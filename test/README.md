@@ -1,0 +1,3 @@
+# Tests
+
+Run with `pytest`.
