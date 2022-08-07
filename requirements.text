@@ -1,0 +1,7 @@
+jax
+numpy
+matplotlib
+torch
+astropy
+jaxlib
+equinox

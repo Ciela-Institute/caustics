@@ -1,2 +1,4 @@
 # caustic
-The lensing pipeline of the future.
+
+Gravitational lensing in jax. Strives to be differentiable, batchable, jittable,
+GPU-compatible and modular.
