@@ -1,0 +1,36 @@
+[project]
+name = "caustic"
+version = "0.0.1"
+authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
+description = "The lensing pipeline of the future."
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "gravitational lensing",
+    "astrophysics",
+    "differentiable programming",
+    "pytorch",
+]
+dependencies = [
+    "astropy",
+    "torch",
+    "numpy",
+    "scipy",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/polairis-space/caustic"
+"Bug Tracker" = "https://github.com/polairis-space/caustic"
+
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
