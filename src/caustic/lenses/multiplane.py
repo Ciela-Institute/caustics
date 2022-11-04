@@ -23,16 +23,9 @@ from .base import AbstractLens
 
 
 class MultiplaneLens(Base):
-    # TODO: is this an AbstractLens? It's different since it's not thin.
-    def __init__(self, lenses: List[AbstractLens], z_ls, cosmology, device):
-        """
-        Args:
-            z_red_ref: the reference redshift used to define the reduced deflection
-                angles for the lenses.
-        """
+    def __init__(self, lenses: List[AbstractLens], cosmology, device):
         super().__init__(cosmology, device)
-        self.lenses = lenses
-        self.z_ls = z_ls
+        self.lenses = sorted(lenses, key=lambda lens: lens.z_l)
 
     def _raytrace_to(self, thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z):
         chi = self.cosmology.comoving_dist(z)
@@ -63,11 +56,13 @@ class MultiplaneLens(Base):
         idx_cur_source = 0
         z_s = z_ss[idx_cur_source]
 
-        for lens, z_l in zip(self.lenses, self.z_ls):
+        for lens in self.lenses:
             # Multiple sources can lie between lens planes
-            while z_s <= z_l:
+            while z_s <= lens.z_l:
                 # Ray-trace to current sources' redshift
-                thx, thy = self._raytrace_to(thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z_s)
+                thx, thy = self._raytrace_to(
+                    thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z_s
+                )
                 thxs[idx_cur_source] = thx
                 thys[idx_cur_source] = thy
 
@@ -78,35 +73,34 @@ class MultiplaneLens(Base):
                     return thxs, thys
 
             # Ray-trace to current lens plane
-            thx, thy = self._raytrace_to(thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z_l)
-            ahx, ahy = lens.alpha_hat(thx, thy, z_l, z_s)
+            thx, thy = self._raytrace_to(
+                thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, lens.z_l
+            )
+            ahx, ahy = lens.alpha_hat(thx, thy, z_s)
 
             # Update sums
             ahx_sum += ahx
             ahy_sum += ahy
-            chi = self.cosmology.comoving_dist(z_l)
+            chi = self.cosmology.comoving_dist(lens.z_l)
             ahx_chi_sum += chi * ahx
             ahy_chi_sum += chi * ahy
 
         # Multiple sources can lie beyond the last lens plane
         for idx in range(idx_cur_source, len(z_ss)):
             z_s = z_ss[idx]
-            thx, thy = self._raytrace_to(thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z_s)
+            thx, thy = self._raytrace_to(
+                thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z_s
+            )
             thxs[idx_cur_source] = thx
             thys[idx_cur_source] = thy
 
         return thxs.reshape(thxy_final_shape), thys.reshape(thxy_final_shape)
 
-    # def alpha(self, x, y, z=None, w=None, t=None):
-    #     x_src = torch.zeros_like(x)
-    #     y_src = torch.zeros_like(y)
-    #     for lens, z in zip(self.lenses, self.z_ls):
-    #         ...
+    def Sigma(self, thx, thy, z_s):
+        ...
 
-    #     return sum([lens.alpha(x, y, z, w, t) for lens in self.lenses])
+    def kappa(self, thx, thy, z_s):
+        ...
 
-    def kappa(self, x, y, z=None, w=None, t=None):
-        raise ValueError("undefined")
-
-    def Psi(self, x, y, z=None, w=None, t=None):
-        raise ValueError("undefined")
+    def Psi(self, thx, thy, z_s):
+        ...
