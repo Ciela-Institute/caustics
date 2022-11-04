@@ -100,7 +100,7 @@ class NFW(AbstractLens):
         x = (thx**2 + thy**2).sqrt() * d_l / self.r_s(z_l) * arcsec_to_rad  # [rad]
         return 2 * self.rho_s(z_l) * self.r_s(z_l) / (x**2 - 1) * self._f(x)
 
-    def alpha_hat(self, thx, thy, z_l):
+    def alpha_hat(self, thx, thy, z_l, z_s):
         """
         [arcsec]
         """

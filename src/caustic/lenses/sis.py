@@ -2,7 +2,7 @@ from math import pi
 
 import torch
 
-from ..constants import G, arcsec_to_rad, c_km_s, rad_to_arcsec
+from ..constants import G, arcsec_to_rad, c_km_s, c_Mpc_s, rad_to_arcsec
 from .base import AbstractLens
 
 
@@ -17,6 +17,12 @@ class SIS(AbstractLens):
         self.thx0 = torch.as_tensor(thx0, dtype=torch.float32, device=device)
         self.thy0 = torch.as_tensor(thy0, dtype=torch.float32, device=device)
 
+    def xi_0(self, z_l, z_s):
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        d_s = self.cosmology.angular_diameter_dist(z_s)
+        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+        return 4 * pi * (self.sigma_v / c_km_s)**2 * d_l * d_ls / d_s  # Mpc
+
     def th_ein(self, z_l, z_s):
         d_s = self.cosmology.angular_diameter_dist(z_s)
         d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s)
@@ -28,15 +34,34 @@ class SIS(AbstractLens):
         xi = d_l * (thx**2 + thy**2).sqrt() * arcsec_to_rad
         return self.sigma_v**2 / (2 * G * xi)
 
-    def Psi_hat(self, thx, thy, d_l, d_s, d_ls):
+    def Psi(self, thx, thy, z_l, z_s):
         thx = thx - self.thx0
         thy = thy - self.thy0
-        th = (thx**2 + thy**2).sqrt()
-        return 4 * pi * (self.sigma_v / c_km_s) ** 2 * d_ls / d_s * th * arcsec_to_rad
+        return (thx**2 + thy**2).sqrt()  # arcsec
 
-    def alpha_hat(self, thx, thy, z_l):
+    def Psi_hat(self, thx, thy, z_l, z_s):
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        return self.Psi(thx, thy, z_l, z_s) * (self.xi_0(z_l, z_s) / d_l)**2  # arcsec
+
+    def alpha(self, thx, thy, z_l, z_s):
         thx = thx - self.thx0
         thy = thy - self.thy0
         th = (thx**2 + thy**2).sqrt()
-        alpha = 4 * pi * (self.sigma_v / c_km_s) ** 2 * rad_to_arcsec
-        return alpha * thx / th, alpha * thy / th
+        return thx / th, thy / th  # arcsec
+
+    def alpha_hat(self, thx, thy, z_l, z_s):
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        d_s = self.cosmology.angular_diameter_dist(z_s)
+        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+        factor = self.xi_0(z_l, z_s) * d_s / d_l / d_ls
+        ax, ay = self.alpha(thx, thy, z_l, z_s)
+        return factor * ax, factor * ay  # arcsec
+
+    # def time_delay(self, thx, thy, z_l, z_s):
+    #     d_l = self.cosmology.angular_diameter_dist(z_l)
+    #     d_s = self.cosmology.angular_diameter_dist(z_s)
+    #     d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+    #     factor = (1 + z_l) / c_Mpc_s * d_s * self.xi_0(z_l, z_s)**2 / d_l / d_ls
+    #     ax, ay = self.alpha(thx, thy, z_l, z_s)
+    #     fp_hat = 0.5 * (ax**2 + ay**2) - self.Psi(thx, thy, z_l, z_s)
+    #     return factor * fp_hat * arcsec_to_rad**2

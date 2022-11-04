@@ -1,5 +1,6 @@
+from functools import wraps
 from math import pi
-from typing import Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -13,7 +14,13 @@ def flip_axis_ratio(q, phi):
     return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
 
 
-def translate_rotate(x, y, phi=None, x_0=0.0, y_0=0.0):
+def translate_rotate(
+    x: Tensor,
+    y: Tensor,
+    phi: Optional[Tensor] = None,
+    x_0: Union[float, Tensor] = 0.0,
+    y_0: Union[float, Tensor] = 0.0,
+) -> Tuple[Tensor, Tensor]:
     """
     Translates and applies an ''active'' counterclockwise rotation to the input
     point.
@@ -27,6 +34,46 @@ def translate_rotate(x, y, phi=None, x_0=0.0, y_0=0.0):
         return x * c_phi - y * s_phi, x * s_phi + y * c_phi
     else:
         return x, y
+
+
+def transform_scalar_fn(fn):
+    @wraps(fn)
+    def wrapped(self, x, y, *args, **kwargs):
+        xt = x - self.x_0
+        yt = y - self.y_0
+
+        if hasattr(self, "phi"):
+            c_phi = self.phi.cos()
+            s_phi = self.phi.sin()
+            xt = x * c_phi - y * s_phi
+            yt = x * s_phi + y * c_phi
+
+        return fn(self, xt, yt, *args, **kwargs)
+
+    return wrapped
+
+
+def transform_vector_fn(fn):
+    @wraps(fn)
+    def wrapped(self, x, y, *args, **kwargs):
+        xt = x - self.x_0
+        yt = y - self.y_0
+        if hasattr(self, "phi"):
+            # Apply R(-phi)
+            c_phi = self.phi.cos()
+            s_phi = self.phi.sin()
+            xt = x * c_phi + y * s_phi
+            yt = -x * s_phi + y * c_phi
+
+            vx, vy = fn(self, xt, yt, *args, **kwargs)
+
+            # Apply R(phi)
+            return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
+        else:
+            # Function is independent of phi
+            return fn(self, xt, yt, *args, **kwargs)
+
+    return wrapped
 
 
 def to_elliptical(x, y, q):
