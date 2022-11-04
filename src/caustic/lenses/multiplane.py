@@ -79,7 +79,7 @@ class MultiplaneLens(Base):
 
             # Ray-trace to current lens plane
             thx, thy = self._raytrace_to(thx_0, thy_0, ahx_sum, ahy_sum, ahx_chi_sum, ahy_chi_sum, z_l)
-            ahx, ahy = lens.alpha_hat(thx, thy, z_l)
+            ahx, ahy = lens.alpha_hat(thx, thy, z_l, z_s)
 
             # Update sums
             ahx_sum += ahx

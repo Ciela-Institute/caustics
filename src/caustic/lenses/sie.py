@@ -37,15 +37,34 @@ class SIE(AbstractLens):
         self.z_l_ref = z_l_ref
         self.z_s_ref = z_s_ref
         self.d_s_ref = self.cosmology.angular_diameter_dist(z_s_ref)
+        self.d_l_ref = self.cosmology.angular_diameter_dist(z_l_ref)
         self.d_ls_ref = self.cosmology.angular_diameter_dist_z1z2(z_l_ref, z_s_ref)
 
-    def Sigma(self, xix, xiy, z_l):
-        ...
+    def xi_0(self, z_l, z_s):
+        return self.d_l_ref * self.th_ein * arcsec_to_rad  # Mpc
 
-    def Psi_hat(self, thx, thy, d_l, d_s, d_ls):
-        ...
+    def kappa(self, thx, thy, z_l, z_s):
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        thx = thx - self.thx0
+        thy = thy - self.thy0
+        r = d_l * (thx**2 + thy**2).sqrt()
+        return 1 / 2 * self.xi_0(z_l, z_s) / r
 
-    def alpha_hat(self, thx, thy, z_l):
+    def Sigma(self, thx, thy, z_l, z_s):
+        Sigma_cr = self.Sigma_cr(z_l, z_s)
+        return Sigma_cr * self.kappa(thx, thy, z_l, z_s)
+
+    def Psi(self, thx, thy, z_l, z_s):
+        ax, ay = self.alpha(thx, thy, z_l, z_s)
+        Psi = thx * ax + thy * ay
+        return Psi  # arcsec
+
+    def Psi_hat(self, thx, thy, z_l, z_s):
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        factor = (self.xi_0(z_l, z_s) / d_l) ** 2
+        return factor * self.Psi(thx, thy, z_l, z_s)  # arcsec
+
+    def alpha(self, thx, thy, z_l, z_s):
         # Transform to elliptical angular coordinates aligned with semimajor/minor
         # axes of ellipse
         q, phi = flip_axis_ratio(self.q, self.phi)
@@ -53,14 +72,10 @@ class SIE(AbstractLens):
         ex, ey = to_elliptical(thx, thy, q)
         phi_e = torch.atan2(ey, ex)
 
-        # Ensures th_ein scales properly as the z_l is changed
-        # TODO: double-check
-        th_ein_scaled = self.th_ein * self.d_s_ref / self.d_ls_ref
-
         q_ratio = ((1 + q) / (1 - q)).sqrt()
         a_complex = (
             2
-            * th_ein_scaled
+            * self.th_ein
             * q.sqrt()
             / (1 + q)
             * q_ratio
@@ -70,4 +85,12 @@ class SIE(AbstractLens):
         ay = a_complex.imag
 
         # Rotate back to coordinate axes
-        return translate_rotate(ax, ay, phi)
+        return translate_rotate(ax, ay, phi)  # arcsec
+
+    def alpha_hat(self, thx, thy, z_l, z_s):
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        d_s = self.cosmology.angular_diameter_dist(z_s)
+        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+        ax, ay = self.alpha(thx, thy, z_l, z_s)
+        factor = self.xi_0(z_l, z_s) * d_s / d_l / d_ls
+        return factor * ax, factor * ay  # arcsec
