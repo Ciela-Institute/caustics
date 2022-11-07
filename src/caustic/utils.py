@@ -85,7 +85,10 @@ def to_elliptical(x, y, q):
     return x * q, y
 
 
-def get_meshgrid(resolution, nx, ny, device=None) -> Tuple[Tensor, Tensor]:
-    xs = torch.linspace(-1, 1, nx, device=device) * resolution * (nx - 1) / 2
-    ys = torch.linspace(-1, 1, ny, device=device) * resolution * (ny - 1) / 2
+def get_meshgrid(
+    resolution, nx, ny, device=None, dtype=torch.float32
+) -> Tuple[Tensor, Tensor]:
+    base_grid = torch.linspace(-1, 1, nx, device=device, dtype=dtype)
+    xs = base_grid * resolution * (nx - 1) / 2
+    ys = base_grid * resolution * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
