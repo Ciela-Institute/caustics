@@ -7,20 +7,18 @@ from .base import AbstractLens
 
 
 class KappaGrid(AbstractLens):
-    def __init__(self, kappa, thx0=0.0, thy0=0.0, fov=1.0, method="fft", cosmology=None, device=None):
-        super().__init__(cosmology, device)
-        self.kappa = torch.as_tensor(kappa, dtype=torch.float32, device=device)
+    def __init__(self, kappa, fov=1.0, method="fft", dtype=torch.float32, z_l=None, cosmology=None, device=None):
+        super().__init__(z_l, cosmology, device)
+        self._kappa = torch.as_tensor(kappa, dtype=dtype, device=device)
         if kappa.ndim != 4:
             raise ValueError("Kappa map must have four dimensions")
-        self.thx0 = torch.as_tensor(thx0, dtype=torch.float32, device=device)
-        self.thy0 = torch.as_tensor(thy0, dtype=torch.float32, device=device)
-        self.fov = torch.as_tensor(fov,   dtype=torch.float32, device=device)
+        self.fov = torch.as_tensor(fov,   dtype=dtype, device=device)
         if method == "fft":
             self._method = self._fft_method
         elif method == "conv2d":
             self._method = self._conv2d_method
         else:
-            raise
+            raise ValueError("invalid convolution method")
         self.pixels = pixels = kappa.shape[2]
         self.dx_kap = fov / (pixels - 1)  # dx on image grid
         # Convolution kernel
@@ -33,30 +31,27 @@ class KappaGrid(AbstractLens):
         self.xconv_kernel = xconv_kernel.unsqueeze(0).unsqueeze(0)
         self.yconv_kernel = yconv_kernel.unsqueeze(0).unsqueeze(0)
 
-    def alpha_hat(self, thx, thy, z_l):
+    def alpha(self, thx, thy, z_s):
         ...
 
-    def alpha(self, thx, thy, z_l, z_s):
+    def Psi(self, thx, thy, z_s):
         ...
 
-    def Psi_hat(self, thx, thy, z_l, z_s):
-        ...
-
-    def Sigma(self, xix, xiy, z_l):
+    def kappa(self, thx, thy, z_s):
         ...
 
     def _fft_method(self):
         x_kernel_tilde = torch.fft.fft2(-self.xconv_kernel)
         y_kernel_tilde = torch.fft.fft2(-self.yconv_kernel)
-        kap = F.pad(self.kappa, [self.pixels + 1, 0, self.pixels+1, 0, 0, 0, 0, 0])
+        kap = F.pad(self._kappa, [self.pixels + 1, 0, self.pixels+1, 0, 0, 0, 0, 0])
         kappa_tilde = torch.fft.fft2(kap)
         alpha_x = torch.fft.ifft2(kappa_tilde * x_kernel_tilde).real * (self.dx_kap ** 2 / pi)
         alpha_y = torch.fft.ifft2(kappa_tilde * y_kernel_tilde).real * (self.dx_kap ** 2 / pi)
         return alpha_x[..., :self.pixels, :self.pixels], alpha_y[..., :self.pixels, :self.pixels]
 
     def _conv2d_method(self):
-        alpha_x = F.conv2d(self.kappa, self.xconv_kernel, padding="same") * (self.dx_kap ** 2 / pi)
-        alpha_y = F.conv2d(self.kappa, self.yconv_kernel, padding="same") * (self.dx_kap ** 2 / pi)
+        alpha_x = F.conv2d(self._kappa, self.xconv_kernel, padding="same") * (self.dx_kap ** 2 / pi)
+        alpha_y = F.conv2d(self._kappa, self.yconv_kernel, padding="same") * (self.dx_kap ** 2 / pi)
         return alpha_x, alpha_y
 
     @staticmethod
