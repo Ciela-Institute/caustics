@@ -31,8 +31,8 @@ class KappaGrid(AbstractLens):
         self.pixels = pixels = kappa.shape[2]
         self.dx_kap = fov / (pixels - 1)  # dx on image grid
         # Convolution kernel
-        x = torch.linspace(-1, 1, 2 * pixels + 1) * fov
-        xx, yy = torch.meshgrid(x, x)
+        x = torch.linspace(-1, 1, 2 * pixels + 1, dtype=dtype) * fov
+        xx, yy = torch.meshgrid(x, x, indexing="xy")
         rho = xx**2 + yy**2
         xconv_kernel = -self._safe_divide(xx, rho)
         yconv_kernel = -self._safe_divide(yy, rho)
