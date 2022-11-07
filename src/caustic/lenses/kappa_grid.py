@@ -1,4 +1,5 @@
 from math import pi
+import warnings
 
 import torch
 import torch.nn.functional as F
@@ -21,6 +22,9 @@ class KappaGrid(AbstractLens):
         self._kappa = torch.as_tensor(kappa, dtype=dtype, device=device)
         if kappa.ndim != 4:
             raise ValueError("Kappa map must have four dimensions")
+        self.pixels = pixels = kappa.shape[2]
+        if sum([int(n) for n in bin(pixels)[2:]]) != 1:
+            warnings.warn("")
         self.fov = torch.as_tensor(fov, dtype=dtype, device=device)
         if method == "fft":
             self._method = self._fft_method
@@ -31,7 +35,9 @@ class KappaGrid(AbstractLens):
         self.pixels = pixels = kappa.shape[2]
         self.dx_kap = fov / (pixels - 1)  # dx on image grid
         # Convolution kernel
-        x = torch.linspace(-1, 1, 2 * pixels + 1, dtype=dtype) * fov
+        # TODO figure out what is going on with 2 * pixels + 1 kernel
+        # x = torch.linspace(-1, 1, 2 * pixels + 1, dtype=dtype) * fov
+        x = torch.linspace(-1, 1, 2 * pixels, dtype=dtype) * fov
         xx, yy = torch.meshgrid(x, x, indexing="xy")
         rho = xx**2 + yy**2
         xconv_kernel = -self._safe_divide(xx, rho)
@@ -50,9 +56,14 @@ class KappaGrid(AbstractLens):
         ...
 
     def _fft_method(self):
-        x_kernel_tilde = torch.fft.fft2(-self.xconv_kernel)
-        y_kernel_tilde = torch.fft.fft2(-self.yconv_kernel)
-        kap = F.pad(self._kappa, [self.pixels + 1, 0, self.pixels + 1, 0, 0, 0, 0, 0])
+        x_kernel_tilde = torch.fft.fft2(
+            -self.xconv_kernel
+        )
+        y_kernel_tilde = torch.fft.fft2(
+            - self.yconv_kernel
+        )
+        # TODO figure out if this is an optimal padding strategy
+        kap = F.pad(self._kappa, [self.pixels, 0, self.pixels, 0, 0, 0, 0, 0])
         kappa_tilde = torch.fft.fft2(kap)
         alpha_x = torch.fft.ifft2(kappa_tilde * x_kernel_tilde).real * (
             self.dx_kap**2 / pi
@@ -80,33 +91,3 @@ class KappaGrid(AbstractLens):
         where = denominator != 0
         out[where] = num[where] / denominator[where]
         return out
-
-
-if __name__ == "__main__":
-    import h5py
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    hf = h5py.File("../../../../data/data_1.h5", "r")
-    kap = hf["kappa"][0][None, None]
-    kappa = KappaGrid(kap)
-    # alpha_x, alpha_y = kappa._fft_method()
-    # fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-    # axs[0].imshow(alpha_x[0, 0], cmap="seismic")
-    # axs[1].imshow(alpha_y[0, 0], cmap="seismic")
-    alpha_x, alpha_y = kappa._fft_method()
-    alpha_x_true, alpha_y_true = kappa._conv2d_method()
-    fig, axs = plt.subplots(3, 2, figsize=(8, 12))
-    axs[0, 0].imshow(alpha_x[0, 0], cmap="seismic")
-    axs[0, 1].imshow(alpha_y[0, 0], cmap="seismic")
-    axs[1, 0].imshow(alpha_x_true[0, 0], cmap="seismic")
-    axs[1, 1].imshow(alpha_y_true[0, 0], cmap="seismic")
-    axs[2, 0].imshow(alpha_x_true[0, 0] - alpha_x[0, 0], cmap="seismic")
-    im = axs[2, 1].imshow(alpha_y_true[0, 0] - alpha_y[0, 0], cmap="seismic")
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
-    print(np.abs(alpha_x_true[0, 0] - alpha_x[0, 0]).max())
-    print(np.abs(alpha_y_true[0, 0] - alpha_y[0, 0]).max())
-
-    plt.show()
