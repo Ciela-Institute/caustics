@@ -46,8 +46,8 @@ def transform_scalar_fn(fn, x_name="thx0", y_name="thy0", phi_name="phi"):
             phi = getattr(self, phi_name)
             c_phi = phi.cos()
             s_phi = phi.sin()
-            xt = x * c_phi + y * s_phi
-            yt = -x * s_phi + y * c_phi
+            xt = xt * c_phi + yt * s_phi
+            yt = -xt * s_phi + yt * c_phi
             # Evaluate function
 
         return fn(self, xt, yt, *args, **kwargs)
@@ -65,8 +65,8 @@ def transform_vector_fn(fn, x_name="thx0", y_name="thy0", phi_name="phi"):
             phi = getattr(self, phi_name)
             c_phi = phi.cos()
             s_phi = phi.sin()
-            xt = x * c_phi + y * s_phi
-            yt = -x * s_phi + y * c_phi
+            xt = xt * c_phi + yt * s_phi
+            yt = -xt * s_phi + yt * c_phi
             # Evaluate function
             vx, vy = fn(self, xt, yt, *args, **kwargs)
             # Apply R(phi)
