@@ -82,7 +82,7 @@ def to_elliptical(x, y, q):
     """
     Converts to elliptical Cartesian coordinates.
     """
-    return x * q, y
+    return x * q.sqrt(), y / q.sqrt()
 
 
 def get_meshgrid(
