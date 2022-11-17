@@ -5,6 +5,8 @@ from typing import Optional, Tuple, Union
 import torch
 from torch import Tensor
 
+from .constants import G_over_c2
+
 
 def flip_axis_ratio(q, phi):
     """
@@ -36,46 +38,51 @@ def translate_rotate(
         return x, y
 
 
-def transform_scalar_fn(fn, x_name="thx0", y_name="thy0", phi_name="phi"):
-    @wraps(fn)
-    def wrapped(self, x, y, *args, **kwargs):
-        xt = x - getattr(self, x_name)
-        yt = y - getattr(self, y_name)
-        if hasattr(self, phi_name):
-            # Apply R(-phi)
-            phi = getattr(self, phi_name)
-            c_phi = phi.cos()
-            s_phi = phi.sin()
-            xt = xt * c_phi + yt * s_phi
-            yt = -xt * s_phi + yt * c_phi
-            # Evaluate function
+def transform_scalar_fn(x0, y0, phi=None):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapped(x, y, *args, **kwargs):
+            xt = x - x0
+            yt = y - y0
 
-        return fn(self, xt, yt, *args, **kwargs)
+            if phi is not None:
+                # Apply R(-phi)
+                c_phi = phi.cos()
+                s_phi = phi.sin()
+                # Simultaneous assignment
+                xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
 
-    return wrapped
+            return fn(xt, yt, *args, **kwargs)
+
+        return wrapped
+
+    return decorator
 
 
-def transform_vector_fn(fn, x_name="thx0", y_name="thy0", phi_name="phi"):
-    @wraps(fn)
-    def wrapped(self, x, y, *args, **kwargs):
-        xt = x - getattr(self, x_name)
-        yt = y - getattr(self, y_name)
-        if hasattr(self, phi_name):
-            # Apply R(-phi)
-            phi = getattr(self, phi_name)
-            c_phi = phi.cos()
-            s_phi = phi.sin()
-            xt = xt * c_phi + yt * s_phi
-            yt = -xt * s_phi + yt * c_phi
-            # Evaluate function
-            vx, vy = fn(self, xt, yt, *args, **kwargs)
-            # Apply R(phi)
-            return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
-        else:
+def transform_vector_fn(x0, y0, phi=None):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapped(x, y, *args, **kwargs):
+            xt = x - x0
+            yt = y - y0
+
+            if phi is not None:
+                # Apply R(-phi)
+                c_phi = phi.cos()
+                s_phi = phi.sin()
+                # Simultaneous assignment
+                xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
+                # Evaluate function
+                vx, vy = fn(xt, yt, *args, **kwargs)
+                # Apply R(phi) to result
+                return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
+
             # Function is independent of phi
-            return fn(self, xt, yt, *args, **kwargs)
+            return fn(xt, yt, *args, **kwargs)
 
-    return wrapped
+        return wrapped
+
+    return decorator
 
 
 def to_elliptical(x, y, q):
@@ -92,3 +99,13 @@ def get_meshgrid(
     xs = base_grid * resolution * (nx - 1) / 2
     ys = base_grid * resolution * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
+
+
+def get_Sigma_cr(z_l, z_s, cosmology) -> Tensor:
+    """
+    Critical lensing density [solMass / Mpc^2]
+    """
+    d_l = cosmology.angular_diameter_dist(z_l)
+    d_s = cosmology.angular_diameter_dist(z_s)
+    d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+    return d_s / d_l / d_ls / (4 * pi * G_over_c2)
