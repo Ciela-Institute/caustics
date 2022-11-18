@@ -3,76 +3,51 @@ from math import pi
 import torch
 import torch.nn.functional as F
 
+from ..interpolatedimage import InterpolatedImage
 from .base import AbstractLens
 
 
 class KappaGrid(AbstractLens):
     def __init__(
-        self,
-        kappa,
-        fov=1.0,
-        method="fft",
-        dtype=torch.float32,
-        z_l=None,
-        cosmology=None,
-        device=None,
+        self, fov, n_pix, dtype=torch.float32, mode="fft", z_l=None, device=None
     ):
-        super().__init__(z_l, cosmology, device)
-        self._kappa = torch.as_tensor(kappa, dtype=dtype, device=device)
-        if kappa.ndim != 4:
-            raise ValueError("Kappa map must have four dimensions")
-        self.fov = torch.as_tensor(fov, dtype=dtype, device=device)
-        if method == "fft":
-            self._method = self._fft_method
-        elif method == "conv2d":
-            self._method = self._conv2d_method
+        super().__init__(device)
+
+        self.n_pix = n_pix  # kappa_map.shape[2]
+        self.fov = fov
+        self.interpolator = InterpolatedImage(fov, device)
+        self.dx_kap = fov / (n_pix - 1)  # dx on image grid
+        self.z_l = z_l
+
+        self.Psi_kernel = self.get_Psi_kernel(n_pix, fov, dtype)
+        self.ax_kernel, self.ay_kernel = self.get_alpha_kernels(n_pix, fov, dtype)
+
+        if mode == "fft":
+            # Get (padded) Fourier transforms of kernels
+            self.Psi_kernel_tilde = self._fft2_padded(self.Psi_kernel)
+            self.ax_kernel_tilde = self._fft2_padded(-self.ax_kernel)
+            self.ay_kernel_tilde = self._fft2_padded(-self.ay_kernel)
+
+            self._kappa_to_Psi = self._kappa_to_Psi_fft
+            self._kappa_to_alpha = self._kappa_to_alpha_fft
+        elif mode == "conv2d":
+            self._kappa_to_Psi = self._kappa_to_Psi_conv2d
+            self._kappa_to_alpha = self._kappa_to_alpha_conv2d
         else:
-            raise ValueError("invalid convolution method")
-        self.pixels = pixels = kappa.shape[2]
-        self.dx_kap = fov / (pixels - 1)  # dx on image grid
-        # Convolution kernel
-        x = torch.linspace(-1, 1, 2 * pixels + 1, dtype=dtype) * fov
-        xx, yy = torch.meshgrid(x, x, indexing="xy")
-        rho = xx**2 + yy**2
-        xconv_kernel = -self._safe_divide(xx, rho)
-        yconv_kernel = -self._safe_divide(yy, rho)
-        # reshape to [in_channels, out_channels, filter_height, filter_width]
-        self.xconv_kernel = xconv_kernel.unsqueeze(0).unsqueeze(0)
-        self.yconv_kernel = yconv_kernel.unsqueeze(0).unsqueeze(0)
+            raise ValueError("invalid convolution mode")
 
-    def alpha(self, thx, thy, z_s):
-        ...
+        self._mode = mode
 
-    def Psi(self, thx, thy, z_s):
-        ...
+    def _fft2_padded(self, x):
+        pad = 3 * self.n_pix
+        return torch.fft.fft2(x, (pad, pad))
 
-    def kappa(self, thx, thy, z_s):
-        ...
+    def _unpad(self, x):
+        return x[..., self.n_pix : -self.n_pix, self.n_pix : -self.n_pix]
 
-    def _fft_method(self):
-        x_kernel_tilde = torch.fft.fft2(-self.xconv_kernel)
-        y_kernel_tilde = torch.fft.fft2(-self.yconv_kernel)
-        kap = F.pad(self._kappa, [self.pixels + 1, 0, self.pixels + 1, 0, 0, 0, 0, 0])
-        kappa_tilde = torch.fft.fft2(kap)
-        alpha_x = torch.fft.ifft2(kappa_tilde * x_kernel_tilde).real * (
-            self.dx_kap**2 / pi
-        )
-        alpha_y = torch.fft.ifft2(kappa_tilde * y_kernel_tilde).real * (
-            self.dx_kap**2 / pi
-        )
-        return (
-            alpha_x[..., : self.pixels, : self.pixels],
-            alpha_y[..., : self.pixels, : self.pixels],
-        )
-
-    def _conv2d_method(self):
-        alpha_x = F.conv2d(self._kappa, self.xconv_kernel, padding="same") * (
-            self.dx_kap**2 / pi
-        )
-        alpha_y = F.conv2d(self._kappa, self.yconv_kernel, padding="same") * (
-            self.dx_kap**2 / pi
-        )
-        return alpha_x, alpha_y
+    @property
+    def mode(self):
+        return self._mode
 
     @staticmethod
     def _safe_divide(num, denominator):
@@ -80,6 +55,93 @@ class KappaGrid(AbstractLens):
         where = denominator != 0
         out[where] = num[where] / denominator[where]
         return out
+
+    @staticmethod
+    def get_alpha_kernels(n_pix, fov, dtype):
+        # Shapes are (in_channels, out_channels, filter_height, filter_width)
+        grid = torch.linspace(-1, 1, 2 * n_pix, dtype=dtype) * fov
+        x_mg, y_mg = torch.meshgrid(grid, grid, indexing="xy")
+        d2 = x_mg**2 + y_mg**2
+        ax_kernel = -KappaGrid._safe_divide(x_mg, d2)[None, None, :, :]
+        ay_kernel = -KappaGrid._safe_divide(y_mg, d2)[None, None, :, :]
+        return ax_kernel, ay_kernel
+
+    @staticmethod
+    def get_Psi_kernel(n_pix, fov, dtype):
+        grid = torch.linspace(-1, 1, 2 * n_pix, dtype=dtype) * fov
+        x_mg, y_mg = torch.meshgrid(grid, grid, indexing="xy")
+        d2 = x_mg**2 + y_mg**2
+        return d2.sqrt().log()[None, None, :, :]
+
+    def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
+        if z_l != self.z_l:
+            raise ValueError(
+                "dynamically setting the lens redshift is not yet supported"
+            )
+
+        alpha_x_map, alpha_y_map = self._kappa_to_alpha(kappa_map)
+        alpha_x = self.interpolator(thx, thy, thx0, thy0, alpha_x_map)
+        alpha_y = self.interpolator(thx, thy, thx0, thy0, alpha_y_map)
+        return alpha_x, alpha_y
+
+    def Psi(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
+        if z_l != self.z_l:
+            raise ValueError(
+                "dynamically setting the lens redshift is not yet supported"
+            )
+
+        Psi_map = self._kappa_to_Psi(kappa_map)
+        Psi = self.interpolator(thx, thy, thx0, thy0, Psi_map)
+        return Psi
+
+    def kappa(self, thx, thy, z_s):
+        ...
+
+    def _check_kappa_map_shape(self, kappa_map):
+        if kappa_map.ndim != 4:
+            raise ValueError("kappa map must have four dimensions")
+
+        expected_shape = (1, self.n_pix, self.n_pix)
+        if kappa_map.shape[1:] != expected_shape:
+            raise ValueError(
+                f"kappa map shape does not have the expected shape of {expected_shape}"
+            )
+
+    def _kappa_to_alpha_fft(self, kappa_map):
+        self._check_kappa_map_shape(kappa_map)
+        kappa_tilde = self._fft2_padded(kappa_map)
+        alpha_x = torch.fft.ifft2(kappa_tilde * self.ax_kernel_tilde).real * (
+            self.dx_kap**2 / pi
+        )
+        alpha_y = torch.fft.ifft2(kappa_tilde * self.ay_kernel_tilde).real * (
+            self.dx_kap**2 / pi
+        )
+        return self._unpad(alpha_x), self._unpad(alpha_y)
+
+    def _kappa_to_alpha_conv2d(self, kappa_map):
+        self._check_kappa_map_shape(kappa_map)
+        alpha_x = F.conv2d(kappa_map, self.ax_kernel, padding="same") * (
+            self.dx_kap**2 / pi
+        )
+        alpha_y = F.conv2d(kappa_map, self.ay_kernel, padding="same") * (
+            self.dx_kap**2 / pi
+        )
+        return alpha_x, alpha_y
+
+    def _kappa_to_Psi_fft(self, kappa_map):
+        self._check_kappa_map_shape(kappa_map)
+        kappa_tilde = self._fft2_padded(kappa_map)
+        Psi = torch.fft.ifft2(kappa_tilde * self.Psi_kernel_tilde).real * (
+            self.dx_kap**2 / pi
+        )
+        return self._unpad(Psi)
+
+    def _kappa_to_Psi_conv2d(self, kappa_map):
+        self._check_kappa_map_shape(kappa_map)
+        Psi = F.conv2d(kappa_map, self.Psi_kernel, padding="same") * (
+            self.dx_kap**2 / pi
+        )
+        return Psi
 
 
 if __name__ == "__main__":
@@ -90,12 +152,12 @@ if __name__ == "__main__":
     hf = h5py.File("../../../../data/data_1.h5", "r")
     kap = hf["kappa"][0][None, None]
     kappa = KappaGrid(kap)
-    # alpha_x, alpha_y = kappa._fft_method()
+    # alpha_x, alpha_y = kappa._fft_mode()
     # fig, axs = plt.subplots(1, 2, figsize=(8, 4))
     # axs[0].imshow(alpha_x[0, 0], cmap="seismic")
     # axs[1].imshow(alpha_y[0, 0], cmap="seismic")
-    alpha_x, alpha_y = kappa._fft_method()
-    alpha_x_true, alpha_y_true = kappa._conv2d_method()
+    alpha_x, alpha_y = kappa._kappa_to_alpha_fft()
+    alpha_x_true, alpha_y_true = kappa._kappa_to_alpha_conv2d()
     fig, axs = plt.subplots(3, 2, figsize=(8, 12))
     axs[0, 0].imshow(alpha_x[0, 0], cmap="seismic")
     axs[0, 1].imshow(alpha_y[0, 0], cmap="seismic")
