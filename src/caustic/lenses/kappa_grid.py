@@ -39,11 +39,11 @@ class KappaGrid(AbstractLens):
         self._mode = mode
 
     def _fft2_padded(self, x):
-        pad = 3 * self.n_pix
+        pad = 2 * self.n_pix
         return torch.fft.fft2(x, (pad, pad))
 
     def _unpad(self, x):
-        return x[..., self.n_pix : -self.n_pix, self.n_pix : -self.n_pix]
+        return x[..., self.n_pix :, self.n_pix :]
 
     @property
     def mode(self):
