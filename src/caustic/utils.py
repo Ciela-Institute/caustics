@@ -16,76 +16,30 @@ def flip_axis_ratio(q, phi):
     return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
 
 
-def translate_rotate(
-    x: Tensor,
-    y: Tensor,
-    phi: Optional[Tensor] = None,
-    x_0: Union[float, Tensor] = 0.0,
-    y_0: Union[float, Tensor] = 0.0,
-) -> Tuple[Tensor, Tensor]:
-    """
-    Translates and applies an ''active'' counterclockwise rotation to the input
-    point.
-    """
-    x = x - x_0
-    y = y - y_0
+def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
+    xt = x - x0
+    yt = y - y0
 
     if phi is not None:
+        # Apply R(-phi)
         c_phi = phi.cos()
         s_phi = phi.sin()
-        return x * c_phi - y * s_phi, x * s_phi + y * c_phi
-    else:
-        return x, y
+        # Simultaneous assignment
+        xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
+
+    return xt, yt
 
 
-def transform_scalar_fn(x0, y0, phi=None):
-    def decorator(fn):
-        @wraps(fn)
-        def wrapped(x, y, *args, **kwargs):
-            xt = x - x0
-            yt = y - y0
+def derotate(vx, vy, phi: Optional[Tensor] = None):
+    if phi is None:
+        return vx, vy
 
-            if phi is not None:
-                # Apply R(-phi)
-                c_phi = phi.cos()
-                s_phi = phi.sin()
-                # Simultaneous assignment
-                xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
-
-            return fn(xt, yt, *args, **kwargs)
-
-        return wrapped
-
-    return decorator
+    c_phi = phi.cos()
+    s_phi = phi.sin()
+    return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
 
 
-def transform_vector_fn(x0, y0, phi=None):
-    def decorator(fn):
-        @wraps(fn)
-        def wrapped(x, y, *args, **kwargs):
-            xt = x - x0
-            yt = y - y0
-
-            if phi is not None:
-                # Apply R(-phi)
-                c_phi = phi.cos()
-                s_phi = phi.sin()
-                # Simultaneous assignment
-                xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
-                # Evaluate function
-                vx, vy = fn(xt, yt, *args, **kwargs)
-                # Apply R(phi) to result
-                return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
-
-            # Function is independent of phi
-            return fn(xt, yt, *args, **kwargs)
-
-        return wrapped
-
-    return decorator
-
-
-def to_elliptical(x, y, q):
+def to_elliptical(x, y, q: Tensor):
     """
     Converts to elliptical Cartesian coordinates.
     """

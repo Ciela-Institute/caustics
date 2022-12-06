@@ -3,7 +3,8 @@ from math import pi
 import torch
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
-from ..utils import get_Sigma_cr, transform_scalar_fn, transform_vector_fn
+from ..utils import get_Sigma_cr
+from ..utils import translate_rotate
 from .base import AbstractLens
 
 DELTA = 200.0
@@ -89,29 +90,28 @@ class NFW(AbstractLens):
         """
         [arcsec]
         """
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
 
-        @transform_vector_fn(thx0, thy0)
-        def helper(thx, thy):
-            d_l = cosmology.angular_diameter_dist(z_l)
-            th = (thx**2 + thy**2).sqrt()
-            r_s = self.get_r_s(z_l, cosmology, m, c)
-            xi = d_l * th * arcsec_to_rad
-            x = xi / r_s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        th = (thx**2 + thy**2).sqrt()
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s
 
-            alpha = (
-                16
-                * pi
-                * G_over_c2
-                * self.get_rho_s(z_l, cosmology, c)
-                * r_s**3
-                * self._h(x)
-                * rad_to_arcsec
-                / xi
-            )
+        alpha = (
+            16
+            * pi
+            * G_over_c2
+            * self.get_rho_s(z_l, cosmology, c)
+            * r_s**3
+            * self._h(x)
+            * rad_to_arcsec
+            / xi
+        )
 
-            return alpha * thx / th, alpha * thy / th
-
-        return helper(thx, thy)
+        ax = alpha * thx / th
+        ay = alpha * thy / th
+        return ax, ay
 
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c):
         d_s = cosmology.angular_diameter_dist(z_s)
@@ -120,31 +120,23 @@ class NFW(AbstractLens):
         return d_ls / d_s * ahx, d_ls / d_s * ahy
 
     def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c):
-        @transform_scalar_fn(thx0, thy0)
-        def helper(thx, thy):
-            d_l = cosmology.angular_diameter_dist(z_l)
-            th = (thx**2 + thy**2).sqrt()
-            r_s = self.get_r_s(z_l, cosmology, m, c)
-            xi = d_l * th * arcsec_to_rad
-            x = xi / r_s  # xi / xi_0
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
 
-            kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-
-            return 2 * kappa_s * self._f(x) / (x**2 - 1)
-
-        return helper(thx, thy)
+        d_l = cosmology.angular_diameter_dist(z_l)
+        th = (thx**2 + thy**2).sqrt()
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
+        return 2 * kappa_s * self._f(x) / (x**2 - 1)
 
     def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c):
-        @transform_scalar_fn(thx0, thy0)
-        def helper(thx, thy):
-            d_l = cosmology.angular_diameter_dist(z_l)
-            th = (thx**2 + thy**2).sqrt()
-            r_s = self.get_r_s(z_l, cosmology, m, c)
-            xi = d_l * th * arcsec_to_rad
-            x = xi / r_s  # xi / xi_0
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
 
-            kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-
-            return 4 * kappa_s(z_s) * self._g(x)
-
-        return helper(thx, thy)
+        d_l = cosmology.angular_diameter_dist(z_l)
+        th = (thx**2 + thy**2).sqrt()
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
+        return 4 * kappa_s(z_s) * self._g(x)
