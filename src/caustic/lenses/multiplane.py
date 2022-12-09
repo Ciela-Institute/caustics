@@ -8,43 +8,58 @@ from .base import AbstractThickLens, AbstractThinLens
 
 
 class MultiplaneLens(AbstractThickLens):
-    def __init__(self, lenses: List[AbstractThinLens], device=torch.device("cpu")):
-        """
-        Args:
-            lenses: list of instances of thin lenses.
-        """
-        super().__init__(device)
-        self.lenses = lenses
-
     def raytrace(
-        self, thx, thy, z_s, cosmology, z_ls: Tensor, lens_args: List[Tuple[Any, ...]]
+        self,
+        thx,
+        thy,
+        z_s,
+        cosmology,
+        lenses: List[AbstractThinLens],
+        z_ls: Tensor,
+        lens_args: List[Tuple[Any, ...]],
     ) -> Tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
 
         Args:
+            lenses: list of instances of thin lenses.
             z_ls: lens redshifts
             lens_arg_list: list of args to pass to each lens.
         """
         # TODO: implement
-        for z_l, i in zip(torch.sort(z_ls)):
-            lens = self.lenses[i]
-            # Should be able to get physical deflection field with:
-            #     lens.alpha_hat(thx, thy, z_l, z_l_next, cosmology, *lens_args[i])
-
-        ...
+        z_ls_sorted, idxs = torch.sort(z_ls)
+        for z_l, i in zip(z_ls_sorted, idxs):
+            # Get physical deflection field for ith lens with:
+            #     lenses[i].alpha_hat(thx, thy, z_l, z_l_next, cosmology, *lens_args[i])
+            ...
+        raise NotImplementedError()
 
     def alpha(
-        self, thx, thy, z_s, cosmology, z_ls: Tensor, lens_args: List[Tuple[Any, ...]]
+        self,
+        thx,
+        thy,
+        z_s,
+        cosmology,
+        lenses: List[AbstractThinLens],
+        z_ls: Tensor,
+        lens_args: List[Tuple[Any, ...]],
     ) -> Tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
         """
-        bx, by = self.raytrace(thx, thy, z_s, cosmology, z_ls, lens_args)
+        bx, by = self.raytrace(thx, thy, z_s, cosmology, lenses, z_ls, lens_args)
         return thx - bx, thy - by
 
-    @abstractmethod
-    def Sigma(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tensor:
+    def Sigma(
+        self,
+        thx,
+        thy,
+        z_s,
+        cosmology,
+        lenses: List[AbstractThinLens],
+        z_ls: Tensor,
+        lens_args: List[Tuple[Any, ...]],
+    ) -> Tensor:
         """
         Projected mass density.
 
@@ -52,12 +67,20 @@ class MultiplaneLens(AbstractThickLens):
             [solMass / Mpc^2]
         """
         # TODO: rescale mass densities of each lens and sum
-        ...
+        raise NotImplementedError()
 
-    @abstractmethod
-    def time_delay(self, thx, thy, z_s, cosmology, *args, **kwargs):
+    def time_delay(
+        self,
+        thx,
+        thy,
+        z_s,
+        cosmology,
+        lenses: List[AbstractThinLens],
+        z_ls: Tensor,
+        lens_args: List[Tuple[Any, ...]],
+    ):
         # TODO: figure out how to compute this
-        ...
+        raise NotImplementedError()
 
 
 # class MultiplaneLens(Base):
