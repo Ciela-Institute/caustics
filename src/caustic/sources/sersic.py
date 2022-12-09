@@ -14,10 +14,11 @@ class Sersic(AbstractSource):
         super().__init__(device)
         self.lenstronomy_k_mode = use_lenstronomy_k
 
-    def brightness(self, thx, thy, thx0, thy0, q, phi, index, th_e, I_e):
+    def brightness(self, thx, thy, thx0, thy0, q, phi, index, th_e, I_e, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
         ex, ey = to_elliptical(thx, thy, q)
-        e = (ex**2 + ey**2).sqrt()
+        e = (ex**2 + ey**2).sqrt() + s
 
         if self.lenstronomy_k_mode:
             k = 1.9992 * index - 0.3271

@@ -1,5 +1,6 @@
-from .base import AbstractLens
+from .base import AbstractThinLens
 from .epl import EPL
+from .external_shear import ExternalShear
 from .multiplane import MultiplaneLens
 from .nfw import NFW
 from .point import Point
@@ -8,8 +9,9 @@ from .sie import SIE
 from .sis import SIS
 
 __all__ = (
-    "AbstractLens",
+    "AbstractThinLens",
     "EPL",
+    "ExternalShear",
     "MultiplaneLens",
     "NFW",
     "Point",

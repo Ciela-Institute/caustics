@@ -21,15 +21,15 @@ def test():
     z_s = torch.tensor(2.1)
     thx0 = torch.tensor(0.071)
     thy0 = torch.tensor(0.023)
-    r_core = torch.tensor(0.5)
-    r_s = torch.tensor(1.5)
-    kappa_0 = lens.kappa_0(z_l, z_s, cosmology, torch.tensor(1.0), r_core, r_s)
-    args = (z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s)
+    th_core = torch.tensor(0.5)
+    th_s = torch.tensor(1.5)
+    kappa_0 = lens.kappa_0(z_l, z_s, cosmology, torch.tensor(1.0), th_core, th_s)
+    args = (z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s)
     kwargs_ls = [
         {
             "sigma0": kappa_0.item(),
-            "Ra": r_core.item(),
-            "Rs": r_s.item(),
+            "Ra": th_core.item(),
+            "Rs": th_s.item(),
             "center_x": thx0.item(),
             "center_y": thy0.item(),
         }

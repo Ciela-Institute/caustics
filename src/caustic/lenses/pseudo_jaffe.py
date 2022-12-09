@@ -3,76 +3,82 @@ from math import pi
 import torch
 
 from ..utils import translate_rotate
-from .base import AbstractLens
+from .base import AbstractThinLens
 
 
-class PseudoJaffe(AbstractLens):
+class PseudoJaffe(AbstractThinLens):
     """
     Notes:
         Based on `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_ and
         the `lenstronomy` source code.
     """
 
-    def __init__(self, s=0.0001, device=torch.device("cpu")):
+    def __init__(self, device=torch.device("cpu")):
         super().__init__(device)
-        self.s = torch.as_tensor(s, device=device)
 
-    def mass_enclosed_2d(self, th, z_l, z_s, cosmology, kappa_0, r_core, r_s):
+    def mass_enclosed_2d(self, th, z_l, z_s, cosmology, kappa_0, th_core, th_s, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=kappa_0.dtype) if s is None else s
+        th += s
         Sigma_0 = kappa_0 * cosmology.Sigma_cr(z_l, z_s)
         return (
             2
             * pi
             * Sigma_0
-            * r_core
-            * r_s
-            / (r_s - r_core)
+            * th_core
+            * th_s
+            / (th_s - th_core)
             * (
-                (r_core**2 + th**2).sqrt()
-                - r_core
-                - (r_s**2 + th**2).sqrt()
-                + r_s
+                (th_core**2 + th**2).sqrt()
+                - th_core
+                - (th_s**2 + th**2).sqrt()
+                + th_s
             )
         )
 
-    def kappa_0(self, z_l, z_s, cosmology, rho_0, r_core, r_s):
-        return pi * rho_0 * r_core * r_s / (r_core + r_s) / cosmology.Sigma_cr(z_l, z_s)
+    def kappa_0(self, z_l, z_s, cosmology, rho_0, th_core, th_s):
+        return pi * rho_0 * th_core * th_s / (th_core + th_s) / cosmology.Sigma_cr(z_l, z_s)
 
-    def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s):
+    def alpha(
+        self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
+    ):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-
-        # th = torch.maximum((thx**2 + thy**2).sqrt(), self.s)
-        th = (thx**2 + thy**2).sqrt()
-        f = th / r_core / (1 + (1 + (th / r_core) ** 2).sqrt()) - th / r_s / (
-            1 + (1 + (th / r_s) ** 2).sqrt()
+        th = (thx**2 + thy**2).sqrt() + s
+        f = th / th_core / (1 + (1 + (th / th_core) ** 2).sqrt()) - th / th_s / (
+            1 + (1 + (th / th_s) ** 2).sqrt()
         )
-        alpha = 2 * kappa_0 * r_core * r_s / (r_s - r_core) * f
+        alpha = 2 * kappa_0 * th_core * th_s / (th_s - th_core) * f
         ax = alpha * thx / th
         ay = alpha * thy / th
         return ax, ay
 
-    def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s):
+    def Psi(
+        self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
+    ):
         """
         Lensing potential (eq. A18).
         """
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-
-        th = torch.maximum((thx**2 + thy**2).sqrt(), self.s)
-        coeff = -2 * kappa_0 * r_core * r_s / (r_s - r_core)
+        th = (thx**2 + thy**2).sqrt() + s
+        coeff = -2 * kappa_0 * th_core * th_s / (th_s - th_core)
         return coeff * (
-            (r_s**2 + th**2).sqrt()
-            - (r_core**2 + th**2).sqrt()
-            + r_core * (r_core + (r_core**2 + th**2).sqrt()).log()
-            - r_s * (r_s + (r_s**2 + th**2).sqrt()).log()
+            (th_s**2 + th**2).sqrt()
+            - (th_core**2 + th**2).sqrt()
+            + th_core * (th_core + (th_core**2 + th**2).sqrt()).log()
+            - th_s * (th_s + (th_s**2 + th**2).sqrt()).log()
         )
 
-    def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s):
+    def kappa(
+        self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
+    ):
         """
         Projected mass density (eq. A6).
         """
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-
-        th = torch.maximum((thx**2 + thy**2).sqrt(), self.s)
-        coeff = kappa_0 * r_core * r_s / (r_s - r_core)
+        th = (thx**2 + thy**2).sqrt() + s
+        coeff = kappa_0 * th_core * th_s / (th_s - th_core)
         return coeff * (
-            1 / (r_core**2 + th**2).sqrt() - 1 / (r_s**2 + th**2).sqrt()
+            1 / (th_core**2 + th**2).sqrt() - 1 / (th_s**2 + th**2).sqrt()
         )

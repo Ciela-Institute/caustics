@@ -1,10 +1,10 @@
 import torch
 
 from ..utils import derotate, translate_rotate
-from .base import AbstractLens
+from .base import AbstractThinLens
 
 
-class EPL(AbstractLens):
+class EPL(AbstractThinLens):
     """
     Elliptical power law (aka singular power-law ellipsoid) profile.
     """
@@ -22,9 +22,7 @@ class EPL(AbstractLens):
             t: power law slope.
             s: core radius.
         """
-        if s is None:
-            s = torch.tensor(0.0, device=self.device)
-
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
 
         # TODO: fill in code to compute the deflection angles ax and ay
@@ -41,9 +39,7 @@ class EPL(AbstractLens):
         return (thx * ax + thy * ay) / (2 - t)
 
     def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, t, s=None):
-        if s is None:
-            s = torch.tensor(0.0, device=self.device)
-
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
         psi = self._get_psi(thx, thy, q, s)
         return (2 - t) / 2 * (b / psi) ** t

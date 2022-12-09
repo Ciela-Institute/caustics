@@ -4,7 +4,7 @@ import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
 
-from caustic.lenses import AbstractLens
+from caustic.lenses import AbstractThinLens
 from caustic.utils import get_meshgrid
 
 
@@ -53,7 +53,7 @@ def kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
 
 
 def lens_test_helper(
-    lens: AbstractLens,
+    lens: AbstractThinLens,
     lens_ls: LensModel,
     args: Tuple[Any, ...],
     kwargs_ls: List[Dict[str, Any]],
