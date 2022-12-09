@@ -1,6 +1,7 @@
 from .base import AbstractThinLens
 from .epl import EPL
 from .external_shear import ExternalShear
+from .kappa_grid import KappaGrid
 from .multiplane import MultiplaneLens
 from .nfw import NFW
 from .point import Point
@@ -12,6 +13,7 @@ __all__ = (
     "AbstractThinLens",
     "EPL",
     "ExternalShear",
+    "KappaGrid",
     "MultiplaneLens",
     "NFW",
     "Point",

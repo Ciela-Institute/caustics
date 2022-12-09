@@ -3,7 +3,7 @@ from math import pi
 import torch
 import torch.nn.functional as F
 
-from ..interpolatedimage import InterpolatedImage
+from ..interpolate_image import interpolate_image
 from ..utils import safe_divide
 from .base import AbstractThinLens
 
@@ -16,7 +16,6 @@ class KappaGrid(AbstractThinLens):
 
         self.n_pix = n_pix  # kappa_map.shape[2]
         self.fov = fov
-        self.interpolator = InterpolatedImage(fov, device)
         self.dx_kap = fov / (n_pix - 1)  # dx on image grid
         self.z_l = z_l
 
@@ -67,27 +66,15 @@ class KappaGrid(AbstractThinLens):
         d2 = x_mg**2 + y_mg**2
         return d2.sqrt().log()[None, None, :, :]
 
-    def alpha(
-        self,
-        thx,
-        thy,
-        z_l,
-        z_s,
-        cosmology,
-        kappa_map,
-        thx0=0.0,
-        thy0=0.0,
-        *,
-        extra=None,
-    ):
+    def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
         if z_l != self.z_l:
             raise ValueError(
                 "dynamically setting the lens redshift is not yet supported"
             )
 
         alpha_x_map, alpha_y_map = self._kappa_to_alpha(kappa_map)
-        alpha_x = self.interpolator(thx, thy, thx0, thy0, alpha_x_map)
-        alpha_y = self.interpolator(thx, thy, thx0, thy0, alpha_y_map)
+        alpha_x = interpolate_image(thx, thy, thx0, thy0, alpha_x_map, self.fov / 2)
+        alpha_y = interpolate_image(thx, thy, thx0, thy0, alpha_y_map, self.fov / 2)
         return alpha_x, alpha_y
 
     def Psi(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
@@ -97,7 +84,7 @@ class KappaGrid(AbstractThinLens):
             )
 
         Psi_map = self._kappa_to_Psi(kappa_map)
-        Psi = self.interpolator(thx, thy, thx0, thy0, Psi_map)
+        Psi = interpolate_image(thx, thy, thx0, thy0, Psi_map, self.fov / 2)
         return Psi
 
     def kappa(self, thx, thy, z_s):
