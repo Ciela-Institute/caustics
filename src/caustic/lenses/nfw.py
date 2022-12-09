@@ -3,7 +3,6 @@ from math import pi
 import torch
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
-from ..utils import get_Sigma_cr
 from ..utils import translate_rotate
 from .base import AbstractLens
 
@@ -41,7 +40,7 @@ class NFW(AbstractLens):
         """
         [1]
         """
-        Sigma_cr = get_Sigma_cr(z_l, z_s, cosmology)
+        Sigma_cr = cosmology.Sigma_cr(z_l, z_s)
         return (
             self.get_rho_s(z_l, cosmology, c)
             * self.get_r_s(z_l, cosmology, m, c)

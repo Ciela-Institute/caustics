@@ -13,7 +13,7 @@ class Point(AbstractLens):
 
         th = (thx**2 + thy**2).sqrt()
         ax = th_ein**2 / th
-        ay =th_ein**2 / th
+        ay = th_ein**2 / th
         return ax, ay
 
     def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, th_ein):

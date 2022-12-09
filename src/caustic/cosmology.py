@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from functools import cached_property
 from math import pi
 
 import torch
@@ -7,9 +6,9 @@ from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
 from torchinterp1d import Interp1d
 
-_interp = Interp1d()
-
 from .constants import G_over_c2, c_Mpc_s, km_to_mpc
+
+_interp1d = Interp1d()
 
 h0_default = float(default_cosmology.get().h)
 rho_cr_0_default = float(
@@ -72,6 +71,15 @@ class AbstractCosmology(ABC):
         d_ls = self.angular_diameter_dist_z1z2(z_l, z_s)
         return (1 + z_l) * d_l * d_s / d_ls
 
+    def Sigma_cr(self, z_l, z_s):
+        """
+        Critical lensing density [solMass / Mpc^2]
+        """
+        d_l = self.angular_diameter_dist(z_l)
+        d_s = self.angular_diameter_dist(z_s)
+        d_ls = self.angular_diameter_dist_z1z2(z_l, z_s)
+        return d_s / d_l / d_ls / (4 * pi * G_over_c2)
+
 
 class FlatLambdaCDMCosmology(AbstractCosmology):
     """
@@ -101,7 +109,7 @@ class FlatLambdaCDMCosmology(AbstractCosmology):
         return self.rho_cr_0 * (self.Om0 * (1 + z) ** 3 + self.Ode0)
 
     def _comoving_dist_helper(self, x):
-        return _interp(
+        return _interp1d(
             self._comoving_dist_helper_x_grid,
             self._comoving_dist_helper_y_grid,
             torch.atleast_1d(x),

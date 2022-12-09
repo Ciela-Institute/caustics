@@ -18,7 +18,7 @@ class SIE(AbstractLens):
 
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, s=None):
         if s is None:
-            s = 0.0
+            s = torch.tensor(0.0, device=self.device)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
 

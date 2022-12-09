@@ -55,11 +55,14 @@ def get_meshgrid(
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
-def get_Sigma_cr(z_l, z_s, cosmology) -> Tensor:
+def safe_divide(num, denom):
     """
-    Critical lensing density [solMass / Mpc^2]
+    Differentiable version of `torch.where(denom != 0, num/denom, 0.0)`.
+
+    Returns:
+        `num / denom` where `denom != 0`; zero everywhere else.
     """
-    d_l = cosmology.angular_diameter_dist(z_l)
-    d_s = cosmology.angular_diameter_dist(z_s)
-    d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
-    return d_s / d_l / d_ls / (4 * pi * G_over_c2)
+    out = torch.zeros_like(num)
+    where = denom != 0
+    out[where] = num[where] / denom[where]
+    return out

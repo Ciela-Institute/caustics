@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from ..interpolatedimage import InterpolatedImage
+from ..utils import safe_divide
 from .base import AbstractLens
 
 
@@ -50,20 +51,13 @@ class KappaGrid(AbstractLens):
         return self._mode
 
     @staticmethod
-    def _safe_divide(num, denominator):
-        out = torch.zeros_like(num)
-        where = denominator != 0
-        out[where] = num[where] / denominator[where]
-        return out
-
-    @staticmethod
     def get_alpha_kernels(n_pix, fov, dtype):
         # Shapes are (in_channels, out_channels, filter_height, filter_width)
         grid = torch.linspace(-1, 1, 2 * n_pix, dtype=dtype) * fov
         x_mg, y_mg = torch.meshgrid(grid, grid, indexing="xy")
         d2 = x_mg**2 + y_mg**2
-        ax_kernel = -KappaGrid._safe_divide(x_mg, d2)[None, None, :, :]
-        ay_kernel = -KappaGrid._safe_divide(y_mg, d2)[None, None, :, :]
+        ax_kernel = -safe_divide(x_mg, d2)[None, None, :, :]
+        ay_kernel = -safe_divide(y_mg, d2)[None, None, :, :]
         return ax_kernel, ay_kernel
 
     @staticmethod
@@ -73,7 +67,19 @@ class KappaGrid(AbstractLens):
         d2 = x_mg**2 + y_mg**2
         return d2.sqrt().log()[None, None, :, :]
 
-    def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
+    def alpha(
+        self,
+        thx,
+        thy,
+        z_l,
+        z_s,
+        cosmology,
+        kappa_map,
+        thx0=0.0,
+        thy0=0.0,
+        *,
+        extra=None,
+    ):
         if z_l != self.z_l:
             raise ValueError(
                 "dynamically setting the lens redshift is not yet supported"

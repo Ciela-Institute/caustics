@@ -6,21 +6,26 @@ from torch import Tensor
 
 from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
-from ..utils import get_Sigma_cr
 
 
 class AbstractLens(Base):
     def __init__(self, device: torch.device = torch.device("cpu")):
         super().__init__(device)
 
+    # TODO: implement .to(device)
+
     @abstractmethod
-    def alpha(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tuple[Tensor, Tensor]:
+    def alpha(
+        self, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+    ) -> Tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec]
         """
         ...
 
-    def alpha_hat(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tuple[Tensor, Tensor]:
+    def alpha_hat(
+        self, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+    ) -> Tuple[Tensor, Tensor]:
         """
         Physical deflection angle [arcsec]
         """
@@ -49,10 +54,12 @@ class AbstractLens(Base):
         Returns:
             [solMass / Mpc^2]
         """
-        Sigma_cr = get_Sigma_cr(z_l, z_s, cosmology)
+        Sigma_cr = cosmology.Sigma_cr(z_l, z_s)
         return self.kappa(thx, thy, z_l, z_s, cosmology, *args, **kwargs) * Sigma_cr
 
-    def raytrace(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tuple[Tensor, Tensor]:
+    def raytrace(
+        self, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+    ) -> Tuple[Tensor, Tensor]:
         ax, ay = self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
         return thx - ax, thy - ay
 

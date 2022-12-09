@@ -2,7 +2,16 @@ from .base import AbstractLens
 from .multiplane import MultiplaneLens
 from .nfw import NFW
 from .point import Point
+from .pseudo_jaffe import PseudoJaffe
 from .sie import SIE
 from .sis import SIS
 
-__all__ = ("AbstractLens", "MultiplaneLens", "NFW", "Point", "SIE", "SIS")
+__all__ = (
+    "AbstractLens",
+    "MultiplaneLens",
+    "NFW",
+    "Point",
+    "PseudoJaffe",
+    "SIE",
+    "SIS",
+)
