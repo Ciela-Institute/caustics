@@ -18,5 +18,6 @@ Then install caustic:
 git clone git@github.com:polairis-space/caustic.git
 cd caustic
 git checkout mvp-dev
-pip install -e .  # editable install
+pip install -e ".[dev]"  # editable install
 ```
+The last line installs the optional dev dependencies.
