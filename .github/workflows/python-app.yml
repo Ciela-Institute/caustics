@@ -47,9 +47,11 @@ jobs:
 
     - name: Install caustic
       run: |
+        cd $GITHUB_WORKSPACE/caustic
         pip install .
 
     - name: Test with pytest
       run: |
+        cd $GITHUB_WORKSPACE/caustic
         pytest test
 
