@@ -4,11 +4,9 @@ from math import pi
 import torch
 from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
-from torchinterp1d import Interp1d
+from torchinterp1d import interp1d
 
 from .constants import G_over_c2, c_Mpc_s, km_to_mpc
-
-_interp1d = Interp1d()
 
 h0_default = float(default_cosmology.get().h)
 rho_cr_0_default = float(
@@ -109,7 +107,7 @@ class FlatLambdaCDMCosmology(AbstractCosmology):
         return self.rho_cr_0 * (self.Om0 * (1 + z) ** 3 + self.Ode0)
 
     def _comoving_dist_helper(self, x):
-        return _interp1d(
+        return interp1d(
             self._comoving_dist_helper_x_grid,
             self._comoving_dist_helper_y_grid,
             torch.atleast_1d(x),
