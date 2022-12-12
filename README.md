@@ -1,5 +1,7 @@
 # caustic
 
+![tests](https://github.com/polairis-space/caustic/actions/workflows/python-app.yml/badge.svg?branch=mvp-dev)
+
 The lensing pipeline of the future. This branch (`mvp-dev`) is for developing the
 minimum viable version of caustic.
 
