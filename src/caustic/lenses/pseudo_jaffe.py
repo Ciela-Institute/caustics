@@ -17,7 +17,11 @@ class PseudoJaffe(AbstractThinLens):
         super().__init__(device)
 
     def mass_enclosed_2d(self, th, z_l, z_s, cosmology, kappa_0, th_core, th_s, s=None):
-        s = torch.tensor(0.0, device=self.device, dtype=kappa_0.dtype) if s is None else s
+        s = (
+            torch.tensor(0.0, device=self.device, dtype=kappa_0.dtype)
+            if s is None
+            else s
+        )
         th += s
         Sigma_0 = kappa_0 * cosmology.Sigma_cr(z_l, z_s)
         return (
@@ -36,7 +40,14 @@ class PseudoJaffe(AbstractThinLens):
         )
 
     def kappa_0(self, z_l, z_s, cosmology, rho_0, th_core, th_s):
-        return pi * rho_0 * th_core * th_s / (th_core + th_s) / cosmology.Sigma_cr(z_l, z_s)
+        return (
+            pi
+            * rho_0
+            * th_core
+            * th_s
+            / (th_core + th_s)
+            / cosmology.Sigma_cr(z_l, z_s)
+        )
 
     def alpha(
         self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
