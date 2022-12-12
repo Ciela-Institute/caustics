@@ -19,9 +19,20 @@ keywords = [
 ]
 dependencies = [
     "astropy",
-    "torch",
+    "h5py",
     "numpy",
     "scipy",
+    "torch",
+    "torchinterp1d"
+]
+
+[project.optional-dependencies]
+dev = [
+    "icecream",
+    "jupyter",
+    "lenstronomy",
+    "matplotlib",
+    "pytest"
 ]
 
 [project.urls]
