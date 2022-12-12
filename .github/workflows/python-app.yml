@@ -20,8 +20,6 @@ jobs:
     steps:
     - name: Checkout caustic
       uses: actions/checkout@v3
-      with:
-        path: caustic
 
     - name: Checkout torchinterp1d
       uses: actions/checkout@v3
