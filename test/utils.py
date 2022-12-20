@@ -29,7 +29,6 @@ def setup_grids(res=0.05, n_pix=200):
 
 def alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    # Cosmologies and redshifts don't matter since SIE is not a physical model
     alpha_x, alpha_y = lens.alpha(thx, thy, *args)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(alpha_x.numpy(), alpha_x_ls, rtol, atol)
@@ -38,15 +37,16 @@ def alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
 
 def Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    # Cosmologies and redshifts don't matter since SIE is not a physical model
     Psi = lens.Psi(thx, thy, *args)
     Psi_ls = lens_ls.potential(thx_ls, thy_ls, kwargs_ls)
+    # Potential is only defined up to a constant
+    Psi -= Psi.min()
+    Psi_ls -= Psi_ls.min()
     assert np.allclose(Psi.numpy(), Psi_ls, rtol, atol)
 
 
 def kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    # Cosmologies and redshifts don't matter since SIE is not a physical model
     kappa = lens.kappa(thx, thy, *args)
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(kappa.numpy(), kappa_ls, rtol, atol)
@@ -59,7 +59,15 @@ def lens_test_helper(
     kwargs_ls: List[Dict[str, Any]],
     rtol,
     atol,
+    test_alpha=True,
+    test_Psi=True,
+    test_kappa=True,
 ):
-    alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
-    Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
-    kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+    if test_alpha:
+        alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+
+    if test_Psi:
+        Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+
+    if test_kappa:
+        kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
