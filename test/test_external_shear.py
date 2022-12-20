@@ -17,8 +17,8 @@ def test():
     # Parameters
     thx0 = torch.tensor(0.912)
     thy0 = torch.tensor(-0.442)
-    gamma_1 = -0.1
-    gamma_2 = 0.1
+    gamma_1 = torch.tensor(-0.1)
+    gamma_2 = torch.tensor(0.1)
     args = (None, None, None, thx0, thy0, gamma_1, gamma_2)
     kwargs_ls = [
         {
