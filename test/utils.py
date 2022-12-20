@@ -41,6 +41,8 @@ def Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
     # Cosmologies and redshifts don't matter since SIE is not a physical model
     Psi = lens.Psi(thx, thy, *args)
     Psi_ls = lens_ls.potential(thx_ls, thy_ls, kwargs_ls)
+    print(Psi.numpy())
+    print(Psi_ls)
     assert np.allclose(Psi.numpy(), Psi_ls, rtol, atol)
 
 
@@ -59,7 +61,15 @@ def lens_test_helper(
     kwargs_ls: List[Dict[str, Any]],
     rtol,
     atol,
+    test_alpha=True,
+    test_Psi=True,
+    test_kappa=True,
 ):
-    alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
-    Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
-    kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+    if test_alpha:
+        alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+
+    if test_Psi:
+        Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+
+    if test_kappa:
+        kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)

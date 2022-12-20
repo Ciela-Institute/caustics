@@ -22,11 +22,11 @@ def test():
     args = (None, None, None, thx0, thy0, gamma_1, gamma_2)
     kwargs_ls = [
         {
-            "ra_0": thx0,
-            "dec_0": thy0,
-            "gamma_1": gamma_1.item(),
-            "gamma_2": gamma_2.item(),
+            "ra_0": thx0.item(),
+            "dec_0": thy0.item(),
+            "gamma1": gamma_1.item(),
+            "gamma2": gamma_2.item(),
         }
     ]
 
-    lens_test_helper(lens, lens_ls, args, kwargs_ls, rtol, atol)
+    lens_test_helper(lens, lens_ls, args, kwargs_ls, rtol, atol, test_kappa=False)
