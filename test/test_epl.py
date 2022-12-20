@@ -24,7 +24,7 @@ def test_lenstronomy():
     q = torch.tensor(0.7)
     phi = torch.tensor(pi / 3)
     b = torch.tensor(1.4)
-    t = 1.35  # TODO: choose slope
+    t = torch.tensor(1.35)  # TODO: choose slope
     s = torch.tensor(0.0)
     args = (None, None, None, thx0, thy0, q, phi, b, t, s)
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi.item(), q=q.item())
@@ -58,7 +58,7 @@ def test_special_case_sie():
     q = torch.tensor(0.7)
     phi = torch.tensor(pi / 3)
     b = torch.tensor(1.4)
-    t = 1.0  # TODO: choose slope
+    t = torch.tensor(1.0)  # TODO: choose slope
     s = torch.tensor(0.0)
     args = (None, None, None, thx0, thy0, q, phi, b, t, s)
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi.item(), q=q.item())
