@@ -60,7 +60,7 @@ class EPL(AbstractThinLens):
         for i in range(1, self.n_iter):
             factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))
             omega_i = -f * factor * phi * omega_i
-            part_sum += omega_i
+            part_sum = part_sum + omega_i
 
         return part_sum
 
