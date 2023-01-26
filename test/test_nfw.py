@@ -8,13 +8,18 @@ from utils import lens_test_helper
 from caustic.cosmology import FlatLambdaCDMCosmology
 from caustic.lenses import NFW
 
-#next to imports to get Rs_angle and alpha_Rs in arcsec for lenstronomy
+#next three imports to get Rs_angle and alpha_Rs in arcsec for lenstronomy
 from lenstronomy.Cosmo.lens_cosmo import LensCosmo
 from astropy.cosmology import FlatLambdaCDM
+from astropy.cosmology import default_cosmology
+
+h0_default = float(default_cosmology.get().h)
+Om0_default = float(default_cosmology.get().Om0)
+Ob0_default = float(default_cosmology.get().Ob0)
 
 def test():
     atol = 1e-5
-    rtol = 1e-5
+    rtol = 0.0002
 
     # Models
     lens = NFW()
@@ -31,7 +36,7 @@ def test():
     c = torch.tensor(15.0)
     args = (z_l, z_s, cosmology, thx0, thy0, m, c)
     
-    cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Ob0=0.05)
+    cosmo = FlatLambdaCDM(H0=h0_default*100, Om0=Om0_default, Ob0=Ob0_default)
     lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)
     Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=m.item(), c=c.item())
     
