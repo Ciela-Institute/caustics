@@ -138,4 +138,4 @@ class NFW(AbstractThinLens):
         xi = d_l * th * arcsec_to_rad
         x = xi / r_s  # xi / xi_0
         kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-        return 4 * kappa_s(z_s) * self._g(x)
+        return 4 * kappa_s * self._g(x)
