@@ -35,8 +35,6 @@ class KappaGrid(AbstractLens):
         self.pixels = pixels = kappa.shape[2]
         self.dx_kap = fov / (pixels - 1)  # dx on image grid
         # Convolution kernel
-        # TODO figure out what is going on with 2 * pixels + 1 kernel
-        # x = torch.linspace(-1, 1, 2 * pixels + 1, dtype=dtype) * fov
         x = torch.linspace(-1, 1, 2 * pixels, dtype=dtype) * fov
         xx, yy = torch.meshgrid(x, x, indexing="xy")
         rho = xx**2 + yy**2
@@ -56,25 +54,14 @@ class KappaGrid(AbstractLens):
         ...
 
     def _fft_method(self):
-        x_kernel_tilde = torch.fft.fft2(
-            -self.xconv_kernel
-        )
-        y_kernel_tilde = torch.fft.fft2(
-            - self.yconv_kernel
-        )
-        # TODO figure out if this is an optimal padding strategy
+        x_kernel_tilde = torch.fft.fft2(-self.xconv_kernel)
+        y_kernel_tilde = torch.fft.fft2(-self.yconv_kernel)
         kap = F.pad(self._kappa, [self.pixels, 0, self.pixels, 0, 0, 0, 0, 0])
         kappa_tilde = torch.fft.fft2(kap)
-        alpha_x = torch.fft.ifft2(kappa_tilde * x_kernel_tilde).real * (
-            self.dx_kap**2 / pi
-        )
-        alpha_y = torch.fft.ifft2(kappa_tilde * y_kernel_tilde).real * (
-            self.dx_kap**2 / pi
-        )
-        return (
-            alpha_x[..., : self.pixels, : self.pixels],
-            alpha_y[..., : self.pixels, : self.pixels],
-        )
+        alpha_x = torch.fft.ifft2(kappa_tilde * x_kernel_tilde).real * (self.dx_kap**2 / pi)
+        alpha_y = torch.fft.ifft2(kappa_tilde * y_kernel_tilde).real * (self.dx_kap**2 / pi)
+        return alpha_x[..., : self.pixels, : self.pixels], \
+               alpha_y[..., : self.pixels, : self.pixels]
 
     def _conv2d_method(self):
         alpha_x = F.conv2d(self._kappa, self.xconv_kernel, padding="same") * (
