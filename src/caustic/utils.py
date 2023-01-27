@@ -5,6 +5,8 @@ from typing import Optional, Tuple, Union
 import torch
 from torch import Tensor
 
+from .constants import G_over_c2
+
 
 def flip_axis_ratio(q, phi):
     """
@@ -14,75 +16,34 @@ def flip_axis_ratio(q, phi):
     return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
 
 
-def translate_rotate(
-    x: Tensor,
-    y: Tensor,
-    phi: Optional[Tensor] = None,
-    x_0: Union[float, Tensor] = 0.0,
-    y_0: Union[float, Tensor] = 0.0,
-) -> Tuple[Tensor, Tensor]:
-    """
-    Translates and applies an ''active'' counterclockwise rotation to the input
-    point.
-    """
-    x = x - x_0
-    y = y - y_0
+def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
+    xt = x - x0
+    yt = y - y0
 
     if phi is not None:
+        # Apply R(-phi)
         c_phi = phi.cos()
         s_phi = phi.sin()
-        return x * c_phi - y * s_phi, x * s_phi + y * c_phi
-    else:
-        return x, y
+        # Simultaneous assignment
+        xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
+
+    return xt, yt
 
 
-def transform_scalar_fn(fn, x_name="thx0", y_name="thy0", phi_name="phi"):
-    @wraps(fn)
-    def wrapped(self, x, y, *args, **kwargs):
-        xt = x - getattr(self, x_name)
-        yt = y - getattr(self, y_name)
-        if hasattr(self, phi_name):
-            # Apply R(-phi)
-            phi = getattr(self, phi_name)
-            c_phi = phi.cos()
-            s_phi = phi.sin()
-            xt = x * c_phi + y * s_phi
-            yt = -x * s_phi + y * c_phi
-            # Evaluate function
+def derotate(vx, vy, phi: Optional[Tensor] = None):
+    if phi is None:
+        return vx, vy
 
-        return fn(self, xt, yt, *args, **kwargs)
-
-    return wrapped
+    c_phi = phi.cos()
+    s_phi = phi.sin()
+    return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
 
 
-def transform_vector_fn(fn, x_name="thx0", y_name="thy0", phi_name="phi"):
-    @wraps(fn)
-    def wrapped(self, x, y, *args, **kwargs):
-        xt = x - getattr(self, x_name)
-        yt = y - getattr(self, y_name)
-        if hasattr(self, phi_name):
-            # Apply R(-phi)
-            phi = getattr(self, phi_name)
-            c_phi = phi.cos()
-            s_phi = phi.sin()
-            xt = x * c_phi + y * s_phi
-            yt = -x * s_phi + y * c_phi
-            # Evaluate function
-            vx, vy = fn(self, xt, yt, *args, **kwargs)
-            # Apply R(phi)
-            return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
-        else:
-            # Function is independent of phi
-            return fn(self, xt, yt, *args, **kwargs)
-
-    return wrapped
-
-
-def to_elliptical(x, y, q):
+def to_elliptical(x, y, q: Tensor):
     """
     Converts to elliptical Cartesian coordinates.
     """
-    return x * q, y
+    return x * q.sqrt(), y / q.sqrt()
 
 
 def get_meshgrid(
@@ -92,3 +53,16 @@ def get_meshgrid(
     xs = base_grid * resolution * (nx - 1) / 2
     ys = base_grid * resolution * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
+
+
+def safe_divide(num, denom):
+    """
+    Differentiable version of `torch.where(denom != 0, num/denom, 0.0)`.
+
+    Returns:
+        `num / denom` where `denom != 0`; zero everywhere else.
+    """
+    out = torch.zeros_like(num)
+    where = denom != 0
+    out[where] = num[where] / denom[where]
+    return out

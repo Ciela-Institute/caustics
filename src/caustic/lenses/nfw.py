@@ -1,17 +1,16 @@
-from functools import cached_property
 from math import pi
 
 import torch
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
-from ..utils import transform_scalar_fn, transform_vector_fn
-from .base import AbstractLens
+from ..utils import translate_rotate
+from .base import AbstractThinLens
 
 DELTA = 200.0
 
 
-class NFW(AbstractLens):
-    def __init__(self, thx0, thy0, m, c, z_l, cosmology=None, device=None):
+class NFW(AbstractThinLens):
+    def __init__(self, device: torch.device = torch.device("cpu")):
         """
         Args:
             thx0: [arcsec]
@@ -19,40 +18,34 @@ class NFW(AbstractLens):
             m: [solMass]
             c: [1]
         """
-        super().__init__(z_l, cosmology, device)
-        self.thx0 = thx0
-        self.thy0 = thy0
-        self.m = m
-        self.c = c
+        super().__init__(device)
 
-    @cached_property
-    def r_s(self):
+    def get_r_s(self, z_l, cosmology, m, c):
         """
         [Mpc]
         """
-        rho_cr = self.cosmology.rho_cr(self.z_l)
-        r_delta = (3 * self.m / (4 * pi * DELTA * rho_cr)) ** (1 / 3)
-        return 1 / self.c * r_delta
+        rho_cr = cosmology.rho_cr(z_l)
+        r_delta = (3 * m / (4 * pi * DELTA * rho_cr)) ** (1 / 3)
+        return 1 / c * r_delta
 
-    @cached_property
-    def rho_s(self):
+    def get_rho_s(self, z_l, cosmology, c):
         """
         [solMass / Mpc^3]
         """
         return (
-            DELTA
-            / 3
-            * self.cosmology.rho_cr(self.z_l)
-            * self.c**3
-            / ((1 + self.c).log() - self.c / (1 + self.c))
+            DELTA / 3 * cosmology.rho_cr(z_l) * c**3 / ((1 + c).log() - c / (1 + c))
         )
 
-    def kappa_s(self, z_s):
+    def get_kappa_s(self, z_l, z_s, cosmology, m, c):
         """
         [1]
         """
-        Sigma_cr = self.Sigma_cr(z_s)
-        return self.rho_s * self.r_s / Sigma_cr
+        Sigma_cr = cosmology.Sigma_cr(z_l, z_s)
+        return (
+            self.get_rho_s(z_l, cosmology, c)
+            * self.get_r_s(z_l, cosmology, m, c)
+            / Sigma_cr
+        )
 
     @classmethod
     def _f(cls, x):
@@ -92,42 +85,57 @@ class NFW(AbstractLens):
         )
         return term_1 + term_2
 
-    @transform_vector_fn
-    def alpha_hat(self, thx, thy, z_s):
+    def alpha_hat(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
         """
         [arcsec]
         """
-        th = (thx**2 + thy**2).sqrt()
-        xi = self.d_l * th * arcsec_to_rad
-        x = xi / self.r_s
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s
+
         alpha = (
             16
             * pi
             * G_over_c2
-            * self.rho_s
-            * self.r_s**3
+            * self.get_rho_s(z_l, cosmology, c)
+            * r_s**3
             * self._h(x)
             * rad_to_arcsec
             / xi
         )
-        return alpha * thx / th, alpha * thy / th
 
-    def alpha(self, thx, thy, z_s):
-        d_s = self.cosmology.angular_diameter_dist(z_s)
-        d_ls = self.cosmology.angular_diameter_dist_z1z2(self.z_l, z_s)
-        ahx, ahy = self.alpha_hat(thx, thy, z_s)
+        ax = alpha * thx / th
+        ay = alpha * thy / th
+        return ax, ay
+
+    def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c):
+        d_s = cosmology.angular_diameter_dist(z_s)
+        d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+        ahx, ahy = self.alpha_hat(thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c)
         return d_ls / d_s * ahx, d_ls / d_s * ahy
 
-    @transform_scalar_fn
-    def kappa(self, thx, thy, z_s):
-        th = (thx**2 + thy**2).sqrt()
-        xi = self.d_l * th * arcsec_to_rad
-        x = xi / self.r_s  # xi / xi_0
-        return 2 * self.kappa_s(z_s) * self._f(x) / (x**2 - 1)
+    def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
+        return 2 * kappa_s * self._f(x) / (x**2 - 1)
 
-    @transform_scalar_fn
-    def Psi(self, thx, thy, z_s):
-        th = (thx**2 + thy**2).sqrt()
-        xi = self.d_l * th * arcsec_to_rad
-        x = xi / self.r_s  # xi / xi_0
-        return 4 * self.kappa_s(z_s) * self._g(x)
+    def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
+        return 4 * kappa_s(z_s) * self._g(x)

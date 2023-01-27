@@ -1,26 +1,27 @@
 import torch
 
-from ..utils import transform_scalar_fn, transform_vector_fn
-from .base import AbstractLens
+from ..utils import translate_rotate
+from .base import AbstractThinLens
 
 
-class Point(AbstractLens):
-    def __init__(self, thx0, thy0, th_ein, z_l, cosmology=None, device=None):
-        super().__init__(z_l, cosmology, device)
-        self.thx0 = thx0
-        self.thy0 = thy0
-        self.th_ein = th_ein
+class Point(AbstractThinLens):
+    def __init__(self, device: torch.device = torch.device("cpu")):
+        super().__init__(device)
 
-    @transform_vector_fn
-    def alpha(self, thx, thy, z_s):
-        th = (thx**2 + thy**2).sqrt()
-        return self.th_ein**2 / th, self.th_ein**2 / th
+    def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, th_ein, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        ax = th_ein**2 / th
+        ay = th_ein**2 / th
+        return ax, ay
 
-    @transform_scalar_fn
-    def Psi(self, thx, thy, z_s):
-        th = (thx**2 + thy**2).sqrt()
-        return self.th_ein**2 * th.log()
+    def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, th_ein, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        return th_ein**2 * th.log()
 
-    @transform_scalar_fn
-    def kappa(self, thx, thy, z_s):
+    def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, th_ein):
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
         return torch.where((thx == 0) & (thy == 0), torch.inf, 0.0)
