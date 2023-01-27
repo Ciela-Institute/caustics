@@ -1,7 +1,7 @@
 [project]
 name = "caustic"
 version = "0.0.1"
-# authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
+authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
 description = "The lensing pipeline of the future."
 readme = "README.md"
 license = { file="LICENSE" }
@@ -14,15 +14,25 @@ classifiers = [
 keywords = [
     "gravitational lensing",
     "astrophysics",
-    "jax",
-    "pytorch"
+    "differentiable programming",
+    "pytorch",
 ]
 dependencies = [
     "astropy",
-    "jax",
-    "jaxlib",
-    "equinox",
-    "torch"
+    "h5py",
+    "numpy",
+    "scipy",
+    "torch",
+    "torchinterp1d"
+]
+
+[project.optional-dependencies]
+dev = [
+    "icecream",
+    "jupyter",
+    "lenstronomy",
+    "matplotlib",
+    "pytest"
 ]
 
 [project.urls]

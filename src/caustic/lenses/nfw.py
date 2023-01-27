@@ -1,46 +1,141 @@
 from math import pi
 
-import jax
-import jax.numpy as jnp
+import torch
+
+from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
+from ..utils import translate_rotate
+from .base import AbstractThinLens
+
+DELTA = 200.0
 
 
-def _rho_s(c, rho_cr):
-    return rho_cr * 1 / 3 * c**3 / (jnp.log(1 + c) - c / (1 + c))
+class NFW(AbstractThinLens):
+    def __init__(self, device: torch.device = torch.device("cpu")):
+        """
+        Args:
+            thx0: [arcsec]
+            thy0: [arcsec]
+            m: [solMass]
+            c: [1]
+        """
+        super().__init__(device)
 
+    def get_r_s(self, z_l, cosmology, m, c):
+        """
+        [Mpc]
+        """
+        rho_cr = cosmology.rho_cr(z_l)
+        r_delta = (3 * m / (4 * pi * DELTA * rho_cr)) ** (1 / 3)
+        return 1 / c * r_delta
 
-def _r_s(m_200, c, rho_cr):
-    return 1 / c * (3 * m_200 / (4 * pi * 200 * rho_cr)) ** (1 / 3)
+    def get_rho_s(self, z_l, cosmology, c):
+        """
+        [solMass / Mpc^3]
+        """
+        return (
+            DELTA / 3 * cosmology.rho_cr(z_l) * c**3 / ((1 + c).log() - c / (1 + c))
+        )
 
+    def get_kappa_s(self, z_l, z_s, cosmology, m, c):
+        """
+        [1]
+        """
+        Sigma_cr = cosmology.Sigma_cr(z_l, z_s)
+        return (
+            self.get_rho_s(z_l, cosmology, c)
+            * self.get_r_s(z_l, cosmology, m, c)
+            / Sigma_cr
+        )
 
-def _th_s_arcsec(r_s, z, cosmo):
-    # Scale radius [arcsec]
-    dist_ang_lens = cosmo.angular_diameter_dist(z)
-    return r_s / dist_ang_lens * (180 / pi * 60**2)
+    @classmethod
+    def _f(cls, x):
+        # TODO: generalize beyond torch, or patch Tensor
+        return torch.where(
+            x > 1,
+            1 - 2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
+            torch.where(
+                x < 1,
+                1 - 2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
+                0.0,
+            ),
+        )
 
+    @classmethod
+    def _g(cls, x):
+        # TODO: generalize beyond torch, or patch Tensor
+        term_1 = 1 / 2 * (x / 2).log() ** 2
+        term_2 = torch.where(
+            x > 1,
+            2 * ((x - 1) / (x + 1)).sqrt().arctan() ** 2,
+            torch.where(x < 1, -2 * ((1 - x) / (1 + x)).sqrt().arctanh() ** 2, 0.0),
+        )
+        return term_1 + term_2
 
-def _kappa_s(rho_s, r_s, z, z_src, cosmo):
-    # Normalization parameter
-    Sigma_cr = cosmo.Sigma_cr(z, z_src)
-    return rho_s * r_s / Sigma_cr
+    @classmethod
+    def _h(cls, x):
+        term_1 = (x / 2).log()
+        term_2 = torch.where(
+            x > 1,
+            2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
+            torch.where(
+                x < 1,
+                2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
+                1.0,
+            ),
+        )
+        return term_1 + term_2
 
+    def alpha_hat(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
+        """
+        [arcsec]
+        """
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s
 
-def _g(s):
-    fn_gt1 = lambda s: 2 * jnp.arctan(jnp.sqrt((s - 1) / (s + 1))) ** 2
-    fn_lt1 = lambda s: -2 * jnp.arctanh(jnp.sqrt((1 - s) / (1 + s))) ** 2
-    fn_neq = lambda s: jax.lax.cond(s > 1, fn_gt1, fn_lt1, s)
-    fn_eq = lambda _: 0.0
-    return 1 / 2 * jnp.log(s / 2) ** 2 + jax.lax.cond(s == 0, fn_eq, fn_neq, s)
+        alpha = (
+            16
+            * pi
+            * G_over_c2
+            * self.get_rho_s(z_l, cosmology, c)
+            * r_s**3
+            * self._h(x)
+            * rad_to_arcsec
+            / xi
+        )
 
+        ax = alpha * thx / th
+        ay = alpha * thy / th
+        return ax, ay
 
-def pot(x, y, x0, y0, m_200, c, z, z_src, cosmo):
-    rho_cr = cosmo.critical_density(z)
-    r_s = _r_s(m_200, c, rho_cr)
-    th_s_arcsec = _th_s_arcsec(r_s, z, cosmo)
-    rho_s = _rho_s(c, rho_cr)
-    kappa_s = _kappa_s(rho_s, r_s, z, z_src, cosmo)
+    def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c):
+        d_s = cosmology.angular_diameter_dist(z_s)
+        d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
+        ahx, ahy = self.alpha_hat(thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c)
+        return d_ls / d_s * ahx, d_ls / d_s * ahy
 
-    x = x - x0
-    y = y - y0
-    s = jnp.sqrt(x**2 + y**2) / th_s_arcsec
+    def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
+        return 2 * kappa_s * self._f(x) / (x**2 - 1)
 
-    return 4 * kappa_s * _g(s)
+    def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
+        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, cosmology, m, c)
+        xi = d_l * th * arcsec_to_rad
+        x = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
+        return 4 * kappa_s(z_s) * self._g(x)
