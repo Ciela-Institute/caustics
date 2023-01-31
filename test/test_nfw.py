@@ -33,7 +33,7 @@ def test():
     thx0 = torch.tensor(0.457)
     thy0 = torch.tensor(0.141)
     m = torch.tensor(1e12)
-    c = torch.tensor(15.0)
+    c = torch.tensor(8.0)
     args = (z_l, z_s, cosmology, thx0, thy0, m, c)
     
     cosmo = FlatLambdaCDM(H0=h0_default*100, Om0=Om0_default, Ob0=Ob0_default)
