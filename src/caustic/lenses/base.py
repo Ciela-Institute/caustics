@@ -74,7 +74,8 @@ class AbstractThinLens(Base):
         """
         d_s = cosmology.angular_diameter_dist(z_s)
         d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
-        return d_s / d_ls * self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+        alpha_x, alpha_y = self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y 
 
     @abstractmethod
     def kappa(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
