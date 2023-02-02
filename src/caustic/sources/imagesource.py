@@ -1,7 +1,7 @@
 from ..utils import interpolate_image
-from .base import AbstractSource
+from .base import Source
 
 
-class ImageSource(AbstractSource):
+class ImageSource(Source):
     def brightness(self, thx, thy, thx0, thy0, image, scale):
         return interpolate_image(thx, thy, thx0, thy0, image, scale)

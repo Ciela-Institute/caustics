@@ -1,10 +1,10 @@
 import torch
 
 from ..utils import translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 
-class ExternalShear(AbstractThinLens):
+class ExternalShear(ThinLens):
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, gamma_1, gamma_2):
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
         # Meneghetti eq 3.83

@@ -2,10 +2,10 @@ import torch
 from scipy.special import hyp2f1
 
 from ..utils import derotate, translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 
-class EPL(AbstractThinLens):
+class EPL(ThinLens):
     """
     Elliptical power law (aka singular power-law ellipsoid) profile.
     """

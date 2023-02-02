@@ -1,10 +1,10 @@
 import torch
 
 from ..utils import to_elliptical, translate_rotate
-from .base import AbstractSource
+from .base import Source
 
 
-class Sersic(AbstractSource):
+class Sersic(Source):
     def __init__(
         self,
         device: torch.device = torch.device("cpu"),

@@ -5,7 +5,7 @@ import torch
 from ..base import Base
 
 
-class AbstractSource(Base):
+class Source(Base):
     @abstractmethod
     def brightness(self, thx, thy, **kwargs):
         ...

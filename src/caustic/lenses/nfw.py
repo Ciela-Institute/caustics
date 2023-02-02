@@ -4,12 +4,12 @@ import torch
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 from ..utils import translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 DELTA = 200.0
 
 
-class NFW(AbstractThinLens):
+class NFW(ThinLens):
     def __init__(self, device: torch.device = torch.device("cpu")):
         """
         Args:

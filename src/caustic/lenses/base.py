@@ -8,7 +8,7 @@ from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
 
 
-class AbstractThickLens(Base):
+class ThickLens(Base):
     """
     Base class for lenses that can't be treated in the thin lens approximation.
     """
@@ -52,7 +52,7 @@ class AbstractThickLens(Base):
         raise NotImplementedError()
 
 
-class AbstractThinLens(Base):
+class ThinLens(Base):
     """
     Base class for lenses that can be treated in the thin lens approximation.
     """
