@@ -30,6 +30,10 @@ class KappaGrid(AbstractThinLens):
         self.Psi_kernel = safe_log(d2.sqrt())[None, None, :, :]
         self.ax_kernel = -safe_divide(x_mg, d2)[None, None, :, :]
         self.ay_kernel = -safe_divide(y_mg, d2)[None, None, :, :]
+        # Set kernel to zero in that pixel
+        self.Psi_kernel[..., self.n_pix, self.n_pix] = 0
+        self.ax_kernel[..., self.n_pix, self.n_pix] = 0
+        self.ay_kernel[..., self.n_pix, self.n_pix] = 0
 
         self.mode = mode
 
@@ -59,6 +63,16 @@ class KappaGrid(AbstractThinLens):
 
         self._mode = mode
 
+    def _check_kappa_map_shape(self, kappa_map):
+        if kappa_map.ndim != 4:
+            raise ValueError("kappa map must have four dimensions")
+
+        expected_shape = (1, self.n_pix, self.n_pix)
+        if kappa_map.shape[1:] != expected_shape:
+            raise ValueError(
+                f"kappa map shape does not have the expected shape of {expected_shape}"
+            )
+
     def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
         if z_l != self.z_l:
             raise ValueError(
@@ -79,6 +93,23 @@ class KappaGrid(AbstractThinLens):
         )
         return alpha_x, alpha_y
 
+    def _alpha_fft(self, kappa_map):
+        self._check_kappa_map_shape(kappa_map)
+        kappa_tilde = self._fft2_padded(kappa_map)
+        alpha_x = torch.fft.ifft2(kappa_tilde * self.ax_kernel_tilde).real * (
+            self.dx_kap**2 / pi
+        )
+        alpha_y = torch.fft.ifft2(kappa_tilde * self.ay_kernel_tilde).real * (
+            self.dx_kap**2 / pi
+        )
+        return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
+
+    def _alpha_conv2d(self, kappa_map):
+        self._check_kappa_map_shape(kappa_map)
+        alpha_x = F.conv2d(self.ax_kernel, kappa_map) * (self.dx_kap**2 / pi)
+        alpha_y = F.conv2d(self.ay_kernel, kappa_map) * (self.dx_kap**2 / pi)
+        return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
+
     def Psi(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
         if z_l != self.z_l:
             raise ValueError(
@@ -96,40 +127,6 @@ class KappaGrid(AbstractThinLens):
         )
         return Psi
 
-    def kappa(self, thx, thy, z_s):
-        ...
-
-    def _check_kappa_map_shape(self, kappa_map):
-        if kappa_map.ndim != 4:
-            raise ValueError("kappa map must have four dimensions")
-
-        expected_shape = (1, self.n_pix, self.n_pix)
-        if kappa_map.shape[1:] != expected_shape:
-            raise ValueError(
-                f"kappa map shape does not have the expected shape of {expected_shape}"
-            )
-
-    def _alpha_fft(self, kappa_map):
-        self._check_kappa_map_shape(kappa_map)
-        kappa_tilde = self._fft2_padded(kappa_map)
-        alpha_x = torch.fft.ifft2(kappa_tilde * self.ax_kernel_tilde).real * (
-            self.dx_kap**2 / pi
-        )
-        alpha_y = torch.fft.ifft2(kappa_tilde * self.ay_kernel_tilde).real * (
-            self.dx_kap**2 / pi
-        )
-        return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
-
-    def _alpha_conv2d(self, kappa_map):
-        self._check_kappa_map_shape(kappa_map)
-        alpha_x = F.conv2d(kappa_map, self.ax_kernel, padding="same") * (
-            self.dx_kap**2 / pi
-        )
-        alpha_y = F.conv2d(kappa_map, self.ay_kernel, padding="same") * (
-            self.dx_kap**2 / pi
-        )
-        return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
-
     def _Psi_fft(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
         kappa_tilde = self._fft2_padded(kappa_map)
@@ -140,6 +137,8 @@ class KappaGrid(AbstractThinLens):
 
     def _Psi_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
-        print(kappa_map.shape, self.Psi_kernel.shape)
         Psi = F.conv2d(self.Psi_kernel, kappa_map) * (self.dx_kap**2 / pi)
         return self._unpad_conv2d(Psi)
+
+    def kappa(self, thx, thy, z_s):
+        ...
