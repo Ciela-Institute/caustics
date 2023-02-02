@@ -5,6 +5,7 @@ from .base import Source
 
 __all__ = ("Sersic",)
 
+
 class Sersic(Source):
     def __init__(
         self,

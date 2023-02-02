@@ -10,7 +10,13 @@ from torchinterp1d import interp1d
 from .base import Base
 from .constants import G_over_c2, c_Mpc_s, km_to_mpc
 
-__all__ = ("h0_default", "rho_cr_0_default", "Om0_default", "Cosmology", "FlatLambdaCDMCosmology")
+__all__ = (
+    "h0_default",
+    "rho_cr_0_default",
+    "Om0_default",
+    "Cosmology",
+    "FlatLambdaCDMCosmology",
+)
 
 h0_default = float(default_cosmology.get().h)
 rho_cr_0_default = float(
