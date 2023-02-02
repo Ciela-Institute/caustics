@@ -13,8 +13,12 @@ class AbstractThickLens(Base):
     Base class for lenses that can't be treated in the thin lens approximation.
     """
 
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
     @abstractmethod
     def alpha(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tuple[Tensor, Tensor]:
@@ -53,8 +57,12 @@ class AbstractThinLens(Base):
     Base class for lenses that can be treated in the thin lens approximation.
     """
 
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
     @abstractmethod
     def alpha(
@@ -75,7 +83,7 @@ class AbstractThinLens(Base):
         d_s = cosmology.angular_diameter_dist(z_s)
         d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
         alpha_x, alpha_y = self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
-        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y 
+        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y
 
     @abstractmethod
     def kappa(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:

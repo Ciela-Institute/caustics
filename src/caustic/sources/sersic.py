@@ -5,13 +5,18 @@ from .base import AbstractSource
 
 
 class Sersic(AbstractSource):
-    def __init__(self, device=torch.device("cpu"), use_lenstronomy_k=False):
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+        use_lenstronomy_k=False,
+    ):
         """
         Args:
             lenstronomy_k_mode: set to `True` to calculate k in the Sersic exponential
                 using the same formula as lenstronomy. Intended primarily for testing.
         """
-        super().__init__(device)
+        super().__init__(device, dtype)
         self.lenstronomy_k_mode = use_lenstronomy_k
 
     def brightness(self, thx, thy, thx0, thy0, q, phi, index, th_e, I_e, s=None):

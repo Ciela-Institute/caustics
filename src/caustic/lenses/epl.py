@@ -10,12 +10,17 @@ class EPL(AbstractThinLens):
     Elliptical power law (aka singular power-law ellipsoid) profile.
     """
 
-    def __init__(self, device=torch.device("cpu"), n_iter=18):
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+        n_iter=18,
+    ):
         """
         Args:
             n_iter: number of iterations for approximation of hypergeometric function.
         """
-        super().__init__(device)
+        super().__init__(device, dtype)
         self.n_iter = n_iter
 
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, t, s=None):

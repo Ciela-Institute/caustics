@@ -5,9 +5,6 @@ from .base import AbstractThinLens
 
 
 class Point(AbstractThinLens):
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
-
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, th_ein, s=None):
         s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0)

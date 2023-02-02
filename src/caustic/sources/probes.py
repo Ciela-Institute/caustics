@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import Dataset
 
 
+# TODO: move elsewhere
 class PROBESDataset(Dataset):
     def __init__(self, filepath, channels):
         self.filepath = filepath

@@ -1,4 +1,5 @@
 from math import pi
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -8,8 +9,15 @@ from .base import AbstractThinLens
 
 
 class KappaGrid(AbstractThinLens):
-    def __init__(self, fov, n_pix, dtype=torch.float32, mode="fft", device=None):
-        super().__init__(device)
+    def __init__(
+        self,
+        fov,
+        n_pix,
+        mode="fft",
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
         self.n_pix = n_pix
         self.fov = fov
@@ -17,7 +25,7 @@ class KappaGrid(AbstractThinLens):
 
         # Construct kernels
         x_mg, y_mg = get_meshgrid(
-            self.res, 2 * self.n_pix, 2 * self.n_pix, self.device, dtype
+            self.res, 2 * self.n_pix, 2 * self.n_pix, device, dtype
         )
         # Shift to center kernels within pixel at index n_pix
         x_mg = x_mg - self.res / 2
@@ -31,7 +39,27 @@ class KappaGrid(AbstractThinLens):
         self.ax_kernel[..., self.n_pix, self.n_pix] = 0
         self.ay_kernel[..., self.n_pix, self.n_pix] = 0
 
+        # FTs of kernels
+        self.Psi_kernel_tilde = None
+        self.ax_kernel_tilde = None
+        self.ay_kernel_tilde = None
+
         self.mode = mode
+
+    def to(
+        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+    ):
+        self.Psi_kernel = self.Psi_kernel.to(device=device, dtype=dtype)
+        self.alpha_x_kernel = self.alpha_x_kernel.to(device=device, dtype=dtype)
+        self.alpha_y_kernel = self.alpha_y_kernel.to(device=device, dtype=dtype)
+        if self.Psi_kernel_tilde is not None:
+            self.Psi_kernel_tilde = self.Psi_kernel_tilde.to(device=device, dtype=dtype)
+            self.alpha_x_kernel_tilde = self.alpha_x_kernel_tilde.to(
+                device=device, dtype=dtype
+            )
+            self.alpha_y_kernel_tilde = self.alpha_y_kernel_tilde.to(
+                device=device, dtype=dtype
+            )
 
     def _fft2_padded(self, x):
         # TODO: next_fast_len

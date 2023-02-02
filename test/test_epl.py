@@ -3,7 +3,7 @@ from math import pi
 import lenstronomy.Util.param_util as param_util
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import alpha_test_helper, kappa_test_helper, Psi_test_helper
+from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 
 from caustic.lenses import EPL
 
@@ -77,6 +77,7 @@ def test_special_case_sie():
     alpha_test_helper(lens, lens_ls, args, kwargs_ls, rtol=1e-100, atol=4.5e-5)
     kappa_test_helper(lens, lens_ls, args, kwargs_ls, rtol=6e-5, atol=1e-100)
     Psi_test_helper(lens, lens_ls, args, kwargs_ls, rtol=2e-5, atol=1e-100)
+
 
 if __name__ == "__main__":
     test_special_case_sie()

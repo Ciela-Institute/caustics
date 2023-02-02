@@ -95,5 +95,6 @@ def _check_center(x, x_approx, rtol=0.00001, atol=1e-8, half_buffer=20):
         atol,
     )
 
+
 if __name__ == "__main__":
     test_consistency()

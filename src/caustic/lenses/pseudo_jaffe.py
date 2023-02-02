@@ -13,9 +13,6 @@ class PseudoJaffe(AbstractThinLens):
         the `lenstronomy` source code.
     """
 
-    def __init__(self, device=torch.device("cpu")):
-        super().__init__(device)
-
     def mass_enclosed_2d(self, th, z_l, z_s, cosmology, kappa_0, th_core, th_s, s=None):
         s = (
             torch.tensor(0.0, device=self.device, dtype=kappa_0.dtype)
