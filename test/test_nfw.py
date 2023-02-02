@@ -27,7 +27,7 @@ def test():
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    z_l = torch.tensor(0.5)
+    z_l = torch.tensor(0.01)
     z_s = torch.tensor(2.1)
     cosmology = FlatLambdaCDMCosmology()
     thx0 = torch.tensor(0.457)
