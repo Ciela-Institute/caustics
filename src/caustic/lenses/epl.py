@@ -1,8 +1,10 @@
 import torch
-from scipy.special import hyp2f1
 
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
+
+
+__all__ = ("EPL",)
 
 
 class EPL(ThinLens):

@@ -4,6 +4,9 @@ from ..utils import derotate, translate_rotate
 from .base import ThinLens
 
 
+__all__ = ("SIE",)
+
+
 class SIE(ThinLens):
     """
     References:

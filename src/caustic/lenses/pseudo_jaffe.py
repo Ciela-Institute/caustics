@@ -6,6 +6,9 @@ from ..utils import translate_rotate
 from .base import ThinLens
 
 
+__all__ = ("PseudoJaffe",)
+
+
 class PseudoJaffe(ThinLens):
     """
     Notes:

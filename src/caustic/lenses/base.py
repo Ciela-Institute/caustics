@@ -7,6 +7,8 @@ from torch import Tensor
 from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
 
+__all__ = ("ThinLens", "ThickLens")
+
 
 class ThickLens(Base):
     """

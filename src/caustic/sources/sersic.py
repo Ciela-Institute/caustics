@@ -3,6 +3,7 @@ import torch
 from ..utils import to_elliptical, translate_rotate
 from .base import Source
 
+__all__ = ("Sersic",)
 
 class Sersic(Source):
     def __init__(

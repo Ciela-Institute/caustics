@@ -1,10 +1,11 @@
-from abc import abstractmethod
 from typing import Any, List, Tuple
 
 import torch
 from torch import Tensor
 
 from .base import ThickLens, ThinLens
+
+__all__ = ("MultiplaneLens",)
 
 
 class MultiplaneLens(ThickLens):

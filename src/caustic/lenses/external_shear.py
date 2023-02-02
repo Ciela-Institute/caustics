@@ -1,8 +1,7 @@
-import torch
-
 from ..utils import translate_rotate
 from .base import ThinLens
 
+__all__ = ("ExternalShear",)
 
 class ExternalShear(ThinLens):
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, gamma_1, gamma_2):

@@ -4,6 +4,8 @@ from ..utils import translate_rotate
 from .base import ThinLens
 
 
+__all__ = ("Point",)
+
 class Point(ThinLens):
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, th_ein, s=None):
         s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s

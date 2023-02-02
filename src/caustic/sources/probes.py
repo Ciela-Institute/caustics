@@ -3,8 +3,9 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+__all__ = ("PROBESDataset",)
 
-# TODO: move elsewhere
+# TODO: move elsewhere?
 class PROBESDataset(Dataset):
     def __init__(self, filepath, channels):
         self.filepath = filepath

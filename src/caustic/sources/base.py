@@ -1,9 +1,8 @@
 from abc import abstractmethod
 
-import torch
-
 from ..base import Base
 
+__all__ = ("Source",)
 
 class Source(Base):
     @abstractmethod

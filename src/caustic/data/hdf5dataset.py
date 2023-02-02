@@ -5,6 +5,8 @@ import numpy as np
 from numpy.typing import ArrayLike, DTypeLike
 from torch.utils.data import Dataset
 
+__all__ = ("HDF5Dataset",)
+
 
 class HDF5Dataset(Dataset):
     """

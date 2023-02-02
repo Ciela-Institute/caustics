@@ -8,6 +8,9 @@ from ..utils import get_meshgrid, interpolate_image, safe_divide, safe_log
 from .base import ThinLens
 
 
+__all__ = ("KappaGrid",)
+
+
 class KappaGrid(ThinLens):
     def __init__(
         self,
