@@ -39,7 +39,8 @@ class PseudoJaffe(AbstractThinLens):
             )
         )
 
-    def kappa_0(self, z_l, z_s, cosmology, rho_0, th_core, th_s):
+    @staticmethod
+    def kappa_0(z_l, z_s, cosmology, rho_0, th_core, th_s):
         return (
             pi
             * rho_0
