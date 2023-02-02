@@ -19,7 +19,7 @@ Ob0_default = float(default_cosmology.get().Ob0)
 
 def test():
     atol = 1e-5
-    rtol = 1e-3
+    rtol = 0.001
 
     # Models
     lens = NFW()
