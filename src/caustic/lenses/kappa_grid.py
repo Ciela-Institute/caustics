@@ -8,28 +8,25 @@ from .base import AbstractThinLens
 
 
 class KappaGrid(AbstractThinLens):
-    def __init__(
-        self, fov, n_pix, dtype=torch.float32, mode="fft", z_l=None, device=None
-    ):
+    def __init__(self, fov, n_pix, dtype=torch.float32, mode="fft", device=None):
         super().__init__(device)
 
-        self.n_pix = n_pix  # kappa_map.shape[2]
+        self.n_pix = n_pix
         self.fov = fov
         self.res = fov / n_pix
-        self.dx_kap = fov / (n_pix - 1)  # dx on image grid
-        self.z_l = z_l
 
+        # Construct kernels
         x_mg, y_mg = get_meshgrid(
             self.res, 2 * self.n_pix, 2 * self.n_pix, self.device, dtype
         )
-        # Shift to center kernel within pixel
+        # Shift to center kernels within pixel at index n_pix
         x_mg = x_mg - self.res / 2
         y_mg = y_mg - self.res / 2
         d2 = x_mg**2 + y_mg**2
         self.Psi_kernel = safe_log(d2.sqrt())[None, None, :, :]
-        self.ax_kernel = -safe_divide(x_mg, d2)[None, None, :, :]
-        self.ay_kernel = -safe_divide(y_mg, d2)[None, None, :, :]
-        # Set kernel to zero in that pixel
+        self.ax_kernel = safe_divide(x_mg, d2)[None, None, :, :]
+        self.ay_kernel = safe_divide(y_mg, d2)[None, None, :, :]
+        # Set centers of kernels to zero
         self.Psi_kernel[..., self.n_pix, self.n_pix] = 0
         self.ax_kernel[..., self.n_pix, self.n_pix] = 0
         self.ay_kernel[..., self.n_pix, self.n_pix] = 0
@@ -55,8 +52,8 @@ class KappaGrid(AbstractThinLens):
     def mode(self, mode):
         if mode == "fft":
             self.Psi_kernel_tilde = self._fft2_padded(self.Psi_kernel)
-            self.ax_kernel_tilde = self._fft2_padded(-self.ax_kernel)
-            self.ay_kernel_tilde = self._fft2_padded(-self.ay_kernel)
+            self.ax_kernel_tilde = self._fft2_padded(self.ax_kernel)
+            self.ay_kernel_tilde = self._fft2_padded(self.ay_kernel)
         elif mode != "conv2d":
             raise ValueError("invalid convolution mode")
 
@@ -73,11 +70,6 @@ class KappaGrid(AbstractThinLens):
             )
 
     def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
-        if z_l != self.z_l:
-            raise ValueError(
-                "dynamically setting the lens redshift is not yet supported"
-            )
-
         if self.mode == "fft":
             alpha_x_map, alpha_y_map = self._alpha_fft(kappa_map)
         else:
@@ -96,25 +88,20 @@ class KappaGrid(AbstractThinLens):
         self._check_kappa_map_shape(kappa_map)
         kappa_tilde = self._fft2_padded(kappa_map)
         alpha_x = torch.fft.ifft2(kappa_tilde * self.ax_kernel_tilde).real * (
-            self.dx_kap**2 / pi
+            self.res**2 / pi
         )
         alpha_y = torch.fft.ifft2(kappa_tilde * self.ay_kernel_tilde).real * (
-            self.dx_kap**2 / pi
+            self.res**2 / pi
         )
         return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
 
     def _alpha_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
-        alpha_x = F.conv2d(self.ax_kernel, kappa_map) * (self.dx_kap**2 / pi)
-        alpha_y = F.conv2d(self.ay_kernel, kappa_map) * (self.dx_kap**2 / pi)
+        alpha_x = F.conv2d(self.ax_kernel, kappa_map) * (self.res**2 / pi)
+        alpha_y = F.conv2d(self.ay_kernel, kappa_map) * (self.res**2 / pi)
         return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
 
     def Psi(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
-        if z_l != self.z_l:
-            raise ValueError(
-                "dynamically setting the lens redshift is not yet supported"
-            )
-
         if self.mode == "fft":
             Psi_map = self._Psi_fft(kappa_map)
         else:
@@ -130,13 +117,13 @@ class KappaGrid(AbstractThinLens):
         self._check_kappa_map_shape(kappa_map)
         kappa_tilde = self._fft2_padded(kappa_map)
         Psi = torch.fft.ifft2(kappa_tilde * self.Psi_kernel_tilde).real * (
-            self.dx_kap**2 / pi
+            self.res**2 / pi
         )
         return self._unpad_fft(Psi)
 
     def _Psi_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
-        Psi = F.conv2d(self.Psi_kernel, kappa_map) * (self.dx_kap**2 / pi)
+        Psi = F.conv2d(self.Psi_kernel, kappa_map) * (self.res**2 / pi)
         return self._unpad_conv2d(Psi)
 
     def kappa(self, thx, thy, z_s):
