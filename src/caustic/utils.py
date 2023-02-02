@@ -1,6 +1,7 @@
 from math import pi
-from typing import Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
+import functorch
 import torch
 from torch import Tensor
 from torch.nn.functional import grid_sample
@@ -108,3 +109,26 @@ def interpolate_image(
     )
     grid = grid.repeat((len(image), 1, 1, 1))
     return grid_sample(image, grid, mode, padding_mode, align_corners)
+
+
+def vmap_n(
+    func: Callable,
+    depth: int = 1,
+    in_dims: Union[int, Tuple] = 0,
+    out_dims: Union[int, Tuple[int, ...]] = 0,
+    randomness: str = "error",
+) -> Callable:
+    """
+    Returns `func` transformed `depth` times by `vmap`, with the same arguments
+    passed to `vmap` each time.
+
+    TODO: test.
+    """
+    if depth < 1:
+        raise ValueError("vmap_n depth must be >= 1")
+
+    vmapd_func = func
+    for _ in range(depth):
+        vmapd_func = functorch.vmap(vmapd_func, in_dims, out_dims, randomness)
+
+    return vmapd_func

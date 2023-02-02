@@ -6,6 +6,7 @@ from torch import Tensor
 
 from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
+from .utils import get_magnification
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -49,9 +50,10 @@ class ThickLens(Base):
     def time_delay(self, thx, thy, z_s, cosmology, *args, **kwargs):
         ...
 
-    def magnification(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tensor:
-        # TODO: implement with automatic differentiation
-        raise NotImplementedError()
+    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        return get_magnification(
+            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+        )
 
 
 class ThinLens(Base):
@@ -127,6 +129,7 @@ class ThinLens(Base):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - Psi
         return factor * fp * arcsec_to_rad**2
 
-    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
-        # TODO: implement with automatic differentiation
-        raise NotImplementedError()
+    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        return get_magnification(
+            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+        )
