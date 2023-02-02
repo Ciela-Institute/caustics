@@ -3,10 +3,10 @@ from typing import Optional
 
 import torch
 import torch.nn.functional as F
+from scipy.fft import next_fast_len
 
 from ..utils import get_meshgrid, interpolate_image, safe_divide, safe_log
 from .base import ThinLens
-
 
 __all__ = ("KappaGrid",)
 
@@ -19,8 +19,16 @@ class KappaGrid(ThinLens):
         mode="fft",
         device: torch.device = torch.device("cpu"),
         dtype: torch.dtype = torch.float32,
+        use_next_fast_len: bool = True,
     ):
+        """
+        Args:
+            use_next_fast_len: if true, add additional padding to speed up the FFT
+                by calling `scipy.fft.next_fast_len <https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.next_fast_len.html#scipy.fft.next_fast_len>`_. The speed boost can be substantial
+                when `n_pix` is prime.
+        """
         super().__init__(device, dtype)
+        self.use_next_fast_len = use_next_fast_len
 
         self.n_pix = n_pix
         self.fov = fov
@@ -67,10 +75,12 @@ class KappaGrid(ThinLens):
     def _fft2_padded(self, x):
         # TODO: next_fast_len
         pad = 2 * self.n_pix
+        if self.use_next_fast_len:
+            pad = next_fast_len(pad)
         return torch.fft.fft2(x, (pad, pad))
 
     def _unpad_fft(self, x):
-        return x[..., self.n_pix :, self.n_pix :]
+        return x[..., -self.n_pix :, -self.n_pix :]
 
     def _unpad_conv2d(self, x):
         return x[..., 1:, 1:]
@@ -139,10 +149,10 @@ class KappaGrid(ThinLens):
             Psi_map = self._Psi_conv2d(kappa_map)
 
         # Scale is distance from center of image to center of pixel on the edge
-        Psi = interpolate_image(
-            thx, thy, thx0, thy0, Psi_map, (self.fov - self.res) / 2
-        )
-        return Psi
+        # Psi = interpolate_image(
+        #     thx, thy, thx0, thy0, Psi_map, (self.fov - self.res) / 2
+        # )
+        return Psi_map
 
     def _Psi_fft(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
