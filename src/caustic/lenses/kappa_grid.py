@@ -2,7 +2,6 @@ from math import pi
 
 import torch
 import torch.nn.functional as F
-from icecream import ic
 
 from ..interpolate_image import interpolate_image
 from ..utils import get_meshgrid, safe_divide, safe_log
@@ -32,21 +31,7 @@ class KappaGrid(AbstractThinLens):
         self.ax_kernel = -safe_divide(x_mg, d2)[None, None, :, :]
         self.ay_kernel = -safe_divide(y_mg, d2)[None, None, :, :]
 
-        if mode == "fft":
-            # Get (padded) Fourier transforms of kernels
-            self.Psi_kernel_tilde = self._fft2_padded(self.Psi_kernel)
-            self.ax_kernel_tilde = self._fft2_padded(-self.ax_kernel)
-            self.ay_kernel_tilde = self._fft2_padded(-self.ay_kernel)
-
-            self._kappa_to_Psi = self._kappa_to_Psi_fft
-            self._kappa_to_alpha = self._kappa_to_alpha_fft
-        elif mode == "conv2d":
-            self._kappa_to_Psi = self._kappa_to_Psi_conv2d
-            self._kappa_to_alpha = self._kappa_to_alpha_conv2d
-        else:
-            raise ValueError("invalid convolution mode")
-
-        self._mode = mode
+        self.mode = mode
 
     def _fft2_padded(self, x):
         # TODO: next_fast_len
@@ -63,13 +48,28 @@ class KappaGrid(AbstractThinLens):
     def mode(self):
         return self._mode
 
+    @mode.setter
+    def mode(self, mode):
+        if mode == "fft":
+            self.Psi_kernel_tilde = self._fft2_padded(self.Psi_kernel)
+            self.ax_kernel_tilde = self._fft2_padded(-self.ax_kernel)
+            self.ay_kernel_tilde = self._fft2_padded(-self.ay_kernel)
+        elif mode != "conv2d":
+            raise ValueError("invalid convolution mode")
+
+        self._mode = mode
+
     def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
         if z_l != self.z_l:
             raise ValueError(
                 "dynamically setting the lens redshift is not yet supported"
             )
 
-        alpha_x_map, alpha_y_map = self._kappa_to_alpha(kappa_map)
+        if self.mode == "fft":
+            alpha_x_map, alpha_y_map = self._alpha_fft(kappa_map)
+        else:
+            alpha_x_map, alpha_y_map = self._alpha_conv2d(kappa_map)
+
         # Scale is distance from center of image to center of pixel on the edge
         alpha_x = interpolate_image(
             thx, thy, thx0, thy0, alpha_x_map, (self.fov - self.res) / 2
@@ -85,7 +85,11 @@ class KappaGrid(AbstractThinLens):
                 "dynamically setting the lens redshift is not yet supported"
             )
 
-        Psi_map = self._kappa_to_Psi(kappa_map)
+        if self.mode == "fft":
+            Psi_map = self._Psi_fft(kappa_map)
+        else:
+            Psi_map = self._Psi_conv2d(kappa_map)
+
         # Scale is distance from center of image to center of pixel on the edge
         Psi = interpolate_image(
             thx, thy, thx0, thy0, Psi_map, (self.fov - self.res) / 2
@@ -105,7 +109,7 @@ class KappaGrid(AbstractThinLens):
                 f"kappa map shape does not have the expected shape of {expected_shape}"
             )
 
-    def _kappa_to_alpha_fft(self, kappa_map):
+    def _alpha_fft(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
         kappa_tilde = self._fft2_padded(kappa_map)
         alpha_x = torch.fft.ifft2(kappa_tilde * self.ax_kernel_tilde).real * (
@@ -116,7 +120,7 @@ class KappaGrid(AbstractThinLens):
         )
         return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
 
-    def _kappa_to_alpha_conv2d(self, kappa_map):
+    def _alpha_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
         alpha_x = F.conv2d(kappa_map, self.ax_kernel, padding="same") * (
             self.dx_kap**2 / pi
@@ -126,7 +130,7 @@ class KappaGrid(AbstractThinLens):
         )
         return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
 
-    def _kappa_to_Psi_fft(self, kappa_map):
+    def _Psi_fft(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
         kappa_tilde = self._fft2_padded(kappa_map)
         Psi = torch.fft.ifft2(kappa_tilde * self.Psi_kernel_tilde).real * (
@@ -134,38 +138,8 @@ class KappaGrid(AbstractThinLens):
         )
         return self._unpad_fft(Psi)
 
-    def _kappa_to_Psi_conv2d(self, kappa_map):
+    def _Psi_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
         print(kappa_map.shape, self.Psi_kernel.shape)
         Psi = F.conv2d(self.Psi_kernel, kappa_map) * (self.dx_kap**2 / pi)
         return self._unpad_conv2d(Psi)
-
-
-if __name__ == "__main__":
-    import h5py
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    hf = h5py.File("../../../../data/data_1.h5", "r")
-    kap = hf["kappa"][0][None, None]
-    kappa = KappaGrid(kap)
-    # alpha_x, alpha_y = kappa._fft_mode()
-    # fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-    # axs[0].imshow(alpha_x[0, 0], cmap="seismic")
-    # axs[1].imshow(alpha_y[0, 0], cmap="seismic")
-    alpha_x, alpha_y = kappa._kappa_to_alpha_fft()
-    alpha_x_true, alpha_y_true = kappa._kappa_to_alpha_conv2d()
-    fig, axs = plt.subplots(3, 2, figsize=(8, 12))
-    axs[0, 0].imshow(alpha_x[0, 0], cmap="seismic")
-    axs[0, 1].imshow(alpha_y[0, 0], cmap="seismic")
-    axs[1, 0].imshow(alpha_x_true[0, 0], cmap="seismic")
-    axs[1, 1].imshow(alpha_y_true[0, 0], cmap="seismic")
-    axs[2, 0].imshow(alpha_x_true[0, 0] - alpha_x[0, 0], cmap="seismic")
-    im = axs[2, 1].imshow(alpha_y_true[0, 0] - alpha_y[0, 0], cmap="seismic")
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
-    print(np.abs(alpha_x_true[0, 0] - alpha_x[0, 0]).max())
-    print(np.abs(alpha_y_true[0, 0] - alpha_y[0, 0]).max())
-
-    plt.show()
