@@ -1,4 +1,4 @@
-from ..interpolate_image import interpolate_image
+from ..utils import interpolate_image
 from .base import AbstractSource
 
 

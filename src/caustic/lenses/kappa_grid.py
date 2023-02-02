@@ -3,8 +3,7 @@ from math import pi
 import torch
 import torch.nn.functional as F
 
-from ..interpolate_image import interpolate_image
-from ..utils import get_meshgrid, safe_divide, safe_log
+from ..utils import get_meshgrid, interpolate_image, safe_divide, safe_log
 from .base import AbstractThinLens
 
 
