@@ -33,28 +33,56 @@ class MultiplaneLens(ThickLens):
         # sort the lenses in redshift order
         z_ls_sorted, idxs = torch.sort(z_ls)
         # compute relevant cosmological distances
-        D_im1_i = cosmology.comoving_dist_z1z2(0 if i == 0 else z_ls_sorted[i-1], z_ls_sorted[i])
-        D_i_ip1 = cosmology.comoving_dist_z1z2(z_ls_sorted[i], z_ls_sorted[i+1] if i+1 < len(z_ls) else z_s)
+        D_im1_i = cosmology.comoving_dist_z1z2(
+            0 if i == 0 else z_ls_sorted[i - 1], z_ls_sorted[i]
+        )
+        D_i_ip1 = cosmology.comoving_dist_z1z2(
+            z_ls_sorted[i], z_ls_sorted[i + 1] if i + 1 < len(z_ls) else z_s
+        )
         D_0_i = cosmology.comoving_dist_z1z2(0, z_ls_sorted[i])
-        D_ratio = cosmology.comoving_dist_z1z2(0, z_s) / cosmology.comoving_dist_z1z2(z_ls_sorted[i], z_s)
+        D_ratio = cosmology.comoving_dist_z1z2(0, z_s) / cosmology.comoving_dist_z1z2(
+            z_ls_sorted[i], z_s
+        )
 
         # Collect the current alphas
-        X_im1 = kwargs.get("_X_im1", (0.,0.))
+        X_im1 = kwargs.get("_X_im1", (0.0, 0.0))
         X_i = kwargs.get("_X_i", (D_0_i * thx, D_0_i * thy))
 
         # Compute the alphas at the next plane
-        alphas = lenses[i].alpha(X_i[0]/D_0_i, X_i[1]/D_0_i, z_ls_sorted[i], z_ls_sorted[i+1] if i+1 < len(z_ls) else z_s, cosmology, *lens_args[i])
+        alphas = lenses[i].alpha(
+            X_i[0] / D_0_i,
+            X_i[1] / D_0_i,
+            z_ls_sorted[i],
+            z_ls_sorted[i + 1] if i + 1 < len(z_ls) else z_s,
+            cosmology,
+            *lens_args[i],
+        )
         X_ip1 = (
-            (D_i_ip1 / D_im1_i + 1) * X_i[0] - (D_i_ip1 / D_im1_i) * X_im1[0] - D_i_ip1 * D_ratio * alphas[0],
-            (D_i_ip1 / D_im1_i + 1) * X_i[1] - (D_i_ip1 / D_im1_i) * X_im1[1] - D_i_ip1 * D_ratio * alphas[1],
+            (D_i_ip1 / D_im1_i + 1) * X_i[0]
+            - (D_i_ip1 / D_im1_i) * X_im1[0]
+            - D_i_ip1 * D_ratio * alphas[0],
+            (D_i_ip1 / D_im1_i + 1) * X_i[1]
+            - (D_i_ip1 / D_im1_i) * X_im1[1]
+            - D_i_ip1 * D_ratio * alphas[1],
         )
 
         # end recursion when last plane reached
-        if (i+1) == len(z_ls):
+        if (i + 1) == len(z_ls):
             D_0_s = cosmology.comoving_dist_z1z2(0, z_s)
             return X_ip1[0] / D_0_s, X_ip1[1] / D_0_s
         # continue recursion while more lensing planes are available
-        return self.raytrace(thx, thy, z_s, cosmology, lenses, z_ls, lens_args, _depth = i+1, _X_im1 = X_i, _X_i = X_ip1)
+        return self.raytrace(
+            thx,
+            thy,
+            z_s,
+            cosmology,
+            lenses,
+            z_ls,
+            lens_args,
+            _depth=i + 1,
+            _X_im1=X_i,
+            _X_i=X_ip1,
+        )
 
     def alpha(
         self,

@@ -5,8 +5,9 @@ import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
-from caustic.lenses import SIE, MultiplaneLens
 from caustic.cosmology import FlatLambdaCDMCosmology
+from caustic.lenses import SIE, MultiplaneLens
+
 
 def test():
     atol = 1e-2
@@ -14,18 +15,18 @@ def test():
 
     # Setup
     redshift_list = [0.1, 0.5]
-    z_source = 1.
+    z_source = 1.0
     cosmology = FlatLambdaCDMCosmology()
-    
+
     # Models
     lens = MultiplaneLens()
     lenses = [SIE(), SIE()]
     lens_model_list = ["SIE", "SIE"]
     lens_ls = LensModel(
         lens_model_list=lens_model_list,
-        z_source = z_source,
-        lens_redshift_list = redshift_list,
-        multi_plane = True,
+        z_source=z_source,
+        lens_redshift_list=redshift_list,
+        multi_plane=True,
     )
 
     # Parameters
@@ -36,11 +37,14 @@ def test():
     b = torch.tensor(1.4)
     s = torch.tensor(0.0)
     args = (
-        z_source, # source redshift
-        cosmology, # cosmology object
-        lenses, # list of lens planes
-        torch.tensor(redshift_list), # list of lens plane redshifts
-        ((thx0, thy0, q, phi, b, s),(thx0, thy0, q, phi, b, s)), # list of lens plane arguments,
+        z_source,  # source redshift
+        cosmology,  # cosmology object
+        lenses,  # list of lens planes
+        torch.tensor(redshift_list),  # list of lens plane redshifts
+        (
+            (thx0, thy0, q, phi, b, s),
+            (thx0, thy0, q, phi, b, s),
+        ),  # list of lens plane arguments,
     )
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi.item(), q=q.item())
     kwargs_ls = [
@@ -60,4 +64,6 @@ def test():
         },
     ]
 
-    lens_test_helper(lens, lens_ls, args, kwargs_ls, rtol, atol, test_Psi = False, test_kappa = False)
+    lens_test_helper(
+        lens, lens_ls, args, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
+    )
