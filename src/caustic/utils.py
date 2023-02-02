@@ -66,3 +66,16 @@ def safe_divide(num, denom):
     where = denom != 0
     out[where] = num[where] / denom[where]
     return out
+
+
+def safe_log(x):
+    """
+    Differentiable version of `torch.where(denom != 0, num/denom, 0.0)`.
+
+    Returns:
+        `num / denom` where `denom != 0`; zero everywhere else.
+    """
+    out = torch.zeros_like(x)
+    where = x != 0
+    out[where] = x[where].log()
+    return out

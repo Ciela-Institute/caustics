@@ -2,9 +2,10 @@ from math import pi
 
 import torch
 import torch.nn.functional as F
+from icecream import ic
 
 from ..interpolate_image import interpolate_image
-from ..utils import safe_divide
+from ..utils import get_meshgrid, safe_divide, safe_log
 from .base import AbstractThinLens
 
 
@@ -16,11 +17,20 @@ class KappaGrid(AbstractThinLens):
 
         self.n_pix = n_pix  # kappa_map.shape[2]
         self.fov = fov
+        self.res = fov / n_pix
         self.dx_kap = fov / (n_pix - 1)  # dx on image grid
         self.z_l = z_l
 
-        self.Psi_kernel = self.get_Psi_kernel(n_pix, fov, dtype)
-        self.ax_kernel, self.ay_kernel = self.get_alpha_kernels(n_pix, fov, dtype)
+        x_mg, y_mg = get_meshgrid(
+            self.res, 2 * self.n_pix, 2 * self.n_pix, self.device, dtype
+        )
+        # Shift to center kernel within pixel
+        x_mg = x_mg - self.res / 2
+        y_mg = y_mg - self.res / 2
+        d2 = x_mg**2 + y_mg**2
+        self.Psi_kernel = safe_log(d2.sqrt())[None, None, :, :]
+        self.ax_kernel = -safe_divide(x_mg, d2)[None, None, :, :]
+        self.ay_kernel = -safe_divide(y_mg, d2)[None, None, :, :]
 
         if mode == "fft":
             # Get (padded) Fourier transforms of kernels
@@ -39,32 +49,19 @@ class KappaGrid(AbstractThinLens):
         self._mode = mode
 
     def _fft2_padded(self, x):
+        # TODO: next_fast_len
         pad = 2 * self.n_pix
         return torch.fft.fft2(x, (pad, pad))
 
-    def _unpad(self, x):
+    def _unpad_fft(self, x):
         return x[..., self.n_pix :, self.n_pix :]
+
+    def _unpad_conv2d(self, x):
+        return x[..., 1:, 1:]
 
     @property
     def mode(self):
         return self._mode
-
-    @staticmethod
-    def get_alpha_kernels(n_pix, fov, dtype):
-        # Shapes are (in_channels, out_channels, filter_height, filter_width)
-        grid = torch.linspace(-1, 1, 2 * n_pix, dtype=dtype) * fov
-        x_mg, y_mg = torch.meshgrid(grid, grid, indexing="xy")
-        d2 = x_mg**2 + y_mg**2
-        ax_kernel = -safe_divide(x_mg, d2)[None, None, :, :]
-        ay_kernel = -safe_divide(y_mg, d2)[None, None, :, :]
-        return ax_kernel, ay_kernel
-
-    @staticmethod
-    def get_Psi_kernel(n_pix, fov, dtype):
-        grid = torch.linspace(-1, 1, 2 * n_pix, dtype=dtype) * fov
-        x_mg, y_mg = torch.meshgrid(grid, grid, indexing="xy")
-        d2 = x_mg**2 + y_mg**2
-        return d2.sqrt().log()[None, None, :, :]
 
     def alpha(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
         if z_l != self.z_l:
@@ -73,8 +70,13 @@ class KappaGrid(AbstractThinLens):
             )
 
         alpha_x_map, alpha_y_map = self._kappa_to_alpha(kappa_map)
-        alpha_x = interpolate_image(thx, thy, thx0, thy0, alpha_x_map, self.fov / 2)
-        alpha_y = interpolate_image(thx, thy, thx0, thy0, alpha_y_map, self.fov / 2)
+        # Scale is distance from center of image to center of pixel on the edge
+        alpha_x = interpolate_image(
+            thx, thy, thx0, thy0, alpha_x_map, (self.fov - self.res) / 2
+        )
+        alpha_y = interpolate_image(
+            thx, thy, thx0, thy0, alpha_y_map, (self.fov - self.res) / 2
+        )
         return alpha_x, alpha_y
 
     def Psi(self, thx, thy, z_l, z_s, cosmology, kappa_map, thx0=0.0, thy0=0.0):
@@ -84,7 +86,10 @@ class KappaGrid(AbstractThinLens):
             )
 
         Psi_map = self._kappa_to_Psi(kappa_map)
-        Psi = interpolate_image(thx, thy, thx0, thy0, Psi_map, self.fov / 2)
+        # Scale is distance from center of image to center of pixel on the edge
+        Psi = interpolate_image(
+            thx, thy, thx0, thy0, Psi_map, (self.fov - self.res) / 2
+        )
         return Psi
 
     def kappa(self, thx, thy, z_s):
@@ -109,7 +114,7 @@ class KappaGrid(AbstractThinLens):
         alpha_y = torch.fft.ifft2(kappa_tilde * self.ay_kernel_tilde).real * (
             self.dx_kap**2 / pi
         )
-        return self._unpad(alpha_x), self._unpad(alpha_y)
+        return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
 
     def _kappa_to_alpha_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
@@ -119,7 +124,7 @@ class KappaGrid(AbstractThinLens):
         alpha_y = F.conv2d(kappa_map, self.ay_kernel, padding="same") * (
             self.dx_kap**2 / pi
         )
-        return alpha_x, alpha_y
+        return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
 
     def _kappa_to_Psi_fft(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
@@ -127,14 +132,13 @@ class KappaGrid(AbstractThinLens):
         Psi = torch.fft.ifft2(kappa_tilde * self.Psi_kernel_tilde).real * (
             self.dx_kap**2 / pi
         )
-        return self._unpad(Psi)
+        return self._unpad_fft(Psi)
 
     def _kappa_to_Psi_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
-        Psi = F.conv2d(kappa_map, self.Psi_kernel, padding="same") * (
-            self.dx_kap**2 / pi
-        )
-        return Psi
+        print(kappa_map.shape, self.Psi_kernel.shape)
+        Psi = F.conv2d(self.Psi_kernel, kappa_map) * (self.dx_kap**2 / pi)
+        return self._unpad_conv2d(Psi)
 
 
 if __name__ == "__main__":
