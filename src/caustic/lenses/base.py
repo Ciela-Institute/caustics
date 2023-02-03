@@ -131,10 +131,10 @@ class ThinLens(Base):
         kx, ky = torch.meshgrid([k ,k], indexing="xy")
         # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
         pad = 2 * n
-        psi_tilde = torch.fft.fft(psi, pad=(pad, pad))
-        psi_xx = torch.abs(torch.fft.ifft2(- kx**2 * psi_tilde))[..., n:, n:]
-        psi_yy = torch.abs(torch.fft.ifft2(- ky**2 * psi_tilde))[..., n:, n:]
-        psi_xy = torch.abs(torch.fft.ifft2(- kx * ky * psi_tilde))[..., n:, n:]
+        psi_tilde = torch.fft.fft(psi, (pad, pad))
+        psi_xx = torch.abs(torch.fft.ifft2(- kx**2 * psi_tilde))[..., :n, :n]
+        psi_yy = torch.abs(torch.fft.ifft2(- ky**2 * psi_tilde))[..., :n, :n]
+        psi_xy = torch.abs(torch.fft.ifft2(- kx * ky * psi_tilde))[..., :n, :n]
         j1 = torch.stack([1 - psi_xx, - psi_xy], dim=-1)  # Equation 2.33 from Meneghetti lensing lectures
         j2 = torch.stack([-psi_xy, 1 - psi_yy], dim=-1)
         jacobian = torch.stack([j1, j2], dim=-1)
