@@ -4,17 +4,17 @@ from typing import Any, List, Tuple
 import torch
 from torch import Tensor
 
-from .base import AbstractThickLens, AbstractThinLens
+from .base import ThickLens, ThinLens
 
 
-class MultiplaneLens(AbstractThickLens):
+class MultiplaneLens(ThickLens):
     def raytrace(
         self,
         thx,
         thy,
         z_s,
         cosmology,
-        lenses: List[AbstractThinLens],
+        lenses: List[ThinLens],
         z_ls: Tensor,
         lens_args: List[Tuple[Any, ...]],
     ) -> Tuple[Tensor, Tensor]:
@@ -40,7 +40,7 @@ class MultiplaneLens(AbstractThickLens):
         thy,
         z_s,
         cosmology,
-        lenses: List[AbstractThinLens],
+        lenses: List[ThinLens],
         z_ls: Tensor,
         lens_args: List[Tuple[Any, ...]],
     ) -> Tuple[Tensor, Tensor]:
@@ -56,7 +56,7 @@ class MultiplaneLens(AbstractThickLens):
         thy,
         z_s,
         cosmology,
-        lenses: List[AbstractThinLens],
+        lenses: List[ThinLens],
         z_ls: Tensor,
         lens_args: List[Tuple[Any, ...]],
     ) -> Tensor:
@@ -75,7 +75,7 @@ class MultiplaneLens(AbstractThickLens):
         thy,
         z_s,
         cosmology,
-        lenses: List[AbstractThinLens],
+        lenses: List[ThinLens],
         z_ls: Tensor,
         lens_args: List[Tuple[Any, ...]],
     ):

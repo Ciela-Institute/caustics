@@ -8,7 +8,7 @@ from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
 
 
-class AbstractThickLens(Base):
+class ThickLens(Base):
     """
     Base class for lenses that can't be treated in the thin lens approximation.
     """
@@ -48,7 +48,7 @@ class AbstractThickLens(Base):
         raise NotImplementedError()
 
 
-class AbstractThinLens(Base):
+class ThinLens(Base):
     """
     Base class for lenses that can be treated in the thin lens approximation.
     """
@@ -117,5 +117,31 @@ class AbstractThinLens(Base):
         return factor * fp * arcsec_to_rad**2
 
     def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
+        # Default implementation of magnification. This should be overwritten in KappaGrid with the FFT version of this
+
         # TODO: implement with automatic differentiation
         raise NotImplementedError()
+
+    def _lensing_jacobian_fft_method(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        psi = self.Psi(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+        # quick dirty work to get kx and ky. Assumes thx and thy come from meshgrid... TODO Might want to get k differently
+        n = thx.shape[-1]
+        d = torch.abs(thx[0, 0] - thx[0, 1])
+        k = torch.fft.fftfreq(2*n, d=d)
+        kx, ky = torch.meshgrid([k ,k], indexing="xy")
+        # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
+        pad = 2 * n
+        psi_tilde = torch.fft.fft(psi, pad=(pad, pad))
+        psi_xx = torch.abs(torch.fft.ifft2(- kx**2 * psi_tilde))[..., n:, n:]
+        psi_yy = torch.abs(torch.fft.ifft2(- ky**2 * psi_tilde))[..., n:, n:]
+        psi_xy = torch.abs(torch.fft.ifft2(- kx * ky * psi_tilde))[..., n:, n:]
+        j1 = torch.stack([1 - psi_xx, - psi_xy], dim=-1)  # Equation 2.33 from Meneghetti lensing lectures
+        j2 = torch.stack([-psi_xy, 1 - psi_yy], dim=-1)
+        jacobian = torch.stack([j1, j2], dim=-1)
+        return jacobian
+
+    # def _lensing_jacobian_ad_method(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+    #     # much easier to do with functorch
+    #     psi_func = lambda thx, thy: self.Psi()
+    #     psi = self.Psi(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+

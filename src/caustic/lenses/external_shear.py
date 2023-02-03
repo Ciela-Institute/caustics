@@ -1,10 +1,10 @@
 import torch
 
 from ..utils import translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 
-class ExternalShear(AbstractThinLens):
+class ExternalShear(ThinLens):
     def __init__(self, device: torch.device = torch.device("cpu")):
         super().__init__(device)
 
