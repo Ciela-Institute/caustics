@@ -1,4 +1,4 @@
-from .base import AbstractThinLens
+from .base import ThinLens
 from .epl import EPL
 from .external_shear import ExternalShear
 from .kappa_grid import KappaGrid
@@ -11,7 +11,7 @@ from .sis import SIS
 from .kappa_grid import KappaGrid
 
 __all__ = (
-    "AbstractThinLens",
+    "ThinLens",
     "EPL",
     "ExternalShear",
     "KappaGrid",

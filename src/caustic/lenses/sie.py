@@ -1,10 +1,10 @@
 import torch
 
 from ..utils import derotate, translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 
-class SIE(AbstractThinLens):
+class SIE(ThinLens):
     """
     References:
         Keeton 2001, https://arxiv.org/abs/astro-ph/0102341

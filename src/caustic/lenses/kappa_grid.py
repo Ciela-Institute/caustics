@@ -5,10 +5,10 @@ import torch.nn.functional as F
 
 from ..interpolate_image import interpolate_image
 from ..utils import safe_divide
-from .base import AbstractThinLens
+from .base import ThinLens
 
 
-class KappaGrid(AbstractThinLens):
+class KappaGrid(ThinLens):
     def __init__(
         self, fov, n_pix, dtype=torch.float32, mode="fft", z_l=None, device=None
     ):

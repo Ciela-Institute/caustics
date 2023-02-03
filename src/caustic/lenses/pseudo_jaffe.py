@@ -3,10 +3,10 @@ from math import pi
 import torch
 
 from ..utils import translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 
-class PseudoJaffe(AbstractThinLens):
+class PseudoJaffe(ThinLens):
     """
     Notes:
         Based on `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_ and
