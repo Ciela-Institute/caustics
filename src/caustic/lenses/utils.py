@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 
 from ..cosmology import Cosmology
-from ..utils import C_MPC_S
+from ..constants import c_Mpc_s
 
 
 def to_alpha(pot):
@@ -56,7 +56,7 @@ def to_time_delay(pot, alpha, cosmo=Cosmology()):
 
     def td(x, y, z, z_src, *args, **kwargs):
         dist_td = cosmo.time_delay_dist(z, z_src)
-        return fermat(x, y, *args, **kwargs) * dist_td / C_MPC_S
+        return fermat(x, y, *args, **kwargs) * dist_td / c_Mpc_s
 
     return td
 
