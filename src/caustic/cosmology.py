@@ -1,12 +1,22 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from math import pi
+from typing import Optional
 
 import torch
 from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
 from torchinterp1d import interp1d
 
+from .base import Base
 from .constants import G_over_c2, c_Mpc_s, km_to_mpc
+
+__all__ = (
+    "h0_default",
+    "rho_cr_0_default",
+    "Om0_default",
+    "Cosmology",
+    "FlatLambdaCDMCosmology",
+)
 
 h0_default = float(default_cosmology.get().h)
 rho_cr_0_default = float(
@@ -14,19 +24,25 @@ rho_cr_0_default = float(
 )
 Om0_default = float(default_cosmology.get().Om0)
 
-# Set up interpolator to speed up comoving distance calculations in Lambda-CDM cosmologies
-_comoving_dist_helper_x_grid = 10 ** torch.linspace(-3, 1, 500)
+# Set up interpolator to speed up comoving distance calculations in Lambda-CDM
+# cosmologies. Construct with float64 precision.
+_comoving_dist_helper_x_grid = 10 ** torch.linspace(-3, 1, 500, dtype=torch.float32)
 _comoving_dist_helper_y_grid = torch.as_tensor(
     _comoving_dist_helper_x_grid
     * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_dist_helper_x_grid**3)),
-    dtype=torch.float32,
+    dtype=torch.float64,
 )
 
 
-class AbstractCosmology(ABC):
-    def __init__(self, h0, device):
+class Cosmology(Base):
+    def __init__(
+        self,
+        h0,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
         self.h0 = h0
-        self.device = device
 
     @abstractmethod
     def rho_cr(self, z) -> torch.Tensor:
@@ -79,7 +95,7 @@ class AbstractCosmology(ABC):
         return d_s / d_l / d_ls / (4 * pi * G_over_c2)
 
 
-class FlatLambdaCDMCosmology(AbstractCosmology):
+class FlatLambdaCDMCosmology(Cosmology):
     """
     Flat LCDM cosmology with no radiation.
 
@@ -92,16 +108,32 @@ class FlatLambdaCDMCosmology(AbstractCosmology):
         h0=h0_default,
         rho_cr_0=rho_cr_0_default,
         Om0=Om0_default,
-        device=None,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
     ):
-        super().__init__(h0, device)
+        super().__init__(h0, device, dtype)
         self.rho_cr_0 = rho_cr_0
         self.Om0 = Om0
         self.Ode0 = 1 - Om0
-        # TODO: can we avoid this operation? Changing device after initializing
-        # will break this.
-        self._comoving_dist_helper_x_grid = _comoving_dist_helper_x_grid.to(self.device)
-        self._comoving_dist_helper_y_grid = _comoving_dist_helper_y_grid.to(self.device)
+
+        self._comoving_dist_helper_x_grid = _comoving_dist_helper_x_grid.to(
+            self.device, dtype
+        )
+        self._comoving_dist_helper_y_grid = _comoving_dist_helper_y_grid.to(
+            self.device, dtype
+        )
+
+    def to(
+        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+    ):
+        # NOTE: initializing with float32 and calling .to(float64) will give different
+        # results than initializing with float64.
+        self._comoving_dist_helper_x_grid = self._comoving_dist_helper_x_grid.to(
+            device=device, dtype=dtype
+        )
+        self._comoving_dist_helper_y_grid = self._comoving_dist_helper_y_grid.to(
+            device=device, dtype=dtype
+        )
 
     def rho_cr(self, z) -> torch.Tensor:
         return self.rho_cr_0 * (self.Om0 * (1 + z) ** 3 + self.Ode0)

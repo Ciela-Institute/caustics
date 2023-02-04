@@ -6,15 +6,22 @@ from torch import Tensor
 
 from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
+from .utils import get_magnification
+
+__all__ = ("ThinLens", "ThickLens")
 
 
-class AbstractThickLens(Base):
+class ThickLens(Base):
     """
     Base class for lenses that can't be treated in the thin lens approximation.
     """
 
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
     @abstractmethod
     def alpha(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tuple[Tensor, Tensor]:
@@ -43,18 +50,23 @@ class AbstractThickLens(Base):
     def time_delay(self, thx, thy, z_s, cosmology, *args, **kwargs):
         ...
 
-    def magnification(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tensor:
-        # TODO: implement with automatic differentiation
-        raise NotImplementedError()
+    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        return get_magnification(
+            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+        )
 
 
-class AbstractThinLens(Base):
+class ThinLens(Base):
     """
     Base class for lenses that can be treated in the thin lens approximation.
     """
 
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
     @abstractmethod
     def alpha(
@@ -75,7 +87,7 @@ class AbstractThinLens(Base):
         d_s = cosmology.angular_diameter_dist(z_s)
         d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
         alpha_x, alpha_y = self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
-        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y 
+        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y
 
     @abstractmethod
     def kappa(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
@@ -117,6 +129,7 @@ class AbstractThinLens(Base):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - Psi
         return factor * fp * arcsec_to_rad**2
 
-    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
-        # TODO: implement with automatic differentiation
-        raise NotImplementedError()
+    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        return get_magnification(
+            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+        )

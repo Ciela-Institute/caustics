@@ -1,17 +1,16 @@
 import torch
 
 from ..utils import derotate, translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
+
+__all__ = ("SIE",)
 
 
-class SIE(AbstractThinLens):
+class SIE(ThinLens):
     """
     References:
         Keeton 2001, https://arxiv.org/abs/astro-ph/0102341
     """
-
-    def __init__(self, device=torch.device("cpu")):
-        super().__init__(device)
 
     def _get_psi(self, x, y, q, s):
         return (q**2 * (x**2 + s**2) + y**2).sqrt()

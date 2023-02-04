@@ -4,22 +4,15 @@ import torch
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 from ..utils import translate_rotate
-from .base import AbstractThinLens
+from .base import ThinLens
 
 DELTA = 200.0
 
 
-class NFW(AbstractThinLens):
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        """
-        Args:
-            thx0: [arcsec]
-            thy0: [arcsec]
-            m: [solMass]
-            c: [1]
-        """
-        super().__init__(device)
+__all__ = ("NFW",)
 
+
+class NFW(ThinLens):
     def get_r_s(self, z_l, cosmology, m, c):
         """
         [Mpc]
