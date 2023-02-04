@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Python application
+name: Unit Tests
 
 on:
   push:
@@ -15,7 +15,11 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
     - name: Checkout caustic
@@ -29,10 +33,10 @@ jobs:
         repository: aliutkus/torchinterp1d
         path: torchinterp1d
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
@@ -44,14 +48,17 @@ jobs:
         # Install other deps
         cd $GITHUB_WORKSPACE/caustic
         pip install -r requirements.txt
+      shell: bash
 
     - name: Install caustic
       run: |
         cd $GITHUB_WORKSPACE/caustic
         pip install .
+      shell: bash
 
     - name: Test with pytest
       run: |
         cd $GITHUB_WORKSPACE/caustic
         pytest test
+      shell: bash
 
