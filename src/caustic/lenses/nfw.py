@@ -76,14 +76,14 @@ class NFW(AbstractThinLens):
         term_1 = (x / 2).log()
         term_2 = torch.where(
             x > 1,
-            (1/x).arccos() * 1/(x**2-1).sqrt(),
+            term_1 + (1/x).arccos() * 1/(x**2-1).sqrt(),
             torch.where(
                 x < 1,
-                (1/x).arccosh() * 1/(1-x**2).sqrt(),
-                1.0,
+                term_1 + (1/x).arccosh() * 1/(1-x**2).sqrt(),
+                1.0+torch.tensor(1/2).log(),
             ),
         )
-        return term_1 + term_2
+        return term_2
 
     def alpha_hat(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
         """
