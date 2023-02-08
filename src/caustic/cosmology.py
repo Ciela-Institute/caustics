@@ -79,7 +79,7 @@ class Cosmology(ABC):
         return d_s / d_l / d_ls / (4 * pi * G_over_c2)
 
 
-class FlatLambdaCDMCosmology(Cosmology):
+class FlatLambdaCDM(Cosmology):
     """
     Flat LCDM cosmology with no radiation.
 
