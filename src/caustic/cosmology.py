@@ -23,7 +23,7 @@ _comoving_dist_helper_y_grid = torch.as_tensor(
 )
 
 
-class AbstractCosmology(ABC):
+class Cosmology(ABC):
     def __init__(self, h0, device):
         self.h0 = h0
         self.device = device
@@ -79,7 +79,7 @@ class AbstractCosmology(ABC):
         return d_s / d_l / d_ls / (4 * pi * G_over_c2)
 
 
-class FlatLambdaCDMCosmology(AbstractCosmology):
+class FlatLambdaCDM(Cosmology):
     """
     Flat LCDM cosmology with no radiation.
 
