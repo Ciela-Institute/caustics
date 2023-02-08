@@ -5,7 +5,11 @@ import torch
 
 
 class Base(ABC):
-    def __init__(self, device: torch.device, dtype: torch.dtype = torch.float32):
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
         self.device = device
         self.dtype = dtype
 
