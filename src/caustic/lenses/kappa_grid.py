@@ -105,7 +105,7 @@ class KappaGrid(ThinLens):
             raise ValueError("kappa map must have four dimensions")
 
         expected_shape = (1, self.n_pix, self.n_pix)
-        if kappa_map.shape[1:] != expected_shape:
+        if kappa_map.shape[-3:] != expected_shape:
             raise ValueError(
                 f"kappa map shape does not have the expected shape of {expected_shape}"
             )
