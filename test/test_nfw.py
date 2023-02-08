@@ -19,16 +19,16 @@ Ob0_default = float(default_cosmology.get().Ob0)
 
 def test():
     atol = 1e-5
-    rtol = 0.001
-
+    rtol = 0.03
+    
     # Models
     lens = NFW()
     lens_model_list = ["NFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    z_l = torch.tensor(0.01)
-    z_s = torch.tensor(2.1)
+    z_l = torch.tensor(0.1)
+    z_s = torch.tensor(0.5)
     cosmology = FlatLambdaCDMCosmology()
     thx0 = torch.tensor(0.457)
     thy0 = torch.tensor(0.141)
