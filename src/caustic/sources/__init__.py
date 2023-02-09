@@ -1,5 +1,5 @@
 from .base import Source
-from .imagesource import ImageSource
+from .pixelated import Pixelated
 from .sersic import Sersic
 
-__all__ = ("Source", "ImageSource", "Sersic")
+__all__ = ("Source", "Pixelated", "Sersic")
