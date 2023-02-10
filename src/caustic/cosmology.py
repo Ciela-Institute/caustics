@@ -26,7 +26,7 @@ Om0_default = float(default_cosmology.get().Om0)
 
 # Set up interpolator to speed up comoving distance calculations in Lambda-CDM
 # cosmologies. Construct with float64 precision.
-_comoving_dist_helper_x_grid = 10 ** torch.linspace(-3, 1, 500, dtype=torch.float32)
+_comoving_dist_helper_x_grid = 10 ** torch.linspace(-3, 1, 500, dtype=torch.float64)
 _comoving_dist_helper_y_grid = torch.as_tensor(
     _comoving_dist_helper_x_grid
     * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_dist_helper_x_grid**3)),
