@@ -5,6 +5,6 @@ lenstronomy==1.10.3
 matplotlib==3.5.1
 numpy==1.22.3
 scipy==1.8.0
-setuptools==59.5.0
-torch==1.13.0
+setuptools==67.2.0
+torch==1.13.1
 torchinterp1d==1.1
