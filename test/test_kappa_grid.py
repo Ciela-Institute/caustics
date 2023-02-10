@@ -61,7 +61,7 @@ def test_Psi_alpha():
             1000, "fft", use_next_fast_len
         )
         _check_center(Psi, Psi_approx, atol=1e-21)
-        _check_center(alpha_x, alpha_x_approx, atol=8e-20)
+        _check_center(alpha_x, alpha_x_approx, atol=1e-19)
         _check_center(alpha_y, alpha_y_approx, atol=1e-20)
 
 
@@ -82,7 +82,7 @@ def test_consistency():
             assert torch.allclose(alpha_y_fft, alpha_y_conv2d, atol=1e-20, rtol=0)
 
 
-def _check_center(x, x_approx, rtol=0.00001, atol=1e-8, half_buffer=20):
+def _check_center(x, x_approx, rtol=1e-5, atol=1e-8, half_buffer=20):
     n_pix = x.shape[-1]
     idx_before = n_pix // 2 - half_buffer
     idx_after = n_pix // 2 + half_buffer

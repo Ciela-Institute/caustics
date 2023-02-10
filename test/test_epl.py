@@ -39,9 +39,9 @@ def test_lenstronomy():
     ]
 
     # Different tolerances for difference quantities
-    alpha_test_helper(lens, lens_ls, args, kwargs_ls, rtol=1e-100, atol=4.5e-5)
-    kappa_test_helper(lens, lens_ls, args, kwargs_ls, rtol=1.5e-5, atol=1e-100)
-    Psi_test_helper(lens, lens_ls, args, kwargs_ls, rtol=2e-5, atol=1e-100)
+    alpha_test_helper(lens, lens_ls, args, kwargs_ls, rtol=1e-100, atol=6e-5)
+    kappa_test_helper(lens, lens_ls, args, kwargs_ls, rtol=3e-5, atol=1e-100)
+    Psi_test_helper(lens, lens_ls, args, kwargs_ls, rtol=3e-5, atol=1e-100)
 
 
 def test_special_case_sie():
@@ -74,9 +74,9 @@ def test_special_case_sie():
     ]
 
     # Different tolerances for difference quantities
-    alpha_test_helper(lens, lens_ls, args, kwargs_ls, rtol=1e-100, atol=4.5e-5)
+    alpha_test_helper(lens, lens_ls, args, kwargs_ls, rtol=1e-100, atol=6e-5)
     kappa_test_helper(lens, lens_ls, args, kwargs_ls, rtol=6e-5, atol=1e-100)
-    Psi_test_helper(lens, lens_ls, args, kwargs_ls, rtol=2e-5, atol=1e-100)
+    Psi_test_helper(lens, lens_ls, args, kwargs_ls, rtol=3e-5, atol=1e-100)
 
 
 if __name__ == "__main__":

@@ -59,8 +59,8 @@ class NFW(ThinLens):
         term_1 = (x / 2).log() ** 2
         term_2 = torch.where(
             x > 1,
-            (1/x).arccos()**2,
-            torch.where(x < 1, - (1/x).arccosh()**2, 0.0),
+            (1 / x).arccos() ** 2,
+            torch.where(x < 1, -(1 / x).arccosh() ** 2, 0.0),
         )
         return term_1 + term_2
 
@@ -69,11 +69,11 @@ class NFW(ThinLens):
         term_1 = (x / 2).log()
         term_2 = torch.where(
             x > 1,
-            term_1 + (1/x).arccos() * 1/(x**2-1).sqrt(),
+            term_1 + (1 / x).arccos() * 1 / (x**2 - 1).sqrt(),
             torch.where(
                 x < 1,
-                term_1 + (1/x).arccosh() * 1/(1-x**2).sqrt(),
-                1.0+torch.tensor(1/2).log(),
+                term_1 + (1 / x).arccosh() * 1 / (1 - x**2).sqrt(),
+                1.0 + torch.tensor(1 / 2).log(),
             ),
         )
         return term_2
@@ -131,4 +131,4 @@ class NFW(ThinLens):
         xi = d_l * th * arcsec_to_rad
         x = xi / r_s  # xi / xi_0
         kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-        return 2 * kappa_s * self._g(x) * r_s**2/(d_l**2 * arcsec_to_rad**2)
+        return 2 * kappa_s * self._g(x) * r_s**2 / (d_l**2 * arcsec_to_rad**2)
