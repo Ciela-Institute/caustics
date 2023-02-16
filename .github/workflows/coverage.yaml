@@ -42,13 +42,13 @@ jobs:
       shell: bash
     - name: Install Caustic
       run: |
-        cd $GITHUB_WORKSPACE/caustic
+        cd $GITHUB_WORKSPACE
         pip install -e .
         pip show caustic
       shell: bash
     - name: Test with pytest
       run: |
-        cd $GITHUB_WORKSPACE/caustic
+        cd $GITHUB_WORKSPACE
         pwd
         pytest --cov-report=xml --cov=src/caustic test/
         cat coverage.xml
