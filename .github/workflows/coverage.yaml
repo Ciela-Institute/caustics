@@ -1,0 +1,57 @@
+name: Code Coverage
+
+on:
+  push:
+    branches:
+      - main  
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Record State
+        run: |
+          pwd
+          echo github.ref is: ${{ github.ref }}
+          echo GITHUB_SHA is: $GITHUB_SHA
+          echo github.event_name is: ${{ github.event_name }}
+          echo github workspace: ${{ github.workspace }}
+          pip --version
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest torch
+          # Install torchinterp1d
+          cd $GITHUB_WORKSPACE/torchinterp1d
+          pip install .
+          # Install other deps
+          cd $GITHUB_WORKSPACE/caustic
+          pip install -r requirements.txt
+        shell: bash
+      - name: Install Caustic
+        run: |
+          cd $GITHUB_WORKSPACE/caustic
+          pip install -e .
+          pip show caustic
+        shell: bash
+      - name: Test with pytest
+        run: |
+          cd $GITHUB_WORKSPACE/caustic
+          pwd
+          pytest --cov-report=xml --cov=src/caustic test/
+          cat coverage.xml
+        shell: bash
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ${{ github.workspace }}/coverage.xml
+          fail_ci_if_error: true
