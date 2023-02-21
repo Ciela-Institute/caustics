@@ -50,13 +50,13 @@ class MultiplaneLens(ThickLens):
         X_i = kwargs.get("_X_i", (D_0_i * thx, D_0_i * thy))
 
         # Compute the alphas at the next plane
-        alphas = lenses[i].alpha(
+        alphas = lenses[idxs[i]].alpha(
             X_i[0] / D_0_i,
             X_i[1] / D_0_i,
             z_ls_sorted[i],
             z_ls_sorted[i + 1] if i + 1 < len(z_ls) else z_s,
             cosmology,
-            *lens_args[i],
+            *lens_args[idxs[i]],
         )
         X_ip1 = (
             (D_i_ip1 / D_im1_i + 1) * X_i[0]
