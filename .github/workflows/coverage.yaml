@@ -63,3 +63,4 @@ jobs:
       with:
         files: ${{ github.workspace }}/coverage.xml
         fail_ci_if_error: true
+        version: "v0.1.15"
