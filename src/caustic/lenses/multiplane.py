@@ -1,25 +1,29 @@
-from typing import Any, List, Tuple
+from collections import defaultdict
+from operator import itemgetter
+from typing import Any, Dict, List, Tuple
 
-import torch
 from torch import Tensor
 
+from ..cosmology import Cosmology
 from .base import ThickLens, ThinLens
 
 __all__ = ("MultiplaneLens",)
 
 
 class MultiplaneLens(ThickLens):
+    def __init__(self, name: str, cosmology: Cosmology, lenses: List[ThinLens]):
+        super().__init__(name, cosmology)
+        self.lenses = lenses  # TODO: need something like ParametrizedList
+
+    def get_z_ls(self, x: Dict) -> List[Tensor]:
+        return [lens.unpack(x)[0] for lens in self.lenses]
+
     def raytrace(
         self,
-        thx,
-        thy,
-        z_s,
-        cosmology,
-        lenses: List[ThinLens],
-        z_ls: Tensor,
-        lens_args: List[Tuple[Any, ...]],
-        *args,
-        **kwargs,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
     ) -> Tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
@@ -29,87 +33,76 @@ class MultiplaneLens(ThickLens):
             z_ls: lens redshifts
             lens_arg_list: list of args to pass to each lens.
         """
-        # Determine which plane is being processed
-        i = kwargs.get("_depth", 0)
-        # sort the lenses in redshift order
-        z_ls_sorted, idxs = torch.sort(z_ls)
-        # compute relevant cosmological distances
-        D_im1_i = cosmology.comoving_dist_z1z2(
-            0 if i == 0 else z_ls_sorted[i - 1], z_ls_sorted[i]
-        )
-        D_i_ip1 = cosmology.comoving_dist_z1z2(
-            z_ls_sorted[i], z_ls_sorted[i + 1] if i + 1 < len(z_ls) else z_s
-        )
-        D_0_i = cosmology.comoving_dist_z1z2(0, z_ls_sorted[i])
-        D_ratio = cosmology.comoving_dist_z1z2(0, z_s) / cosmology.comoving_dist_z1z2(
-            z_ls_sorted[i], z_s
-        )
+        # argsort redshifts
+        z_ls = self.get_z_ls(x)
+        idxs = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
+        D_0_s = self.cosmology.comoving_dist_z1z2(0, z_s)
+        X_im1 = 0.0
+        Y_im1 = 0.0
+        X_i = None
+        Y_i = None
+        X_ip1 = None
+        Y_ip1 = None
 
-        # Collect the current alphas
-        X_im1 = kwargs.get("_X_im1", (0.0, 0.0))
-        X_i = kwargs.get("_X_i", (D_0_i * thx, D_0_i * thy))
+        for i in idxs:
+            z_im1 = 0.0 if i == 0 else z_ls[i - 1]
+            z_i = z_ls[i]
+            z_ip1 = z_s if i == len(z_ls) - 1 else z_ls[i + 1]
 
-        # Compute the alphas at the next plane
-        alphas = lenses[i].alpha(
-            X_i[0] / D_0_i,
-            X_i[1] / D_0_i,
-            z_ls_sorted[i],
-            z_ls_sorted[i + 1] if i + 1 < len(z_ls) else z_s,
-            cosmology,
-            *lens_args[i],
-        )
-        X_ip1 = (
-            (D_i_ip1 / D_im1_i + 1) * X_i[0]
-            - (D_i_ip1 / D_im1_i) * X_im1[0]
-            - D_i_ip1 * D_ratio * alphas[0],
-            (D_i_ip1 / D_im1_i + 1) * X_i[1]
-            - (D_i_ip1 / D_im1_i) * X_im1[1]
-            - D_i_ip1 * D_ratio * alphas[1],
-        )
+            D_im1_i = self.cosmology.comoving_dist_z1z2(z_im1, z_i)
+            D_i_ip1 = self.cosmology.comoving_dist_z1z2(z_i, z_ip1)
+            D_0_i = self.cosmology.comoving_dist_z1z2(0, z_i)
+            D_i_s = self.cosmology.comoving_dist_z1z2(z_i, z_s)
+            D_ratio = D_0_s / D_i_s
 
-        # end recursion when last plane reached
-        if (i + 1) == len(z_ls):
-            D_0_s = cosmology.comoving_dist_z1z2(0, z_s)
-            return X_ip1[0] / D_0_s, X_ip1[1] / D_0_s
-        # continue recursion while more lensing planes are available
-        return self.raytrace(
-            thx,
-            thy,
-            z_s,
-            cosmology,
-            lenses,
-            z_ls,
-            lens_args,
-            _depth=i + 1,
-            _X_im1=X_i,
-            _X_i=X_ip1,
-        )
+            # Collect current alphas
+            X_i = D_0_i * thx if X_i is None else X_i
+            Y_i = D_0_i * thy if Y_i is None else Y_i
+
+            # Get alphas at next plane
+            ax, ay = self.lenses[i].alpha(X_i / D_0_i, Y_i / D_0_i, z_ip1, x)
+            X_ip1 = (
+                (D_i_ip1 / D_im1_i + 1) * X_i
+                - (D_i_ip1 / D_im1_i) * X_im1
+                - D_i_ip1 * D_ratio * ax
+            )
+            Y_ip1 = (
+                (D_i_ip1 / D_im1_i + 1) * Y_i
+                - (D_i_ip1 / D_im1_i) * Y_im1
+                - D_i_ip1 * D_ratio * ay
+            )
+
+            # Advanced indices
+            X_im1 = X_i
+            Y_im1 = Y_i
+            X_i = X_ip1
+            Y_i = Y_ip1
+
+        # Handle edge case of lenses = []
+        if X_ip1 is None or Y_ip1 is None:
+            return thx, thy
+        else:
+            return X_ip1 / D_0_s, Y_ip1 / D_0_s
 
     def alpha(
         self,
-        thx,
-        thy,
-        z_s,
-        cosmology,
-        lenses: List[ThinLens],
-        z_ls: Tensor,
-        lens_args: List[Tuple[Any, ...]],
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
     ) -> Tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
         """
-        bx, by = self.raytrace(thx, thy, z_s, cosmology, lenses, z_ls, lens_args)
+        bx, by = self.raytrace(thx, thy, z_s, x)
         return thx - bx, thy - by
 
     def Sigma(
         self,
-        thx,
-        thy,
-        z_s,
-        cosmology,
-        lenses: List[ThinLens],
-        z_ls: Tensor,
-        lens_args: List[Tuple[Any, ...]],
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         """
         Projected mass density.
@@ -122,13 +115,10 @@ class MultiplaneLens(ThickLens):
 
     def time_delay(
         self,
-        thx,
-        thy,
-        z_s,
-        cosmology,
-        lenses: List[ThinLens],
-        z_ls: Tensor,
-        lens_args: List[Tuple[Any, ...]],
-    ):
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tensor:
         # TODO: figure out how to compute this
         raise NotImplementedError()

@@ -1,8 +1,12 @@
+from collections import defaultdict
 from math import pi
+from typing import Any, Dict, Optional, Tuple
 
 import torch
+from torch import Tensor
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
+from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 
@@ -13,35 +17,54 @@ __all__ = ("NFW",)
 
 
 class NFW(ThinLens):
-    def get_r_s(self, z_l, cosmology, m, c):
+    def __init__(
+        self,
+        name: str,
+        cosmology: Cosmology,
+        z_l: Optional[Tensor] = None,
+        thx0: Optional[Tensor] = None,
+        thy0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
+        s: Optional[Tensor] = torch.tensor(0.0),
+    ):
+        super().__init__(name, cosmology, z_l)
+
+        self.add_param("thx0", thx0)
+        self.add_param("thy0", thy0)
+        self.add_param("m", m)
+        self.add_param("c", c)
+        self.add_param("s", s)
+
+    def get_r_s(self, z_l, m, c, x) -> Tensor:
         """
         [Mpc]
         """
-        rho_cr = cosmology.rho_cr(z_l)
+        rho_cr = self.cosmology.rho_cr(z_l, x)
         r_delta = (3 * m / (4 * pi * DELTA * rho_cr)) ** (1 / 3)
         return 1 / c * r_delta
 
-    def get_rho_s(self, z_l, cosmology, c):
+    def get_rho_s(self, z_l, c, x) -> Tensor:
         """
         [solMass / Mpc^3]
         """
         return (
-            DELTA / 3 * cosmology.rho_cr(z_l) * c**3 / ((1 + c).log() - c / (1 + c))
+            DELTA
+            / 3
+            * self.cosmology.rho_cr(z_l, x)
+            * c**3
+            / ((1 + c).log() - c / (1 + c))
         )
 
-    def get_kappa_s(self, z_l, z_s, cosmology, m, c):
+    def get_kappa_s(self, z_l, z_s, m, c, x) -> Tensor:
         """
         [1]
         """
-        Sigma_cr = cosmology.Sigma_cr(z_l, z_s)
-        return (
-            self.get_rho_s(z_l, cosmology, c)
-            * self.get_r_s(z_l, cosmology, m, c)
-            / Sigma_cr
-        )
+        Sigma_cr = self.cosmology.Sigma_cr(z_l, z_s)
+        return self.get_rho_s(z_l, c, x) * self.get_r_s(z_l, m, c, x) / Sigma_cr
 
     @classmethod
-    def _f(cls, x):
+    def _f(cls, x: Tensor) -> Tensor:
         # TODO: generalize beyond torch, or patch Tensor
         return torch.where(
             x > 1,
@@ -54,7 +77,7 @@ class NFW(ThinLens):
         )
 
     @classmethod
-    def _g(cls, x):
+    def _g(cls, x: Tensor) -> Tensor:
         # TODO: generalize beyond torch, or patch Tensor
         term_1 = (x / 2).log() ** 2
         term_2 = torch.where(
@@ -65,7 +88,7 @@ class NFW(ThinLens):
         return term_1 + term_2
 
     @classmethod
-    def _h(cls, x):
+    def _h(cls, x: Tensor) -> Tensor:
         term_1 = (x / 2).log()
         term_2 = torch.where(
             x > 1,
@@ -78,25 +101,32 @@ class NFW(ThinLens):
         )
         return term_2
 
-    def alpha_hat(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
+    def alpha_hat(
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tuple[Tensor, Tensor]:
         """
         [arcsec]
         """
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        z_l, thx0, thy0, m, c, s = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
         th = (thx**2 + thy**2).sqrt() + s
-        d_l = cosmology.angular_diameter_dist(z_l)
-        r_s = self.get_r_s(z_l, cosmology, m, c)
+        d_l = self.cosmology.angular_diameter_dist(z_l)
+        r_s = self.get_r_s(z_l, m, c, x)
         xi = d_l * th * arcsec_to_rad
-        x = xi / r_s
+        r = xi / r_s
 
         alpha = (
             16
             * pi
             * G_over_c2
-            * self.get_rho_s(z_l, cosmology, c)
+            * self.get_rho_s(z_l, c, x)
             * r_s**3
-            * self._h(x)
+            * self._h(r)
             * rad_to_arcsec
             / xi
         )
@@ -105,30 +135,52 @@ class NFW(ThinLens):
         ay = alpha * thy / th
         return ax, ay
 
-    def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c):
-        d_s = cosmology.angular_diameter_dist(z_s)
-        d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
-        ahx, ahy = self.alpha_hat(thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c)
+    def alpha(
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tuple[Tensor, Tensor]:
+        z_l = self.unpack(x)[0]
+
+        d_s = self.cosmology.angular_diameter_dist(z_s, x)
+        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s, x)
+        ahx, ahy = self.alpha_hat(thx, thy, z_s, x)
         return d_ls / d_s * ahx, d_ls / d_s * ahy
 
-    def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
-        d_l = cosmology.angular_diameter_dist(z_l)
-        r_s = self.get_r_s(z_l, cosmology, m, c)
-        xi = d_l * th * arcsec_to_rad
-        x = xi / r_s  # xi / xi_0
-        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-        return 2 * kappa_s * self._f(x) / (x**2 - 1)
+    def kappa(
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tensor:
+        z_l, thx0, thy0, m, c, s = self.unpack(x)
 
-    def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
         th = (thx**2 + thy**2).sqrt() + s
-        d_l = cosmology.angular_diameter_dist(z_l)
-        r_s = self.get_r_s(z_l, cosmology, m, c)
+        d_l = self.cosmology.angular_diameter_dist(z_l, x)
+        r_s = self.get_r_s(z_l, m, c, x)
         xi = d_l * th * arcsec_to_rad
-        x = xi / r_s  # xi / xi_0
-        kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-        return 2 * kappa_s * self._g(x) * r_s**2 / (d_l**2 * arcsec_to_rad**2)
+        r = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, m, c, x)
+        return 2 * kappa_s * self._f(r) / (r**2 - 1)
+
+    def Psi(
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tensor:
+        z_l, thx0, thy0, m, c, s = self.unpack(x)
+
+        thx, thy = translate_rotate(thx, thy, thx0, thy0)
+        th = (thx**2 + thy**2).sqrt() + s
+        d_l = self.cosmology.angular_diameter_dist(z_l, x)
+        r_s = self.get_r_s(z_l, m, c, x)
+        xi = d_l * th * arcsec_to_rad
+        r = xi / r_s  # xi / xi_0
+        kappa_s = self.get_kappa_s(z_l, z_s, m, c, x)
+        return 2 * kappa_s * self._g(r) * r_s**2 / (d_l**2 * arcsec_to_rad**2)

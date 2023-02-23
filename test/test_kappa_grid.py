@@ -10,41 +10,50 @@ def _setup(n_pix, mode, use_next_fast_len):
     res = fov / n_pix
     thx, thy = get_meshgrid(res, n_pix, n_pix)
 
-    cosmology = FlatLambdaCDMCosmology()
     z_l = torch.tensor(0.5)
     z_s = torch.tensor(2.1)
 
+    cosmology = FlatLambdaCDMCosmology("cosmology")
     # Use PseudoJaffe since it is compact: 99.16% of its mass is contained in
     # the circle circumscribing this image plane
-    lens = PseudoJaffe()
-    thx0 = torch.tensor(0.0)
-    thy0 = torch.tensor(0.0)
-    r_core = torch.tensor(0.04)
-    r_s = torch.tensor(0.2)
-    kappa_0 = lens.kappa_0(z_l, z_s, cosmology, torch.tensor(1.0), r_core, r_s)
+    lens_pj = PseudoJaffe("pf", cosmology)
 
-    kappa_lens = KappaGrid(fov, n_pix, mode=mode, use_next_fast_len=use_next_fast_len)
-    kappa_map = lens.kappa(
-        thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s
-    )
-    # Shape required by KappaGrid
-    kappa_map = kappa_map[None, None, :, :]
+    thx0 = 0.0
+    thy0 = 0.0
+    th_core = 0.04
+    th_s = 0.2
+    rho_0 = 1.0
+    kappa_0 = lens_pj.kappa_0(z_l, z_s, rho_0, th_core, th_s, cosmology)
+    # z_l, thx0, thy0, kappa_0, th_core, th_s
+    x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
 
-    Psi = lens.Psi(thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s)
+    # Exact calculations
+    Psi = lens_pj.Psi(thx, thy, z_l, lens_pj.x_to_dict(x_pj))
     Psi -= Psi.min()
+    alpha_x, alpha_y = lens_pj.alpha(thx, thy, z_l, lens_pj.x_to_dict(x_pj))
 
-    Psi_approx = kappa_lens.Psi(thx, thy, None, None, None, kappa_map)
+    # Approximate calculations
+    lens_kap = KappaGrid(
+        "kg",
+        fov,
+        n_pix,
+        cosmology,
+        z_l=z_l,
+        kappa_map_shape=(1, 1, n_pix, n_pix),
+        mode=mode,
+        use_next_fast_len=use_next_fast_len,
+    )
+    kappa_map = lens_pj.kappa(thx, thy, z_l, lens_pj.x_to_dict(x_pj))
+    x_kap = kappa_map.flatten()
+
+    Psi_approx = lens_kap.Psi(thx, thy, z_l, lens_kap.x_to_dict(x_kap))
     Psi_approx = Psi_approx[0, 0]
     Psi_approx -= Psi_approx.min()
     # Try to remove unobservable constant offset
     Psi_approx += torch.mean(Psi - Psi_approx)
 
-    alpha_x, alpha_y = lens.alpha(
-        thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, r_core, r_s
-    )
-
-    alpha_x_approx, alpha_y_approx = kappa_lens.alpha(
-        thx, thy, None, None, None, kappa_map
+    alpha_x_approx, alpha_y_approx = lens_kap.alpha(
+        thx, thy, z_l, lens_kap.x_to_dict(x_kap)
     )
     alpha_x_approx = alpha_x_approx[0, 0]
     alpha_y_approx = alpha_y_approx[0, 0]

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
@@ -11,28 +13,29 @@ def test():
     rtol = 1e-5
 
     # Models
-    lens = PseudoJaffe()
+    cosmology = FlatLambdaCDMCosmology("cosmo")
+    lens = PseudoJaffe("pj", cosmology)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
-    # Parameters
-    cosmology = FlatLambdaCDMCosmology()
-    z_l = torch.tensor(0.5)
+    # Parameters, computing kappa_0 with a helper function
     z_s = torch.tensor(2.1)
-    thx0 = torch.tensor(0.071)
-    thy0 = torch.tensor(0.023)
-    th_core = torch.tensor(0.5)
-    th_s = torch.tensor(1.5)
-    kappa_0 = lens.kappa_0(z_l, z_s, cosmology, torch.tensor(1.0), th_core, th_s)
-    args = (z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s)
+    x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
+    x[3] = kappa_0 = lens.kappa_0(
+        x[0], z_s, torch.tensor(1.0), x[4], x[5], cosmology, defaultdict(list)
+    )
     kwargs_ls = [
         {
             "sigma0": kappa_0.item(),
-            "Ra": th_core.item(),
-            "Rs": th_s.item(),
-            "center_x": thx0.item(),
-            "center_y": thy0.item(),
+            "Ra": x[4].item(),
+            "Rs": x[5].item(),
+            "center_x": x[1].item(),
+            "center_y": x[2].item(),
         }
     ]
 
-    lens_test_helper(lens, lens_ls, args, kwargs_ls, rtol, atol)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+
+
+if __name__ == "__main__":
+    test()
