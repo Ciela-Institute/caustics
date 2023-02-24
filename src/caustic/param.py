@@ -27,6 +27,10 @@ class Param:
             self._shape = shape
 
     @property
+    def static(self) -> bool:
+        return not self.dynamic
+
+    @property
     def dynamic(self) -> bool:
         return self._value is None
 
