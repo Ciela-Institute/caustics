@@ -112,4 +112,5 @@ def _check_center(x, x_approx, rtol=1e-5, atol=1e-8, half_buffer=20):
 
 
 if __name__ == "__main__":
+    test_Psi_alpha()
     test_consistency()
