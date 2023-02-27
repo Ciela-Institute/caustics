@@ -47,7 +47,7 @@ class KappaGrid(ThinLens):
         if kappa_map is None and kappa_map_shape is not None:
             self.add_param("kappa_map", shape=kappa_map_shape)
         else:
-            self.add_param("kappa_map", kappa_map)
+            self.add_param("kappa_map", kappa_map, kappa_map_shape)
 
         self.n_pix = n_pix
         self.fov = fov
