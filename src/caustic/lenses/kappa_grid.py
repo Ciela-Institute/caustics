@@ -35,19 +35,11 @@ class KappaGrid(ThinLens):
                 by calling `scipy.fft.next_fast_len <https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.next_fast_len.html#scipy.fft.next_fast_len>`_. The speed boost can be substantial
                 when `n_pix` is prime.
         """
-        if kappa_map is None and kappa_map_shape is None:
-            raise ValueError("if kappa_map is dynamic, its shape must be given")
-        if kappa_map is not None and kappa_map_shape is not None:
-            raise ValueError("if kappa_map is static, its shape must not be given")
-
         super().__init__(name, cosmology, z_l)
 
         self.add_param("thx0", thx0)
         self.add_param("thy0", thy0)
-        if kappa_map is None and kappa_map_shape is not None:
-            self.add_param("kappa_map", shape=kappa_map_shape)
-        else:
-            self.add_param("kappa_map", kappa_map, kappa_map_shape)
+        self.add_param("kappa_map", kappa_map, kappa_map_shape)
 
         self.n_pix = n_pix
         self.fov = fov
@@ -209,7 +201,9 @@ class KappaGrid(ThinLens):
         self._check_kappa_map_shape(kappa_map)
         # Use kappa_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
-        Psi = F.conv2d(self.Psi_kernel, kappa_map.flip(-1).flip(-2)) * (self.res**2 / pi)
+        Psi = F.conv2d(self.Psi_kernel, kappa_map.flip(-1).flip(-2)) * (
+            self.res**2 / pi
+        )
         return self._unpad_conv2d(Psi)
 
     def kappa(

@@ -12,10 +12,15 @@ class Param:
     dynamic parameters must be passed in each time they're required.
     """
 
-    def __init__(self, value: Optional[Tensor] = None, shape: Tuple[int, ...] = ()):
+    def __init__(
+        self, value: Optional[Tensor] = None, shape: Optional[Tuple[int, ...]] = ()
+    ):
         # Must assign one of value or shape
         self._value = value
         if value is None:
+            if shape is None:
+                raise ValueError("if value is None, a shape must be provided")
+
             self._shape = shape
         else:
             if shape is not None and shape != value.shape:

@@ -46,13 +46,17 @@ class Parametrized:
         return self
 
     def add_param(
-        self, name: str, value: Optional[Tensor] = None, shape: Tuple[int, ...] = ()
+        self,
+        name: str,
+        value: Optional[Tensor] = None,
+        shape: Optional[Tuple[int, ...]] = (),
     ):
         """
         Stores parameter in _params and records its size.
         """
         self._params[name] = Param(value, shape)
         if value is None:
+            assert isinstance(shape, Tuple)  # quiet pyright error
             size = prod(shape)
             self._dynamic_size += size
             self._n_dynamic += 1

@@ -91,7 +91,9 @@ def test_consistency():
             assert torch.allclose(alpha_y_fft, alpha_y_conv2d, atol=1e-20, rtol=0)
 
 
-def _check_center(x, x_approx, center_c, center_r, rtol=1e-5, atol=1e-8, half_buffer=20):
+def _check_center(
+    x, x_approx, center_c, center_r, rtol=1e-5, atol=1e-8, half_buffer=20
+):
     idx_before_r = center_r - half_buffer
     idx_after_r = center_r + half_buffer
     idx_before_c = center_c - half_buffer

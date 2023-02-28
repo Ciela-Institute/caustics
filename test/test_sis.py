@@ -20,11 +20,7 @@ def test():
     z_s = torch.tensor(1.2)
     x = torch.tensor([-0.342, 0.51, 1.4, 0.7])
     kwargs_ls = [
-        {
-            "center_x": x[0].item(),
-            "center_y": x[1].item(),
-            "theta_E": x[2].item()
-        }
+        {"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": x[2].item()}
     ]
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
