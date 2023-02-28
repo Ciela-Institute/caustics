@@ -16,10 +16,10 @@ def _setup(n_pix, mode, use_next_fast_len):
     cosmology = FlatLambdaCDMCosmology("cosmology")
     # Use PseudoJaffe since it is compact: 99.16% of its mass is contained in
     # the circle circumscribing this image plane
-    lens_pj = PseudoJaffe("pf", cosmology)
+    lens_pj = PseudoJaffe("pj", cosmology)
 
-    thx0 = 0.0
-    thy0 = 0.0
+    thx0 = 7.0
+    thy0 = 3.0
     th_core = 0.04
     th_s = 0.2
     rho_0 = 1.0
@@ -69,9 +69,9 @@ def test_Psi_alpha():
         Psi, Psi_approx, alpha_x, alpha_x_approx, alpha_y, alpha_y_approx = _setup(
             1000, "fft", use_next_fast_len
         )
-        _check_center(Psi, Psi_approx, atol=1e-21)
-        _check_center(alpha_x, alpha_x_approx, atol=1e-19)
-        _check_center(alpha_y, alpha_y_approx, atol=1e-20)
+        _check_center(Psi, Psi_approx, 780, 620, atol=1e-20)
+        _check_center(alpha_x, alpha_x_approx, 780, 620, atol=1e-20)
+        _check_center(alpha_y, alpha_y_approx, 780, 620, atol=1e-20)
 
 
 def test_consistency():
@@ -91,21 +91,26 @@ def test_consistency():
             assert torch.allclose(alpha_y_fft, alpha_y_conv2d, atol=1e-20, rtol=0)
 
 
-def _check_center(x, x_approx, rtol=1e-5, atol=1e-8, half_buffer=20):
-    n_pix = x.shape[-1]
-    idx_before = n_pix // 2 - half_buffer
-    idx_after = n_pix // 2 + half_buffer
-    assert torch.allclose(x[:idx_before], x_approx[:idx_before], rtol, atol)
-    assert torch.allclose(x[idx_after:], x_approx[idx_after:], rtol, atol)
+def _check_center(x, x_approx, center_c, center_r, rtol=1e-5, atol=1e-8, half_buffer=20):
+    idx_before_r = center_r - half_buffer
+    idx_after_r = center_r + half_buffer
+    idx_before_c = center_c - half_buffer
+    idx_after_c = center_c + half_buffer
+    print(idx_before_r)
+    print(idx_after_r)
+    print(idx_before_c)
+    print(idx_after_c)
+    assert torch.allclose(x[:idx_before_r], x_approx[:idx_before_r], rtol, atol)
+    assert torch.allclose(x[idx_after_r:], x_approx[idx_after_r:], rtol, atol)
     assert torch.allclose(
-        x[idx_before:idx_after, :idx_before],
-        x_approx[idx_before:idx_after, :idx_before],
+        x[idx_before_r:idx_after_r, :idx_before_c],
+        x_approx[idx_before_r:idx_after_r, :idx_before_c],
         rtol,
         atol,
     )
     assert torch.allclose(
-        x[idx_before:idx_after, idx_after:],
-        x_approx[idx_before:idx_after, idx_after:],
+        x[idx_before_r:idx_after_r, idx_after_c:],
+        x_approx[idx_before_r:idx_after_r, idx_after_c:],
         rtol,
         atol,
     )

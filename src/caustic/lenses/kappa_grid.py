@@ -168,8 +168,12 @@ class KappaGrid(ThinLens):
         return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
 
     def _alpha_conv2d(self, kappa_map):
-        alpha_x = F.conv2d(self.ax_kernel, kappa_map) * (self.res**2 / pi)
-        alpha_y = F.conv2d(self.ay_kernel, kappa_map) * (self.res**2 / pi)
+        self._check_kappa_map_shape(kappa_map)
+        kappa_map_flipped = kappa_map.flip(-1).flip(-2)
+        # Use kappa_map as kernel since the kernel is twice as large. Flip since
+        # we actually want the cross-correlation.
+        alpha_x = F.conv2d(self.ax_kernel, kappa_map_flipped) * (self.res**2 / pi)
+        alpha_y = F.conv2d(self.ay_kernel, kappa_map_flipped) * (self.res**2 / pi)
         return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
 
     def Psi(
@@ -203,7 +207,9 @@ class KappaGrid(ThinLens):
 
     def _Psi_conv2d(self, kappa_map):
         self._check_kappa_map_shape(kappa_map)
-        Psi = F.conv2d(self.Psi_kernel, kappa_map) * (self.res**2 / pi)
+        # Use kappa_map as kernel since the kernel is twice as large. Flip since
+        # we actually want the cross-correlation.
+        Psi = F.conv2d(self.Psi_kernel, kappa_map.flip(-1).flip(-2)) * (self.res**2 / pi)
         return self._unpad_conv2d(Psi)
 
     def kappa(
