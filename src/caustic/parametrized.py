@@ -332,7 +332,7 @@ class Parametrized:
             f")"
         )
 
-    def graph(
+    def get_graph(
         self, show_dynamic_params: bool = False, show_static_params: bool = False
     ) -> "graphviz.Digraph":  # type: ignore
         from operator import itemgetter
@@ -358,7 +358,7 @@ class Parametrized:
                     dot.node(f"{p.name}/{n}", n)
                     dot.edge(p.name, f"{p.name}/{n}")
 
-        dot = graphviz.Digraph()
+        dot = graphviz.Digraph(strict=True)
         add_component(self, dot)
         add_params(self, dot)
 
@@ -366,10 +366,10 @@ class Parametrized:
             add_component(desc, dot)
 
             for parent in desc._parents:
+                if parent.name not in self._descendants and parent.name != self.name:
+                    continue
                 add_component(parent, dot)
-
                 dot.edge(parent.name, desc.name)
-
                 add_params(desc, dot)
 
         return dot
