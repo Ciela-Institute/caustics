@@ -5,7 +5,7 @@ import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
-from caustic.cosmology import FlatLambdaCDMCosmology
+from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustic.lenses import NFW
 
 #next three imports to get Rs_angle and alpha_Rs in arcsec for lenstronomy
@@ -29,15 +29,15 @@ def test():
     # Parameters
     z_l = torch.tensor(0.1)
     z_s = torch.tensor(0.5)
-    cosmology = FlatLambdaCDMCosmology()
+    caustic_cosmo = CausticFlatLambdaCDM()
     thx0 = torch.tensor(0.457)
     thy0 = torch.tensor(0.141)
     m = torch.tensor(1e12)
     c = torch.tensor(8.0)
-    args = (z_l, z_s, cosmology, thx0, thy0, m, c)
+    args = (z_l, z_s, caustic_cosmo, thx0, thy0, m, c)
     
-    cosmo = FlatLambdaCDM(H0=h0_default*100, Om0=Om0_default, Ob0=Ob0_default)
-    lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)
+    astropy_cosmo = FlatLambdaCDM(H0=h0_default*100, Om0=Om0_default, Ob0=Ob0_default)
+    lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=astropy_cosmo)
     Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=m.item(), c=c.item())
     
     #lenstronomy params ['Rs', 'alpha_Rs', 'center_x', 'center_y']

@@ -1,6 +1,6 @@
 import torch
 
-from caustic.cosmology import FlatLambdaCDMCosmology
+from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import KappaGrid, PseudoJaffe
 from caustic.utils import get_meshgrid
 
@@ -10,7 +10,7 @@ def _setup(n_pix, mode, use_next_fast_len):
     res = fov / n_pix
     thx, thy = get_meshgrid(res, n_pix, n_pix)
 
-    cosmology = FlatLambdaCDMCosmology()
+    cosmology = FlatLambdaCDM()
     z_l = torch.tensor(0.5)
     z_s = torch.tensor(2.1)
 

@@ -1,5 +1,4 @@
-from .base import Source
-from .pixelated import Pixelated
-from .sersic import Sersic
-
-__all__ = ("Source", "Pixelated", "Sersic")
+from .base import *
+from .imagesource import *
+from .probes import *
+from .sersic import *

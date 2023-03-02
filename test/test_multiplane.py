@@ -5,7 +5,7 @@ import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
-from caustic.cosmology import FlatLambdaCDMCosmology
+from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE, MultiplaneLens
 
 
@@ -16,7 +16,7 @@ def test():
     # Setup
     redshift_list = [0.1, 0.5]
     z_source = 1.0
-    cosmology = FlatLambdaCDMCosmology()
+    cosmology = FlatLambdaCDM()
 
     # Models
     lens = MultiplaneLens()
