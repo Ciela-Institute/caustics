@@ -1,22 +1,25 @@
 from typing import Dict, List, Union
 
 import h5py
-import numpy as np
-from numpy.typing import ArrayLike, DTypeLike
+import torch
+from torch import Tensor
 from torch.utils.data import Dataset
+
+__all__ = ("HDF5Dataset",)
 
 
 class HDF5Dataset(Dataset):
     """
-    Light-weight HDF5 dataset that reads all the data into RAM. Assumes all groups
-    in the file being read have the same length.
+    Light-weight HDF5 dataset that reads all the data into tensors. Assumes all
+    groups in dataset have the same length.
     """
 
     def __init__(
         self,
         path: str,
         keys: List[str],
-        dtypes: Union[Dict[str, DTypeLike], DTypeLike] = np.float32,
+        device: torch.device = torch.device("cpu"),
+        dtypes: Union[Dict[str, torch.dtype], torch.dtype] = torch.float32,
     ):
         """
         Args:
@@ -30,14 +33,19 @@ class HDF5Dataset(Dataset):
         self.dtypes = dtypes
         with h5py.File(path, "r") as f:
             if isinstance(dtypes, dict):
-                self.data = {k: f[k][:].astype(dtypes[k]) for k in keys}
+                self.data = {
+                    k: torch.tensor(f[k][:], device=device, dtype=dtypes[k])
+                    for k in keys
+                }
             else:
-                self.data = {k: f[k][:].astype(dtypes) for k in keys}
+                self.data = {
+                    k: torch.tensor(f[k][:], device=device, dtype=dtypes) for k in keys
+                }
 
     def __len__(self):
         return len(self.data[self.keys[0]])
 
-    def __getitem__(self, i: Union[float, slice]) -> Dict[str, ArrayLike]:
+    def __getitem__(self, i: Union[int, slice]) -> Dict[str, Tensor]:
         """
         Retrieves the data at index `i` for each key.
         """

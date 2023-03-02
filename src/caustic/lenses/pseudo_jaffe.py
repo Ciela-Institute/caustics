@@ -5,6 +5,8 @@ import torch
 from ..utils import translate_rotate
 from .base import ThinLens
 
+__all__ = ("PseudoJaffe",)
+
 
 class PseudoJaffe(ThinLens):
     """
@@ -12,9 +14,6 @@ class PseudoJaffe(ThinLens):
         Based on `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_ and
         the `lenstronomy` source code.
     """
-
-    def __init__(self, device=torch.device("cpu")):
-        super().__init__(device)
 
     def mass_enclosed_2d(self, th, z_l, z_s, cosmology, kappa_0, th_core, th_s, s=None):
         s = (
@@ -39,7 +38,8 @@ class PseudoJaffe(ThinLens):
             )
         )
 
-    def kappa_0(self, z_l, z_s, cosmology, rho_0, th_core, th_s):
+    @staticmethod
+    def kappa_0(z_l, z_s, cosmology, rho_0, th_core, th_s):
         return (
             pi
             * rho_0

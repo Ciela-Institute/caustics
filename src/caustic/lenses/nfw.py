@@ -10,16 +10,6 @@ DELTA = 200.0
 
 
 class NFW(ThinLens):
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        """
-        Args:
-            thx0: [arcsec]
-            thy0: [arcsec]
-            m: [solMass]
-            c: [1]
-        """
-        super().__init__(device)
-
     def get_r_s(self, z_l, cosmology, m, c):
         """
         [Mpc]
@@ -63,11 +53,11 @@ class NFW(ThinLens):
     @classmethod
     def _g(cls, x):
         # TODO: generalize beyond torch, or patch Tensor
-        term_1 = 1 / 2 * (x / 2).log() ** 2
+        term_1 = (x / 2).log() ** 2
         term_2 = torch.where(
             x > 1,
-            2 * ((x - 1) / (x + 1)).sqrt().arctan() ** 2,
-            torch.where(x < 1, -2 * ((1 - x) / (1 + x)).sqrt().arctanh() ** 2, 0.0),
+            (1/x).arccos()**2,
+            torch.where(x < 1, - (1/x).arccosh()**2, 0.0),
         )
         return term_1 + term_2
 
@@ -76,14 +66,14 @@ class NFW(ThinLens):
         term_1 = (x / 2).log()
         term_2 = torch.where(
             x > 1,
-            2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
+            term_1 + (1/x).arccos() * 1/(x**2-1).sqrt(),
             torch.where(
                 x < 1,
-                2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
-                1.0,
+                term_1 + (1/x).arccosh() * 1/(1-x**2).sqrt(),
+                1.0+torch.tensor(1/2).log(),
             ),
         )
-        return term_1 + term_2
+        return term_2
 
     def alpha_hat(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, m, c, s=None):
         """
@@ -138,4 +128,4 @@ class NFW(ThinLens):
         xi = d_l * th * arcsec_to_rad
         x = xi / r_s  # xi / xi_0
         kappa_s = self.get_kappa_s(z_l, z_s, cosmology, m, c)
-        return 4 * kappa_s(z_s) * self._g(x)
+        return 2 * kappa_s * self._g(x) * r_s**2/(d_l**2 * arcsec_to_rad**2)

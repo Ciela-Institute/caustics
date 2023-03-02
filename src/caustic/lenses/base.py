@@ -6,15 +6,21 @@ from torch import Tensor
 
 from ..base import Base
 from ..constants import arcsec_to_rad, c_Mpc_s
+from .utils import get_magnification
 
+__all__ = ("ThinLens", "ThickLens")
 
 class ThickLens(Base):
     """
     Base class for lenses that can't be treated in the thin lens approximation.
     """
 
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
     @abstractmethod
     def alpha(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tuple[Tensor, Tensor]:
@@ -43,9 +49,10 @@ class ThickLens(Base):
     def time_delay(self, thx, thy, z_s, cosmology, *args, **kwargs):
         ...
 
-    def magnification(self, thx, thy, z_s, cosmology, *args, **kwargs) -> Tensor:
-        # TODO: implement with automatic differentiation
-        raise NotImplementedError()
+    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        return get_magnification(
+            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+        )
 
 
 class ThinLens(Base):
@@ -53,8 +60,12 @@ class ThinLens(Base):
     Base class for lenses that can be treated in the thin lens approximation.
     """
 
-    def __init__(self, device: torch.device = torch.device("cpu")):
-        super().__init__(device)
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+    ):
+        super().__init__(device, dtype)
 
     @abstractmethod
     def alpha(
@@ -74,7 +85,8 @@ class ThinLens(Base):
         """
         d_s = cosmology.angular_diameter_dist(z_s)
         d_ls = cosmology.angular_diameter_dist_z1z2(z_l, z_s)
-        return d_s / d_ls * self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+        alpha_x, alpha_y = self.alpha(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y
 
     @abstractmethod
     def kappa(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
@@ -116,12 +128,6 @@ class ThinLens(Base):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - Psi
         return factor * fp * arcsec_to_rad**2
 
-    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs) -> Tensor:
-        # Default implementation of magnification. This should be overwritten in KappaGrid with the FFT version of this
-
-        # TODO: implement with automatic differentiation
-        raise NotImplementedError()
-
     def _lensing_jacobian_fft_method(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
         psi = self.Psi(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
         # quick dirty work to get kx and ky. Assumes thx and thy come from meshgrid... TODO Might want to get k differently
@@ -140,8 +146,7 @@ class ThinLens(Base):
         jacobian = torch.stack([j1, j2], dim=-1)
         return jacobian
 
-    # def _lensing_jacobian_ad_method(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
-    #     # much easier to do with functorch
-    #     psi_func = lambda thx, thy: self.Psi()
-    #     psi = self.Psi(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
-
+    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
+        return get_magnification(
+            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
+        )

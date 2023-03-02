@@ -1,8 +1,9 @@
 import torch
-from scipy.special import hyp2f1
 
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
+
+__all__ = ("EPL",)
 
 
 class EPL(ThinLens):
@@ -10,12 +11,17 @@ class EPL(ThinLens):
     Elliptical power law (aka singular power-law ellipsoid) profile.
     """
 
-    def __init__(self, device=torch.device("cpu"), n_iter=18):
+    def __init__(
+        self,
+        device: torch.device = torch.device("cpu"),
+        dtype: torch.dtype = torch.float32,
+        n_iter=18,
+    ):
         """
         Args:
             n_iter: number of iterations for approximation of hypergeometric function.
         """
-        super().__init__(device)
+        super().__init__(device, dtype)
         self.n_iter = n_iter
 
     def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, t, s=None):
@@ -80,3 +86,4 @@ class EPL(ThinLens):
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
         psi = (q**2 * (thx**2 + s**2) + thy**2).sqrt()
         return (2 - t) / 2 * (b / psi) ** t
+
