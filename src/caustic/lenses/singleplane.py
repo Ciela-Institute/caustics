@@ -3,6 +3,8 @@ from torch import Tensor
 
 from .base import ThinLens
 
+__all__ = ("SinglePlane",)
+
 
 class SinglePlane(ThinLens):
     """

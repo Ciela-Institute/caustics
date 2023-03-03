@@ -12,6 +12,8 @@ from .base import ThinLens
 
 DELTA = 200.0
 
+__all__ = ("NFW",)
+
 
 class NFW(ThinLens):
     def __init__(
