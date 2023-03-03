@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from math import prod
 from operator import itemgetter
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -16,20 +16,29 @@ class Parametrized:
     Represents a class with Param and Parametrized attributes.
 
     TODO
-        - Improve error checking by giving names of missing args.
-        - Improve typing if possible
+    - Attributes can be Params, Parametrized, tensor buffers or just normal attributes.
+    - Need to make sure an attribute of one of those types isn't rebound to be of a different type.
+    - params: generator returning all the params, with names of parent Parametrized concatenated as key.
     """
 
     def __init__(self, name: str):
         if not isinstance(name, str):
             raise ValueError(f"name must be a string (received {name})")
-        self.name = name
+        self._name = name
         self._parents: List[Parametrized] = []
         self._params: OrderedDict[str, Param] = OrderedDict()
         self._descendants: OrderedDict[str, Parametrized] = OrderedDict()
         self._dynamic_size = 0
         self._n_dynamic = 0
         self._n_static = 0
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, newname: str):
+        raise NotImplementedError()
 
     def to(
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
@@ -44,24 +53,6 @@ class Parametrized:
             desc.to(device, dtype)
 
         return self
-
-    def add_param(
-        self,
-        name: str,
-        value: Optional[Tensor] = None,
-        shape: Optional[Tuple[int, ...]] = (),
-    ):
-        """
-        Stores parameter in _params and records its size.
-        """
-        self._params[name] = Param(value, shape)
-        if value is None:
-            assert isinstance(shape, Tuple)  # quiet pyright error
-            size = prod(shape)
-            self._dynamic_size += size
-            self._n_dynamic += 1
-        else:
-            self._n_static += 1
 
     def _can_add(self, p: "Parametrized") -> bool:
         """
@@ -90,48 +81,69 @@ class Parametrized:
         for parent in self._parents:
             parent._merge_descendants_up(p)
 
+    def add_param(
+        self,
+        name: str,
+        value: Optional[Tensor] = None,
+        shape: Optional[Tuple[int, ...]] = (),
+    ):
+        """
+        Stores parameter in _params and records its size.
+        """
+        self._params[name] = Param(value, shape)
+        if value is None:
+            assert isinstance(shape, Tuple)  # quiet pyright error
+            size = prod(shape)
+            self._dynamic_size += size
+            self._n_dynamic += 1
+        else:
+            self._n_static += 1
+
+    def add_parametrized(self, p: "Parametrized"):
+        # Check if new component can be added
+        if not self._can_add(p):
+            val_str = (
+                str(p)
+                .replace("(\n    ", "(")
+                .replace("\n)", ")")
+                .replace("\n    ", " ")
+            )
+            raise KeyError(
+                f"cannot add {val_str}: a component with the name '{p.name}' "
+                "already exists in the model DAG"
+            )
+
+        # Check if its descendants can be added
+        for name, desc in p._descendants.items():
+            if not self._can_add(desc):
+                val_str = (
+                    str(p)
+                    .replace("(\n", "(")
+                    .replace("\n)", ")")
+                    .replace("\n    ", " ")
+                )
+                raise KeyError(
+                    f"cannot add {val_str}: its descendant '{name}' already exists "
+                    "in the model DAG"
+                )
+
+        # Add new component and its descendants to this component's descendants,
+        # as well as those of its parents
+        self._merge_descendants_up(p)
+
+        # Add this component as a parent for the new one
+        p._parents.append(self)
+
     def __setattr__(self, key, val):
         if isinstance(val, Param):
             raise ValueError(
                 "cannot add Params directly as attributes: use add_param instead"
             )
-
-        if isinstance(val, Parametrized):
-            # Check if new component can be added
-            if not self._can_add(val):
-                val_str = (
-                    str(val)
-                    .replace("(\n    ", "(")
-                    .replace("\n)", ")")
-                    .replace("\n    ", " ")
-                )
-                raise KeyError(
-                    f"cannot add {val_str}: a component with the name '{val.name}' "
-                    "already exists in the model DAG"
-                )
-
-            # Check if its descendants can be added
-            for name, desc in val._descendants.items():
-                if not self._can_add(desc):
-                    val_str = (
-                        str(val)
-                        .replace("(\n", "(")
-                        .replace("\n)", ")")
-                        .replace("\n    ", " ")
-                    )
-                    raise KeyError(
-                        f"cannot add {val_str}: its descendant '{name}' already exists "
-                        "in the model DAG"
-                    )
-
-            # Add new component and its descendants to this component's descendants,
-            # as well as those of its parents
-            self._merge_descendants_up(val)
-
-            # Add this component as a parent for the new one
-            val._parents.append(self)
-
-        super().__setattr__(key, val)
+        elif isinstance(val, Parametrized):
+            self.add_parametrized(val)
+            super().__setattr__(key, val)
+        else:
+            super().__setattr__(key, val)
 
     @property
     def n_dynamic(self) -> int:
@@ -373,3 +385,53 @@ class Parametrized:
                 add_params(desc, dot)
 
         return dot
+
+
+class ParametrizedList(Parametrized):
+    """
+    TODO
+        - Many operations require being able to remove descendants from the DAG.
+    """
+
+    def __init__(self, name: str, items: Iterable[Parametrized] = []):
+        super().__init__(name)
+        self._children = []
+        self.extend(items)
+
+    def __getitem__(self, idx: int) -> Parametrized:
+        return self._children[idx]
+
+    def __iter__(self) -> Iterator[Parametrized]:
+        return iter(self._children)
+
+    def __iadd__(self, items: Iterable[Parametrized]) -> "ParametrizedList":
+        self.extend(items)
+
+    def extend(self, items: Iterable[Parametrized]) -> "ParametrizedList":
+        self._children.extend(items)
+        for p in items:
+            self.add_parametrized(p)
+        return self
+
+    def append(self, item: Parametrized) -> "ParametrizedList":
+        self._children.append(item)
+        self.add_parametrized(item)
+        return self
+
+    def __len__(self) -> int:
+        return len(self._children)
+
+    def __add__(self, other: Iterable[Parametrized]) -> "ParametrizedList":
+        raise NotImplementedError()
+
+    def insert(self, idx: int, item: Parametrized):
+        raise NotImplementedError()
+
+    def __setitem__(self, idx: int, item: Parametrized):
+        raise NotImplementedError()
+
+    def __delitem__(self, idx: Union[int, slice]):
+        raise NotImplementedError()
+
+    def pop(self, idx: Union[int, slice]) -> Parametrized:
+        raise NotImplementedError()

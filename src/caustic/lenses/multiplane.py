@@ -2,6 +2,7 @@ from collections import defaultdict
 from operator import itemgetter
 from typing import Any, Dict, List, Tuple
 
+import torch
 from torch import Tensor
 
 from ..cosmology import Cosmology
@@ -13,9 +14,13 @@ __all__ = ("MultiplaneLens",)
 class MultiplaneLens(ThickLens):
     def __init__(self, name: str, cosmology: Cosmology, lenses: List[ThinLens]):
         super().__init__(name, cosmology)
-        self.lenses = lenses  # TODO: need something like ParametrizedList
+        self.lenses = lenses
+        for lens in lenses:
+            self.add_parametrized(lens)
 
     def get_z_ls(self, x: Dict) -> List[Tensor]:
+        # Relies on z_l being the first element to be unpacked, which should always
+        # be the case for a ThinLens
         return [lens.unpack(x)[0] for lens in self.lenses]
 
     def raytrace(
@@ -33,10 +38,12 @@ class MultiplaneLens(ThickLens):
             z_ls: lens redshifts
             lens_arg_list: list of args to pass to each lens.
         """
+        zero = torch.tensor(0.0, dtype=z_s.dtype, device=z_s.device)
+
         # argsort redshifts
         z_ls = self.get_z_ls(x)
         idxs = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_0_s = self.cosmology.comoving_dist_z1z2(0, z_s)
+        D_0_s = self.cosmology.comoving_dist(z_s)
         X_im1 = 0.0
         Y_im1 = 0.0
         X_i = None
@@ -45,13 +52,13 @@ class MultiplaneLens(ThickLens):
         Y_ip1 = None
 
         for i in idxs:
-            z_im1 = 0.0 if i == 0 else z_ls[i - 1]
+            z_im1 = zero if i == 0 else z_ls[i - 1]
             z_i = z_ls[i]
             z_ip1 = z_s if i == len(z_ls) - 1 else z_ls[i + 1]
 
             D_im1_i = self.cosmology.comoving_dist_z1z2(z_im1, z_i)
             D_i_ip1 = self.cosmology.comoving_dist_z1z2(z_i, z_ip1)
-            D_0_i = self.cosmology.comoving_dist_z1z2(0, z_i)
+            D_0_i = self.cosmology.comoving_dist(z_i)
             D_i_s = self.cosmology.comoving_dist_z1z2(z_i, z_s)
             D_ratio = D_0_s / D_i_s
 
