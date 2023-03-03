@@ -168,7 +168,11 @@ class Parametrized:
 
     def x_to_dict(
         self,
-        x: List[Tensor] | Dict[str, List[Tensor] | Tensor | Dict[str, Tensor]] | Tensor,
+        x: Union[
+            List[Tensor],
+            Dict[str, Union[List[Tensor], Tensor, Dict[str, Tensor]]],
+            Tensor,
+        ],
     ) -> Dict[str, Any]:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
@@ -223,7 +227,7 @@ class Parametrized:
             raise ValueError("can only repack a list or 1D tensor")
 
     def unpack(
-        self, x: Dict[str, List[Tensor] | Dict[str, Tensor] | Tensor]
+        self, x: Dict[str, Union[List[Tensor], Dict[str, Tensor], Tensor]]
     ) -> List[Tensor]:
         """
         Unpacks a dict of kwargs, list of args or flattened vector of args to retrieve
