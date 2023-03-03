@@ -9,7 +9,7 @@ from scipy.special import hyp2f1
 from torch import Tensor
 from torchinterp1d import interp1d
 
-from .constants import G_over_c2, c_Mpc_s, km_to_mpc
+from .constants import G_over_c2, c_Mpc_s, km_to_Mpc
 from .parametrized import Parametrized
 
 __all__ = (
@@ -112,7 +112,7 @@ class FlatLambdaCDMCosmology(Cosmology):
         )
 
     def dist_hubble(self, h0):
-        return c_Mpc_s / (100 * km_to_mpc) / h0
+        return c_Mpc_s / (100 * km_to_Mpc) / h0
 
     def rho_cr(self, z: Tensor, x: Dict[str, Any] = defaultdict(list)) -> torch.Tensor:
         _, rho_cr_0, Om0 = self.unpack(x)
