@@ -9,4 +9,4 @@ c_km_s = float(_c_astropy.to("km/s").value)
 G = float(_G_astropy.to("pc * km^2 / (s^2 * solMass)").value)
 G_over_c2 = float((_G_astropy / _c_astropy**2).to("Mpc/solMass").value)
 c_Mpc_s = float(_c_astropy.to("Mpc/s").value)
-km_to_mpc = 3.2407792896664e-20  # TODO: use astropy
+km_to_Mpc = 3.2407792896664e-20  # TODO: use astropy

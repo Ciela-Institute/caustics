@@ -1,24 +1,36 @@
+[![tests](https://github.com/Ciela-Institute/caustic/actions/workflows/python-app.yml/badge.svg?branch=main)](https://github.com/Ciela-Institute/caustic/actions)
+[![PyPI version](https://badge.fury.io/py/caustic.svg)](https://pypi.org/project/caustic/)
+[![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustic)](https://app.codecov.io/gh/Ciela-Institute/caustic)
 # caustic
 
-![tests](https://github.com/polairis-space/caustic/actions/workflows/python-app.yml/badge.svg?branch=mvp-dev)
-
-The lensing pipeline of the future. This branch (`dev`) is for active developement of caustic. 
-This is where feature branches are merged until a stable version is reached, which can then be merged with 
-the `main` branch.
+The lensing pipeline of the future: GPU-accelerated, automatically-differentiable,
+highly modular. Currently under heavy development: expect interface changes and
+some imprecise/untested calculations.
 
 ## Installation
 
-First install [torchinterp1d](https://github.com/aliutkus/torchinterp1d):
-```
+Manually install the [torchinterp1d](https://github.com/aliutkus/torchinterp1d)
+dependency:
+```bash
 git clone git@github.com:aliutkus/torchinterp1d.git
 cd torchinterp1d
 pip install .
 ```
-Then install caustic:
+Then install caustic from PyPI:
+```bash
+pip install caustic
 ```
-git clone git@github.com:polairis-space/caustic.git
-cd caustic
-git checkout dev
-pip install -e ".[dev]"  # editable install
+
+## Contributing
+
+Please reach out to one of us if you're interested in contributing!
+
+To start, follow the installation instructions, replacing the last line with
+```bash
+pip install -e ".[dev]"
 ```
-The last line installs the optional dev dependencies.
+This creates an editable install and installs the dev dependencies.
+
+Please use `isort` and `black` to format your code. Open up issues for bugs/missing
+features. Use pull requests for additions to the code. Write tests that can be run
+by [`pytest`](https://docs.pytest.org/).

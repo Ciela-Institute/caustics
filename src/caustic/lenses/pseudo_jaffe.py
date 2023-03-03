@@ -1,7 +1,11 @@
+from collections import defaultdict
 from math import pi
+from typing import Any, Dict, Optional, Tuple
 
 import torch
+from torch import Tensor
 
+from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 
@@ -15,14 +19,32 @@ class PseudoJaffe(ThinLens):
         the `lenstronomy` source code.
     """
 
-    def mass_enclosed_2d(self, th, z_l, z_s, cosmology, kappa_0, th_core, th_s, s=None):
-        s = (
-            torch.tensor(0.0, device=self.device, dtype=kappa_0.dtype)
-            if s is None
-            else s
-        )
+    def __init__(
+        self,
+        name: str,
+        cosmology: Cosmology,
+        z_l: Optional[Tensor] = None,
+        thx0: Optional[Tensor] = None,
+        thy0: Optional[Tensor] = None,
+        kappa_0: Optional[Tensor] = None,
+        th_core: Optional[Tensor] = None,
+        th_s: Optional[Tensor] = None,
+        s: Optional[Tensor] = torch.tensor(0.0),
+    ):
+        super().__init__(name, cosmology, z_l)
+
+        self.add_param("thx0", thx0)
+        self.add_param("thy0", thy0)
+        self.add_param("kappa_0", kappa_0)
+        self.add_param("th_core", th_core)
+        self.add_param("th_s", th_s)
+        self.add_param("s", s)
+
+    def mass_enclosed_2d(self, th, z_s, x: Dict[str, Any] = defaultdict(list)):
+        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+
         th += s
-        Sigma_0 = kappa_0 * cosmology.Sigma_cr(z_l, z_s)
+        Sigma_0 = kappa_0 * self.cosmology.Sigma_cr(z_l, z_s, x)
         return (
             2
             * pi
@@ -39,20 +61,33 @@ class PseudoJaffe(ThinLens):
         )
 
     @staticmethod
-    def kappa_0(z_l, z_s, cosmology, rho_0, th_core, th_s):
+    def kappa_0(
+        z_l,
+        z_s,
+        rho_0,
+        th_core,
+        th_s,
+        cosmology: Cosmology,
+        x: Dict[str, Any] = defaultdict(list),
+    ):
         return (
             pi
             * rho_0
             * th_core
             * th_s
             / (th_core + th_s)
-            / cosmology.Sigma_cr(z_l, z_s)
+            / cosmology.Sigma_cr(z_l, z_s, x)
         )
 
     def alpha(
-        self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
-    ):
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tuple[Tensor, Tensor]:
+        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
         th = (thx**2 + thy**2).sqrt() + s
         f = th / th_core / (1 + (1 + (th / th_core) ** 2).sqrt()) - th / th_s / (
@@ -64,12 +99,17 @@ class PseudoJaffe(ThinLens):
         return ax, ay
 
     def Psi(
-        self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
-    ):
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tensor:
         """
         Lensing potential (eq. A18).
         """
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
         th = (thx**2 + thy**2).sqrt() + s
         coeff = -2 * kappa_0 * th_core * th_s / (th_s - th_core)
@@ -81,12 +121,17 @@ class PseudoJaffe(ThinLens):
         )
 
     def kappa(
-        self, thx, thy, z_l, z_s, cosmology, thx0, thy0, kappa_0, th_core, th_s, s=None
-    ):
+        self,
+        thx: Tensor,
+        thy: Tensor,
+        z_s: Tensor,
+        x: Dict[str, Any] = defaultdict(list),
+    ) -> Tensor:
         """
         Projected mass density (eq. A6).
         """
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
         th = (thx**2 + thy**2).sqrt() + s
         coeff = kappa_0 * th_core * th_s / (th_s - th_core)

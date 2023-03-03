@@ -2,6 +2,7 @@ from math import pi
 
 import lenstronomy.Util.param_util as param_util
 import torch
+from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_ap
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
@@ -10,60 +11,55 @@ from caustic.lenses import SIE, MultiplaneLens
 
 
 def test():
-    atol = 1e-2
-    rtol = 1e-2
+    rtol = 0
+    atol = 5e-3
 
     # Setup
-    redshift_list = [0.1, 0.5]
-    z_source = 1.0
-    cosmology = FlatLambdaCDM()
 
-    # Models
-    lens = MultiplaneLens()
-    lenses = [SIE(), SIE()]
-    lens_model_list = ["SIE", "SIE"]
+    z_s = torch.tensor(1.5, dtype=torch.float32)
+    cosmology = FlatLambdaCDM("cosmo")
+    cosmology.to(dtype=torch.float32)
+
+    # Parameters
+    xs = [
+        [0.5, 0.9, -0.4, 0.9999, 3 * pi / 4, 0.8],
+        [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
+        [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
+    ]
+    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
+
+    lens = MultiplaneLens(
+        "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
+    )
+
+    # lenstronomy
+    kwargs_ls = []
+    for _xs in xs:
+        e1, e2 = param_util.phi_q2_ellipticity(phi=_xs[4], q=_xs[3])
+        kwargs_ls.append(
+            {
+                "theta_E": _xs[5],
+                "e1": e1,
+                "e2": e2,
+                "center_x": _xs[1],
+                "center_y": _xs[2],
+            }
+        )
+
+    # Use same cosmology
+    cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
     lens_ls = LensModel(
-        lens_model_list=lens_model_list,
-        z_source=z_source,
-        lens_redshift_list=redshift_list,
+        lens_model_list=["SIE" for _ in range(len(xs))],
+        z_source=z_s.item(),
+        lens_redshift_list=[_xs[0] for _xs in xs],
+        cosmo=cosmo_ap,
         multi_plane=True,
     )
 
-    # Parameters
-    thx0 = torch.tensor(0.912)
-    thy0 = torch.tensor(-0.442)
-    q = torch.tensor(0.7)
-    phi = torch.tensor(pi / 3)
-    b = torch.tensor(1.4)
-    s = torch.tensor(0.0)
-    args = (
-        z_source,  # source redshift
-        cosmology,  # cosmology object
-        lenses,  # list of lens planes
-        torch.tensor(redshift_list),  # list of lens plane redshifts
-        (
-            (thx0, thy0, q, phi, b, s),
-            (thx0, thy0, q, phi, b, s),
-        ),  # list of lens plane arguments,
-    )
-    e1, e2 = param_util.phi_q2_ellipticity(phi=phi.item(), q=q.item())
-    kwargs_ls = [
-        {
-            "theta_E": b.item(),
-            "e1": e1,
-            "e2": e2,
-            "center_x": thx0.item(),
-            "center_y": thy0.item(),
-        },
-        {
-            "theta_E": b.item(),
-            "e1": e1,
-            "e2": e2,
-            "center_x": thx0.item(),
-            "center_y": thy0.item(),
-        },
-    ]
-
     lens_test_helper(
-        lens, lens_ls, args, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
+        lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
+
+
+if __name__ == "__main__":
+    test()

@@ -1,6 +1,6 @@
 [project]
 name = "caustic"
-version = "0.0.1"
+version = "0.0.1a0"
 authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
 description = "The lensing pipeline of the future."
 readme = "README.md"
@@ -19,6 +19,7 @@ keywords = [
 ]
 dependencies = [
     "astropy",
+    "graphviz",
     "h5py",
     "numpy",
     "scipy",
@@ -36,8 +37,8 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/polairis-space/caustic"
-"Bug Tracker" = "https://github.com/polairis-space/caustic"
+"Homepage" = "https://github.com/Ciela-Institute/caustic"
+"Bug Tracker" = "https://github.com/Ciela-Institute/caustic"
 
 [build-system]
 requires = [
