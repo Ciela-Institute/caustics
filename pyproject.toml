@@ -19,6 +19,7 @@ keywords = [
 ]
 dependencies = [
     "astropy",
+    "graphviz",
     "h5py",
     "numpy",
     "scipy",
