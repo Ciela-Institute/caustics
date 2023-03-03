@@ -3,9 +3,9 @@ from typing import List, Tuple
 import numpy as np
 import torch
 from astropy.cosmology import Cosmology as Cosmology_AP
-from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
+from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
 
-from caustic.cosmology import Cosmology, FlatLambdaCDMCosmology, Om0_default, h0_default
+from caustic.cosmology import Cosmology, FlatLambdaCDM as CausticFlatLambdaCDM, Om0_default, h0_default
 
 
 def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
@@ -15,8 +15,8 @@ def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
     cosmologies = []
     cosmologies.append(
         (
-            FlatLambdaCDMCosmology("cosmo"),
-            FlatLambdaCDM_AP(h0_default, Om0_default, Tcmb0=0),
+            CausticFlatLambdaCDM("cosmo"),
+            AstropyFlatLambdaCDM(h0_default, Om0_default, Tcmb0=0),
         )
     )
     return cosmologies
