@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -46,8 +46,8 @@ class SIE(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
@@ -63,7 +63,7 @@ class SIE(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
 
@@ -77,7 +77,7 @@ class SIE(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
 

@@ -1,5 +1,3 @@
-from typing import Dict, List, Tuple
-
 import torch
 from torch import Tensor
 
@@ -13,7 +11,7 @@ class SinglePlane(ThinLens):
 
     def __init__(
         self,
-        lenses: Dict[str, ThinLens],
+        lenses: dict[str, ThinLens],
         device=torch.device("cpu"),
         dtype=torch.float32,
     ):
@@ -21,8 +19,8 @@ class SinglePlane(ThinLens):
         self.lenses = lenses
 
     def alpha(
-        self, thx, thy, z_l, z_s, cosmology, lens_args: List[Tuple[str, Tensor]]
-    ) -> Tuple[Tensor, Tensor]:
+        self, thx, thy, z_l, z_s, cosmology, lens_args: list[tuple[str, Tensor]]
+    ) -> tuple[Tensor, Tensor]:
         ax = torch.zeros_like(thx)
         ay = torch.zeros_like(thx)
         for name, args in lens_args:
@@ -33,7 +31,7 @@ class SinglePlane(ThinLens):
         return ax, ay
 
     def kappa(
-        self, thx, thy, z_l, z_s, cosmology, lens_args: List[Tuple[str, Tensor]]
+        self, thx, thy, z_l, z_s, cosmology, lens_args: list[tuple[str, Tensor]]
     ) -> Tensor:
         kappa = torch.zeros_like(thx)
         for name, args in lens_args:
@@ -43,7 +41,7 @@ class SinglePlane(ThinLens):
         return kappa
 
     def Psi(
-        self, thx, thy, z_l, z_s, cosmology, lens_args: List[Tuple[str, Tensor]]
+        self, thx, thy, z_l, z_s, cosmology, lens_args: list[tuple[str, Tensor]]
     ) -> Tensor:
         Psi = torch.zeros_like(thx)
         for name, args in lens_args:

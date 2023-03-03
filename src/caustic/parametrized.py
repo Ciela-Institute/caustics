@@ -1,12 +1,12 @@
 from collections import OrderedDict
 from math import prod
 from operator import itemgetter
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterable, Iterator, Optional, Union
 
 import torch
 from torch import Tensor
 
-from .param import Param
+from .parameter import Parameter
 
 __all__ = ("Parametrized",)
 
@@ -25,8 +25,8 @@ class Parametrized:
         if not isinstance(name, str):
             raise ValueError(f"name must be a string (received {name})")
         self._name = name
-        self._parents: List[Parametrized] = []
-        self._params: OrderedDict[str, Param] = OrderedDict()
+        self._parents: list[Parametrized] = []
+        self._params: OrderedDict[str, Parameter] = OrderedDict()
         self._descendants: OrderedDict[str, Parametrized] = OrderedDict()
         self._dynamic_size = 0
         self._n_dynamic = 0
@@ -85,14 +85,14 @@ class Parametrized:
         self,
         name: str,
         value: Optional[Tensor] = None,
-        shape: Optional[Tuple[int, ...]] = (),
+        shape: Optional[tuple[int, ...]] = (),
     ):
         """
         Stores parameter in _params and records its size.
         """
-        self._params[name] = Param(value, shape)
+        self._params[name] = Parameter(value, shape)
         if value is None:
-            assert isinstance(shape, Tuple)  # quiet pyright error
+            assert isinstance(shape, tuple)  # quiet pyright error
             size = prod(shape)
             self._dynamic_size += size
             self._n_dynamic += 1
@@ -135,7 +135,7 @@ class Parametrized:
         p._parents.append(self)
 
     def __setattr__(self, key, val):
-        if isinstance(val, Param):
+        if isinstance(val, Parameter):
             raise ValueError(
                 "cannot add Params directly as attributes: use add_param instead"
             )
@@ -169,16 +169,16 @@ class Parametrized:
     def x_to_dict(
         self,
         x: Union[
-            List[Tensor],
-            Dict[str, Union[List[Tensor], Tensor, Dict[str, Tensor]]],
+            list[Tensor],
+            dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]],
             Tensor,
         ],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
         into arguments to this component and its descendants.
         """
-        if isinstance(x, Dict):
+        if isinstance(x, dict):
             # TODO: check structure!
             return x
         elif isinstance(x, list):
@@ -227,14 +227,14 @@ class Parametrized:
             raise ValueError("can only repack a list or 1D tensor")
 
     def unpack(
-        self, x: Dict[str, Union[List[Tensor], Dict[str, Tensor], Tensor]]
-    ) -> List[Tensor]:
+        self, x: dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]
+    ) -> list[Tensor]:
         """
         Unpacks a dict of kwargs, list of args or flattened vector of args to retrieve
         this object's static and dynamic parameters.
         """
         my_x = x[self.name]
-        if isinstance(my_x, Dict):
+        if isinstance(my_x, dict):
             # Parse dynamic kwargs
             args = []
             for name, p in self._params.items():
@@ -251,7 +251,7 @@ class Parametrized:
                     args.append(p.value)
 
             return args
-        elif isinstance(my_x, List):
+        elif isinstance(my_x, list):
             # Parse dynamic args
             vals = []
             offset = 0
@@ -297,7 +297,7 @@ class Parametrized:
                 raise e
 
     @property
-    def params(self) -> Dict[str, OrderedDict[str, Param]]:
+    def params(self) -> dict[str, OrderedDict[str, Parameter]]:
         """
         Gets all of the static and dynamic Params for this component and its descendants
         in the correct order.
@@ -313,11 +313,11 @@ class Parametrized:
         return {"static": static, "dynamic": dynamic}
 
     @property
-    def static_params(self) -> OrderedDict[str, Param]:
+    def static_params(self) -> OrderedDict[str, Parameter]:
         return self.params["static"]
 
     @property
-    def dynamic_params(self) -> OrderedDict[str, Param]:
+    def dynamic_params(self) -> OrderedDict[str, Parameter]:
         return self.params["dynamic"]
 
     def __repr__(self) -> str:
@@ -410,6 +410,7 @@ class ParametrizedList(Parametrized):
 
     def __iadd__(self, items: Iterable[Parametrized]) -> "ParametrizedList":
         self.extend(items)
+        return self
 
     def extend(self, items: Iterable[Parametrized]) -> "ParametrizedList":
         self._children.extend(items)

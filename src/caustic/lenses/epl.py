@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -47,8 +47,8 @@ class EPL(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         Args:
             b: scale length.
@@ -100,7 +100,7 @@ class EPL(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ):
         z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
 
@@ -114,7 +114,7 @@ class EPL(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ):
         z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
 

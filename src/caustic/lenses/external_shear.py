@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from torch import Tensor
 
@@ -33,8 +33,8 @@ class ExternalShear(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, gamma_1, gamma_2 = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
@@ -48,7 +48,7 @@ class ExternalShear(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         z_l, thx0, thy0, gamma_1, gamma_2 = self.unpack(x)
 
@@ -61,6 +61,6 @@ class ExternalShear(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         raise NotImplementedError("convergence undefined for external shear")

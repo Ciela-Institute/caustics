@@ -1,6 +1,6 @@
 from collections import defaultdict
 from math import pi
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import torch
 import torch.nn.functional as F
@@ -25,7 +25,7 @@ class KappaGrid(ThinLens):
         thx0: Optional[Tensor] = torch.tensor(0.0),
         thy0: Optional[Tensor] = torch.tensor(0.0),
         kappa_map: Optional[Tensor] = None,
-        kappa_map_shape: Optional[Tuple[int, ...]] = None,
+        kappa_map_shape: Optional[tuple[int, ...]] = None,
         mode: str = "fft",
         use_next_fast_len: bool = True,
     ):
@@ -130,8 +130,8 @@ class KappaGrid(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, kappa_map = self.unpack(x)
 
         self._check_kappa_map_shape(kappa_map)
@@ -173,7 +173,7 @@ class KappaGrid(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         z_l, thx0, thy0, kappa_map = self.unpack(x)
 
@@ -211,6 +211,6 @@ class KappaGrid(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         raise NotImplementedError()

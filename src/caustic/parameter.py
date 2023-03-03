@@ -1,19 +1,19 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 from torch import Tensor
 
-__all__ = ("Param",)
+__all__ = ("Parameter",)
 
 
-class Param:
+class Parameter:
     """
     Represents a static or dynamic parameter. Static parameters are fixed while
     dynamic parameters must be passed in each time they're required.
     """
 
     def __init__(
-        self, value: Optional[Tensor] = None, shape: Optional[Tuple[int, ...]] = ()
+        self, value: Optional[Tensor] = None, shape: Optional[tuple[int, ...]] = ()
     ):
         # Must assign one of value or shape
         self._value = value
@@ -44,7 +44,7 @@ class Param:
         return self._value
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         return self._shape
 
     def to(

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from operator import itemgetter
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import torch
 from torch import Tensor
@@ -12,13 +12,13 @@ __all__ = ("MultiplaneLens",)
 
 
 class MultiplaneLens(ThickLens):
-    def __init__(self, name: str, cosmology: Cosmology, lenses: List[ThinLens]):
+    def __init__(self, name: str, cosmology: Cosmology, lenses: list[ThinLens]):
         super().__init__(name, cosmology)
         self.lenses = lenses
         for lens in lenses:
             self.add_parametrized(lens)
 
-    def get_z_ls(self, x: Dict) -> List[Tensor]:
+    def get_z_ls(self, x: dict) -> list[Tensor]:
         # Relies on z_l being the first element to be unpacked, which should always
         # be the case for a ThinLens
         return [lens.unpack(x)[0] for lens in self.lenses]
@@ -28,8 +28,8 @@ class MultiplaneLens(ThickLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
 
@@ -96,8 +96,8 @@ class MultiplaneLens(ThickLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
         """
@@ -109,7 +109,7 @@ class MultiplaneLens(ThickLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         """
         Projected mass density.
@@ -125,7 +125,7 @@ class MultiplaneLens(ThickLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         # TODO: figure out how to compute this
         raise NotImplementedError()

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -28,8 +28,8 @@ class ThickLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec]
         """
@@ -40,8 +40,8 @@ class ThickLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         ax, ay = self.alpha(thx, thy, z_s, x)
         return thx - ax, thy - ay
 
@@ -51,7 +51,7 @@ class ThickLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         """
         Projected mass density.
@@ -67,7 +67,7 @@ class ThickLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         ...
 
@@ -76,7 +76,7 @@ class ThickLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         raise NotImplementedError()
         # return get_magnification(
@@ -100,8 +100,8 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec]
         """
@@ -112,8 +112,8 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         Physical deflection angle immediately after passing through this lens'
         plane [arcsec].
@@ -131,7 +131,7 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         """
         Convergence [1]
@@ -144,7 +144,7 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         """
         Potential [arcsec^2]
@@ -156,7 +156,7 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         """
         Surface mass density.
@@ -175,8 +175,8 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         ax, ay = self.alpha(thx, thy, z_s, x)
         return thx - ax, thy - ay
 
@@ -185,7 +185,7 @@ class ThinLens(Parametrized):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ):
         z_l = self.unpack(x)[0]
 

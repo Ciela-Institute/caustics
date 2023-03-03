@@ -1,6 +1,6 @@
 from collections import defaultdict
 from math import pi
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -103,8 +103,8 @@ class NFW(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         """
         [arcsec]
         """
@@ -137,8 +137,8 @@ class NFW(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
-    ) -> Tuple[Tensor, Tensor]:
+        x: dict[str, Any] = defaultdict(list),
+    ) -> tuple[Tensor, Tensor]:
         z_l = self.unpack(x)[0]
 
         d_s = self.cosmology.angular_diameter_dist(z_s, x)
@@ -151,7 +151,7 @@ class NFW(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         z_l, thx0, thy0, m, c, s = self.unpack(x)
 
@@ -169,7 +169,7 @@ class NFW(ThinLens):
         thx: Tensor,
         thy: Tensor,
         z_s: Tensor,
-        x: Dict[str, Any] = defaultdict(list),
+        x: dict[str, Any] = defaultdict(list),
     ) -> Tensor:
         z_l, thx0, thy0, m, c, s = self.unpack(x)
 
