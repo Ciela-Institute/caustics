@@ -20,14 +20,12 @@ class Parameter:
         if value is None:
             if shape is None:
                 raise ValueError("if value is None, a shape must be provided")
-
             self._shape = shape
         else:
             if shape is not None and shape != value.shape:
                 raise ValueError(
                     f"value's shape {value.shape} does not match provided shape {shape}"
                 )
-
             self._value = value
             self._shape = shape
 
@@ -54,7 +52,7 @@ class Parameter:
             self._value = self._value.to(device=device, dtype=dtype)
 
     def __repr__(self) -> str:
-        if not self.dynamic:
+        if self.static:
             return f"Param(value={self.value})"
         else:
             return f"Param(shape={self.shape})"

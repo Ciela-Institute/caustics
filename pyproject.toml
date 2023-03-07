@@ -1,6 +1,6 @@
 [project]
 name = "caustic"
-version = "1.0.0"
+version = "0.2.0"
 authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
 description = "The lensing pipeline of the future."
 readme = "README.md"
@@ -10,7 +10,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-]
+n]
 keywords = [
     "gravitational lensing",
     "astrophysics",

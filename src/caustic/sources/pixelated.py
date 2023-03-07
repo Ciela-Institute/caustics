@@ -17,11 +17,6 @@ class ImageSource(Source):
         image: Optional[Tensor] = None,
         scale: Optional[Tensor] = None,
     ):
-        """
-        Args:
-            lenstronomy_k_mode: set to `True` to calculate k in the Sersic exponential
-                using the same formula as lenstronomy. Intended primarily for testing.
-        """
         super().__init__(name)
         self.add_param("thx0", thx0)
         self.add_param("thy0", thy0)
