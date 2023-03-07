@@ -1,7 +1,7 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from math import prod
 from operator import itemgetter
-from typing import Any, Iterable, Iterator, Optional, Union
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
@@ -227,13 +227,13 @@ class Parametrized:
             raise ValueError("can only repack a list or 1D tensor")
 
     def unpack(
-        self, x: dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]
+        self, x: Optional[dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]]
     ) -> list[Tensor]:
         """
         Unpacks a dict of kwargs, list of args or flattened vector of args to retrieve
         this object's static and dynamic parameters.
         """
-        my_x = x[self.name]
+        my_x = defaultdict(list) if x is None else x[self.name]
         if isinstance(my_x, dict):
             # Parse dynamic kwargs
             args = []
@@ -391,52 +391,52 @@ class Parametrized:
         return dot
 
 
-class ParametrizedList(Parametrized):
-    """
-    TODO
-        - Many operations require being able to remove descendants from the DAG.
-    """
-
-    def __init__(self, name: str, items: Iterable[Parametrized] = []):
-        super().__init__(name)
-        self._children = []
-        self.extend(items)
-
-    def __getitem__(self, idx: int) -> Parametrized:
-        return self._children[idx]
-
-    def __iter__(self) -> Iterator[Parametrized]:
-        return iter(self._children)
-
-    def __iadd__(self, items: Iterable[Parametrized]) -> "ParametrizedList":
-        self.extend(items)
-        return self
-
-    def extend(self, items: Iterable[Parametrized]) -> "ParametrizedList":
-        self._children.extend(items)
-        for p in items:
-            self.add_parametrized(p)
-        return self
-
-    def append(self, item: Parametrized) -> "ParametrizedList":
-        self._children.append(item)
-        self.add_parametrized(item)
-        return self
-
-    def __len__(self) -> int:
-        return len(self._children)
-
-    def __add__(self, other: Iterable[Parametrized]) -> "ParametrizedList":
-        raise NotImplementedError()
-
-    def insert(self, idx: int, item: Parametrized):
-        raise NotImplementedError()
-
-    def __setitem__(self, idx: int, item: Parametrized):
-        raise NotImplementedError()
-
-    def __delitem__(self, idx: Union[int, slice]):
-        raise NotImplementedError()
-
-    def pop(self, idx: Union[int, slice]) -> Parametrized:
-        raise NotImplementedError()
+# class ParametrizedList(Parametrized):
+#     """
+#     TODO
+#         - Many operations require being able to remove descendants from the DAG.
+#     """
+#
+#     def __init__(self, name: str, items: Iterable[Parametrized] = []):
+#         super().__init__(name)
+#         self._children = []
+#         self.extend(items)
+#
+#     def __getitem__(self, idx: int) -> Parametrized:
+#         return self._children[idx]
+#
+#     def __iter__(self) -> Iterator[Parametrized]:
+#         return iter(self._children)
+#
+#     def __iadd__(self, items: Iterable[Parametrized]) -> "ParametrizedList":
+#         self.extend(items)
+#         return self
+#
+#     def extend(self, items: Iterable[Parametrized]) -> "ParametrizedList":
+#         self._children.extend(items)
+#         for p in items:
+#             self.add_parametrized(p)
+#         return self
+#
+#     def append(self, item: Parametrized) -> "ParametrizedList":
+#         self._children.append(item)
+#         self.add_parametrized(item)
+#         return self
+#
+#     def __len__(self) -> int:
+#         return len(self._children)
+#
+#     def __add__(self, other: Iterable[Parametrized]) -> "ParametrizedList":
+#         raise NotImplementedError()
+#
+#     def insert(self, idx: int, item: Parametrized):
+#         raise NotImplementedError()
+#
+#     def __setitem__(self, idx: int, item: Parametrized):
+#         raise NotImplementedError()
+#
+#     def __delitem__(self, idx: Union[int, slice]):
+#         raise NotImplementedError()
+#
+#     def pop(self, idx: Union[int, slice]) -> Parametrized:
+#         raise NotImplementedError()

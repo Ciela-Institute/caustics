@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Optional
 
 import torch
@@ -42,11 +41,7 @@ class SIE(ThinLens):
         return (q**2 * (x**2 + s**2) + y**2).sqrt()
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
 
@@ -59,11 +54,7 @@ class SIE(ThinLens):
         return derotate(ax, ay, phi)
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
 
@@ -73,11 +64,7 @@ class SIE(ThinLens):
         return thx * ax + thy * ay
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
 

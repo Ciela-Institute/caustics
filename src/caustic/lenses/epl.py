@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Optional
 
 import torch
@@ -43,11 +42,7 @@ class EPL(ThinLens):
         self.n_iter = n_iter
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Args:
@@ -96,11 +91,7 @@ class EPL(ThinLens):
         return part_sum
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ):
         z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
 
@@ -110,15 +101,10 @@ class EPL(ThinLens):
         return (thx * ax + thy * ay) / (2 - t)
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ):
         z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
         psi = (q**2 * (thx**2 + s**2) + thy**2).sqrt()
         return (2 - t) / 2 * (b / psi) ** t
-

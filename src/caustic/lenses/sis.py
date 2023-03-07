@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Optional
 
 import torch
@@ -30,11 +29,7 @@ class SIS(ThinLens):
         self.add_param("s", s)
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, th_ein, s = self.unpack(x)
 
@@ -45,11 +40,7 @@ class SIS(ThinLens):
         return ax, ay
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, th_ein, s = self.unpack(x)
 
@@ -58,11 +49,7 @@ class SIS(ThinLens):
         return th_ein * th
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, th_ein, s = self.unpack(x)
 

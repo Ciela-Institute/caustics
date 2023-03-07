@@ -1,6 +1,3 @@
-from math import pi
-
-import lenstronomy.Util.param_util as param_util
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper

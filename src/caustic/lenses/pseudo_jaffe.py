@@ -1,4 +1,3 @@
-from collections import defaultdict
 from math import pi
 from typing import Any, Optional
 
@@ -40,7 +39,7 @@ class PseudoJaffe(ThinLens):
         self.add_param("th_s", th_s)
         self.add_param("s", s)
 
-    def mass_enclosed_2d(self, th, z_s, x: dict[str, Any] = defaultdict(list)):
+    def mass_enclosed_2d(self, th, z_s, x: Optional[dict[str, Any]] = None):
         z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
 
         th += s
@@ -68,7 +67,7 @@ class PseudoJaffe(ThinLens):
         th_core,
         th_s,
         cosmology: Cosmology,
-        x: dict[str, Any] = defaultdict(list),
+        x: Optional[dict[str, Any]] = None,
     ):
         return (
             pi
@@ -80,11 +79,7 @@ class PseudoJaffe(ThinLens):
         )
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
 
@@ -99,11 +94,7 @@ class PseudoJaffe(ThinLens):
         return ax, ay
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Lensing potential (eq. A18).
@@ -121,11 +112,7 @@ class PseudoJaffe(ThinLens):
         )
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Projected mass density (eq. A6).

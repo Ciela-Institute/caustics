@@ -1,6 +1,5 @@
-from collections import defaultdict
 from operator import itemgetter
-from typing import Any
+from typing import Any, Optional
 
 import torch
 from torch import Tensor
@@ -18,17 +17,13 @@ class MultiplaneLens(ThickLens):
         for lens in lenses:
             self.add_parametrized(lens)
 
-    def get_z_ls(self, x: dict) -> list[Tensor]:
+    def get_z_ls(self, x: Optional[dict[str, Any]]) -> list[Tensor]:
         # Relies on z_l being the first element to be unpacked, which should always
         # be the case for a ThinLens
         return [lens.unpack(x)[0] for lens in self.lenses]
 
     def raytrace(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
@@ -92,11 +87,7 @@ class MultiplaneLens(ThickLens):
             return X_ip1 / D_0_s, Y_ip1 / D_0_s
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec].
@@ -105,11 +96,7 @@ class MultiplaneLens(ThickLens):
         return thx - bx, thy - by
 
     def Sigma(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Projected mass density.
@@ -121,11 +108,7 @@ class MultiplaneLens(ThickLens):
         raise NotImplementedError()
 
     def time_delay(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         # TODO: figure out how to compute this
         raise NotImplementedError()

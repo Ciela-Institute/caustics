@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from collections import defaultdict
 from typing import Any, Optional
 
 import torch
@@ -24,11 +23,7 @@ class ThickLens(Parametrized):
 
     @abstractmethod
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec]
@@ -36,22 +31,14 @@ class ThickLens(Parametrized):
         ...
 
     def raytrace(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         ax, ay = self.alpha(thx, thy, z_s, x)
         return thx - ax, thy - ay
 
     @abstractmethod
     def Sigma(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Projected mass density.
@@ -63,11 +50,7 @@ class ThickLens(Parametrized):
 
     @abstractmethod
     def time_delay(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         ...
 
@@ -87,11 +70,7 @@ class ThinLens(Parametrized):
 
     @abstractmethod
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Reduced deflection angle [arcsec]
@@ -99,11 +78,7 @@ class ThinLens(Parametrized):
         ...
 
     def alpha_hat(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Physical deflection angle immediately after passing through this lens'
@@ -118,11 +93,7 @@ class ThinLens(Parametrized):
 
     @abstractmethod
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Convergence [1]
@@ -131,11 +102,7 @@ class ThinLens(Parametrized):
 
     @abstractmethod
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Potential [arcsec^2]
@@ -143,11 +110,7 @@ class ThinLens(Parametrized):
         ...
 
     def Sigma(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
         Surface mass density.
@@ -162,21 +125,13 @@ class ThinLens(Parametrized):
         return self.kappa(thx, thy, z_s, x) * Sigma_cr
 
     def raytrace(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         ax, ay = self.alpha(thx, thy, z_s, x)
         return thx - ax, thy - ay
 
     def time_delay(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ):
         z_l = self.unpack(x)[0]
 
@@ -189,20 +144,24 @@ class ThinLens(Parametrized):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - Psi
         return factor * fp * arcsec_to_rad**2
 
-    def _lensing_jacobian_fft_method(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
-        psi = self.Psi(thx, thy, z_l, z_s, cosmology, *args, **kwargs)
+    def _lensing_jacobian_fft_method(
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
+        psi = self.Psi(thx, thy, z_s, x)
         # quick dirty work to get kx and ky. Assumes thx and thy come from meshgrid... TODO Might want to get k differently
         n = thx.shape[-1]
         d = torch.abs(thx[0, 0] - thx[0, 1])
-        k = torch.fft.fftfreq(2*n, d=d)
-        kx, ky = torch.meshgrid([k ,k], indexing="xy")
+        k = torch.fft.fftfreq(2 * n, d=d)
+        kx, ky = torch.meshgrid([k, k], indexing="xy")
         # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
         pad = 2 * n
         psi_tilde = torch.fft.fft(psi, (pad, pad))
-        psi_xx = torch.abs(torch.fft.ifft2(- kx**2 * psi_tilde))[..., :n, :n]
-        psi_yy = torch.abs(torch.fft.ifft2(- ky**2 * psi_tilde))[..., :n, :n]
-        psi_xy = torch.abs(torch.fft.ifft2(- kx * ky * psi_tilde))[..., :n, :n]
-        j1 = torch.stack([1 - psi_xx, - psi_xy], dim=-1)  # Equation 2.33 from Meneghetti lensing lectures
+        psi_xx = torch.abs(torch.fft.ifft2(-(kx**2) * psi_tilde))[..., :n, :n]
+        psi_yy = torch.abs(torch.fft.ifft2(-(ky**2) * psi_tilde))[..., :n, :n]
+        psi_xy = torch.abs(torch.fft.ifft2(-kx * ky * psi_tilde))[..., :n, :n]
+        j1 = torch.stack(
+            [1 - psi_xx, -psi_xy], dim=-1
+        )  # Equation 2.33 from Meneghetti lensing lectures
         j2 = torch.stack([-psi_xy, 1 - psi_yy], dim=-1)
         jacobian = torch.stack([j1, j2], dim=-1)
         return jacobian

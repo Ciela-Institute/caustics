@@ -1,4 +1,3 @@
-from collections import defaultdict
 from math import pi
 from typing import Any, Optional
 
@@ -32,8 +31,8 @@ class KappaGrid(ThinLens):
         """
         Args:
             use_next_fast_len: if true, add additional padding to speed up the FFT
-                by calling `scipy.fft.next_fast_len <https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.next_fast_len.html#scipy.fft.next_fast_len>`_. The speed boost can be substantial
-                when `n_pix` is prime.
+                by calling `scipy.fft.next_fast_len <https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.next_fast_len.html#scipy.fft.next_fast_len>`_.
+                The speed boost can be substantial when `n_pix` is prime.
         """
         super().__init__(name, cosmology, z_l)
 
@@ -126,11 +125,7 @@ class KappaGrid(ThinLens):
             )
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, kappa_map = self.unpack(x)
 
@@ -169,11 +164,7 @@ class KappaGrid(ThinLens):
         return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, kappa_map = self.unpack(x)
 
@@ -207,10 +198,6 @@ class KappaGrid(ThinLens):
         return self._unpad_conv2d(Psi)
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         raise NotImplementedError()

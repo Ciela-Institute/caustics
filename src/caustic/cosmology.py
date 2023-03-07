@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from collections import defaultdict
 from math import pi
 from typing import Any, Optional
 
@@ -47,34 +46,34 @@ class Cosmology(Parametrized):
         super().__init__(name)
 
     @abstractmethod
-    def rho_cr(self, z: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+    def rho_cr(self, z: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         ...
 
     @abstractmethod
-    def comoving_dist(self, z: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+    def comoving_dist(self, z: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         ...
 
     def comoving_dist_z1z2(
-        self, z1: Tensor, z2: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+        self, z1: Tensor, z2: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         return self.comoving_dist(z2, x) - self.comoving_dist(z1, x)
 
     def angular_diameter_dist(
-        self, z: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+        self, z: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         return self.comoving_dist(z, x) / (1 + z)
 
     def angular_diameter_dist_z1z2(
-        self, z1: Tensor, z2: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+        self, z1: Tensor, z2: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         return self.comoving_dist_z1z2(z1, z2, x) / (1 + z2)
 
     def time_delay_dist(
-        self, z_l: Tensor, z_s: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+        self, z_l: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         d_l = self.angular_diameter_dist(z_l, x)
         d_s = self.angular_diameter_dist(z_s, x)
         d_ls = self.angular_diameter_dist_z1z2(z_l, z_s, x)
         return (1 + z_l) * d_l * d_s / d_ls
 
     def Sigma_cr(
-        self, z_l: Tensor, z_s: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+        self, z_l: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         d_l = self.angular_diameter_dist(z_l, x)
         d_s = self.angular_diameter_dist(z_s, x)
         d_ls = self.angular_diameter_dist_z1z2(z_l, z_s, x)
@@ -110,7 +109,7 @@ class FlatLambdaCDM(Cosmology):
     def dist_hubble(self, h0):
         return c_Mpc_s / (100 * km_to_Mpc) / h0
 
-    def rho_cr(self, z: Tensor, x: dict[str, Any] = defaultdict(list)) -> torch.Tensor:
+    def rho_cr(self, z: Tensor, x: Optional[dict[str, Any]] = None) -> torch.Tensor:
         _, rho_cr_0, Om0 = self.unpack(x)
         Ode0 = 1 - Om0
         return rho_cr_0 * (Om0 * (1 + z) ** 3 + Ode0)
@@ -122,7 +121,7 @@ class FlatLambdaCDM(Cosmology):
             torch.atleast_1d(x),
         ).reshape(x.shape)
 
-    def comoving_dist(self, z: Tensor, x: dict[str, Any] = defaultdict(list)) -> Tensor:
+    def comoving_dist(self, z: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
         h0, _, Om0 = self.unpack(x)
 
         Ode0 = 1 - Om0

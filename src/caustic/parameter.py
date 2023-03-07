@@ -27,7 +27,7 @@ class Parameter:
                     f"value's shape {value.shape} does not match provided shape {shape}"
                 )
             self._value = value
-            self._shape = shape
+            self._shape = value.shape
 
     @property
     def static(self) -> bool:

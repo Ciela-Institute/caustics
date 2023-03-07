@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Optional
 
 from torch import Tensor
@@ -29,11 +28,7 @@ class ExternalShear(ThinLens):
         self.add_param("gamma_2", gamma_2)
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, gamma_1, gamma_2 = self.unpack(x)
 
@@ -44,11 +39,7 @@ class ExternalShear(ThinLens):
         return a1, a2  # I'm not sure but I think no derotation necessary
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, gamma_1, gamma_2 = self.unpack(x)
 
@@ -57,10 +48,6 @@ class ExternalShear(ThinLens):
         return 0.5 * (thx * ax + thy * ay)
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         raise NotImplementedError("convergence undefined for external shear")

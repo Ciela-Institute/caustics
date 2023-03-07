@@ -1,4 +1,3 @@
-from collections import defaultdict
 from math import pi
 from typing import Any, Optional
 
@@ -101,11 +100,7 @@ class NFW(ThinLens):
         return term_2
 
     def alpha_hat(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
         [arcsec]
@@ -135,11 +130,7 @@ class NFW(ThinLens):
         return ax, ay
 
     def alpha(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l = self.unpack(x)[0]
 
@@ -149,11 +140,7 @@ class NFW(ThinLens):
         return d_ls / d_s * ahx, d_ls / d_s * ahy
 
     def kappa(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, m, c, s = self.unpack(x)
 
@@ -167,11 +154,7 @@ class NFW(ThinLens):
         return 2 * kappa_s * self._f(r) / (r**2 - 1)
 
     def Psi(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         z_l, thx0, thy0, m, c, s = self.unpack(x)
 
