@@ -24,7 +24,7 @@ class NFW(ThinLens):
         thy0: Optional[Tensor] = None,
         m: Optional[Tensor] = None,
         c: Optional[Tensor] = None,
-        s: Optional[Tensor] = torch.tensor(0.0),
+        s: float = 0.0,
     ):
         super().__init__(name, cosmology, z_l)
 
@@ -32,7 +32,7 @@ class NFW(ThinLens):
         self.add_param("thy0", thy0)
         self.add_param("m", m)
         self.add_param("c", c)
-        self.add_param("s", s)
+        self.s = s
 
     def get_r_s(self, z_l, m, c, x) -> Tensor:
         """
@@ -105,10 +105,10 @@ class NFW(ThinLens):
         """
         [arcsec]
         """
-        z_l, thx0, thy0, m, c, s = self.unpack(x)
+        z_l, thx0, thy0, m, c = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
+        th = (thx**2 + thy**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_dist(z_l)
         r_s = self.get_r_s(z_l, m, c, x)
         xi = d_l * th * arcsec_to_rad
@@ -142,10 +142,10 @@ class NFW(ThinLens):
     def kappa(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
-        z_l, thx0, thy0, m, c, s = self.unpack(x)
+        z_l, thx0, thy0, m, c = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
+        th = (thx**2 + thy**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_dist(z_l, x)
         r_s = self.get_r_s(z_l, m, c, x)
         xi = d_l * th * arcsec_to_rad
@@ -156,10 +156,10 @@ class NFW(ThinLens):
     def Psi(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
-        z_l, thx0, thy0, m, c, s = self.unpack(x)
+        z_l, thx0, thy0, m, c = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
+        th = (thx**2 + thy**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_dist(z_l, x)
         r_s = self.get_r_s(z_l, m, c, x)
         xi = d_l * th * arcsec_to_rad

@@ -1,6 +1,5 @@
 from typing import Any, Optional
 
-import torch
 from torch import Tensor
 
 from ..cosmology import Cosmology
@@ -26,7 +25,7 @@ class SIE(ThinLens):
         q: Optional[Tensor] = None,
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
-        s: Optional[Tensor] = torch.tensor(0.0),
+        s: float = 0.0,
     ):
         super().__init__(name, cosmology, z_l)
 
@@ -35,28 +34,28 @@ class SIE(ThinLens):
         self.add_param("q", q)
         self.add_param("phi", phi)
         self.add_param("b", b)
-        self.add_param("s", s)
+        self.s = s
 
-    def _get_psi(self, x, y, q, s):
-        return (q**2 * (x**2 + s**2) + y**2).sqrt()
+    def _get_psi(self, x, y, q):
+        return (q**2 * (x**2 + self.s**2) + y**2).sqrt()
 
     def alpha(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
-        z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
+        z_l, thx0, thy0, q, phi, b = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = self._get_psi(thx, thy, q, s)
+        psi = self._get_psi(thx, thy, q)
         f = (1 - q**2).sqrt()
-        ax = b * q.sqrt() / f * (f * thx / (psi + s)).atan()
-        ay = b * q.sqrt() / f * (f * thy / (psi + q**2 * s)).atanh()
+        ax = b * q.sqrt() / f * (f * thx / (psi + self.s)).atan()
+        ay = b * q.sqrt() / f * (f * thy / (psi + q**2 * self.s)).atanh()
 
         return derotate(ax, ay, phi)
 
     def Psi(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
-        z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
+        z_l, thx0, thy0, q, phi, b = self.unpack(x)
 
         ax, ay = self.alpha(thx, thy, z_s, x)
         ax, ay = derotate(ax, ay, -phi)
@@ -66,8 +65,8 @@ class SIE(ThinLens):
     def kappa(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
-        z_l, thx0, thy0, q, phi, b, s = self.unpack(x)
+        z_l, thx0, thy0, q, phi, b = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = self._get_psi(thx, thy, q, s)
+        psi = self._get_psi(thx, thy, q)
         return 0.5 * q.sqrt() * b / psi

@@ -28,7 +28,7 @@ class PseudoJaffe(ThinLens):
         kappa_0: Optional[Tensor] = None,
         th_core: Optional[Tensor] = None,
         th_s: Optional[Tensor] = None,
-        s: Optional[Tensor] = torch.tensor(0.0),
+        s: float = 0.0,
     ):
         super().__init__(name, cosmology, z_l)
 
@@ -37,12 +37,12 @@ class PseudoJaffe(ThinLens):
         self.add_param("kappa_0", kappa_0)
         self.add_param("th_core", th_core)
         self.add_param("th_s", th_s)
-        self.add_param("s", s)
+        self.s = s
 
     def mass_enclosed_2d(self, th, z_s, x: Optional[dict[str, Any]] = None):
-        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+        z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
-        th += s
+        th = th + self.s
         Sigma_0 = kappa_0 * self.cosmology.Sigma_cr(z_l, z_s, x)
         return (
             2
@@ -81,10 +81,10 @@ class PseudoJaffe(ThinLens):
     def alpha(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
-        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+        z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
+        th = (thx**2 + thy**2).sqrt() + self.s
         f = th / th_core / (1 + (1 + (th / th_core) ** 2).sqrt()) - th / th_s / (
             1 + (1 + (th / th_s) ** 2).sqrt()
         )
@@ -99,10 +99,10 @@ class PseudoJaffe(ThinLens):
         """
         Lensing potential (eq. A18).
         """
-        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+        z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
+        th = (thx**2 + thy**2).sqrt() + self.s
         coeff = -2 * kappa_0 * th_core * th_s / (th_s - th_core)
         return coeff * (
             (th_s**2 + th**2).sqrt()
@@ -117,10 +117,10 @@ class PseudoJaffe(ThinLens):
         """
         Projected mass density (eq. A6).
         """
-        z_l, thx0, thy0, kappa_0, th_core, th_s, s = self.unpack(x)
+        z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + s
+        th = (thx**2 + thy**2).sqrt() + self.s
         coeff = kappa_0 * th_core * th_s / (th_s - th_core)
         return coeff * (
             1 / (th_core**2 + th**2).sqrt() - 1 / (th_s**2 + th**2).sqrt()

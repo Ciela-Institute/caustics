@@ -26,7 +26,7 @@ class EPL(ThinLens):
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
         t: Optional[Tensor] = None,
-        s: Optional[Tensor] = torch.tensor(0.0),
+        s: float = 0.0,
         n_iter: int = 18,
     ):
         super().__init__(name, cosmology, z_l)
@@ -37,7 +37,7 @@ class EPL(ThinLens):
         self.add_param("phi", phi)
         self.add_param("b", b)
         self.add_param("t", t)
-        self.add_param("s", s)
+        self.s = s
 
         self.n_iter = n_iter
 
@@ -48,9 +48,8 @@ class EPL(ThinLens):
         Args:
             b: scale length.
             t: power law slope (`gamma-1`).
-            s: core radius.
         """
-        z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
+        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
 
@@ -93,7 +92,7 @@ class EPL(ThinLens):
     def Psi(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ):
-        z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
+        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
 
         ax, ay = self.alpha(thx, thy, z_s, x)
         ax, ay = derotate(ax, ay, -phi)
@@ -103,8 +102,8 @@ class EPL(ThinLens):
     def kappa(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ):
-        z_l, thx0, thy0, q, phi, b, t, s = self.unpack(x)
+        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = (q**2 * (thx**2 + s**2) + thy**2).sqrt()
+        psi = (q**2 * (thx**2 + self.s**2) + thy**2).sqrt()
         return (2 - t) / 2 * (b / psi) ** t
