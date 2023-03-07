@@ -37,4 +37,3 @@ def get_magnification(raytrace, thx, thy, z_s, x) -> Tensor:
     return vmap_n(get_pix_magnification, 2, (None, 0, 0, None, None))(
         raytrace, thx, thy, z_s, x
     )
-

@@ -71,17 +71,8 @@ class ThickLens(Parametrized):
     ) -> Tensor:
         ...
 
-    def magnification(
-        self,
-        thx: Tensor,
-        thy: Tensor,
-        z_s: Tensor,
-        x: dict[str, Any] = defaultdict(list),
-    ) -> Tensor:
-        raise NotImplementedError()
-        # return get_magnification(
-        #     self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
-        # )
+    def magnification(self, thx: Tensor, thy: Tensor, z_s: Tensor, x) -> Tensor:
+        return get_magnification(self.raytrace, thx, thy, z_s, x)
 
 
 class ThinLens(Parametrized):
@@ -216,7 +207,5 @@ class ThinLens(Parametrized):
         jacobian = torch.stack([j1, j2], dim=-1)
         return jacobian
 
-    def magnification(self, thx, thy, z_l, z_s, cosmology, *args, **kwargs):
-        return get_magnification(
-            self.raytrace, thx, thy, z_l, z_s, cosmology, *args, **kwargs
-        )
+    def magnification(self, thx: Tensor, thy: Tensor, z_s: Tensor, x) -> Tensor:
+        return get_magnification(self.raytrace, thx, thy, z_s, x)
