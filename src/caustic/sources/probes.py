@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 
 __all__ = ("PROBESDataset",)
 
+
 # TODO: move elsewhere?
 class PROBESDataset(Dataset):
     def __init__(self, filepath, channels):

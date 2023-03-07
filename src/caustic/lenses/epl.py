@@ -1,5 +1,9 @@
-import torch
+from typing import Any, Optional
 
+import torch
+from torch import Tensor
+
+from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
 
@@ -13,25 +17,40 @@ class EPL(ThinLens):
 
     def __init__(
         self,
-        device: torch.device = torch.device("cpu"),
-        dtype: torch.dtype = torch.float32,
-        n_iter=18,
+        name: str,
+        cosmology: Cosmology,
+        z_l: Optional[Tensor] = None,
+        thx0: Optional[Tensor] = None,
+        thy0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
+        t: Optional[Tensor] = None,
+        s: float = 0.0,
+        n_iter: int = 18,
     ):
-        """
-        Args:
-            n_iter: number of iterations for approximation of hypergeometric function.
-        """
-        super().__init__(device, dtype)
+        super().__init__(name, cosmology, z_l)
+
+        self.add_param("thx0", thx0)
+        self.add_param("thy0", thy0)
+        self.add_param("q", q)
+        self.add_param("phi", phi)
+        self.add_param("b", b)
+        self.add_param("t", t)
+        self.s = s
+
         self.n_iter = n_iter
 
-    def alpha(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, t, s=None):
+    def alpha(
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> tuple[Tensor, Tensor]:
         """
         Args:
             b: scale length.
             t: power law slope (`gamma-1`).
-            s: core radius.
         """
-        s = torch.tensor(0.0, device=self.device, dtype=thx.dtype) if s is None else s
+        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
 
         # follow Tessore et al 2015 (eq. 5)
@@ -70,19 +89,21 @@ class EPL(ThinLens):
 
         return part_sum
 
-    def Psi(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, t, s=None):
+    def Psi(
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ):
+        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
+
+        ax, ay = self.alpha(thx, thy, z_s, x)
+        ax, ay = derotate(ax, ay, -phi)
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        # Don't translate or rotate in call to alpha
-        thx0_origin = torch.tensor(0.0, dtype=thx0.dtype, device=thx0.device)
-        thy0_origin = torch.tensor(0.0, dtype=thy0.dtype, device=thy0.device)
-        phi_0 = torch.tensor(0.0, dtype=phi.dtype, device=phi.device)
-        ax, ay = self.alpha(
-            thx, thy, z_l, z_s, cosmology, thx0_origin, thy0_origin, q, phi_0, b, t, s
-        )
         return (thx * ax + thy * ay) / (2 - t)
 
-    def kappa(self, thx, thy, z_l, z_s, cosmology, thx0, thy0, q, phi, b, t, s=None):
-        s = torch.tensor(0.0, device=self.device, dtype=thx.dtype) if s is None else s
+    def kappa(
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ):
+        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = (q**2 * (thx**2 + s**2) + thy**2).sqrt()
+        psi = (q**2 * (thx**2 + self.s**2) + thy**2).sqrt()
         return (2 - t) / 2 * (b / psi) ** t

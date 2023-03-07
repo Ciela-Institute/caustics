@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
@@ -9,12 +9,13 @@ from caustic.lenses.base import ThickLens
 from caustic.utils import get_meshgrid
 
 
-def setup_grids(res=0.05, n_pix=200):
+def setup_grids(res=0.05, n_pix=100):
     # Caustic setup
     thx, thy = get_meshgrid(res, n_pix, n_pix)
 
     # Lenstronomy setup
-    ra_at_xy_0, dec_at_xy_0 = (-5 + res / 2, -5 + res / 2)
+    fov = res * n_pix
+    ra_at_xy_0, dec_at_xy_0 = ((-fov + res) / 2, (-fov + res) / 2)
     transform_pix2angle = np.array([[1, 0], [0, 1]]) * res
     kwargs_pixel = {
         "nx": n_pix,
@@ -28,17 +29,17 @@ def setup_grids(res=0.05, n_pix=200):
     return thx, thy, thx_ls, thy_ls
 
 
-def alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
+def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    alpha_x, alpha_y = lens.alpha(thx, thy, *args)
+    alpha_x, alpha_y = lens.alpha(thx, thy, z_s, lens.x_to_dict(x))
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(alpha_x.numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.numpy(), alpha_y_ls, rtol, atol)
 
 
-def Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
+def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    Psi = lens.Psi(thx, thy, *args)
+    Psi = lens.Psi(thx, thy, z_s, lens.x_to_dict(x))
     Psi_ls = lens_ls.potential(thx_ls, thy_ls, kwargs_ls)
     # Potential is only defined up to a constant
     Psi -= Psi.min()
@@ -46,9 +47,9 @@ def Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
     assert np.allclose(Psi.numpy(), Psi_ls, rtol, atol)
 
 
-def kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
+def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    kappa = lens.kappa(thx, thy, *args)
+    kappa = lens.kappa(thx, thy, z_s, lens.x_to_dict(x))
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(kappa.numpy(), kappa_ls, rtol, atol)
 
@@ -56,7 +57,8 @@ def kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol):
 def lens_test_helper(
     lens: Union[ThinLens, ThickLens],
     lens_ls: LensModel,
-    args: Tuple[Any, ...],
+    z_s,
+    x,
     kwargs_ls: List[Dict[str, Any]],
     rtol,
     atol,
@@ -65,10 +67,10 @@ def lens_test_helper(
     test_kappa=True,
 ):
     if test_alpha:
-        alpha_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+        alpha_test_helper(lens, lens_ls, z_s, lens.x_to_dict(x), kwargs_ls, atol, rtol)
 
     if test_Psi:
-        Psi_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+        Psi_test_helper(lens, lens_ls, z_s, lens.x_to_dict(x), kwargs_ls, atol, rtol)
 
     if test_kappa:
-        kappa_test_helper(lens, lens_ls, args, kwargs_ls, atol, rtol)
+        kappa_test_helper(lens, lens_ls, z_s, lens.x_to_dict(x), kwargs_ls, atol, rtol)

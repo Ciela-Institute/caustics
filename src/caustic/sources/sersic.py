@@ -1,4 +1,7 @@
+from typing import Optional
+
 import torch
+from torch import Tensor
 
 from ..utils import to_elliptical, translate_rotate
 from .base import Source
@@ -9,23 +12,35 @@ __all__ = ("Sersic",)
 class Sersic(Source):
     def __init__(
         self,
-        device: torch.device = torch.device("cpu"),
-        dtype: torch.dtype = torch.float32,
+        name: str,
+        thx0: Optional[Tensor] = None,
+        thy0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        index: Optional[Tensor] = None,
+        th_e: Optional[Tensor] = None,
+        I_e: Optional[Tensor] = None,
+        s: float = 0.0,
         use_lenstronomy_k=False,
     ):
-        """
-        Args:
-            lenstronomy_k_mode: set to `True` to calculate k in the Sersic exponential
-                using the same formula as lenstronomy. Intended primarily for testing.
-        """
-        super().__init__(device, dtype)
+        super().__init__(name)
+        self.add_param("thx0", thx0)
+        self.add_param("thy0", thy0)
+        self.add_param("q", q)
+        self.add_param("phi", phi)
+        self.add_param("index", index)
+        self.add_param("th_e", th_e)
+        self.add_param("I_e", I_e)
+        self.s = s
+
         self.lenstronomy_k_mode = use_lenstronomy_k
 
-    def brightness(self, thx, thy, thx0, thy0, q, phi, index, th_e, I_e, s=None):
-        s = torch.tensor(0.0, device=self.device, dtype=thx0.dtype) if s is None else s
+    def brightness(self, thx, thy, x):
+        thx0, thy0, q, phi, index, th_e, I_e = self.unpack(x)
+
         thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
         ex, ey = to_elliptical(thx, thy, q)
-        e = (ex**2 + ey**2).sqrt() + s
+        e = (ex**2 + ey**2).sqrt() + self.s
 
         if self.lenstronomy_k_mode:
             k = 1.9992 * index - 0.3271

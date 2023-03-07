@@ -8,13 +8,13 @@ from caustic.sources import Sersic
 from caustic.utils import get_meshgrid
 
 
-def test_sersic():
+def test():
     # Caustic setup
     res = 0.05
     nx = 200
     ny = 200
     thx, thy = get_meshgrid(res, nx, ny)
-    sersic = Sersic(use_lenstronomy_k=True)
+    sersic = Sersic("sersic", use_lenstronomy_k=True)
 
     # Lenstronomy setup
     ra_at_xy_0, dec_at_xy_0 = (-5 + res / 2, -5 + res / 2)
@@ -31,31 +31,34 @@ def test_sersic():
     sersic_ls = LightModel(light_model_list=source_light_model_list)
 
     # Parameters
-    thx0_src = torch.tensor(0.05)
-    thy0_src = torch.tensor(0.01)
-    phi_src = torch.tensor(0.8)
-    q_src = torch.tensor(0.5)
-    index_src = torch.tensor(1.5)
-    th_e_src = torch.tensor(0.1)
-    I_e_src = torch.tensor(100)
-    e1, e2 = param_util.phi_q2_ellipticity(phi=phi_src.item(), q=q_src.item())
+    thx0_src = 0.05
+    thy0_src = 0.01
+    phi_src = 0.8
+    q_src = 0.5
+    index_src = 1.5
+    th_e_src = 0.1
+    I_e_src = 100
+    x = torch.tensor([thx0_src, thy0_src, q_src, phi_src, index_src, th_e_src, I_e_src])
+    e1, e2 = param_util.phi_q2_ellipticity(phi=phi_src, q=q_src)
     kwargs_light_source = [
         {
-            "amp": I_e_src.item(),
-            "R_sersic": th_e_src.item(),
-            "n_sersic": index_src.item(),
+            "amp": I_e_src,
+            "R_sersic": th_e_src,
+            "n_sersic": index_src,
             "e1": e1,
             "e2": e2,
-            "center_x": thx0_src.item(),
-            "center_y": thy0_src.item(),
+            "center_x": thx0_src,
+            "center_y": thy0_src,
         }
     ]
 
-    brightness = sersic.brightness(
-        thx, thy, thx0_src, thy0_src, q_src, phi_src, index_src, th_e_src, I_e_src
-    )
+    brightness = sersic.brightness(thx, thy, sersic.x_to_dict(x))
     brightness_ls = sersic_ls.surface_brightness(
         *pixel_grid.coordinate_grid(nx, ny), kwargs_light_source
     )
 
     assert np.allclose(brightness.numpy(), brightness_ls)
+
+
+if __name__ == "__main__":
+    test()
