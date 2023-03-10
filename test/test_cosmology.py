@@ -5,7 +5,9 @@ import torch
 from astropy.cosmology import Cosmology as Cosmology_AP
 from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
 
-from caustic.cosmology import Cosmology, FlatLambdaCDM as CausticFlatLambdaCDM, Om0_default, h0_default
+from caustic.cosmology import Cosmology
+from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
+from caustic.cosmology import Om0_default, h0_default
 
 
 def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:

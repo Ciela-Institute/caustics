@@ -3,9 +3,8 @@ from math import pi
 import lenstronomy.Util.param_util as param_util
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import lens_test_helper
+from utils import get_default_cosmologies, lens_test_helper
 
-from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE
 
 
@@ -14,10 +13,10 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
+    cosmology, cosmology_ap = get_default_cosmologies()
     lens = SIE("sie", cosmology)
     lens_model_list = ["SIE"]
-    lens_ls = LensModel(lens_model_list=lens_model_list)
+    lens_ls = LensModel(lens_model_list=lens_model_list, cosmo=cosmology_ap)
 
     # Parameters
     z_s = torch.tensor(1.2)

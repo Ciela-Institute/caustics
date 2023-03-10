@@ -3,19 +3,23 @@ from math import pi
 import lenstronomy.Util.param_util as param_util
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
+from utils import (
+    Psi_test_helper,
+    alpha_test_helper,
+    get_default_cosmologies,
+    kappa_test_helper,
+)
 
-from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import EPL
 
 
 def test_lenstronomy():
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
+    cosmology, cosmology_ap = get_default_cosmologies()
     lens = EPL("epl", cosmology)
     # There is also an EPL_NUMBA class lenstronomy, but it shouldn't matter much
     lens_model_list = ["EPL"]
-    lens_ls = LensModel(lens_model_list=lens_model_list)
+    lens_ls = LensModel(lens_model_list=lens_model_list, cosmo=cosmology_ap)
 
     # Parameters
     z_s = torch.tensor(1.0)
@@ -44,10 +48,10 @@ def test_special_case_sie():
     """
     Checks that the deflection field matches an SIE for `t=1`.
     """
-    cosmology = FlatLambdaCDM("cosmo")
+    cosmology, cosmology_ap = get_default_cosmologies()
     lens = EPL("epl", cosmology)
     lens_model_list = ["SIE"]
-    lens_ls = LensModel(lens_model_list=lens_model_list)
+    lens_ls = LensModel(lens_model_list=lens_model_list, cosmo=cosmology_ap)
 
     # Parameters
     z_s = torch.tensor(1.9)

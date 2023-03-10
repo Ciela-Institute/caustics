@@ -1,12 +1,22 @@
 from typing import Any, Dict, List, Union
 
 import numpy as np
+from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
 
+from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import ThinLens
 from caustic.lenses.base import ThickLens
 from caustic.utils import get_meshgrid
+
+
+def get_default_cosmologies():
+    cosmology = FlatLambdaCDM("cosmo")
+    cosmology_ap = FlatLambdaCDM_AP(
+        100 * cosmology.h0.value, cosmology.Om0.value, Tcmb0=0
+    )
+    return cosmology, cosmology_ap
 
 
 def setup_grids(res=0.05, n_pix=100):

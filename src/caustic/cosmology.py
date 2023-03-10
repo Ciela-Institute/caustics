@@ -54,26 +54,31 @@ class Cosmology(Parametrized):
         ...
 
     def comoving_dist_z1z2(
-        self, z1: Tensor, z2: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
+        self, z1: Tensor, z2: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
         return self.comoving_dist(z2, x) - self.comoving_dist(z1, x)
 
     def angular_diameter_dist(
-        self, z: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
+        self, z: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
         return self.comoving_dist(z, x) / (1 + z)
 
     def angular_diameter_dist_z1z2(
-        self, z1: Tensor, z2: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
+        self, z1: Tensor, z2: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
         return self.comoving_dist_z1z2(z1, z2, x) / (1 + z2)
 
     def time_delay_dist(
-        self, z_l: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
+        self, z_l: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
         d_l = self.angular_diameter_dist(z_l, x)
         d_s = self.angular_diameter_dist(z_s, x)
         d_ls = self.angular_diameter_dist_z1z2(z_l, z_s, x)
         return (1 + z_l) * d_l * d_s / d_ls
 
     def Sigma_cr(
-        self, z_l: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None) -> Tensor:
+        self, z_l: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
         d_l = self.angular_diameter_dist(z_l, x)
         d_s = self.angular_diameter_dist(z_s, x)
         d_ls = self.angular_diameter_dist_z1z2(z_l, z_s, x)
