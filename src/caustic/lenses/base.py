@@ -130,19 +130,20 @@ class ThinLens(Parametrized):
         ax, ay = self.alpha(thx, thy, z_s, x)
         return thx - ax, thy - ay
 
+    def fermat_potential(
+        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    ) -> Tensor:
+        ax, ay = self.alpha(thx, thy, z_s, x)
+        Psi = self.Psi(thx, thy, z_s, x)
+        return 0.5 * (ax**2 + ay**2) - Psi
+
     def time_delay(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ):
         z_l = self.unpack(x)[0]
-
-        d_l = self.cosmology.angular_diameter_dist(z_l, x)
-        d_s = self.cosmology.angular_diameter_dist(z_s, x)
-        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s, x)
-        ax, ay = self.alpha(thx, thy, z_s, x)
-        Psi = self.Psi(thx, thy, z_s, x)
-        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - Psi
-        return factor * fp * arcsec_to_rad**2
+        d_td = self.cosmology.time_delay_dist(z_l, z_s, x)
+        phi = self.fermat_potential(thx, thy, z_s, x)
+        return d_td * phi * arcsec_to_rad**2 / c_Mpc_s
 
     def _lensing_jacobian_fft_method(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
