@@ -31,6 +31,9 @@ pip install -e ".[dev]"
 ```
 This creates an editable install and installs the dev dependencies.
 
-Please use `isort` and `black` to format your code. Open up issues for bugs/missing
-features. Use pull requests for additions to the code. Write tests that can be run
-by [`pytest`](https://docs.pytest.org/).
+Some guidelines:
+- Please use `isort` and `black` to format your code.
+- Use `CamelCase` for class names and `snake_case` for variable and method names.
+- Open up issues for bugs/missing features.
+- Use pull requests for additions to the code.
+- Write tests that can be run by [`pytest`](https://docs.pytest.org/).
