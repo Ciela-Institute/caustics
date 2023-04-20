@@ -61,16 +61,14 @@ class KappaGrid(ThinLens):
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
         self.Psi_kernel = self.Psi_kernel.to(device=device, dtype=dtype)
-        self.alpha_x_kernel = self.alpha_x_kernel.to(device=device, dtype=dtype)
-        self.alpha_y_kernel = self.alpha_y_kernel.to(device=device, dtype=dtype)
+        self.ax_kernel = self.ax_kernel.to(device=device, dtype=dtype)
+        self.ay_kernel = self.ay_kernel.to(device=device, dtype=dtype)
         if self.Psi_kernel_tilde is not None:
             self.Psi_kernel_tilde = self.Psi_kernel_tilde.to(device=device, dtype=dtype)
-            self.alpha_x_kernel_tilde = self.alpha_x_kernel_tilde.to(
-                device=device, dtype=dtype
-            )
-            self.alpha_y_kernel_tilde = self.alpha_y_kernel_tilde.to(
-                device=device, dtype=dtype
-            )
+        if self.ax_kernel_tilde is not None:
+            self.ax_kernel_tilde = self.ax_kernel_tilde.to(device=device, dtype=dtype)
+        if self.ay_kernel_tilde is not None:
+            self.ay_kernel_tilde = self.ay_kernel_tilde.to(device=device, dtype=dtype)
 
     def _fft2_padded(self, x):
         # TODO: next_fast_len
