@@ -1,4 +1,4 @@
 from .base import *
-from .imagesource import *
+from .pixelated import *
 from .probes import *
 from .sersic import *

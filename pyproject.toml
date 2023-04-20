@@ -1,11 +1,11 @@
 [project]
 name = "caustic"
-version = "0.0.1a0"
+version = "0.2.0"
 authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
 description = "The lensing pipeline of the future."
 readme = "README.md"
 license = { file="LICENSE" }
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -19,6 +19,7 @@ keywords = [
 ]
 dependencies = [
     "astropy",
+    "graphviz",
     "h5py",
     "numpy",
     "scipy",

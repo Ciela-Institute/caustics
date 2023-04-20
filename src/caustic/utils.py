@@ -132,3 +132,29 @@ def vmap_n(
         vmapd_func = functorch.vmap(vmapd_func, in_dims, out_dims, randomness)
 
     return vmapd_func
+
+
+def get_cluster_means(xs, k):
+    """
+    Runs the k-means++ initialization algorithm.
+    """
+    b = len(xs)
+    mean_idxs = [torch.randint(high=b, size=(), device=xs.device).item()]
+    means = [xs[mean_idxs[0]]]
+    for _ in range(1, k):
+        unselected_xs = torch.stack([x for i, x in enumerate(xs) if i not in mean_idxs])
+
+        # Distances to all means
+        d2s = ((unselected_xs[:, None, :] - torch.stack(means)[None, :, :]) ** 2).sum(
+            -1
+        )
+
+        # Distances to closest mean
+        d2s_closest = torch.tensor([d2s[i, m] for i, m in enumerate(d2s.argmin(-1))])
+
+        # Add point furthest from closest mean as next mean
+        new_idx = d2s_closest.argmax().item()
+        means.append(unselected_xs[new_idx])
+        mean_idxs.append(new_idx)
+
+    return torch.stack(means)
