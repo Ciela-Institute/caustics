@@ -46,8 +46,8 @@ class Parametrized:
         """
         Put static Params for this component and its descendants on the given device.
         """
-        for param in self._params.values():
-            param.to(device, dtype)
+        for name in self._params:
+            self._params[name] = self._params[name].to(device, dtype)
 
         for desc in self._descendants.values():
             desc.to(device, dtype)
