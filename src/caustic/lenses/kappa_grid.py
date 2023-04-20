@@ -69,6 +69,7 @@ class KappaGrid(ThinLens):
     def to(
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
+        super().to(device, dtype)
         self.Psi_kernel = self.Psi_kernel.to(device=device, dtype=dtype)
         self.ax_kernel = self.ax_kernel.to(device=device, dtype=dtype)
         self.ay_kernel = self.ay_kernel.to(device=device, dtype=dtype)
