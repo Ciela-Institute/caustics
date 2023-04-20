@@ -47,7 +47,9 @@ class Parametrized:
         Put static Params for this component and its descendants on the given device.
         """
         for name in self._params:
-            self._params[name] = self._params[name].to(device, dtype)
+            param = self._params[name]
+            if isinstance(param, torch.Tensor):
+                self._params[name] = param.to(device, dtype)
 
         for desc in self._descendants.values():
             desc.to(device, dtype)
