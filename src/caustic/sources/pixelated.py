@@ -16,11 +16,12 @@ class ImageSource(Source):
         thy0: Optional[Tensor] = None,
         image: Optional[Tensor] = None,
         scale: Optional[Tensor] = None,
+        image_shape: Optional[tuple[int, ...]] = None,
     ):
         super().__init__(name)
         self.add_param("thx0", thx0)
         self.add_param("thy0", thy0)
-        self.add_param("image", image)
+        self.add_param("image", image, image_shape)
         self.add_param("scale", scale)
 
     def brightness(self, thx, thy, x):

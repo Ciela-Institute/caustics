@@ -183,7 +183,7 @@ class Parametrized:
         if isinstance(x, dict):
             # TODO: check structure!
             return x
-        elif isinstance(x, list):
+        elif isinstance(x, list) or isinstance(x, tuple):
             n_passed = len(x)
             n_expected = (
                 sum([desc.n_dynamic for desc in self._descendants.values()])
@@ -253,7 +253,7 @@ class Parametrized:
                     args.append(p.value)
 
             return args
-        elif isinstance(my_x, list):
+        elif isinstance(my_x, list) or isinstance(x, tuple):
             # Parse dynamic args
             vals = []
             offset = 0
