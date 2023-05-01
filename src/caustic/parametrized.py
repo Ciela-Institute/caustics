@@ -1,14 +1,34 @@
 from collections import OrderedDict, defaultdict
+from itertools import chain
 from math import prod
 from operator import itemgetter
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import torch
 from torch import Tensor
 
+from .packed import Packed
 from .parameter import Parameter
 
 __all__ = ("Parametrized",)
+
+
+# def unpack_method(n_leading_args=0):
+#     # TODO: what if leading args are passed as kwargs?
+#     def decorator(method):
+#         @functools.wraps(method)
+#         def wrapped(self, *args, **kwargs):
+#             leading_args = args[:n_leading_args]
+#             if isinstance(args[n_leading_args], Packed):
+#                 x = args[n_leading_args]
+#             else:
+#                 x = self.pack(args[n_leading_args:])
+#
+#             return method(self, *leading_args, *self.unpack(x), x)
+#
+#         return wrapped
+#
+#     return decorator
 
 
 class Parametrized:
@@ -168,21 +188,28 @@ class Parametrized:
         """
         return self._dynamic_size
 
-    def x_to_dict(
+    def pack(
         self,
         x: Union[
             list[Tensor],
             dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]],
             Tensor,
         ],
-    ) -> dict[str, Any]:
+    ) -> Packed:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
         into arguments to this component and its descendants.
         """
         if isinstance(x, dict):
+            missing_names = [
+                name for name in chain([self.name], self._descendants) if name not in x
+            ]
+            if len(missing_names) > 0:
+                raise ValueError(f"missing x keys for {missing_names}")
+
             # TODO: check structure!
-            return x
+
+            return Packed(x)
         elif isinstance(x, list) or isinstance(x, tuple):
             n_passed = len(x)
             n_expected = (
@@ -190,7 +217,7 @@ class Parametrized:
                 + self.n_dynamic
             )
             if n_passed != n_expected:
-                # TODO: give arg names
+                # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} dynamic args were passed, but {n_expected} are "
                     "required"
@@ -202,7 +229,7 @@ class Parametrized:
                 x_repacked[desc.name] = x[cur_offset : cur_offset + desc.n_dynamic]
                 cur_offset += desc.n_dynamic
 
-            return x_repacked
+            return Packed(x_repacked)
         elif isinstance(x, Tensor):
             n_passed = x.shape[-1]
             n_expected = (
@@ -210,7 +237,7 @@ class Parametrized:
                 + self.dynamic_size
             )
             if n_passed != n_expected:
-                # TODO: give arg names
+                # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} flattened dynamic args were passed, but {n_expected}"
                     " are required"
@@ -224,7 +251,7 @@ class Parametrized:
                 ]
                 cur_offset += desc.dynamic_size
 
-            return x_repacked
+            return Packed(x_repacked)
         else:
             raise ValueError("can only repack a list or 1D tensor")
 
