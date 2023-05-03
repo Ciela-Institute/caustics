@@ -28,9 +28,9 @@ def _setup(n_pix, mode, use_next_fast_len):
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
 
     # Exact calculations
-    Psi = lens_pj.Psi(thx, thy, z_l, lens_pj.x_to_dict(x_pj))
+    Psi = lens_pj.Psi(thx, thy, z_l, lens_pj.pack(x_pj))
     Psi -= Psi.min()
-    alpha_x, alpha_y = lens_pj.alpha(thx, thy, z_l, lens_pj.x_to_dict(x_pj))
+    alpha_x, alpha_y = lens_pj.alpha(thx, thy, z_l, lens_pj.pack(x_pj))
 
     # Approximate calculations
     lens_kap = KappaGrid(
@@ -39,24 +39,21 @@ def _setup(n_pix, mode, use_next_fast_len):
         n_pix,
         cosmology,
         z_l=z_l,
-        kappa_map_shape=(1, 1, n_pix, n_pix),
+        kappa_map_shape=(n_pix, n_pix),
         mode=mode,
         use_next_fast_len=use_next_fast_len,
     )
-    kappa_map = lens_pj.kappa(thx, thy, z_l, lens_pj.x_to_dict(x_pj))
+    kappa_map = lens_pj.kappa(thx, thy, z_l, lens_pj.pack(x_pj))
     x_kap = kappa_map.flatten()
 
-    Psi_approx = lens_kap.Psi(thx, thy, z_l, lens_kap.x_to_dict(x_kap))
-    Psi_approx = Psi_approx[0, 0]
+    Psi_approx = lens_kap.Psi(thx, thy, z_l, lens_kap.pack(x_kap))
     Psi_approx -= Psi_approx.min()
     # Try to remove unobservable constant offset
     Psi_approx += torch.mean(Psi - Psi_approx)
 
     alpha_x_approx, alpha_y_approx = lens_kap.alpha(
-        thx, thy, z_l, lens_kap.x_to_dict(x_kap)
+        thx, thy, z_l, lens_kap.pack(x_kap)
     )
-    alpha_x_approx = alpha_x_approx[0, 0]
-    alpha_y_approx = alpha_y_approx[0, 0]
 
     return Psi, Psi_approx, alpha_x, alpha_x_approx, alpha_y, alpha_y_approx
 
@@ -98,10 +95,6 @@ def _check_center(
     idx_after_r = center_r + half_buffer
     idx_before_c = center_c - half_buffer
     idx_after_c = center_c + half_buffer
-    print(idx_before_r)
-    print(idx_after_r)
-    print(idx_before_c)
-    print(idx_after_c)
     assert torch.allclose(x[:idx_before_r], x_approx[:idx_before_r], rtol, atol)
     assert torch.allclose(x[idx_after_r:], x_approx[idx_after_r:], rtol, atol)
     assert torch.allclose(
