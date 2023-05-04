@@ -1,6 +1,6 @@
 from typing import Tuple
 
-import functorch
+import torch
 from torch import Tensor
 
 from ..utils import vmap_n
@@ -18,7 +18,7 @@ def get_pix_jacobian(
         Currently uses `jacrev` due to upcasting bug with `jacfwd` (https://github.com/pytorch/pytorch/issues/90065).
         Should probably switch to `jacfwd` in the future.
     """
-    jac = functorch.jacfwd(raytrace, (0, 1))(thx, thy, z_s, x)
+    jac = torch.func.jacfwd(raytrace, (0, 1))(thx, thy, z_s, x)  # type: ignore
     return jac
 
 

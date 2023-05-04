@@ -21,6 +21,7 @@ dependencies = [
     "astropy",
     "graphviz",
     "h5py",
+    "levmarq_torch",
     "numpy",
     "scipy",
     "torch",
@@ -29,7 +30,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "icecream",
     "jupyter",
     "lenstronomy",
     "matplotlib",
