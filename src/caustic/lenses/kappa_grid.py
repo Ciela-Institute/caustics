@@ -38,7 +38,7 @@ class KappaGrid(ThinLens):
 
         if kappa_map is not None and kappa_map.ndim != 2:
             raise ValueError(
-                f"kappa_map must be 2D (received {kappa_map.shape}D tensor)"
+                f"kappa_map must be 2D (received {kappa_map.ndim}D tensor)"
             )
         elif kappa_map_shape is not None and len(kappa_map_shape) != 2:
             raise ValueError(
@@ -121,16 +121,6 @@ class KappaGrid(ThinLens):
             raise ValueError("invalid convolution mode")
 
         self._mode = mode
-
-    # def _check_kappa_map_shape(self, kappa_map):
-    #     if kappa_map.ndim != 4:
-    #         raise ValueError("kappa map must have four dimensions")
-
-    #     expected_shape = (1, self.n_pix, self.n_pix)
-    #     if kappa_map.shape[-3:] != expected_shape:
-    #         raise ValueError(
-    #             f"kappa map shape does not have the expected shape of {expected_shape}"
-    #         )
 
     def alpha(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
