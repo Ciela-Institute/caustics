@@ -7,7 +7,7 @@ from scipy.fft import next_fast_len
 from torch import Tensor
 
 from ..cosmology import Cosmology
-from ..utils import get_meshgrid, interpolate_image, safe_divide, safe_log
+from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
 from .base import ThinLens
 
 __all__ = ("KappaGrid",)
@@ -36,6 +36,15 @@ class KappaGrid(ThinLens):
         """
         super().__init__(name, cosmology, z_l)
 
+        if kappa_map is not None and kappa_map.ndim != 2:
+            raise ValueError(
+                f"kappa_map must be 2D (received {kappa_map.ndim}D tensor)"
+            )
+        elif kappa_map_shape is not None and len(kappa_map_shape) != 2:
+            raise ValueError(
+                f"kappa_map_shape must be 2D (received {len(kappa_map_shape)}D)"
+            )
+
         self.add_param("thx0", thx0)
         self.add_param("thy0", thy0)
         self.add_param("kappa_map", kappa_map, kappa_map_shape)
@@ -51,9 +60,9 @@ class KappaGrid(ThinLens):
         x_mg = x_mg - self.res / 2
         y_mg = y_mg - self.res / 2
         d2 = x_mg**2 + y_mg**2
-        self.Psi_kernel = safe_log(d2.sqrt())[None, None, :, :]
-        self.ax_kernel = safe_divide(x_mg, d2)[None, None, :, :]
-        self.ay_kernel = safe_divide(y_mg, d2)[None, None, :, :]
+        self.Psi_kernel = safe_log(d2.sqrt())
+        self.ax_kernel = safe_divide(x_mg, d2)
+        self.ay_kernel = safe_divide(y_mg, d2)
         # Set centers of kernels to zero
         self.Psi_kernel[..., self.n_pix, self.n_pix] = 0
         self.ax_kernel[..., self.n_pix, self.n_pix] = 0
@@ -113,34 +122,24 @@ class KappaGrid(ThinLens):
 
         self._mode = mode
 
-    def _check_kappa_map_shape(self, kappa_map):
-        if kappa_map.ndim != 4:
-            raise ValueError("kappa map must have four dimensions")
-
-        expected_shape = (1, self.n_pix, self.n_pix)
-        if kappa_map.shape[-3:] != expected_shape:
-            raise ValueError(
-                f"kappa map shape does not have the expected shape of {expected_shape}"
-            )
-
     def alpha(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         z_l, thx0, thy0, kappa_map = self.unpack(x)
 
-        self._check_kappa_map_shape(kappa_map)
         if self.mode == "fft":
             alpha_x_map, alpha_y_map = self._alpha_fft(kappa_map)
         else:
             alpha_x_map, alpha_y_map = self._alpha_conv2d(kappa_map)
 
         # Scale is distance from center of image to center of pixel on the edge
-        alpha_x = interpolate_image(
-            thx, thy, thx0, thy0, alpha_x_map, (self.fov - self.res) / 2
-        )
-        alpha_y = interpolate_image(
-            thx, thy, thx0, thy0, alpha_y_map, (self.fov - self.res) / 2
-        )
+        scale = self.fov / 2
+        alpha_x = interp2d(
+            alpha_x_map, (thx - thx0).view(-1) / scale, (thy - thy0).view(-1) / scale
+        ).reshape(thx.shape)
+        alpha_y = interp2d(
+            alpha_y_map, (thx - thx0).view(-1) / scale, (thy - thy0).view(-1) / scale
+        ).reshape(thx.shape)
         return alpha_x, alpha_y
 
     def _alpha_fft(self, kappa_map):
@@ -154,12 +153,15 @@ class KappaGrid(ThinLens):
         return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
 
     def _alpha_conv2d(self, kappa_map):
-        self._check_kappa_map_shape(kappa_map)
-        kappa_map_flipped = kappa_map.flip((-1, -2))
         # Use kappa_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
-        alpha_x = F.conv2d(self.ax_kernel, kappa_map_flipped) * (self.res**2 / pi)
-        alpha_y = F.conv2d(self.ay_kernel, kappa_map_flipped) * (self.res**2 / pi)
+        kappa_map_flipped = kappa_map.flip((-1, -2))[None, None]
+        alpha_x = F.conv2d(self.ax_kernel[None, None], kappa_map_flipped)[0, 0] * (
+            self.res**2 / pi
+        )
+        alpha_y = F.conv2d(self.ay_kernel[None, None], kappa_map_flipped)[0, 0] * (
+            self.res**2 / pi
+        )
         return self._unpad_conv2d(alpha_x), self._unpad_conv2d(alpha_y)
 
     def Psi(
@@ -167,20 +169,18 @@ class KappaGrid(ThinLens):
     ) -> Tensor:
         z_l, thx0, thy0, kappa_map = self.unpack(x)
 
-        self._check_kappa_map_shape(kappa_map)
         if self.mode == "fft":
             Psi_map = self._Psi_fft(kappa_map)
         else:
             Psi_map = self._Psi_conv2d(kappa_map)
 
         # Scale is distance from center of image to center of pixel on the edge
-        Psi = interpolate_image(
-            thx, thy, thx0, thy0, Psi_map, (self.fov - self.res) / 2
-        )
-        return Psi
+        scale = self.fov / 2
+        return interp2d(
+            Psi_map, (thx - thx0).view(-1) / scale, (thy - thy0).view(-1) / scale
+        ).reshape(thx.shape)
 
     def _Psi_fft(self, kappa_map):
-        self._check_kappa_map_shape(kappa_map)
         kappa_tilde = self._fft2_padded(kappa_map)
         Psi = torch.fft.ifft2(kappa_tilde * self.Psi_kernel_tilde).real * (
             self.res**2 / pi
@@ -188,10 +188,12 @@ class KappaGrid(ThinLens):
         return self._unpad_fft(Psi)
 
     def _Psi_conv2d(self, kappa_map):
-        self._check_kappa_map_shape(kappa_map)
         # Use kappa_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
-        Psi = F.conv2d(self.Psi_kernel, kappa_map.flip((-1, -2))) * (self.res**2 / pi)
+        kappa_map_flipped = kappa_map.flip((-1, -2))[None, None]
+        Psi = F.conv2d(self.Psi_kernel[None, None], kappa_map_flipped)[0, 0] * (
+            self.res**2 / pi
+        )
         return self._unpad_conv2d(Psi)
 
     def kappa(

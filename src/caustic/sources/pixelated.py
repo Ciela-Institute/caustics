@@ -2,7 +2,7 @@ from typing import Optional
 
 from torch import Tensor
 
-from ..utils import interpolate_image
+from ..utils import interp2d
 from .base import Source
 
 __all__ = ("ImageSource",)
@@ -26,4 +26,6 @@ class ImageSource(Source):
 
     def brightness(self, thx, thy, x):
         thx0, thy0, image, scale = self.unpack(x)
-        return interpolate_image(thx, thy, thx0, thy0, image, scale)
+        return interp2d(
+            image, (thx - thx0).view(-1) / scale, (thy - thy0).view(-1) / scale
+        ).reshape(thx.shape)

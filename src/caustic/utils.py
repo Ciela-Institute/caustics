@@ -1,10 +1,8 @@
 from math import pi
 from typing import Callable, Optional, Tuple, Union
 
-import functorch
 import torch
 from torch import Tensor
-from torch.nn.functional import grid_sample
 
 
 def flip_axis_ratio(q, phi):
@@ -48,9 +46,18 @@ def to_elliptical(x, y, q: Tensor):
 def get_meshgrid(
     resolution, nx, ny, device=None, dtype=torch.float32
 ) -> Tuple[Tensor, Tensor]:
-    base_grid = torch.linspace(-1, 1, nx, device=device, dtype=dtype)
-    xs = base_grid * resolution * (nx - 1) / 2
-    ys = base_grid * resolution * (ny - 1) / 2
+    xs = (
+        torch.linspace(-1, 1, nx, device=device, dtype=dtype)
+        * resolution
+        * (nx - 1)
+        / 2
+    )
+    ys = (
+        torch.linspace(-1, 1, ny, device=device, dtype=dtype)
+        * resolution
+        * (ny - 1)
+        / 2
+    )
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
@@ -80,35 +87,69 @@ def safe_log(x):
     return out
 
 
-def interpolate_image(
-    thx: Tensor,
-    thy: Tensor,
-    thx0: Union[float, Tensor],
-    thy0: Union[float, Tensor],
-    image: Tensor,
-    scale: Union[float, Tensor],
-    mode: str = "bilinear",
+def interp2d(
+    im: Tensor,
+    x: Tensor,
+    y: Tensor,
+    method: str = "linear",
     padding_mode: str = "zeros",
-    align_corners: bool = True,
-):
+) -> Tensor:
     """
-    Shifts, scales and interpolates the image.
+    Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Args:
-        scale: distance from the origin to the center of a pixel on the edge of
-            the image. For the common case of an image defined on a meshgrid of
-            width `fov` and resolution `res`, this should be `0.5 * (fov - res)`.
-    """
-    if image.ndim != 4:
-        raise ValueError("image must have four dimensions")
+        im: 2D tensor.
+        x: 0D or 1D tensor of x coordinates at which to interpolate.
+        y: 0D or 1D tensor of y coordinates at which to interpolate.
 
-    # Batch grid to match image batching
-    grid = (
-        torch.stack((thx - thx0, thy - thy0), dim=-1).reshape(-1, *thx.shape[-2:], 2)
-        / scale
-    )
-    grid = grid.repeat((len(image), 1, 1, 1))
-    return grid_sample(image, grid, mode, padding_mode, align_corners)
+    Returns:
+        Tensor with the same shape as `x` and `y` containing the interpolated values.
+    """
+    if im.ndim != 2:
+        raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
+    if x.ndim > 1:
+        raise ValueError(f"x must be 0 or 1D (received {x.ndim}D tensor)")
+    if y.ndim > 1:
+        raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
+    if padding_mode not in ["extrapolate", "zeros"]:
+        raise ValueError(f"{padding_mode} is not a valid padding mode")
+
+    idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+    # Convert coordinates to pixel indices
+    h, w = im.shape
+    x = 0.5 * ((x + 1) * w - 1)
+    y = 0.5 * ((y + 1) * h - 1)
+
+    if method == "nearest":
+        result = im[y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)]
+    elif method == "linear":
+        x0 = x.floor().long()
+        y0 = y.floor().long()
+        x1 = x0 + 1
+        y1 = y0 + 1
+        x0 = x0.clamp(0, w - 2)
+        x1 = x1.clamp(1, w - 1)
+        y0 = y0.clamp(0, h - 2)
+        y1 = y1.clamp(1, h - 1)
+
+        fa = im[y0, x0]
+        fb = im[y1, x0]
+        fc = im[y0, x1]
+        fd = im[y1, x1]
+
+        wa = (x1 - x) * (y1 - y)
+        wb = (x1 - x) * (y - y0)
+        wc = (x - x0) * (y1 - y)
+        wd = (x - x0) * (y - y0)
+
+        result = fa * wa + fb * wb + fc * wc + fd * wd
+    else:
+        raise ValueError(f"{method} is not a valid interpolation method")
+
+    if padding_mode == "zeros":  # else padding_mode == "extrapolate"
+        result[idxs_out_of_bounds] = 0.0
+
+    return result
 
 
 def vmap_n(
@@ -129,17 +170,17 @@ def vmap_n(
 
     vmapd_func = func
     for _ in range(depth):
-        vmapd_func = functorch.vmap(vmapd_func, in_dims, out_dims, randomness)
+        vmapd_func = torch.vmap(vmapd_func, in_dims, out_dims, randomness)
 
     return vmapd_func
 
 
-def get_cluster_means(xs, k):
+def get_cluster_means(xs: Tensor, k: int):
     """
     Runs the k-means++ initialization algorithm.
     """
     b = len(xs)
-    mean_idxs = [torch.randint(high=b, size=(), device=xs.device).item()]
+    mean_idxs = [int(torch.randint(high=b, size=(), device=xs.device).item())]
     means = [xs[mean_idxs[0]]]
     for _ in range(1, k):
         unselected_xs = torch.stack([x for i, x in enumerate(xs) if i not in mean_idxs])
@@ -153,7 +194,7 @@ def get_cluster_means(xs, k):
         d2s_closest = torch.tensor([d2s[i, m] for i, m in enumerate(d2s.argmin(-1))])
 
         # Add point furthest from closest mean as next mean
-        new_idx = d2s_closest.argmax().item()
+        new_idx = int(d2s_closest.argmax().item())
         means.append(unselected_xs[new_idx])
         mean_idxs.append(new_idx)
 
