@@ -1,7 +1,10 @@
 [project]
 name = "caustic"
 version = "0.2.0"
-authors = [{name="Adam Coogan", email="dr.adam.coogan@gmail.com"}]
+authors = [
+    {name="Connor Stone", email="connorstone628@gmail.com"},
+    {name="Adam Coogan", email="dr.adam.coogan@gmail.com"}
+]
 description = "The lensing pipeline of the future."
 readme = "README.md"
 license = { file="LICENSE" }
