@@ -28,7 +28,6 @@ dependencies = [
     "numpy",
     "scipy",
     "torch",
-    "torchinterp1d"
 ]
 
 [project.optional-dependencies]

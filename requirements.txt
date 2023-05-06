@@ -7,4 +7,3 @@ numpy==1.23.5
 scipy==1.8.0
 setuptools==67.2.0
 torch==2.0.0
-torchinterp1d==1.1

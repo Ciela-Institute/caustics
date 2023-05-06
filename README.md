@@ -7,16 +7,9 @@ The lensing pipeline of the future: GPU-accelerated, automatically-differentiabl
 highly modular. Currently under heavy development: expect interface changes and
 some imprecise/untested calculations.
 
-## Installation
+## Installation 
 
-Manually install the [torchinterp1d](https://github.com/aliutkus/torchinterp1d)
-dependency:
-```bash
-git clone git@github.com:aliutkus/torchinterp1d.git
-cd torchinterp1d
-pip install .
-```
-Then install caustic from PyPI:
+Simply install caustic from PyPI:
 ```bash
 pip install caustic
 ```

@@ -6,8 +6,8 @@ import torch
 from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
 from torch import Tensor
-from torchinterp1d import interp1d
 
+from .utils import interp1d
 from .constants import G_over_c2, c_Mpc_s, km_to_Mpc
 from .parametrized import Parametrized
 
