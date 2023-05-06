@@ -9,7 +9,7 @@ some imprecise/untested calculations.
 
 ## Installation
 
-Simply install caustic from PyPI: 
+Simply install caustic from PyPI:
 ```bash
 pip install caustic
 ```
