@@ -49,7 +49,8 @@ class KappaGrid(ThinLens):
             mode (str, optional): The convolution mode for calculating deflection angles and lensing potential.
                 It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution). Default is "fft".
             use_next_fast_len (bool, optional): If True, adds additional padding to speed up the FFT by calling
-                `scipy.fft.next_fast_len`. The speed boost can be substantial when `n_pix` is prime. Default is True.
+                `scipy.fft.next_fast_len`. The speed boost can be substantial when `n_pix` is a multiple of a
+                small prime number. Default is True.
 
         """
         
