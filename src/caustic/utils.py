@@ -205,7 +205,7 @@ def interp2d(
         raise ValueError(f"{method} is not a valid interpolation method")
 
     if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result[idxs_out_of_bounds] = 0.0
+        result[idxs_out_of_bounds] = torch.zeros_like(result[idxs_out_of_bounds])
 
     return result
 
