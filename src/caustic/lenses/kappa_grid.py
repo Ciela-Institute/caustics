@@ -240,7 +240,7 @@ class KappaGrid(ThinLens):
         )
         return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
 
-    def _alpha_conv2d(self, kappa_map: Tensor) -> tuple[Tensor, Tensor]::
+    def _alpha_conv2d(self, kappa_map: Tensor) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles using the 2D convolution method.
 
