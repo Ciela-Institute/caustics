@@ -7,7 +7,7 @@ The lensing pipeline of the future: GPU-accelerated, automatically-differentiabl
 highly modular. Currently under heavy development: expect interface changes and
 some imprecise/untested calculations.
 
-## Installation
+## Installation 
 
 Simply install caustic from PyPI:
 ```bash
