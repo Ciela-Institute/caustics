@@ -90,6 +90,7 @@ class KappaGrid(ThinLens):
         self.Psi_kernel_tilde = None
         self.ax_kernel_tilde = None
         self.ay_kernel_tilde = None
+        self._s = None
 
         # Triggers creation of FFTs of kernels
         self.mode = mode
@@ -128,7 +129,8 @@ class KappaGrid(ThinLens):
         pad = 2 * self.n_pix
         if self.use_next_fast_len:
             pad = next_fast_len(pad)
-        return torch.fft.rfft2(x, (pad, pad))
+        self._s = (pad, pad)
+        return torch.fft.rfft2(x, self._s)
 
     def _unpad_fft(self, x: Tensor) -> Tensor:
         """
@@ -230,10 +232,10 @@ class KappaGrid(ThinLens):
             tuple[Tensor, Tensor]: The x and y components of the deflection angles.
         """
         kappa_tilde = self._fft2_padded(kappa_map)
-        alpha_x = torch.fft.irfft2(kappa_tilde * self.ax_kernel_tilde) * (
+        alpha_x = torch.fft.irfft2(kappa_tilde * self.ax_kernel_tilde, self._s) * (
             self.res**2 / pi
         )
-        alpha_y = torch.fft.irfft2(kappa_tilde * self.ay_kernel_tilde) * (
+        alpha_y = torch.fft.irfft2(kappa_tilde * self.ay_kernel_tilde, self._s) * (
             self.res**2 / pi
         )
         return self._unpad_fft(alpha_x), self._unpad_fft(alpha_y)
@@ -298,7 +300,7 @@ class KappaGrid(ThinLens):
             Tensor: The lensing potential.
         """
         kappa_tilde = self._fft2_padded(kappa_map)
-        Psi = torch.fft.irfft2(kappa_tilde * self.Psi_kernel_tilde) * (
+        Psi = torch.fft.irfft2(kappa_tilde * self.Psi_kernel_tilde, self._s) * (
             self.res**2 / pi
         )
         return self._unpad_fft(Psi)
