@@ -46,12 +46,14 @@ jobs:
         pip install --upgrade pip
         pip --version
         pip install torch==1.13.1
-        echo xxxx
+        echo xxx
         pip show torch
-        echo xxxxx
+        echo xxxx
         python -c "import sys; print('Python executable:', sys.executable)"
-        echo xxxxxx
+        echo xxxxx
         python --version
+        echo xxxxxx
+        python -c "import torch; print('Torch version:', torch.__version__)"
         pip install pytest
         # Install torchinterp1d
         cd $GITHUB_WORKSPACE/torchinterp1d
