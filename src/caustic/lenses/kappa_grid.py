@@ -12,7 +12,6 @@ from .base import ThinLens
 
 __all__ = ("KappaGrid",)
 
-
 class KappaGrid(ThinLens):
     def __init__(
         self,
@@ -110,11 +109,11 @@ class KappaGrid(ThinLens):
         self.ax_kernel = self.ax_kernel.to(device=device, dtype=dtype)
         self.ay_kernel = self.ay_kernel.to(device=device, dtype=dtype)
         if self.Psi_kernel_tilde is not None:
-            self.Psi_kernel_tilde = self.Psi_kernel_tilde.to(device=device, dtype=dtype)
+            self.Psi_kernel_tilde = self.Psi_kernel_tilde.to(device=device)
         if self.ax_kernel_tilde is not None:
-            self.ax_kernel_tilde = self.ax_kernel_tilde.to(device=device, dtype=dtype)
+            self.ax_kernel_tilde = self.ax_kernel_tilde.to(device=device)
         if self.ay_kernel_tilde is not None:
-            self.ay_kernel_tilde = self.ay_kernel_tilde.to(device=device, dtype=dtype)
+            self.ay_kernel_tilde = self.ay_kernel_tilde.to(device=device)
 
     def _fft2_padded(self, x: Tensor) -> Tensor:
         """
