@@ -45,7 +45,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         pip install --upgrade pip
         pip --version
-        pip install torch torchvision
+        pip install torch==1.13.1
         pip show torch
         pip install pytest
         # Install torchinterp1d
