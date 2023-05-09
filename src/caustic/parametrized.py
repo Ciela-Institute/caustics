@@ -12,7 +12,6 @@ from .parameter import Parameter
 
 __all__ = ("Parametrized", "Simulator")
 
-
 class Parametrized:
     """
     Represents a class with Param and Parametrized attributes.
@@ -182,7 +181,7 @@ class Parametrized:
         Converts a list or tensor into a dict that can subsequently be unpacked
         into arguments to this component and its descendants.
         """
-        if isinstance(x, dict):
+        if isinstance(x, (dict, Packed)):
             missing_names = [
                 name for name in chain([self.name], self._descendants) if name not in x
             ]
@@ -202,7 +201,7 @@ class Parametrized:
                 # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} dynamic args were passed, but {n_expected} are "
-                    "required"
+                    "required."
                 )
 
             cur_offset = self.n_dynamic
@@ -402,6 +401,17 @@ class Parametrized:
         return dot
 
 class Simulator(Parametrized):
+    """A caustic simulator using Parametrized framework.
+
+    Defines a simulator class which is a callable function that
+    operates on the Parametrized framework. Users define the `forward`
+    method which takes as its first argument an object which can be
+    packed, all other args and kwargs are simply passed to the forward
+    method.
+
+    See `Parametrized` for details on how to add/access parameters.
+
+    """
     def __call__(self, *args, **kwargs):
         return self.forward(self.pack(args[0]), *args[1:], **kwargs)
     
