@@ -10,7 +10,7 @@ from torch import Tensor
 from .packed import Packed
 from .parameter import Parameter
 
-__all__ = ("Parametrized",)
+__all__ = ("Parametrized", "Simulator")
 
 
 class Parametrized:
@@ -401,7 +401,10 @@ class Parametrized:
 
         return dot
 
-
+class Simulator(Parametrized):
+    def __call__(self, *args, **kwargs):
+        return self.forward(self.pack(args[0]), *args[1:], **kwargs)
+    
 # class ParametrizedList(Parametrized):
 #     """
 #     TODO

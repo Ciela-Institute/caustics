@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import Any, Optional
+from functools import partial
 
 import torch
 from torch import Tensor
@@ -55,7 +56,7 @@ class ThickLens(Parametrized):
         ...
 
     def magnification(self, thx: Tensor, thy: Tensor, z_s: Tensor, x) -> Tensor:
-        return get_magnification(self.raytrace, thx, thy, z_s, x)
+        return get_magnification(partial(self.raytrace, x = x), thx, thy, z_s)
 
 
 class ThinLens(Parametrized):
@@ -167,4 +168,4 @@ class ThinLens(Parametrized):
         return jacobian
 
     def magnification(self, thx: Tensor, thy: Tensor, z_s: Tensor, x) -> Tensor:
-        return get_magnification(self.raytrace, thx, thy, z_s, x)
+        return get_magnification(partial(self.raytrace, x = x), thx, thy, z_s)
