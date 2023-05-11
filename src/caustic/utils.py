@@ -7,13 +7,33 @@ from torch import Tensor
 
 def flip_axis_ratio(q, phi):
     """
-    Makes q positive, then swaps x and y axes if it's larger than 1.
+    Makes the value of 'q' positive, then swaps x and y axes if 'q' is larger than 1.
+
+    Args:
+        q (Tensor): Tensor containing values to be processed.
+        phi (Tensor): Tensor containing the phi values for the orientation of the axes.
+
+    Returns:
+        Tuple[Tensor, Tensor]: Tuple containing the processed 'q' and 'phi' Tensors.
     """
     q = q.abs()
     return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
 
 
 def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
+    """
+    Translates and rotates the points (x, y) by subtracting (x0, y0) and applying rotation angle phi.
+
+    Args:
+        x (Tensor): Tensor containing the x-coordinates.
+        y (Tensor): Tensor containing the y-coordinates.
+        x0 (Tensor): Tensor containing the x-coordinate translation values.
+        y0 (Tensor): Tensor containing the y-coordinate translation values.
+        phi (Optional[Tensor], optional): Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
+
+    Returns:
+        Tuple[Tensor, Tensor]: Tuple containing the translated and rotated x and y coordinates.
+    """
     xt = x - x0
     yt = y - y0
 
@@ -28,6 +48,17 @@ def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
 
 
 def derotate(vx, vy, phi: Optional[Tensor] = None):
+    """
+    Applies inverse rotation to the velocity components (vx, vy) using the rotation angle phi.
+
+    Args:
+        vx (Tensor): Tensor containing the x-component of velocity.
+        vy (Tensor): Tensor containing the y-component of velocity.
+        phi (Optional[Tensor], optional): Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
+
+    Returns:
+        Tuple[Tensor, Tensor]: Tuple containing the derotated x and y components of velocity.
+    """
     if phi is None:
         return vx, vy
 
@@ -38,7 +69,15 @@ def derotate(vx, vy, phi: Optional[Tensor] = None):
 
 def to_elliptical(x, y, q: Tensor):
     """
-    Converts to elliptical Cartesian coordinates.
+    Converts Cartesian coordinates to elliptical coordinates.
+
+    Args:
+        x (Tensor): Tensor containing the x-coordinates.
+        y (Tensor): Tensor containing the y-coordinates.
+        q (Tensor): Tensor containing the elliptical parameters.
+
+    Returns:
+        Tuple[Tensor, Tensor]: Tuple containing the x and y coordinates in elliptical form.
     """
     return x * q.sqrt(), y / q.sqrt()
 
@@ -46,6 +85,19 @@ def to_elliptical(x, y, q: Tensor):
 def get_meshgrid(
     resolution, nx, ny, device=None, dtype=torch.float32
 ) -> Tuple[Tensor, Tensor]:
+    """
+    Generates a 2D meshgrid based on the provided resolution and dimensions.
+
+    Args:
+        resolution (float): The scale of the meshgrid in each dimension.
+        nx (int): The number of grid points along the x-axis.
+        ny (int): The number of grid points along the y-axis.
+        device (torch.device, optional): The device on which to create the tensor. Defaults to None.
+        dtype (torch.dtype, optional): The desired data type of the tensor. Defaults to torch.float32.
+
+    Returns:
+        Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
+    """
     xs = (
         torch.linspace(-1, 1, nx, device=device, dtype=dtype)
         * resolution
@@ -63,10 +115,14 @@ def get_meshgrid(
 
 def safe_divide(num, denom):
     """
-    Differentiable version of `torch.where(denom != 0, num/denom, 0.0)`.
+    Safely divides two tensors, returning zero where the denominator is zero.
+
+    Args:
+        num (Tensor): The numerator tensor.
+        denom (Tensor): The denominator tensor.
 
     Returns:
-        `num / denom` where `denom != 0`; zero everywhere else.
+        Tensor: The result of the division, with zero where the denominator was zero.
     """
     out = torch.zeros_like(num)
     where = denom != 0
@@ -76,10 +132,13 @@ def safe_divide(num, denom):
 
 def safe_log(x):
     """
-    Differentiable version of `torch.where(denom != 0, num/denom, 0.0)`.
+    Safely applies the logarithm to a tensor, returning zero where the tensor is zero.
+
+    Args:
+        x (Tensor): The input tensor.
 
     Returns:
-        `num / denom` where `denom != 0`; zero everywhere else.
+        Tensor: The result of applying the logarithm, with zero where the input was zero.
     """
     out = torch.zeros_like(x)
     where = x != 0
@@ -153,15 +212,26 @@ def interp2d(
     padding_mode: str = "zeros",
 ) -> Tensor:
     """
+    Interpolates a 2D image at specified coordinates. 
     Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Args:
-        im: 2D tensor.
-        x: 0D or 1D tensor of x coordinates at which to interpolate.
-        y: 0D or 1D tensor of y coordinates at which to interpolate.
+        im (Tensor): A 2D tensor representing the image.
+        x (Tensor): A 0D or 1D tensor of x coordinates at which to interpolate.
+        y (Tensor): A 0D or 1D tensor of y coordinates at which to interpolate.
+        method (str, optional): Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
+        padding_mode (str, optional): Defines the padding mode when out-of-bound indices are encountered.
+                                      Either 'zeros' or 'extrapolate'. Defaults to 'zeros'.
+
+    Raises:
+        ValueError: If `im` is not a 2D tensor.
+        ValueError: If `x` is not a 0D or 1D tensor.
+        ValueError: If `y` is not a 0D or 1D tensor.
+        ValueError: If `padding_mode` is not 'extrapolate' or 'zeros'.
+        ValueError: If `method` is not 'nearest' or 'linear'.
 
     Returns:
-        Tensor with the same shape as `x` and `y` containing the interpolated values.
+        Tensor: Tensor with the same shape as `x` and `y` containing the interpolated values.
     """
     if im.ndim != 2:
         raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
@@ -218,8 +288,22 @@ def vmap_n(
     randomness: str = "error",
 ) -> Callable:
     """
+    Transforms a function `depth` times using `torch.vmap` with the same arguments passed each time.
     Returns `func` transformed `depth` times by `vmap`, with the same arguments
     passed to `vmap` each time.
+
+    Args:
+        func (Callable): The function to transform.
+        depth (int, optional): The number of times to apply `torch.vmap`. Defaults to 1.
+        in_dims (Union[int, Tuple], optional): The dimensions to vectorize over in the input. Defaults to 0.
+        out_dims (Union[int, Tuple[int, ...]], optional): The dimensions to vectorize over in the output. Defaults to 0.
+        randomness (str, optional): How to handle randomness. Defaults to 'error'.
+
+    Raises:
+        ValueError: If `depth` is less than 1.
+
+    Returns:
+        Callable: The transformed function.
 
     TODO: test.
     """
@@ -235,7 +319,14 @@ def vmap_n(
 
 def get_cluster_means(xs: Tensor, k: int):
     """
-    Runs the k-means++ initialization algorithm.
+    Computes cluster means using the k-means++ initialization algorithm.
+
+    Args:
+        xs (Tensor): A tensor of data points.
+        k (int): The number of clusters.
+
+    Returns:
+        Tensor: A tensor of cluster means.
     """
     b = len(xs)
     mean_idxs = [int(torch.randint(high=b, size=(), device=xs.device).item())]

@@ -11,6 +11,17 @@ __all__ = ("MultiplaneLens",)
 
 
 class MultiplaneLens(ThickLens):
+    """
+    Class for handling gravitational lensing with multiple lens planes.
+
+    Attributes:
+        lenses (list[ThinLens]): List of thin lenses.
+
+    Args:
+        name (str): Name of the lens.
+        cosmology (Cosmology): Cosmological parameters used for calculations.
+        lenses (list[ThinLens]): List of thin lenses.
+    """
     def __init__(self, name: str, cosmology: Cosmology, lenses: list[ThinLens]):
         super().__init__(name, cosmology)
         self.lenses = lenses
@@ -18,6 +29,15 @@ class MultiplaneLens(ThickLens):
             self.add_parametrized(lens)
 
     def get_z_ls(self, x: Optional[dict[str, Any]]) -> list[Tensor]:
+        """
+        Get the redshifts of each lens in the multiplane.
+
+        Args:
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            List[Tensor]: Redshifts of the lenses.
+        """
         # Relies on z_l being the first element to be unpacked, which should always
         # be the case for a ThinLens
         return [lens.unpack(x)[0] for lens in self.lenses]
@@ -26,12 +46,16 @@ class MultiplaneLens(ThickLens):
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
-        Reduced deflection angle [arcsec].
+        Calculate the reduced deflection angle [arcsec].
 
         Args:
-            lenses: list of instances of thin lenses.
-            z_ls: lens redshifts
-            lens_arg_list: list of args to pass to each lens.
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            tuple[Tensor, Tensor]: The reduced deflection angle.
         """
         zero = torch.tensor(0.0, dtype=z_s.dtype, device=z_s.device)
 
@@ -90,7 +114,16 @@ class MultiplaneLens(ThickLens):
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
-        Reduced deflection angle [arcsec].
+        Calculate the reduced deflection angle [arcsec].
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            tuple[Tensor, Tensor]: The reduced deflection angle.
         """
         bx, by = self.raytrace(thx, thy, z_s, x)
         return thx - bx, thy - by
@@ -99,10 +132,19 @@ class MultiplaneLens(ThickLens):
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
-        Projected mass density.
+        Calculate the projected mass density.
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
 
         Returns:
-            [solMass / Mpc^2]
+            Tensor: Projected mass density [solMass / Mpc^2].
+
+        Raises:
+            NotImplementedError: This method is not yet implemented.
         """
         # TODO: rescale mass densities of each lens and sum
         raise NotImplementedError()
@@ -110,5 +152,20 @@ class MultiplaneLens(ThickLens):
     def time_delay(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
+        """
+        Compute the time delay of light caused by the lensing.
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            Tensor: Time delay caused by the lensing.
+
+        Raises:
+            NotImplementedError: This method is not yet implemented.
+        """
         # TODO: figure out how to compute this
         raise NotImplementedError()
