@@ -15,6 +15,34 @@ __all__ = ("NFW",)
 
 
 class NFW(ThinLens):
+    """
+    NFW lens class. This class models a lens using the Navarro-Frenk-White (NFW) profile.
+    The NFW profile is a spatial density profile of dark matter halo that arises in 
+    cosmological simulations.
+
+    Attributes:
+        z_l (Optional[Tensor]): Redshift of the lens. Default is None.
+        thx0 (Optional[Tensor]): x-coordinate of the lens center in the lens plane. 
+            Default is None.
+        thy0 (Optional[Tensor]): y-coordinate of the lens center in the lens plane. 
+            Default is None.
+        m (Optional[Tensor]): Mass of the lens. Default is None.
+        c (Optional[Tensor]): Concentration parameter of the lens. Default is None.
+        s (float): Softening parameter to avoid singularities at the center of the lens. 
+            Default is 0.0.
+
+    Methods:
+        get_r_s: Returns the scale radius of the lens.
+        get_rho_s: Returns the scale density of the lens.
+        get_kappa_s: Returns the dimensionless surface mass density of the lens.
+        _f: Helper method for computing deflection angles.
+        _g: Helper method for computing lensing potential.
+        _h: Helper method for computing reduced deflection angles.
+        alpha_hat: Computes the reduced deflection angle.
+        alpha: Computes the deflection angle.
+        kappa: Computes the convergence (dimensionless surface mass density).
+        Psi: Computes the lensing potential.
+    """
     def __init__(
         self,
         name: str,
@@ -26,6 +54,23 @@ class NFW(ThinLens):
         c: Optional[Tensor] = None,
         s: float = 0.0,
     ):
+        """
+        Initialize an instance of the NFW lens class.
+
+        Args:
+            name (str): Name of the lens instance.
+            cosmology (Cosmology): An instance of the Cosmology class which contains 
+                information about the cosmological model and parameters.
+            z_l (Optional[Tensor]): Redshift of the lens. Default is None.
+            thx0 (Optional[Tensor]): x-coordinate of the lens center in the lens plane. 
+                Default is None.
+            thy0 (Optional[Tensor]): y-coordinate of the lens center in the lens plane. 
+                Default is None.
+            m (Optional[Tensor]): Mass of the lens. Default is None.
+            c (Optional[Tensor]): Concentration parameter of the lens. Default is None.
+            s (float): Softening parameter to avoid singularities at the center of the lens. 
+                Default is 0.0.
+        """
         super().__init__(name, cosmology, z_l)
 
         self.add_param("thx0", thx0)
@@ -36,7 +81,16 @@ class NFW(ThinLens):
 
     def get_r_s(self, z_l, m, c, x) -> Tensor:
         """
-        [Mpc]
+        Calculate the scale radius of the lens.
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            m (Tensor): Mass of the lens.
+            c (Tensor): Concentration parameter of the lens.
+            x (dict): Additional parameters.
+
+        Returns:
+            Tensor: The scale radius of the lens in Mpc.
         """
         rho_cr = self.cosmology.rho_cr(z_l, x)
         r_delta = (3 * m / (4 * pi * DELTA * rho_cr)) ** (1 / 3)
@@ -44,7 +98,15 @@ class NFW(ThinLens):
 
     def get_rho_s(self, z_l, c, x) -> Tensor:
         """
-        [solMass / Mpc^3]
+        Calculate the scale density of the lens.
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            c (Tensor): Concentration parameter of the lens.
+            x (dict): Additional parameters.
+
+        Returns:
+            Tensor: The scale density of the lens in solar masses per Mpc cubed.
         """
         return (
             DELTA
@@ -56,13 +118,32 @@ class NFW(ThinLens):
 
     def get_kappa_s(self, z_l, z_s, m, c, x) -> Tensor:
         """
-        [1]
+        Calculate the dimensionless surface mass density of the lens.
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            z_s (Tensor): Redshift of the source.
+            m (Tensor): Mass of the lens.
+            c (Tensor): Concentration parameter of the lens.
+            x (dict): Additional parameters.
+
+        Returns:
+            Tensor: The dimensionless surface mass density of the lens.
         """
         Sigma_cr = self.cosmology.Sigma_cr(z_l, z_s)
         return self.get_rho_s(z_l, c, x) * self.get_r_s(z_l, m, c, x) / Sigma_cr
 
     @classmethod
     def _f(cls, x: Tensor) -> Tensor:
+        """
+        Helper method for computing deflection angles.
+
+        Args:
+            x (Tensor): The scaled radius (xi / xi_0).
+
+        Returns:
+            Tensor: Result of the deflection angle computation.
+        """
         # TODO: generalize beyond torch, or patch Tensor
         return torch.where(
             x > 1,
@@ -76,6 +157,15 @@ class NFW(ThinLens):
 
     @classmethod
     def _g(cls, x: Tensor) -> Tensor:
+        """
+        Helper method for computing lensing potential.
+
+        Args:
+            x (Tensor): The scaled radius (xi / xi_0).
+
+        Returns:
+            Tensor: Result of the lensing potential computation.
+        """
         # TODO: generalize beyond torch, or patch Tensor
         term_1 = (x / 2).log() ** 2
         term_2 = torch.where(
@@ -87,6 +177,15 @@ class NFW(ThinLens):
 
     @classmethod
     def _h(cls, x: Tensor) -> Tensor:
+        """
+        Helper method for computing reduced deflection angles.
+
+        Args:
+            x (Tensor): The scaled radius (xi / xi_0).
+
+        Returns:
+            Tensor: Result of the reduced deflection angle computation.
+        """
         term_1 = (x / 2).log()
         term_2 = torch.where(
             x > 1,
@@ -103,7 +202,16 @@ class NFW(ThinLens):
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
         """
-        [arcsec]
+        Compute the reduced deflection angle.
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions.
         """
         z_l, thx0, thy0, m, c = self.unpack(x)
 
@@ -132,6 +240,18 @@ class NFW(ThinLens):
     def alpha(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
+        """
+        Compute the deflection angle.
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
+        """
         z_l = self.unpack(x)[0]
 
         d_s = self.cosmology.angular_diameter_dist(z_s, x)
@@ -142,6 +262,18 @@ class NFW(ThinLens):
     def kappa(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
+        """
+        Compute the convergence (dimensionless surface mass density).
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            Tensor: The convergence (dimensionless surface mass density).
+        """
         z_l, thx0, thy0, m, c = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
@@ -156,6 +288,18 @@ class NFW(ThinLens):
     def Psi(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
+        """
+        Compute the lensing potential.
+
+        Args:
+            thx (Tensor): x-coordinates in the lens plane.
+            thy (Tensor): y-coordinates in the lens plane.
+            z_s (Tensor): Redshifts of the sources.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            Tensor: The lensing potential.
+        """
         z_l, thx0, thy0, m, c = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)

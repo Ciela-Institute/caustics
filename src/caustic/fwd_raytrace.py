@@ -19,6 +19,38 @@ def fwd_raytrace(
     max_iters_guesses: int = 50,
     max_iters_final: int = 50,
 ) -> Tensor:
+    """
+    Implements a forward ray tracing algorithm for a strong gravitational lensing system. 
+
+    Args:
+        beta_x (Tensor): The x coordinates of the source positions in the source plane.
+        beta_y (Tensor): The y coordinates of the source positions in the source plane.
+        get_beta_hat (Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]]): A function that returns 
+            the predicted source positions given the lensed image positions.
+        n_images (int): The number of images to produce.
+        thx_range (Tuple[float, float]): The range of x coordinates in the lens plane to consider for initial guesses.
+        thy_range (Tuple[float, float]): The range of y coordinates in the lens plane to consider for initial guesses.
+        n_guesses (int, optional): The number of initial guesses for the lensed image positions. Default is 15.
+        lam (float, optional): The damping parameter for the Levenberg-Marquardt optimization. Default is 1e-2.
+        max_iters_guesses (int, optional): The maximum number of iterations for the optimization of initial guesses. Default is 50.
+        max_iters_final (int, optional): The maximum number of iterations for the final optimization. Default is 50.
+
+    Returns:
+        Tensor: The optimized lensed image positions in the lens plane.
+    
+    This function first generates a set of initial guesses for the lensed image positions. 
+    These guesses are then optimized using the Levenberg-Marquardt algorithm to match the 
+    observed source positions. If the optimization fails for any of the initial guesses, 
+    new guesses are generated and the process is repeated until a successful optimization is achieved.
+
+    Once the initial optimization is complete, the results are pared down to the desired number 
+    of images using a clustering algorithm, and a final round of optimization is performed. 
+    The function returns the final optimized lensed image positions.
+
+    Note: If the number of images is greater than the number of observed source positions, 
+    the function may not be able to find a solution.
+    """
+
     bxy = torch.stack((beta_x, beta_y))
     thxy_min = torch.tensor((thx_range[0], thy_range[0]))
     thxy_max = torch.tensor((thx_range[1], thy_range[1]))
