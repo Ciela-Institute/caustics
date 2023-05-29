@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import Any, Optional
+from functools import partial
 
 import torch
 from torch import Tensor
@@ -10,7 +11,6 @@ from ..parametrized import Parametrized
 from .utils import get_magnification
 
 __all__ = ("ThinLens", "ThickLens")
-
 
 class ThickLens(Parametrized):
     """
@@ -117,8 +117,7 @@ class ThickLens(Parametrized):
         Returns:
             Tensor: The gravitational lensing magnification at the given coordinates.
         """
-        return get_magnification(self.raytrace, thx, thy, z_s, x)
-
+        return get_magnification(partial(self.raytrace, x = x), thx, thy, z_s)
 
 class ThinLens(Parametrized):
     """Base class for thin gravitational lenses.
@@ -328,4 +327,4 @@ class ThinLens(Parametrized):
         Returns:
             Tensor: Gravitational magnification at the given coordinates.
         """
-        return get_magnification(self.raytrace, thx, thy, z_s, x)
+        return get_magnification(partial(self.raytrace, x = x), thx, thy, z_s)

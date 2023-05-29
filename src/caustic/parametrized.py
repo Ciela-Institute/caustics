@@ -12,7 +12,6 @@ from .parameter import Parameter
 
 __all__ = ("Parametrized",)
 
-
 class Parametrized:
     """
     Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator
@@ -282,7 +281,7 @@ class Parametrized:
             ValueError: If the number of dynamic arguments does not match the expected number.
             ValueError: If the input is a tensor and the shape does not match the expected shape.
         """
-        if isinstance(x, dict):
+        if isinstance(x, (dict, Packed)):
             missing_names = [
                 name for name in chain([self.name], self._descendants) if name not in x
             ]
@@ -302,7 +301,7 @@ class Parametrized:
                 # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} dynamic args were passed, but {n_expected} are "
-                    "required"
+                    "required."
                 )
 
             cur_offset = self.n_dynamic
@@ -559,8 +558,7 @@ class Parametrized:
                 add_params(desc, dot)
 
         return dot
-
-
+    
 # class ParametrizedList(Parametrized):
 #     """
 #     TODO

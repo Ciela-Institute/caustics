@@ -9,7 +9,7 @@ __all__ = ("get_pix_jacobian", "get_pix_magnification", "get_magnification")
 
 
 def get_pix_jacobian(
-    raytrace, thx, thy, z_s, x
+    raytrace, thx, thy, z_s
 ) -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor]]:
     """Computes the Jacobian matrix of the partial derivatives of the
     image position with respect to the source position
@@ -27,11 +27,11 @@ def get_pix_jacobian(
         The Jacobian matrix of the image position with respect to the source position at the given point.
 
     """
-    jac = torch.func.jacfwd(raytrace, (0, 1))(thx, thy, z_s, x)  # type: ignore
+    jac = torch.func.jacfwd(raytrace, (0, 1))(thx, thy, z_s)  # type: ignore
     return jac
 
 
-def get_pix_magnification(raytrace, thx, thy, z_s, x) -> Tensor:
+def get_pix_magnification(raytrace, thx, thy, z_s) -> Tensor:
     """
     Computes the magnification at a single point on the lensing plane. The magnification is derived from the determinant
     of the Jacobian matrix of the image position with respect to the source position.
@@ -46,11 +46,11 @@ def get_pix_magnification(raytrace, thx, thy, z_s, x) -> Tensor:
     Returns:
         The magnification at the given point on the lensing plane.
     """
-    jac = get_pix_jacobian(raytrace, thx, thy, z_s, x)
+    jac = get_pix_jacobian(raytrace, thx, thy, z_s)
     return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()
 
 
-def get_magnification(raytrace, thx, thy, z_s, x) -> Tensor:
+def get_magnification(raytrace, thx, thy, z_s) -> Tensor:
     """
     Computes the magnification over a grid on the lensing plane. This is done by calling `get_pix_magnification` 
     for each point on the grid.
@@ -65,6 +65,6 @@ def get_magnification(raytrace, thx, thy, z_s, x) -> Tensor:
     Returns:
         A tensor representing the magnification at each point on the grid.
     """
-    return vmap_n(get_pix_magnification, 2, (None, 0, 0, None, None))(
-        raytrace, thx, thy, z_s, x
+    return vmap_n(get_pix_magnification, 2, (None, 0, 0, None))(
+        raytrace, thx, thy, z_s
     )
