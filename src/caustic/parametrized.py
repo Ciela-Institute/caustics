@@ -10,7 +10,7 @@ from torch import Tensor
 from .packed import Packed
 from .parameter import Parameter
 
-__all__ = ("Parametrized", "Simulator")
+__all__ = ("Parametrized",)
 
 class Parametrized:
     """
@@ -558,21 +558,6 @@ class Parametrized:
                 add_params(desc, dot)
 
         return dot
-
-class Simulator(Parametrized):
-    """A caustic simulator using Parametrized framework.
-
-    Defines a simulator class which is a callable function that
-    operates on the Parametrized framework. Users define the `forward`
-    method which takes as its first argument an object which can be
-    packed, all other args and kwargs are simply passed to the forward
-    method.
-
-    See `Parametrized` for details on how to add/access parameters.
-
-    """
-    def __call__(self, *args, **kwargs):
-        return self.forward(self.pack(args[0]), *args[1:], **kwargs)
     
 # class ParametrizedList(Parametrized):
 #     """
