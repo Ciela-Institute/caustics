@@ -13,9 +13,20 @@ __all__ = ("PseudoJaffe",)
 
 class PseudoJaffe(ThinLens):
     """
-    Notes:
-        Based on `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_ and
-        the `lenstronomy` source code.
+    Class representing a Pseudo Jaffe lens in strong gravitational lensing, 
+    based on `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_ and 
+    the `lenstronomy` source code.
+
+    Attributes:
+        name (str): The name of the Pseudo Jaffe lens.
+        cosmology (Cosmology): The cosmology used for calculations.
+        z_l (Optional[Tensor]): Redshift of the lens.
+        thx0 (Optional[Tensor]): x-coordinate of the center of the lens.
+        thy0 (Optional[Tensor]): y-coordinate of the center of the lens.
+        kappa_0 (Optional[Tensor]): Central convergence of the lens.
+        th_core (Optional[Tensor]): Core radius of the lens.
+        th_s (Optional[Tensor]): Scaling radius of the lens.
+        s (float): Softening parameter to prevent numerical instabilities.
     """
 
     def __init__(
@@ -30,6 +41,20 @@ class PseudoJaffe(ThinLens):
         th_s: Optional[Tensor] = None,
         s: float = 0.0,
     ):
+        """
+        Initialize the PseudoJaffe class.
+
+        Args:
+            name (str): The name of the Pseudo Jaffe lens.
+            cosmology (Cosmology): The cosmology used for calculations.
+            z_l (Optional[Tensor]): Redshift of the lens.
+            thx0 (Optional[Tensor]): x-coordinate of the center of the lens.
+            thy0 (Optional[Tensor]): y-coordinate of the center of the lens.
+            kappa_0 (Optional[Tensor]): Central convergence of the lens.
+            th_core (Optional[Tensor]): Core radius of the lens.
+            th_s (Optional[Tensor]): Scaling radius of the lens.
+            s (float): Softening parameter to prevent numerical instabilities.
+        """
         super().__init__(name, cosmology, z_l)
 
         self.add_param("thx0", thx0)
@@ -40,6 +65,17 @@ class PseudoJaffe(ThinLens):
         self.s = s
 
     def mass_enclosed_2d(self, th, z_s, x: Optional[dict[str, Any]] = None):
+        """
+        Calculate the mass enclosed within a two-dimensional radius.
+
+        Args:
+            th (Tensor): Radius at which to calculate enclosed mass.
+            z_s (Tensor): Source redshift.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            Tensor: The mass enclosed within the given radius.
+        """
         z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
         th = th + self.s
@@ -69,6 +105,21 @@ class PseudoJaffe(ThinLens):
         cosmology: Cosmology,
         x: Optional[dict[str, Any]] = None,
     ):
+        """
+        Compute the central convergence.
+
+        Args:
+            z_l (Tensor): Lens redshift.
+            z_s (Tensor): Source redshift.
+            rho_0 (Tensor): Central mass density.
+            th_core (Tensor): Core radius of the lens.
+            th_s (Tensor): Scaling radius of the lens.
+            cosmology (Cosmology): The cosmology used for calculations.
+            x (Optional[dict[str, Any]]): Additional parameters.
+
+        Returns:
+            Tensor: The central convergence.
+        """
         return (
             pi
             * rho_0
@@ -81,6 +132,17 @@ class PseudoJaffe(ThinLens):
     def alpha(
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> tuple[Tensor, Tensor]:
+        """ Calculate the deflection angle.
+
+        Args:
+            thx (Tensor): x-coordinate of the lens.
+            thy (Tensor): y-coordinate of the lens.
+            z_s (Tensor): Source redshift.
+            x (Optional[dict[str, Any]]): Additional parameters.
+    
+        Returns:
+            Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
+        """
         z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
         thx, thy = translate_rotate(thx, thy, thx0, thy0)
@@ -97,7 +159,16 @@ class PseudoJaffe(ThinLens):
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
-        Lensing potential (eq. A18).
+        Compute the lensing potential. This calculation is based on equation A18.
+    
+        Args:
+            thx (Tensor): x-coordinate of the lens.
+            thy (Tensor): y-coordinate of the lens.
+            z_s (Tensor): Source redshift.
+            x (Optional[dict[str, Any]]): Additional parameters.
+    
+        Returns:
+            Tensor: The lensing potential.
         """
         z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
@@ -115,7 +186,16 @@ class PseudoJaffe(ThinLens):
         self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
     ) -> Tensor:
         """
-        Projected mass density (eq. A6).
+        Calculate the projected mass density, based on equation A6.
+    
+        Args:
+            thx (Tensor): x-coordinate of the lens.
+            thy (Tensor): y-coordinate of the lens.
+            z_s (Tensor): Source redshift.
+            x (Optional[dict[str, Any]]): Additional parameters.
+    
+        Returns:
+            Tensor: The projected mass density.
         """
         z_l, thx0, thy0, kappa_0, th_core, th_s = self.unpack(x)
 
