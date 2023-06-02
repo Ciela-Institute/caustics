@@ -23,7 +23,7 @@ class EPL(ThinLens):
     
     Parameters:
         z_l (Tensor, optional): This is the redshift of the lens. In the context of gravitational lensing, the lens is the galaxy or other mass distribution that is bending the light from a more distant source.
-        thx0 and thy0 (Tensors, optional): These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
+        x0 and y0 (Tensors, optional): These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
         q (Tensor, optional): This is the axis ratio of the lens, i.e., the ratio of the minor axis to the major axis of the elliptical lens.
         phi (Tensor, optional): This is the orientation of the lens on the sky, typically given as an angle measured counter-clockwise from some reference direction.
         b (Tensor, optional): This is the scale length of the lens, which sets the overall scale of the lensing effect. In some contexts, this is referred to as the Einstein radius.
@@ -36,8 +36,8 @@ class EPL(ThinLens):
         name: str,
         cosmology: Cosmology,
         z_l: Optional[Tensor] = None,
-        thx0: Optional[Tensor] = None,
-        thy0: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
         q: Optional[Tensor] = None,
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
@@ -52,8 +52,8 @@ class EPL(ThinLens):
             name (str): Name of the lens model.
             cosmology (Cosmology): Cosmology object that provides cosmological distance calculations.
             z_l (Optional[Tensor]): Redshift of the lens. If not provided, it is considered as a free parameter.
-            thx0 (Optional[Tensor]): X coordinate of the lens center. If not provided, it is considered as a free parameter.
-            thy0 (Optional[Tensor]): Y coordinate of the lens center. If not provided, it is considered as a free parameter.
+            x0 (Optional[Tensor]): X coordinate of the lens center. If not provided, it is considered as a free parameter.
+            y0 (Optional[Tensor]): Y coordinate of the lens center. If not provided, it is considered as a free parameter.
             q (Optional[Tensor]): Axis ratio of the lens. If not provided, it is considered as a free parameter.
             phi (Optional[Tensor]): Position angle of the lens. If not provided, it is considered as a free parameter.
             b (Optional[Tensor]): Scale length of the lens. If not provided, it is considered as a free parameter.
@@ -63,8 +63,8 @@ class EPL(ThinLens):
         """
         super().__init__(name, cosmology, z_l)
 
-        self.add_param("thx0", thx0)
-        self.add_param("thy0", thy0)
+        self.add_param("x0", x0)
+        self.add_param("y0", y0)
         self.add_param("q", q)
         self.add_param("phi", phi)
         self.add_param("b", b)
@@ -73,27 +73,27 @@ class EPL(ThinLens):
 
         self.n_iter = n_iter
 
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angles of the lens.
 
         Args:
-            thx (Tensor): X coordinates in the lens plane.
-            thy (Tensor): Y coordinates in the lens plane.
+            x (Tensor): X coordinates in the lens plane.
+            y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x (Optional[dict[str, Any]]): Additional parameters for the lens model.
+            x ("Packed"): Additional parameters for the lens model.
 
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angles in the x and y directions.
         """
-        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
+        z_l, x0, y0, q, phi, b, t = self.unpack(P)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
+        x, y = translate_rotate(x, y, x0, y0, phi)
 
         # follow Tessore et al 2015 (eq. 5)
-        z = q * thx + thy * 1j
+        z = q * x + y * 1j
         r = torch.abs(z)
 
         # Tessore et al 2015 (eq. 23)
@@ -131,45 +131,45 @@ class EPL(ThinLens):
 
         return part_sum
 
-    def Psi(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def potential(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ):
         """
         Compute the lensing potential of the lens.
 
         Args:
-            thx (Tensor): X coordinates in the lens plane.
-            thy (Tensor): Y coordinates in the lens plane.
+            x (Tensor): X coordinates in the lens plane.
+            y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x (Optional[dict[str, Any]]): Additional parameters for the lens model.
+            P ("Packed"): Additional parameters for the lens model.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
+        z_l, x0, y0, q, phi, b, t = self.unpack(P)
 
-        ax, ay = self.alpha(thx, thy, z_s, x)
+        ax, ay = self.deflection_angle(x, y, z_s, P)
         ax, ay = derotate(ax, ay, -phi)
-        thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        return (thx * ax + thy * ay) / (2 - t)
+        x, y = translate_rotate(x, y, x0, y0, phi)
+        return (x * ax + y * ay) / (2 - t)
 
-    def kappa(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def convergence(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ):
         """
         Compute the convergence of the lens, which describes the local density of the lens.
 
         Args:
-            thx (Tensor): X coordinates in the lens plane.
-            thy (Tensor): Y coordinates in the lens plane.
+            x (Tensor): X coordinates in the lens plane.
+            y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x (Optional[dict[str, Any]]): Additional parameters for the lens model.
+            x ("Packed"): Additional parameters for the lens model.
 
         Returns:
             Tensor: The convergence of the lens.
         """
-        z_l, thx0, thy0, q, phi, b, t = self.unpack(x)
+        z_l, x0, y0, q, phi, b, t = self.unpack(P)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = (q**2 * (thx**2 + self.s**2) + thy**2).sqrt()
+        x, y = translate_rotate(x, y, x0, y0, phi)
+        psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()
         return (2 - t) / 2 * (b / psi) ** t

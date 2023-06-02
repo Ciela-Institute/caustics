@@ -33,17 +33,17 @@ class ThickLens(Parametrized):
         self.cosmology = cosmology
 
     @abstractmethod
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle at given coordinates [arcsec].
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Tuple of Tensors representing the x and y components of the deflection angle, respectively.
@@ -51,35 +51,35 @@ class ThickLens(Parametrized):
         ...
 
     def raytrace(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
         Performs ray tracing by computing the deflection angle and subtracting it from the initial coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Tuple of Tensors representing the x and y coordinates of the ray-traced light rays, respectively.
         """
-        ax, ay = self.alpha(thx, thy, z_s, x)
-        return thx - ax, thy - ay
+        ax, ay = self.deflection_angle(x, y, z_s, P)
+        return x - ax, y - ay
 
     @abstractmethod
-    def Sigma(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def Sigma( # TODO Sigma -> surface_density
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """
         Computes the projected mass density at given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: The projected mass density at the given coordinates in units of solar masses per square Megaparsec.
@@ -88,36 +88,36 @@ class ThickLens(Parametrized):
 
     @abstractmethod
     def time_delay(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """
         Computes the gravitational time delay at given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor ofsource redshifts.
-        x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: The gravitational time delay at the given coordinates.
         """
         ...
 
-    def magnification(self, thx: Tensor, thy: Tensor, z_s: Tensor, x) -> Tensor:
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, P) -> Tensor:
         """
         Computes the gravitational lensing magnification at given coordinates.
     
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
     
         Returns:
             Tensor: The gravitational lensing magnification at the given coordinates.
         """
-        return get_magnification(partial(self.raytrace, x = x), thx, thy, z_s)
+        return get_magnification(partial(self.raytrace, P = P), x, y, z_s)
 
 class ThinLens(Parametrized):
     """Base class for thin gravitational lenses.
@@ -141,57 +141,57 @@ class ThinLens(Parametrized):
         self.add_param("z_l", z_l)
 
     @abstractmethod
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def deflection_angle( # TODO be explicit about the type of deflection angle used physical or reduce
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angle in x and y directions.
         """
         ...
 
-    def alpha_hat(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def deflection_angle_hat( # TODO: hat -> reduced ? need to double check this
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Physical deflection angle in x and y directions in arcseconds.
         """
-        z_l = self.unpack(x)[0]
+        z_l = self.unpack(P)[0]
 
-        d_s = self.cosmology.angular_diameter_dist(z_s, x)
-        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s, x)
-        alpha_x, alpha_y = self.alpha(thx, thy, z_s, x)
-        return (d_s / d_ls) * alpha_x, (d_s / d_ls) * alpha_y
+        d_s = self.cosmology.angular_diameter_distance(z_s, P)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, P)
+        deflection_angle_x, deflection_angle_y = self.deflection_angle(x, y, z_s, P)
+        return (d_s / d_ls) * deflection_angle_x, (d_s / d_ls) * deflection_angle_y
 
     @abstractmethod
-    def kappa(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def convergence(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """
         Computes the convergence of the lens at given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Convergence at the given coordinates.
@@ -199,132 +199,132 @@ class ThinLens(Parametrized):
         ...
 
     @abstractmethod
-    def Psi(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def potential(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """
         Computes the gravitational lensing potential at given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns: Tensor: Gravitational lensing potential at the given coordinates in arcsec^2.
         """
         ...
 
     def Sigma(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Surface mass density at the given coordinates in solar masses per Mpc^2.
         """
         # Superclass params come before subclass ones
-        z_l = self.unpack(x)[0]
+        z_l = self.unpack(P)[0]
 
-        Sigma_cr = self.cosmology.Sigma_cr(z_l, z_s, x)
-        return self.kappa(thx, thy, z_s, x) * Sigma_cr
+        Sigma_cr = self.cosmology.Sigma_cr(z_l, z_s, P)
+        return self.convergence(x, y, z_s, P) * Sigma_cr
 
     def raytrace(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
         Perform a ray-tracing operation by subtracting the deflection angles from the input coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
         """
-        ax, ay = self.alpha(thx, thy, z_s, x)
-        return thx - ax, thy - ay
+        ax, ay = self.deflection_angle(x, y, z_s, P) # TODO: use reduced alpha? double check
+        return x - ax, y - ay
 
     def time_delay(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ):
         """
         Compute the gravitational time delay for light passing through the lens at given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Time delay at the given coordinates.
         """
-        z_l = self.unpack(x)[0]
+        z_l = self.unpack(P)[0]
 
-        d_l = self.cosmology.angular_diameter_dist(z_l, x)
-        d_s = self.cosmology.angular_diameter_dist(z_s, x)
-        d_ls = self.cosmology.angular_diameter_dist_z1z2(z_l, z_s, x)
-        ax, ay = self.alpha(thx, thy, z_s, x)
-        Psi = self.Psi(thx, thy, z_s, x)
+        d_l = self.cosmology.angular_diameter_distance(z_l, P)
+        d_s = self.cosmology.angular_diameter_distance(z_s, P)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, P)
+        ax, ay = self.deflection_angle(x, y, z_s, P)
+        potential = self.potential(x, y, z_s, P)
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - Psi
+        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
         return factor * fp * arcsec_to_rad**2
 
     def _lensing_jacobian_fft_method(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """
         Compute the lensing Jacobian using the Fast Fourier Transform method.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Lensing Jacobian at the given coordinates.
         """
-        psi = self.Psi(thx, thy, z_s, x)
-        # quick dirty work to get kx and ky. Assumes thx and thy come from meshgrid... TODO Might want to get k differently
-        n = thx.shape[-1]
-        d = torch.abs(thx[0, 0] - thx[0, 1])
+        potential = self.potential(x, y, z_s, P)
+        # quick dirty work to get kx and ky. Assumes x and y come from meshgrid... TODO Might want to get k differently
+        n = x.shape[-1]
+        d = torch.abs(x[0, 0] - x[0, 1])
         k = torch.fft.fftfreq(2 * n, d=d)
         kx, ky = torch.meshgrid([k, k], indexing="xy")
         # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
         pad = 2 * n
-        psi_tilde = torch.fft.fft(psi, (pad, pad))
-        psi_xx = torch.abs(torch.fft.ifft2(-(kx**2) * psi_tilde))[..., :n, :n]
-        psi_yy = torch.abs(torch.fft.ifft2(-(ky**2) * psi_tilde))[..., :n, :n]
-        psi_xy = torch.abs(torch.fft.ifft2(-kx * ky * psi_tilde))[..., :n, :n]
+        potential_tilde = torch.fft.fft(potential, (pad, pad))
+        potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :n, :n]
+        potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :n, :n]
+        potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :n, :n]
         j1 = torch.stack(
-            [1 - psi_xx, -psi_xy], dim=-1
+            [1 - potential_xx, -potential_xy], dim=-1
         )  # Equation 2.33 from Meneghetti lensing lectures
-        j2 = torch.stack([-psi_xy, 1 - psi_yy], dim=-1)
+        j2 = torch.stack([-potential_xy, 1 - potential_yy], dim=-1)
         jacobian = torch.stack([j1, j2], dim=-1)
         return jacobian
 
-    def magnification(self, thx: Tensor, thy: Tensor, z_s: Tensor, x) -> Tensor:
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed") -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
 
         Args:
-            thx (Tensor): Tensor of x coordinates in the lens plane.
-            thy (Tensor): Tensor of y coordinates in the lens plane.
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            x (Optional[dict[str, Any]], optional): Additional parameters for the lens model. Defaults to None.
+            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Gravitational magnification at the given coordinates.
         """
-        return get_magnification(partial(self.raytrace, x = x), thx, thy, z_s)
+        return get_magnification(partial(self.raytrace, P = P), x, y, z_s)

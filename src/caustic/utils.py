@@ -79,7 +79,7 @@ def to_elliptical(x, y, q: Tensor):
     Returns:
         Tuple[Tensor, Tensor]: Tuple containing the x and y coordinates in elliptical form.
     """
-    return x * q.sqrt(), y / q.sqrt()
+    return x, y / q # TODO make it: x, y/q
 
 
 def get_meshgrid(
