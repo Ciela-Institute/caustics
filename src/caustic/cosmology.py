@@ -13,14 +13,14 @@ from .parametrized import Parametrized
 
 __all__ = (
     "h0_default",
-    "rho_cr_0_default",
+    "critical_density_0_default",
     "Om0_default",
     "Cosmology",
     "FlatLambdaCDM",
 )
 
 h0_default = float(default_cosmology.get().h)
-rho_cr_0_default = float(
+critical_density_0_default = float(
     default_cosmology.get().critical_density(0).to("solMass/Mpc^3").value
 )
 Om0_default = float(default_cosmology.get().Om0)
@@ -60,7 +60,7 @@ class Cosmology(Parametrized):
         super().__init__(name)
 
     @abstractmethod
-    def rho_cr(self, # TODO rho_cr -> critical_density
+    def critical_density(self, # TODO critical_density -> critical_density
                z: Tensor, P: "Packed" = None) -> Tensor:
         """
         Compute the critical density at redshift z.
@@ -179,7 +179,7 @@ class FlatLambdaCDM(Cosmology):
         self,
         name: str,
         h0: Optional[Tensor] = torch.tensor(h0_default),
-        rho_cr_0: Optional[Tensor] = torch.tensor(rho_cr_0_default),
+        critical_density_0: Optional[Tensor] = torch.tensor(critical_density_0_default),
         Om0: Optional[Tensor] = torch.tensor(Om0_default),
     ):
         """
@@ -188,13 +188,13 @@ class FlatLambdaCDM(Cosmology):
         Args:
             name (str): Name of the cosmology.
             h0 (Optional[Tensor]): Hubble constant over 100. Default is h0_default.
-            rho_cr_0 (Optional[Tensor]): Critical density at z=0. Default is rho_cr_0_default.
+            critical_density_0 (Optional[Tensor]): Critical density at z=0. Default is critical_density_0_default.
             Om0 (Optional[Tensor]): Matter density parameter at z=0. Default is Om0_default.
         """
         super().__init__(name)
 
         self.add_param("h0", h0)
-        self.add_param("rho_cr_0", rho_cr_0)
+        self.add_param("critical_density_0", critical_density_0)
         self.add_param("Om0", Om0)
 
         self._comoving_distance_helper_x_grid = _comoving_distance_helper_x_grid.to(
@@ -216,7 +216,7 @@ class FlatLambdaCDM(Cosmology):
         """
         return c_Mpc_s / (100 * km_to_Mpc) / h0
 
-    def critical_density(self, # TODO rho_cr -> critical_density
+    def critical_density(self, # TODO critical_density -> critical_density
                z: Tensor, P: "Packed" = None) -> torch.Tensor:
         """
         Calculate the critical density at redshift z.
@@ -228,7 +228,7 @@ class FlatLambdaCDM(Cosmology):
         Returns:
             torch.Tensor: Critical density at redshift z.
         """
-        _, rho_cr_0, Om0 = self.unpack(P)
+        _, critical_density_0, Om0 = self.unpack(P)
         Ode0 = 1 - Om0
         return critical_density_0 * (Om0 * (1 + z) ** 3 + Ode0)
 
@@ -268,7 +268,7 @@ class FlatLambdaCDM(Cosmology):
         return (
             self.hubble_distance(h0)
             * (
-                self._comoving_distance_helper((1 + z, P) * ratio)
+                self._comoving_distance_helper((1 + z) * ratio, P)
                 - self._comoving_distance_helper(ratio, P)
             )
             / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))

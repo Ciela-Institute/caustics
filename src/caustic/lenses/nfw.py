@@ -226,7 +226,7 @@ class NFW(ThinLens):
             16
             * pi
             * G_over_c2
-            * self.get_scale_density(z_l, c, x)
+            * self.get_scale_density(z_l, c, P)
             * scale_radius**3
             * self._h(r)
             * rad_to_arcsec

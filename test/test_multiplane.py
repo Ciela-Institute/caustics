@@ -7,7 +7,7 @@ from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
 from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import SIE, MultiplaneLens
+from caustic.lenses import SIE, Multiplane
 
 
 def test():
@@ -28,7 +28,7 @@ def test():
     ]
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
-    lens = MultiplaneLens(
+    lens = Multiplane(
         "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
     )
 

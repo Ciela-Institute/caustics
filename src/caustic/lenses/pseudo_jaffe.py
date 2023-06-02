@@ -79,7 +79,7 @@ class PseudoJaffe(ThinLens):
         z_l, x0, y0, convergence_0, th_core, th_s = self.unpack(P)
 
         th = th + self.s
-        Sigma_0 = convergence_0 * self.cosmology.Sigma_cr(z_l, z_s, P)
+        Sigma_0 = convergence_0 * self.cosmology.critical_surface_density(z_l, z_s, P)
         return (
             2
             * pi
@@ -126,7 +126,7 @@ class PseudoJaffe(ThinLens):
             * th_core
             * th_s
             / (th_core + th_s)
-            / cosmology.Sigma_cr(z_l, z_s, x)
+            / cosmology.critical_surface_density(z_l, z_s, P)
         )
 
     def deflection_angle(
