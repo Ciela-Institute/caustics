@@ -128,7 +128,7 @@ class Multiplane(ThickLens):
         bx, by = self.raytrace(x, y, z_s, P)
         return x - bx, y - by
 
-    def Sigma(
+    def surface_density(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> Tensor:
         """

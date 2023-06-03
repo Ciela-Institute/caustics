@@ -34,7 +34,7 @@ class ThickLens(Parametrized):
 
     @abstractmethod
     def deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle at given coordinates [arcsec].
@@ -43,7 +43,7 @@ class ThickLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Tuple of Tensors representing the x and y components of the deflection angle, respectively.
@@ -51,7 +51,7 @@ class ThickLens(Parametrized):
         ...
 
     def raytrace(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Performs ray tracing by computing the deflection angle and subtracting it from the initial coordinates.
@@ -60,7 +60,7 @@ class ThickLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Tuple of Tensors representing the x and y coordinates of the ray-traced light rays, respectively.
@@ -69,8 +69,8 @@ class ThickLens(Parametrized):
         return x - ax, y - ay
 
     @abstractmethod
-    def Sigma( # TODO Sigma -> surface_density
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+    def surface_density(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> Tensor:
         """
         Computes the projected mass density at given coordinates.
@@ -79,7 +79,7 @@ class ThickLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: The projected mass density at the given coordinates in units of solar masses per square Megaparsec.
@@ -88,7 +88,7 @@ class ThickLens(Parametrized):
 
     @abstractmethod
     def time_delay(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> Tensor:
         """
         Computes the gravitational time delay at given coordinates.
@@ -97,7 +97,7 @@ class ThickLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor ofsource redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: The gravitational time delay at the given coordinates.
@@ -112,7 +112,7 @@ class ThickLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
     
         Returns:
             Tensor: The gravitational lensing magnification at the given coordinates.
@@ -141,8 +141,8 @@ class ThinLens(Parametrized):
         self.add_param("z_l", z_l)
 
     @abstractmethod
-    def deflection_angle( # TODO be explicit about the type of deflection angle used physical or reduce
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+    def deflection_angle( # TODO be explicit about the type of deflection angle used physical or reduced
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -151,7 +151,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angle in x and y directions.
@@ -159,7 +159,7 @@ class ThinLens(Parametrized):
         ...
 
     def deflection_angle_hat( # TODO: hat -> reduced ? need to double check this
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
@@ -168,7 +168,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Physical deflection angle in x and y directions in arcseconds.
@@ -182,7 +182,7 @@ class ThinLens(Parametrized):
 
     @abstractmethod
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> Tensor:
         """
         Computes the convergence of the lens at given coordinates.
@@ -191,7 +191,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Convergence at the given coordinates.
@@ -200,7 +200,7 @@ class ThinLens(Parametrized):
 
     @abstractmethod
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> Tensor:
         """
         Computes the gravitational lensing potential at given coordinates.
@@ -209,14 +209,14 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns: Tensor: Gravitational lensing potential at the given coordinates in arcsec^2.
         """
         ...
 
-    def Sigma(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+    def surface_density(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
@@ -225,7 +225,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Surface mass density at the given coordinates in solar masses per Mpc^2.
@@ -233,11 +233,11 @@ class ThinLens(Parametrized):
         # Superclass params come before subclass ones
         z_l = self.unpack(P)[0]
 
-        Sigma_cr = self.cosmology.Sigma_cr(z_l, z_s, P)
-        return self.convergence(x, y, z_s, P) * Sigma_cr
+        critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, P)
+        return self.convergence(x, y, z_s, P) * critical_surface_density
 
     def raytrace(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Perform a ray-tracing operation by subtracting the deflection angles from the input coordinates.
@@ -246,7 +246,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
@@ -255,7 +255,7 @@ class ThinLens(Parametrized):
         return x - ax, y - ay
 
     def time_delay(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ):
         """
         Compute the gravitational time delay for light passing through the lens at given coordinates.
@@ -264,7 +264,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Time delay at the given coordinates.
@@ -281,7 +281,7 @@ class ThinLens(Parametrized):
         return factor * fp * arcsec_to_rad**2
 
     def _lensing_jacobian_fft_method(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing Jacobian using the Fast Fourier Transform method.
@@ -290,7 +290,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Lensing Jacobian at the given coordinates.
@@ -322,7 +322,7 @@ class ThinLens(Parametrized):
             x (Tensor): Tensor of x coordinates in the lens plane.
             y (Tensor): Tensor of y coordinates in the lens plane.
             z_s (Tensor): Tensor of source redshifts.
-            P ("Packed", optional): Additional parameters for the lens model. Defaults to None.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
 
         Returns:
             Tensor: Gravitational magnification at the given coordinates.

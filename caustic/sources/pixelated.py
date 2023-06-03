@@ -8,7 +8,7 @@ from .base import Source
 __all__ = ("Pixelated",)
 
 
-class Pixelated(Source): # TODO ImageSource -> Pixelated
+class Pixelated(Source):
     """
     `Pixelated` is a subclass of the abstract class `Source`. It represents a source in a strong 
     gravitational lensing system where the source is an image.
@@ -27,11 +27,11 @@ class Pixelated(Source): # TODO ImageSource -> Pixelated
     def __init__(
         self,
         name: str,
-        x0: Optional[Tensor] = None, # TODO thx0 -> x0
+        x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         image: Optional[Tensor] = None, 
-        pixelscale: Optional[Tensor] = None, # TODO scale -> pixelscale
-        image_shape: Optional[tuple[int, ...]] = None, # TODO image_shape -> shape
+        pixelscale: Optional[Tensor] = None,
+        image_shape: Optional[tuple[int, ...]] = None,
     ):
         """
         Constructs the `Pixelated` object with the given parameters. 

@@ -50,7 +50,7 @@ class SIE(ThinLens):
         self.add_param("b", b)
         self.s = s
 
-    def _get_potential(self, x, y, q): # TODO _get_psi -> _get_potential
+    def _get_potential(self, x, y, q):
         """
         Compute the radial coordinate in the lens plane.
 
