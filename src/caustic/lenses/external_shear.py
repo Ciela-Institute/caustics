@@ -51,7 +51,7 @@ class ExternalShear(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions.
@@ -74,7 +74,7 @@ class ExternalShear(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The lensing potential.
@@ -95,7 +95,7 @@ class ExternalShear(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Raises:
             NotImplementedError: This method is not implemented as the convergence is not defined 

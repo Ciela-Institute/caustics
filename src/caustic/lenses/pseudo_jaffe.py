@@ -71,7 +71,7 @@ class PseudoJaffe(ThinLens):
         Args:
             th (Tensor): Radius at which to calculate enclosed mass.
             z_s (Tensor): Source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The mass enclosed within the given radius.
@@ -115,7 +115,7 @@ class PseudoJaffe(ThinLens):
             th_core (Tensor): Core radius of the lens.
             th_s (Tensor): Scaling radius of the lens.
             cosmology (Cosmology): The cosmology used for calculations.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The central convergence.
@@ -138,7 +138,7 @@ class PseudoJaffe(ThinLens):
             x (Tensor): x-coordinate of the lens.
             y (Tensor): y-coordinate of the lens.
             z_s (Tensor): Source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
     
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
@@ -165,7 +165,7 @@ class PseudoJaffe(ThinLens):
             x (Tensor): x-coordinate of the lens.
             y (Tensor): y-coordinate of the lens.
             z_s (Tensor): Source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
     
         Returns:
             Tensor: The lensing potential.
@@ -192,7 +192,7 @@ class PseudoJaffe(ThinLens):
             x (Tensor): x-coordinate of the lens.
             y (Tensor): y-coordinate of the lens.
             z_s (Tensor): Source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
     
         Returns:
             Tensor: The projected mass density.

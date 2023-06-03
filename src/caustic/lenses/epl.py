@@ -83,7 +83,7 @@ class EPL(ThinLens):
             x (Tensor): X coordinates in the lens plane.
             y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x ("Packed"): Additional parameters for the lens model.
+            x (Packed): Additional parameters for the lens model.
 
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angles in the x and y directions.
@@ -141,7 +141,7 @@ class EPL(ThinLens):
             x (Tensor): X coordinates in the lens plane.
             y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            P ("Packed"): Additional parameters for the lens model.
+            P (Packed): Additional parameters for the lens model.
 
         Returns:
             Tensor: The lensing potential.
@@ -163,7 +163,7 @@ class EPL(ThinLens):
             x (Tensor): X coordinates in the lens plane.
             y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x ("Packed"): Additional parameters for the lens model.
+            x (Packed): Additional parameters for the lens model.
 
         Returns:
             Tensor: The convergence of the lens.

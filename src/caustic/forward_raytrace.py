@@ -6,27 +6,26 @@ from torch import Tensor
 
 from .utils import get_cluster_means
 
-# TODO everywhere: th -> theta
 
-def forward_raytrace( # TODO fwd_raytrace -> forward_raytrace
+def forward_raytrace(
     beta_x: Tensor,
     beta_y: Tensor,
     get_beta_hat: Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]],
     n_images: int,
-    thetax_range: Tuple[float, float], 
+    thetax_range: Tuple[float, float],
     thetay_range: Tuple[float, float],
     n_guesses: int = 15,
-    LM_damping: float = 1e-2, # TODO lam -> LM_damping
+    LM_damping: float = 1e-2,
     max_iters_guesses: int = 50,
     max_iters_final: int = 50,
 ) -> Tensor:
     """
-    Implements a forward ray tracing algorithm for a strong gravitational lensing system. 
+    Implements a forward ray tracing algorithm for a strong gravitational lensing system.
 
     Args:
         beta_x (Tensor): The x coordinates of the source positions in the source plane.
         beta_y (Tensor): The y coordinates of the source positions in the source plane.
-        get_beta_hat (Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]]): A function that returns 
+        get_beta_hat (Callable[[Tensor, Tensor], Tuple[Tensor, Tensor]]): A function that returns
             the predicted source positions given the lensed image positions.
         n_images (int): The number of images to produce.
         thetax_range (Tuple[float, float]): The range of x coordinates in the lens plane to consider for initial guesses.
@@ -38,17 +37,17 @@ def forward_raytrace( # TODO fwd_raytrace -> forward_raytrace
 
     Returns:
         Tensor: The optimized lensed image positions in the lens plane.
-    
-    This function first generates a set of initial guesses for the lensed image positions. 
-    These guesses are then optimized using the Levenberg-Marquardt algorithm to match the 
-    observed source positions. If the optimization fails for any of the initial guesses, 
+
+    This function first generates a set of initial guesses for the lensed image positions.
+    These guesses are then optimized using the Levenberg-Marquardt algorithm to match the
+    observed source positions. If the optimization fails for any of the initial guesses,
     new guesses are generated and the process is repeated until a successful optimization is achieved.
 
-    Once the initial optimization is complete, the results are pared down to the desired number 
-    of images using a clustering algorithm, and a final round of optimization is performed. 
+    Once the initial optimization is complete, the results are pared down to the desired number
+    of images using a clustering algorithm, and a final round of optimization is performed.
     The function returns the final optimized lensed image positions.
 
-    Note: If the number of images is greater than the number of observed source positions, 
+    Note: If the number of images is greater than the number of observed source positions,
     the function may not be able to find a solution.
     """
 
@@ -76,5 +75,9 @@ def forward_raytrace( # TODO fwd_raytrace -> forward_raytrace
 
     # Run final optimization
     return minimize_levmarq(
-        thetaxys, bxy.repeat(n_images, 1), get_beta_hat, lam=LM_damping, max_iters=max_iters_final
+        thetaxys,
+        bxy.repeat(n_images, 1),
+        get_beta_hat,
+        lam=LM_damping,
+        max_iters=max_iters_final,
     )

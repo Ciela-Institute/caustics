@@ -12,20 +12,21 @@ from .parameter import Parameter
 
 __all__ = ("Parametrized",)
 
+
 class Parametrized:
     """
     Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator
     that have parameters which need to be tracked during MCMC sampling.
 
     This class can contain Params, Parametrized, tensor buffers or normal attributes as its attributes.
-    It provides functionalities to manage these attributes, ensuring that an attribute of one type isn't rebound 
+    It provides functionalities to manage these attributes, ensuring that an attribute of one type isn't rebound
     to be of a different type.
 
     TODO
     - Attributes can be Params, Parametrized, tensor buffers or just normal attributes.
     - Need to make sure an attribute of one of those types isn't rebound to be of a different type.
     - params: generator returning all the params, with names of parent Parametrized concatenated as key.
-    
+
     Attributes:
         name (str): The name of the Parametrized object.
         parents (list[Parametrized]): List of parent Parametrized objects.
@@ -269,7 +270,7 @@ class Parametrized:
         into arguments to this component and its descendants.
 
         Args:
-            x (Union[list[Tensor], dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]], Tensor): 
+            x (Union[list[Tensor], dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]], Tensor):
                 The input to be packed. Can be a list of tensors, a dictionary of tensors, or a single tensor.
 
         Returns:
@@ -344,7 +345,7 @@ class Parametrized:
         this object's static and dynamic parameters.
 
         Args:
-            x (Optional[dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]]): 
+            x (Optional[dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]]):
                 The packed object to be unpacked.
 
         Returns:
@@ -353,7 +354,7 @@ class Parametrized:
         Raises:
             ValueError: If the input is not a dict, list, tuple or tensor.
             ValueError: If a static parameter is passed dynamically.
-            ValueError: If the argument type is invalid. It must be a dict containing key {self.name} 
+            ValueError: If the argument type is invalid. It must be a dict containing key {self.name}
                 and value containing args as list or flattened tensor, or kwargs.
         """
         my_x = defaultdict(list) if x is None else x[self.name]
@@ -558,7 +559,8 @@ class Parametrized:
                 add_params(desc, dot)
 
         return dot
-    
+
+
 # class ParametrizedList(Parametrized):
 #     """
 #     TODO

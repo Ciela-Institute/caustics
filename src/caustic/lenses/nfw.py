@@ -208,7 +208,7 @@ class NFW(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions.
@@ -247,7 +247,7 @@ class NFW(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
@@ -269,7 +269,7 @@ class NFW(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The convergence (dimensionless surface mass density).
@@ -295,7 +295,7 @@ class NFW(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The lensing potential.

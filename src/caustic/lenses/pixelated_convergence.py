@@ -200,7 +200,7 @@ class PixelatedConvergence(ThinLens):
             x (Tensor): The x-coordinates of the positions to compute the deflection angles for.
             y (Tensor): The y-coordinates of the positions to compute the deflection angles for.
             z_s (Tensor): The source redshift.
-            P ("Packed"): A dictionary containing additional parameters.
+            P (Packed): A dictionary containing additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The x and y components of the deflection angles at the specified positions.
@@ -272,7 +272,7 @@ class PixelatedConvergence(ThinLens):
         x (Tensor): The x-coordinates of the positions to compute the lensing potential for.
         y (Tensor): The y-coordinates of the positions to compute the lensing potential for.
         z_s (Tensor): The source redshift.
-        P ("Packed"): A dictionary containing additional parameters.
+        P (Packed): A dictionary containing additional parameters.
 
         Returns:
             Tensor: The lensing potential at the specified positions.
@@ -334,7 +334,7 @@ class PixelatedConvergence(ThinLens):
             x (Tensor): The x-coordinates of the positions to compute the convergence for.
             y (Tensor): The y-coordinates of the positions to compute the convergence for.
             z_s (Tensor): The source redshift.
-            P ("Packed"): A dictionary containing additional parameters.
+            P (Packed): A dictionary containing additional parameters.
     
         Returns:
             Tensor: The convergence at the specified positions.

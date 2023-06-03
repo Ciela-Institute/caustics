@@ -39,7 +39,7 @@ class SinglePlane(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tuple[Tensor, Tensor]: The total deflection angle in the x and y directions.
@@ -62,7 +62,7 @@ class SinglePlane(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The total projected mass density.
@@ -83,7 +83,7 @@ class SinglePlane(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The total lensing potential.

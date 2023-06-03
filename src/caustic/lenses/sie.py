@@ -78,7 +78,7 @@ class SIE(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
@@ -103,7 +103,7 @@ class SIE(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The lensing potential.
@@ -125,7 +125,7 @@ class SIE(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: The projected mass.

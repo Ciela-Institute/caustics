@@ -33,7 +33,7 @@ class Multiplane(ThickLens):
         Get the redshifts of each lens in the multiplane.
 
         Args:
-            x ("Packed"): Additional parameters.
+            x (Packed): Additional parameters.
 
         Returns:
             List[Tensor]: Redshifts of the lenses.
@@ -52,7 +52,7 @@ class Multiplane(ThickLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angle.
@@ -120,7 +120,7 @@ class Multiplane(ThickLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angle.
@@ -138,7 +138,7 @@ class Multiplane(ThickLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: Projected mass density [solMass / Mpc^2].
@@ -159,7 +159,7 @@ class Multiplane(ThickLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P ("Packed"): Additional parameters.
+            P (Packed): Additional parameters.
 
         Returns:
             Tensor: Time delay caused by the lensing.

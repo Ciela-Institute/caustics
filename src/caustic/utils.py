@@ -79,7 +79,7 @@ def to_elliptical(x, y, q: Tensor):
     Returns:
         Tuple[Tensor, Tensor]: Tuple containing the x and y coordinates in elliptical form.
     """
-    return x, y / q # TODO make it: x, y/q
+    return x, y / q
 
 
 def get_meshgrid(
@@ -146,14 +146,13 @@ def safe_log(x):
     return out
 
 
-
 def _h_poly(t):
     """Helper function to compute the 'h' polynomial matrix used in the
     cubic spline.
-    
+
     Args:
         t (Tensor): A 1D tensor representing the normalized x values.
-    
+
     Returns:
         Tensor: A 2D tensor of size (4, len(t)) representing the 'h' polynomial matrix.
 
@@ -166,6 +165,7 @@ def _h_poly(t):
         device=t.device,
     )
     return A @ tt
+
 
 def interp1d(x: Tensor, y: Tensor, xs: Tensor, extend: str = "extrapolate") -> Tensor:
     """Compute the 1D cubic spline interpolation for the given data points
@@ -181,7 +181,7 @@ def interp1d(x: Tensor, y: Tensor, xs: Tensor, extend: str = "extrapolate") -> T
                                 "const": Use the value of the last known data point for extrapolation.
                                 "linear": Use linear extrapolation based on the last two known data points.
                                 "extrapolate": Use cubic extrapolation of data.
-    
+
     Returns:
         Tensor: A 1D tensor representing the interpolated values at the specified positions (xs).
 
@@ -204,6 +204,7 @@ def interp1d(x: Tensor, y: Tensor, xs: Tensor, extend: str = "extrapolate") -> T
         ret[indices] = y[-1] + (xs[indices] - x[-1]) * (y[-1] - y[-2]) / (x[-1] - x[-2])
     return ret
 
+
 def interp2d(
     im: Tensor,
     x: Tensor,
@@ -212,7 +213,7 @@ def interp2d(
     padding_mode: str = "zeros",
 ) -> Tensor:
     """
-    Interpolates a 2D image at specified coordinates. 
+    Interpolates a 2D image at specified coordinates.
     Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Args:
