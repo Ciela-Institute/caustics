@@ -48,7 +48,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         pwd
-        pytest --cov-report=xml --cov=src/caustic test/
+        pytest --cov-report=xml --cov=caustic test/
         cat coverage.xml
       shell: bash
     - name: Upload coverage report to Codecov
