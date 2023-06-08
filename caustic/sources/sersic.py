@@ -68,7 +68,7 @@ class Sersic(Source):
 
         self.lenstronomy_k_mode = use_lenstronomy_k
 
-    def brightness(self, x, y, P: Optional["Packed"]):
+    def brightness(self, x, y, params: Optional["Packed"]):
         """
         Implements the `brightness` method for `Sersic`. The brightness at a given point is 
         determined by the Sersic profile formula.
@@ -78,7 +78,7 @@ class Sersic(Source):
                 This could be a single value or a tensor of values.
             y (Tensor): The y-coordinate(s) at which to calculate the source brightness. 
                 This could be a single value or a tensor of values.
-            P (Optional[Packed]): A dictionary containing additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The brightness of the source at the given point(s). The output tensor has the same shape as `x` and `y`.
@@ -93,7 +93,7 @@ class Sersic(Source):
             If `lenstronomy_k_mode` is True, we use the approximation from Lenstronomy, 
             otherwise, we use the approximation from Ciotti & Bertin (1999).
         """
-        x0, y0, q, phi, n, Re, Ie = self.unpack(P)
+        x0, y0, q, phi, n, Re, Ie = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0, phi)
         ex, ey = to_elliptical(x, y, q)

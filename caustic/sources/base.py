@@ -20,7 +20,7 @@ class Source(Parametrized):
     """
     @abstractmethod
     def brightness(
-        self, x: Tensor, y: Tensor, P: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Abstract method that calculates the brightness of the source at the given coordinates. 
@@ -33,7 +33,7 @@ class Source(Parametrized):
             y (Tensor): The y-coordinate(s) at which to calculate the source brightness. 
                 This could be a single value or a tensor of values.
                 
-            P (Optional[Packed]): Additional parameters that might be required to calculate 
+            params (Packed, optional): Dynamic parameter container that might be required to calculate 
                 the brightness. The exact contents will depend on the specific implementation in derived classes. 
 
         Returns:

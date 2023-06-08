@@ -191,7 +191,7 @@ class PixelatedConvergence(ThinLens):
         self._convolution_mode = convolution_mode
 
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -200,12 +200,12 @@ class PixelatedConvergence(ThinLens):
             x (Tensor): The x-coordinates of the positions to compute the deflection angles for.
             y (Tensor): The y-coordinates of the positions to compute the deflection angles for.
             z_s (Tensor): The source redshift.
-            P (Packed): A dictionary containing additional parameters.
+            params (Packed, optional): A dictionary containing additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The x and y components of the deflection angles at the specified positions.
         """
-        z_l, x0, y0, convergence_map = self.unpack(P)
+        z_l, x0, y0, convergence_map = self.unpack(params)
 
         if self.convolution_mode == "fft":
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_fft(convergence_map)
@@ -263,7 +263,7 @@ class PixelatedConvergence(ThinLens):
         return self._unpad_conv2d(deflection_angle_x), self._unpad_conv2d(deflection_angle_y)
 
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -272,12 +272,12 @@ class PixelatedConvergence(ThinLens):
         x (Tensor): The x-coordinates of the positions to compute the lensing potential for.
         y (Tensor): The y-coordinates of the positions to compute the lensing potential for.
         z_s (Tensor): The source redshift.
-        P (Packed): A dictionary containing additional parameters.
+        params (Packed, optional): A dictionary containing additional parameters.
 
         Returns:
             Tensor: The lensing potential at the specified positions.
         """
-        z_l, x0, y0, convergence_map = self.unpack(P)
+        z_l, x0, y0, convergence_map = self.unpack(params)
 
         if self.convolution_mode == "fft":
             potential_map = self._potential_fft(convergence_map)
@@ -325,7 +325,7 @@ class PixelatedConvergence(ThinLens):
         return self._unpad_conv2d(potential)
 
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the convergence at the specified positions. This method is not implemented.
@@ -334,7 +334,7 @@ class PixelatedConvergence(ThinLens):
             x (Tensor): The x-coordinates of the positions to compute the convergence for.
             y (Tensor): The y-coordinates of the positions to compute the convergence for.
             z_s (Tensor): The source redshift.
-            P (Packed): A dictionary containing additional parameters.
+            params (Packed, optional): A dictionary containing additional parameters.
     
         Returns:
             Tensor: The convergence at the specified positions.
@@ -342,7 +342,7 @@ class PixelatedConvergence(ThinLens):
         Raises:
             NotImplementedError: This method is not implemented.
         """
-        x0, y0, convergence_map, pixelscale = self.unpack(P)
+        x0, y0, convergence_map, pixelscale = self.unpack(params)
         return interp2d(
             convergence_map, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale
         ).reshape(x.shape)

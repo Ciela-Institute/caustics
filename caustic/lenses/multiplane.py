@@ -28,22 +28,22 @@ class Multiplane(ThickLens):
         for lens in lenses:
             self.add_parametrized(lens)
 
-    def get_z_ls(self, P: "Packed") -> list[Tensor]:
+    def get_z_ls(self, params: Optional["Packed"]) -> list[Tensor]:
         """
         Get the redshifts of each lens in the multiplane.
 
         Args:
-            x (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             List[Tensor]: Redshifts of the lenses.
         """
         # Relies on z_l being the first element to be unpacked, which should always
         # be the case for a ThinLens
-        return [lens.unpack(P)[0] for lens in self.lenses]
+        return [lens.unpack(params)[0] for lens in self.lenses]
 
     def raytrace(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """Calculate the angular source positions corresponding to the
         observer positions x,y. See Margarita et al. 2013 for the
@@ -54,7 +54,7 @@ class Multiplane(ThickLens):
             x (Tensor): angular x-coordinates from the observer perspective.
             y (Tensor): angular y-coordinates from the observer perspective.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angle.
@@ -62,13 +62,13 @@ class Multiplane(ThickLens):
         """
         zero = torch.tensor(0.0, dtype=z_s.dtype, device=z_s.device)
         # argsort redshifts
-        z_ls = self.get_z_ls(P)
+        z_ls = self.get_z_ls(params)
         idxs = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_0_s = self.cosmology.comoving_distance(z_s, P)
+        D_0_s = self.cosmology.comoving_distance(z_s, params)
         X_im1 = 0.0
         Y_im1 = 0.0
-        X_i = self.cosmology.comoving_distance(z_ls[0], P) * x 
-        Y_i = self.cosmology.comoving_distance(z_ls[0], P) * y 
+        X_i = self.cosmology.comoving_distance(z_ls[0], params) * x 
+        Y_i = self.cosmology.comoving_distance(z_ls[0], params) * y 
         X_ip1 = None
         Y_ip1 = None
 
@@ -77,14 +77,14 @@ class Multiplane(ThickLens):
             z_i = z_ls[i]
             z_ip1 = z_s if i == len(z_ls) - 1 else z_ls[i + 1]
 
-            D_im1_i = self.cosmology.comoving_distance_z1z2(z_im1, z_i, P)
-            D_i_ip1 = self.cosmology.comoving_distance_z1z2(z_i, z_ip1, P)
-            D_0_i = self.cosmology.comoving_distance(z_i, P)
-            D_i_s = self.cosmology.comoving_distance_z1z2(z_i, z_s, P)
+            D_im1_i = self.cosmology.comoving_distance_z1z2(z_im1, z_i, params)
+            D_i_ip1 = self.cosmology.comoving_distance_z1z2(z_i, z_ip1, params)
+            D_0_i = self.cosmology.comoving_distance(z_i, params)
+            D_i_s = self.cosmology.comoving_distance_z1z2(z_i, z_s, params)
             D_ratio = D_0_s / D_i_s
 
             # Get alphas at next plane
-            ax, ay = self.lenses[i].reduced_deflection_angle(X_i / D_0_i, Y_i / D_0_i, z_ip1, P)
+            ax, ay = self.lenses[i].reduced_deflection_angle(X_i / D_0_i, Y_i / D_0_i, z_ip1, params)
             X_ip1 = (
                 (D_i_ip1 / D_im1_i + 1) * X_i
                 - (D_i_ip1 / D_im1_i) * X_im1
@@ -109,13 +109,13 @@ class Multiplane(ThickLens):
             return X_ip1 / D_0_s, Y_ip1 / D_0_s
         
     def effective_reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
-        bx, by = self.raytrace(x,y,z_s,P)
+        bx, by = self.raytrace(x, y, z_s, params)
         return x - bx, y - by
 
     def surface_density(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density.
@@ -124,7 +124,7 @@ class Multiplane(ThickLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: Projected mass density [solMass / Mpc^2].
@@ -136,7 +136,7 @@ class Multiplane(ThickLens):
         raise NotImplementedError()
 
     def time_delay(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the time delay of light caused by the lensing.
@@ -145,7 +145,7 @@ class Multiplane(ThickLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: Time delay caused by the lensing.

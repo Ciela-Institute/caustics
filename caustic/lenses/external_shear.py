@@ -42,7 +42,7 @@ class ExternalShear(ThinLens):
         self.add_param("gamma_2", gamma_2)
 
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -51,12 +51,12 @@ class ExternalShear(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions.
         """
-        z_l, x0, y0, gamma_1, gamma_2 = self.unpack(P)
+        z_l, x0, y0, gamma_1, gamma_2 = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         # Meneghetti eq 3.83
@@ -65,7 +65,7 @@ class ExternalShear(ThinLens):
         return a1, a2  # I'm not sure but I think no derotation necessary
 
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculates the lensing potential.
@@ -74,19 +74,19 @@ class ExternalShear(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, gamma_1, gamma_2 = self.unpack(P)
+        z_l, x0, y0, gamma_1, gamma_2 = self.unpack(params)
 
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         x, y = translate_rotate(x, y, x0, y0)
         return 0.5 * (x * ax + y * ay)
 
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         The convergence is undefined for an external shear.
@@ -95,7 +95,7 @@ class ExternalShear(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Raises:
             NotImplementedError: This method is not implemented as the convergence is not defined 

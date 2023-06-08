@@ -74,7 +74,7 @@ class EPL(ThinLens):
         self.n_iter = n_iter
 
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angles of the lens.
@@ -83,12 +83,12 @@ class EPL(ThinLens):
             x (Tensor): X coordinates in the lens plane.
             y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x (Packed): Additional parameters for the lens model.
+            params (Packed, optional): Dynamic parameter container for the lens model.
 
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angles in the x and y directions.
         """
-        z_l, x0, y0, q, phi, b, t = self.unpack(P)
+        z_l, x0, y0, q, phi, b, t = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0, phi)
 
@@ -132,7 +132,7 @@ class EPL(ThinLens):
         return part_sum
 
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ):
         """
         Compute the lensing potential of the lens.
@@ -141,20 +141,20 @@ class EPL(ThinLens):
             x (Tensor): X coordinates in the lens plane.
             y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            P (Packed): Additional parameters for the lens model.
+            params (Packed, optional): Dynamic parameter container for the lens model.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, q, phi, b, t = self.unpack(P)
+        z_l, x0, y0, q, phi, b, t = self.unpack(params)
 
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
         x, y = translate_rotate(x, y, x0, y0, phi)
         return (x * ax + y * ay) / (2 - t)
 
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ):
         """
         Compute the convergence of the lens, which describes the local density of the lens.
@@ -163,12 +163,12 @@ class EPL(ThinLens):
             x (Tensor): X coordinates in the lens plane.
             y (Tensor): Y coordinates in the lens plane.
             z_s (Tensor): Source redshifts.
-            x (Packed): Additional parameters for the lens model.
+            params (Packed, optional): Dynamic parameter container for the lens model.
 
         Returns:
             Tensor: The convergence of the lens.
         """
-        z_l, x0, y0, q, phi, b, t = self.unpack(P)
+        z_l, x0, y0, q, phi, b, t = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()

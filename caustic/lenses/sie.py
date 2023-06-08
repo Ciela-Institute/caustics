@@ -69,7 +69,7 @@ class SIE(ThinLens):
             x: Tensor,
             y: Tensor,
             z_s: Tensor,
-            P: "Packed" = None
+            params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the physical deflection angle.
@@ -78,12 +78,12 @@ class SIE(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, x0, y0, q, phi, b = self.unpack(P)
+        z_l, x0, y0, q, phi, b = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
@@ -94,7 +94,7 @@ class SIE(ThinLens):
         return derotate(ax, ay, phi)
 
     def potential( 
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -103,20 +103,20 @@ class SIE(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, q, phi, b = self.unpack(P)
+        z_l, x0, y0, q, phi, b = self.unpack(params)
 
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
         x, y = translate_rotate(x, y, x0, y0, phi)
         return x * ax + y * ay
 
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density.
@@ -125,12 +125,12 @@ class SIE(ThinLens):
             x (Tensor): The x-coordinate of the lens.
             y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The projected mass.
         """
-        z_l, x0, y0, q, phi, b = self.unpack(P)
+        z_l, x0, y0, q, phi, b = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)

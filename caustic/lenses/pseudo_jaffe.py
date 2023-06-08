@@ -64,22 +64,22 @@ class PseudoJaffe(ThinLens):
         self.add_param("scale_radius", scale_radius)
         self.s = s
 
-    def mass_enclosed_2d(self, theta, z_s, P: "Packed" = None):
+    def mass_enclosed_2d(self, theta, z_s, params: Optional["Packed"] = None):
         """
         Calculate the mass enclosed within a two-dimensional radius.
 
         Args:
             theta (Tensor): Radius at which to calculate enclosed mass.
             z_s (Tensor): Source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The mass enclosed within the given radius.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(P)
+        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
 
         theta = theta + self.s
-        surface_density_0 = convergence_0 * self.cosmology.critical_surface_density(z_l, z_s, P)
+        surface_density_0 = convergence_0 * self.cosmology.critical_surface_density(z_l, z_s, params)
         return (
             2
             * pi
@@ -103,7 +103,7 @@ class PseudoJaffe(ThinLens):
         core_radius,
         scale_radius,
         cosmology: Cosmology,
-        P: "Packed" = None,
+        params: Optional["Packed"] = None,
     ):
         """
         Compute the central convergence.
@@ -115,7 +115,7 @@ class PseudoJaffe(ThinLens):
             core_radius (Tensor): Core radius of the lens.
             scale_radius (Tensor): Scaling radius of the lens.
             cosmology (Cosmology): The cosmology used for calculations.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The central convergence.
@@ -126,11 +126,11 @@ class PseudoJaffe(ThinLens):
             * core_radius
             * scale_radius
             / (core_radius + scale_radius)
-            / cosmology.critical_surface_density(z_l, z_s, P)
+            / cosmology.critical_surface_density(z_l, z_s, params)
         )
 
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """ Calculate the deflection angle.
 
@@ -138,12 +138,12 @@ class PseudoJaffe(ThinLens):
             x (Tensor): x-coordinate of the lens.
             y (Tensor): y-coordinate of the lens.
             z_s (Tensor): Source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
     
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(P)
+        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         R = (x**2 + y**2).sqrt() + self.s
@@ -156,7 +156,7 @@ class PseudoJaffe(ThinLens):
         return ax, ay
 
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential. This calculation is based on equation A18.
@@ -165,12 +165,12 @@ class PseudoJaffe(ThinLens):
             x (Tensor): x-coordinate of the lens.
             y (Tensor): y-coordinate of the lens.
             z_s (Tensor): Source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
     
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(P)
+        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         R_squared = x**2 + y**2 + self.s
@@ -183,7 +183,7 @@ class PseudoJaffe(ThinLens):
         )
 
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density, based on equation A6.
@@ -192,12 +192,12 @@ class PseudoJaffe(ThinLens):
             x (Tensor): x-coordinate of the lens.
             y (Tensor): y-coordinate of the lens.
             z_s (Tensor): Source redshift.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
     
         Returns:
             Tensor: The projected mass density.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(P)
+        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         R_squared = x**2 + y**2 + self.s

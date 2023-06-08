@@ -52,7 +52,7 @@ class Point(ThinLens):
         self.s = s
 
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -61,12 +61,12 @@ class Point(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
         """
-        z_l, x0, y0, th_ein = self.unpack(P)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -75,7 +75,7 @@ class Point(ThinLens):
         return ax, ay
 
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -84,19 +84,19 @@ class Point(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, th_ein = self.unpack(P)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         return th_ein**2 * th.log()
 
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
@@ -105,12 +105,12 @@ class Point(ThinLens):
             x (Tensor): x-coordinates in the lens plane.
             y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The convergence (dimensionless surface mass density).
         """
-        z_l, x0, y0, th_ein = self.unpack(P)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
         x, y = translate_rotate(x, y, x0, y0)
         return torch.where((x == 0) & (y == 0), torch.inf, 0.0)

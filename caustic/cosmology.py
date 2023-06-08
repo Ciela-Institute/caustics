@@ -60,13 +60,13 @@ class Cosmology(Parametrized):
         super().__init__(name)
 
     @abstractmethod
-    def critical_density(self, z: Tensor, P: "Packed" = None) -> Tensor:
+    def critical_density(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the critical density at redshift z.
 
         Args:
             z (Tensor): The redshifts.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The critical density at each redshift.
@@ -74,13 +74,13 @@ class Cosmology(Parametrized):
         ...
 
     @abstractmethod
-    def comoving_distance(self, z: Tensor, P: "Packed" = None) -> Tensor:
+    def comoving_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the comoving distance to redshift z.
 
         Args:
             z (Tensor): The redshifts.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The comoving distance to each redshift.
@@ -88,7 +88,7 @@ class Cosmology(Parametrized):
         ...
 
     def comoving_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, P: "Packed" = None
+        self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the comoving distance between two redshifts.
@@ -96,28 +96,28 @@ class Cosmology(Parametrized):
         Args:
             z1 (Tensor): The starting redshifts.
             z2 (Tensor): The ending redshifts.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The comoving distance between each pair of redshifts.
         """
-        return self.comoving_distance(z2, P) - self.comoving_distance(z1, P)
+        return self.comoving_distance(z2, params) - self.comoving_distance(z1, params)
 
-    def angular_diameter_distance(self, z: Tensor, P: "Packed" = None) -> Tensor:
+    def angular_diameter_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the angular diameter distance to redshift z.
 
         Args:
             z (Tensor): The redshifts.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The angular diameter distance to each redshift.
         """
-        return self.comoving_distance(z, P) / (1 + z)
+        return self.comoving_distance(z, params) / (1 + z)
 
     def angular_diameter_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, P: "Packed" = None
+        self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the angular diameter distance between two redshifts.
@@ -125,15 +125,15 @@ class Cosmology(Parametrized):
         Args:
             z1 (Tensor): The starting redshifts.
             z2 (Tensor): The ending redshifts.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The angular diameter distance between each pair of redshifts.
         """
-        return self.comoving_distance_z1z2(z1, z2, P) / (1 + z2)
+        return self.comoving_distance_z1z2(z1, z2, params) / (1 + z2)
 
     def time_delay_distance(
-        self, z_l: Tensor, z_s: Tensor, P: "Packed" = None
+        self, z_l: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the time delay distance between lens and source planes.
@@ -141,18 +141,18 @@ class Cosmology(Parametrized):
         Args:
             z_l (Tensor): The lens redshifts.
             z_s (Tensor): The source redshifts.
-            x (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The time delay distance for each pair of lens and source redshifts.
         """
-        d_l = self.angular_diameter_distance(z_l, P)
-        d_s = self.angular_diameter_distance(z_s, P)
-        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, P)
+        d_l = self.angular_diameter_distance(z_l, params)
+        d_s = self.angular_diameter_distance(z_s, params)
+        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
         return (1 + z_l) * d_l * d_s / d_ls
 
     def critical_surface_density(
-        self, z_l: Tensor, z_s: Tensor, P: "Packed" = None
+        self, z_l: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the critical surface density between lens and source planes.
@@ -160,14 +160,14 @@ class Cosmology(Parametrized):
         Args:
             z_l (Tensor): The lens redshifts.
             z_s (Tensor): The source redshifts.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: The critical surface density for each pair of lens and source redshifts.
         """
-        d_l = self.angular_diameter_distance(z_l, P)
-        d_s = self.angular_diameter_distance(z_s, P)
-        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, P)
+        d_l = self.angular_diameter_distance(z_l, params)
+        d_s = self.angular_diameter_distance(z_s, params)
+        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
         return d_s / d_l / d_ls / (4 * pi * G_over_c2)
 
 
@@ -217,22 +217,22 @@ class FlatLambdaCDM(Cosmology):
         """
         return c_Mpc_s / (100 * km_to_Mpc) / h0
 
-    def critical_density(self, z: Tensor, P: "Packed" = None) -> torch.Tensor:
+    def critical_density(self, z: Tensor, params: Optional["Packed"] = None) -> torch.Tensor:
         """
         Calculate the critical density at redshift z.
 
         Args:
             z (Tensor): Redshift.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             torch.Tensor: Critical density at redshift z.
         """
-        _, critical_density_0, Om0 = self.unpack(P)
+        _, critical_density_0, Om0 = self.unpack(params)
         Ode0 = 1 - Om0
         return critical_density_0 * (Om0 * (1 + z) ** 3 + Ode0)
 
-    def _comoving_distance_helper(self, x: Tensor, P: "Packed") -> Tensor:
+    def _comoving_distance_helper(self, x: Tensor, params: Optional["Packed"]) -> Tensor:
         """
         Helper method for computing comoving distances.
 
@@ -248,26 +248,26 @@ class FlatLambdaCDM(Cosmology):
             torch.atleast_1d(x),
         ).reshape(x.shape)
 
-    def comoving_distance(self, z: Tensor, P: "Packed" = None) -> Tensor:
+    def comoving_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Calculate the comoving distance to redshift z.
 
         Args:
             z (Tensor): Redshift.
-            P (Packed): Additional parameters for the computation.
+            params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
             Tensor: Comoving distance to redshift z.
         """
-        h0, _, Om0 = self.unpack(P)
+        h0, _, Om0 = self.unpack(params)
 
         Ode0 = 1 - Om0
         ratio = (Om0 / Ode0) ** (1 / 3)
         return (
             self.hubble_distance(h0)
             * (
-                self._comoving_distance_helper((1 + z) * ratio, P)
-                - self._comoving_distance_helper(ratio, P)
+                self._comoving_distance_helper((1 + z) * ratio, params)
+                - self._comoving_distance_helper(ratio, params)
             )
             / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))
         )
