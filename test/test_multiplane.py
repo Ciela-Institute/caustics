@@ -15,7 +15,6 @@ def test():
     atol = 5e-3
 
     # Setup
-
     z_s = torch.tensor(1.5, dtype=torch.float32)
     cosmology = FlatLambdaCDM("cosmo")
     cosmology.to(dtype=torch.float32)
@@ -31,6 +30,7 @@ def test():
     lens = Multiplane(
         "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
     )
+    #lens.effective_reduced_deflection_angle = lens.raytrace
 
     # lenstronomy
     kwargs_ls = []
@@ -59,7 +59,6 @@ def test():
     lens_test_helper(
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
-
 
 if __name__ == "__main__":
     test()

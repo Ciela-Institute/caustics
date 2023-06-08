@@ -44,7 +44,7 @@ class SIS(ThinLens):
         self.add_param("th_ein", th_ein)
         self.s = s
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -62,9 +62,9 @@ class SIS(ThinLens):
         z_l, x0, y0, th_ein = self.unpack(P)
 
         x, y = translate_rotate(x, y, x0, y0)
-        th = (x**2 + y**2).sqrt() + self.s
-        ax = th_ein * x / th
-        ay = th_ein * y / th
+        R = (x**2 + y**2).sqrt() + self.s
+        ax = th_ein * x / R
+        ay = th_ein * y / R
         return ax, ay
 
     def potential(

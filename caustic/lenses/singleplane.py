@@ -28,8 +28,9 @@ class SinglePlane(ThinLens):
         self.lenses = lenses
         for lens in lenses:
             self.add_parametrized(lens)
+        # TODO: assert all z_l are the same?
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -47,7 +48,7 @@ class SinglePlane(ThinLens):
         ax = torch.zeros_like(x)
         ay = torch.zeros_like(x)
         for lens in self.lenses:
-            ax_cur, ay_cur = lens.deflection_angle(x, y, z_s, P)
+            ax_cur, ay_cur = lens.reduced_deflection_angle(x, y, z_s, P)
             ax = ax + ax_cur
             ay = ay + ay_cur
         return ax, ay

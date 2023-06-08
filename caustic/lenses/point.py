@@ -51,7 +51,7 @@ class Point(ThinLens):
         self.add_param("th_ein", th_ein)
         self.s = s
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """

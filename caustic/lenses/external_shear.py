@@ -41,7 +41,7 @@ class ExternalShear(ThinLens):
         self.add_param("gamma_1", gamma_1)
         self.add_param("gamma_2", gamma_2)
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -81,7 +81,7 @@ class ExternalShear(ThinLens):
         """
         z_l, x0, y0, gamma_1, gamma_2 = self.unpack(P)
 
-        ax, ay = self.deflection_angle(x, y, z_s, P)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
         x, y = translate_rotate(x, y, x0, y0)
         return 0.5 * (x * ax + y * ay)
 

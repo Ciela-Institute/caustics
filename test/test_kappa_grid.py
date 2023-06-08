@@ -30,7 +30,7 @@ def _setup(n_pix, mode, use_next_fast_len):
     # Exact calculations
     Psi = lens_pj.potential(thx, thy, z_l, lens_pj.pack(x_pj))
     Psi -= Psi.min()
-    alpha_x, alpha_y = lens_pj.deflection_angle(thx, thy, z_l, lens_pj.pack(x_pj))
+    alpha_x, alpha_y = lens_pj.reduced_deflection_angle(thx, thy, z_l, lens_pj.pack(x_pj))
 
     # Approximate calculations
     lens_kap = PixelatedConvergence(
@@ -51,7 +51,7 @@ def _setup(n_pix, mode, use_next_fast_len):
     # Try to remove unobservable constant offset
     Psi_approx += torch.mean(Psi - Psi_approx)
 
-    alpha_x_approx, alpha_y_approx = lens_kap.deflection_angle(
+    alpha_x_approx, alpha_y_approx = lens_kap.reduced_deflection_angle(
         thx, thy, z_l, lens_kap.pack(x_kap)
     )
 

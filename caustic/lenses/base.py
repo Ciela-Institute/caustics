@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Any, Optional
 from functools import partial
+import warnings
 
 import torch
 from torch import Tensor
@@ -32,12 +33,51 @@ class ThickLens(Parametrized):
         super().__init__(name)
         self.cosmology = cosmology
 
-    @abstractmethod
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
-        Computes the reduced deflection angle at given coordinates [arcsec].
+        ThickLens objects do not have a reduced deflection angle since the distance D_ls is undefined
+        
+        Args:
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
+            z_s (Tensor): Tensor of source redshifts.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
+
+        Raises:
+            NotImplementedError
+        """
+        warnings.warn("ThickLens objects do not have a reduced deflection angle since they have no unique lens redshift. The distance D_{ls} is undefined in the equation $\alpha_{reduced} = \frac{D_{ls}}{D_s}\alpha_{physical}$. See `effective_reduced_deflection_angle`. Now using effective_reduced_deflection_angle, please switch functions to remove this warning")
+        return self.effective_reduced_deflection_angle(x, y, z_s, P)
+
+    def effective_reduced_deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
+    ) -> tuple[Tensor, Tensor]:
+        """ThickLens objects do not have a reduced deflection angle since the
+        distance D_ls is undefined. Instead we define an effective
+        reduced deflection angle by simply assuming the relation
+        $\alpha = \theta - \beta$ holds, where $\alpha$ is the
+        effective reduced deflection angle, $\theta$ are the observed
+        angular coordinates, and $\beta$ are the angular coordinates
+        to the source plane.
+        
+        Args:
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
+            z_s (Tensor): Tensor of source redshifts.
+            P (Packed, optional): Additional parameters for the lens model. Defaults to None.
+
+        """
+        bx, by = self.raytrace(x,y,z_s,P)
+        return x - bx, y - by
+    
+    def physical_deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
+    ) -> tuple[Tensor, Tensor]:
+        """Physical deflection angles are computed with respect to a lensing
+        plane. ThickLens objects have no unique definition of a lens
+        plane and so cannot compute a physical_deflection_angle
 
         Args:
             x (Tensor): Tensor of x coordinates in the lens plane.
@@ -47,14 +87,17 @@ class ThickLens(Parametrized):
 
         Returns:
             tuple[Tensor, Tensor]: Tuple of Tensors representing the x and y components of the deflection angle, respectively.
-        """
-        ...
 
+        """
+        raise NotImplementedError("Physical deflection angles are computed with respect to a lensing plane. ThickLens objects have no unique definition of a lens plane and so cannot compute a physical_deflection_angle")
+
+    @abstractmethod
     def raytrace(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
-        """
-        Performs ray tracing by computing the deflection angle and subtracting it from the initial coordinates.
+        """Performs ray tracing by computing the angular position on the
+        source plance associated with a given input observed angular
+        coordinate x,y.
 
         Args:
             x (Tensor): Tensor of x coordinates in the lens plane.
@@ -64,9 +107,9 @@ class ThickLens(Parametrized):
 
         Returns:
             tuple[Tensor, Tensor]: Tuple of Tensors representing the x and y coordinates of the ray-traced light rays, respectively.
+
         """
-        ax, ay = self.deflection_angle(x, y, z_s, P)
-        return x - ax, y - ay
+        ...
 
     @abstractmethod
     def surface_density(
@@ -141,7 +184,7 @@ class ThinLens(Parametrized):
         self.add_param("z_l", z_l)
 
     @abstractmethod
-    def deflection_angle( # TODO be explicit about the type of deflection angle used physical or reduced
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -158,7 +201,7 @@ class ThinLens(Parametrized):
         """
         ...
 
-    def deflection_angle_hat( # TODO: hat -> reduced ? need to double check this
+    def physical_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -177,7 +220,7 @@ class ThinLens(Parametrized):
 
         d_s = self.cosmology.angular_diameter_distance(z_s, P)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, P)
-        deflection_angle_x, deflection_angle_y = self.deflection_angle(x, y, z_s, P)
+        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(x, y, z_s, P)
         return (d_s / d_ls) * deflection_angle_x, (d_s / d_ls) * deflection_angle_y
 
     @abstractmethod
@@ -251,7 +294,7 @@ class ThinLens(Parametrized):
         Returns:
             tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
         """
-        ax, ay = self.deflection_angle(x, y, z_s, P) # TODO: use reduced alpha? double check
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
         return x - ax, y - ay
 
     def time_delay(
@@ -274,7 +317,7 @@ class ThinLens(Parametrized):
         d_l = self.cosmology.angular_diameter_distance(z_l, P)
         d_s = self.cosmology.angular_diameter_distance(z_s, P)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, P)
-        ax, ay = self.deflection_angle(x, y, z_s, P)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
         potential = self.potential(x, y, z_s, P)
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential

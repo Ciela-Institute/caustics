@@ -1,4 +1,4 @@
-from .parameterized import Parametrized
+from . import Parametrized
 
 __all__ = ("Simulator",)
 

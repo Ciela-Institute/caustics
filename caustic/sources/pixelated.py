@@ -50,7 +50,7 @@ class Pixelated(Source):
         self.add_param("image", image, image_shape)
         self.add_param("pixelscale", pixelscale)
 
-    def brightness(self, x, y, P):
+    def brightness(self, x, y, P: Optional["Packed"]):
         """
         Implements the `brightness` method for `Pixelated`. The brightness at a given point is 
         determined by interpolating values from the source image.
@@ -60,7 +60,7 @@ class Pixelated(Source):
                 This could be a single value or a tensor of values.
             y (Tensor): The y-coordinate(s) at which to calculate the source brightness. 
                 This could be a single value or a tensor of values.
-            P (dict): A dictionary containing additional parameters that might be required to 
+            P (Optional[Packed]): A dictionary containing additional parameters that might be required to 
                 calculate the brightness. 
 
         Returns:

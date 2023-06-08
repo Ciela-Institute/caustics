@@ -45,28 +45,30 @@ class Multiplane(ThickLens):
     def raytrace(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
-        """
-        Calculate the reduced deflection angle [arcsec].
+        """Calculate the angular source positions corresponding to the
+        observer positions x,y. See Margarita et al. 2013 for the
+        formalism from the GLAMER -II code:
+        https://ui.adsabs.harvard.edu/abs/2014MNRAS.445.1954P/abstract
 
         Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
+            x (Tensor): angular x-coordinates from the observer perspective.
+            y (Tensor): angular y-coordinates from the observer perspective.
             z_s (Tensor): Redshifts of the sources.
             P (Packed): Additional parameters.
 
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angle.
+
         """
         zero = torch.tensor(0.0, dtype=z_s.dtype, device=z_s.device)
-
         # argsort redshifts
         z_ls = self.get_z_ls(P)
         idxs = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
         D_0_s = self.cosmology.comoving_distance(z_s, P)
         X_im1 = 0.0
         Y_im1 = 0.0
-        X_i = None
-        Y_i = None
+        X_i = self.cosmology.comoving_distance(z_ls[0], P) * x 
+        Y_i = self.cosmology.comoving_distance(z_ls[0], P) * y 
         X_ip1 = None
         Y_ip1 = None
 
@@ -81,12 +83,8 @@ class Multiplane(ThickLens):
             D_i_s = self.cosmology.comoving_distance_z1z2(z_i, z_s, P)
             D_ratio = D_0_s / D_i_s
 
-            # Collect current alphas
-            X_i = D_0_i * x if X_i is None else X_i
-            Y_i = D_0_i * y if Y_i is None else Y_i
-
             # Get alphas at next plane
-            ax, ay = self.lenses[i].deflection_angle(X_i / D_0_i, Y_i / D_0_i, z_ip1, P)
+            ax, ay = self.lenses[i].reduced_deflection_angle(X_i / D_0_i, Y_i / D_0_i, z_ip1, P)
             X_ip1 = (
                 (D_i_ip1 / D_im1_i + 1) * X_i
                 - (D_i_ip1 / D_im1_i) * X_im1
@@ -109,23 +107,11 @@ class Multiplane(ThickLens):
             return x, y
         else:
             return X_ip1 / D_0_s, Y_ip1 / D_0_s
-
-    def deflection_angle(
+        
+    def effective_reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
-        """
-        Calculate the reduced deflection angle [arcsec].
-
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
-
-        Returns:
-            tuple[Tensor, Tensor]: The reduced deflection angle.
-        """
-        bx, by = self.raytrace(x, y, z_s, P)
+        bx, by = self.raytrace(x,y,z_s,P)
         return x - bx, y - by
 
     def surface_density(

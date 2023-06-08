@@ -12,7 +12,6 @@ from .parameter import Parameter
 
 __all__ = ("Parametrized",)
 
-
 class Parametrized:
     """
     Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator

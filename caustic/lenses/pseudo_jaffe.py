@@ -129,7 +129,7 @@ class PseudoJaffe(ThinLens):
             / cosmology.critical_surface_density(z_l, z_s, P)
         )
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """ Calculate the deflection angle.

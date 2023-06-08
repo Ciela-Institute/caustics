@@ -190,7 +190,7 @@ class PixelatedConvergence(ThinLens):
 
         self._convolution_mode = convolution_mode
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -342,4 +342,7 @@ class PixelatedConvergence(ThinLens):
         Raises:
             NotImplementedError: This method is not implemented.
         """
-        raise NotImplementedError()
+        x0, y0, convergence_map, pixelscale = self.unpack(P)
+        return interp2d(
+            convergence_map, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale
+        ).reshape(x.shape)

@@ -198,7 +198,7 @@ class NFW(ThinLens):
         )
         return term_2
 
-    def deflection_angle_hat(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -235,29 +235,31 @@ class NFW(ThinLens):
 
         ax = deflection_angle * x / th
         ay = deflection_angle * y / th
-        return ax, ay
-
-    def deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
-    ) -> tuple[Tensor, Tensor]:
-        """
-        Compute the deflection angle.
-
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            P (Packed): Additional parameters.
-
-        Returns:
-            tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
-        """
-        z_l = self.unpack(P)[0]
-
         d_s = self.cosmology.angular_diameter_distance(z_s, P)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, P)
-        ahx, ahy = self.deflection_angle_hat(x, y, z_s, P)
-        return d_ls / d_s * ahx, d_ls / d_s * ahy
+        return ax * d_ls / d_s, ay * d_ls / d_s
+
+    # def deflection_angle(
+    #     self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
+    # ) -> tuple[Tensor, Tensor]:
+    #     """
+    #     Compute the deflection angle.
+
+    #     Args:
+    #         x (Tensor): x-coordinates in the lens plane.
+    #         y (Tensor): y-coordinates in the lens plane.
+    #         z_s (Tensor): Redshifts of the sources.
+    #         P (Packed): Additional parameters.
+
+    #     Returns:
+    #         tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
+    #     """
+    #     z_l = self.unpack(P)[0]
+
+    #     d_s = self.cosmology.angular_diameter_distance(z_s, P)
+    #     d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, P)
+    #     ahx, ahy = self.deflection_angle_hat(x, y, z_s, P)
+    #     return d_ls / d_s * ahx, d_ls / d_s * ahy
 
     def convergence(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
@@ -275,7 +277,7 @@ class NFW(ThinLens):
             Tensor: The convergence (dimensionless surface mass density).
         """
         z_l, x0, y0, m, c = self.unpack(P)
-
+        
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, P)

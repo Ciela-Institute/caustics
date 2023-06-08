@@ -6,6 +6,7 @@ from torch import Tensor
 
 from .utils import get_cluster_means
 
+__all__ = ("forward_raytrace", )
 
 def forward_raytrace(
     beta_x: Tensor,

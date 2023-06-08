@@ -73,7 +73,7 @@ class EPL(ThinLens):
 
         self.n_iter = n_iter
 
-    def deflection_angle(
+    def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, P: "Packed" = None
     ) -> tuple[Tensor, Tensor]:
         """
@@ -148,7 +148,7 @@ class EPL(ThinLens):
         """
         z_l, x0, y0, q, phi, b, t = self.unpack(P)
 
-        ax, ay = self.deflection_angle(x, y, z_s, P)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, P)
         ax, ay = derotate(ax, ay, -phi)
         x, y = translate_rotate(x, y, x0, y0, phi)
         return (x * ax + y * ay) / (2 - t)
