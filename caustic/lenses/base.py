@@ -147,7 +147,7 @@ class ThickLens(Parametrized):
         """
         ...
 
-    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, params) -> Tensor:
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Computes the gravitational lensing magnification at given coordinates.
     
@@ -357,7 +357,7 @@ class ThinLens(Parametrized):
         jacobian = torch.stack([j1, j2], dim=-1)
         return jacobian
 
-    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"]) -> Tensor:
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
 
