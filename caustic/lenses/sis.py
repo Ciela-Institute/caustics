@@ -19,8 +19,8 @@ class SIS(ThinLens):
         name (str): The name of the SIS lens.
         cosmology (Cosmology): An instance of the Cosmology class.
         z_l (Optional[Tensor]): The lens redshift.
-        thx0 (Optional[Tensor]): The x-coordinate of the lens center.
-        thy0 (Optional[Tensor]): The y-coordinate of the lens center.
+        x0 (Optional[Tensor]): The x-coordinate of the lens center.
+        y0 (Optional[Tensor]): The y-coordinate of the lens center.
         th_ein (Optional[Tensor]): The Einstein radius of the lens.
         s (float): A smoothing factor, default is 0.0.
     """
@@ -29,8 +29,8 @@ class SIS(ThinLens):
         name: str,
         cosmology: Cosmology,
         z_l: Optional[Tensor] = None,
-        thx0: Optional[Tensor] = None,
-        thy0: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
         th_ein: Optional[Tensor] = None,
         s: float = 0.0,
     ):
@@ -39,72 +39,72 @@ class SIS(ThinLens):
         """
         super().__init__(name, cosmology, z_l)
 
-        self.add_param("thx0", thx0)
-        self.add_param("thy0", thy0)
+        self.add_param("x0", x0)
+        self.add_param("y0", y0)
         self.add_param("th_ein", th_ein)
         self.s = s
 
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def reduced_deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the SIS lens.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, thx0, thy0, th_ein = self.unpack(x)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + self.s
-        ax = th_ein * thx / th
-        ay = th_ein * thy / th
+        x, y = translate_rotate(x, y, x0, y0)
+        R = (x**2 + y**2).sqrt() + self.s
+        ax = th_ein * x / R
+        ay = th_ein * y / R
         return ax, ay
 
-    def Psi(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def potential(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential of the SIS lens.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, thx0, thy0, th_ein = self.unpack(x)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + self.s
+        x, y = translate_rotate(x, y, x0, y0)
+        th = (x**2 + y**2).sqrt() + self.s
         return th_ein * th
 
-    def kappa(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def convergence(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density of the SIS lens.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The projected mass density.
         """
-        z_l, thx0, thy0, th_ein = self.unpack(x)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + self.s
+        x, y = translate_rotate(x, y, x0, y0)
+        th = (x**2 + y**2).sqrt() + self.s
         return 0.5 * th_ein / th

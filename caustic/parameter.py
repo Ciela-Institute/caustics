@@ -16,7 +16,7 @@ class Parameter:
         value (Optional[Tensor]): The value of the parameter.
         shape (tuple[int, ...]): The shape of the parameter.
     """
-    
+
     def __init__(
         self, value: Optional[Tensor] = None, shape: Optional[tuple[int, ...]] = ()
     ):
@@ -26,7 +26,7 @@ class Parameter:
         Args:
             value (Optional[Tensor], optional): The value of the parameter. Defaults to None.
             shape (Optional[tuple[int, ...]], optional): The shape of the parameter. Defaults to an empty tuple.
-        
+
         Raises:
             ValueError: If both value and shape are None, or if shape is provided and doesn't match the shape of the value.
         """

@@ -28,68 +28,69 @@ class SinglePlane(ThinLens):
         self.lenses = lenses
         for lens in lenses:
             self.add_parametrized(lens)
+        # TODO: assert all z_l are the same?
 
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def reduced_deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the total deflection angle by summing the deflection angles of all individual lenses.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tuple[Tensor, Tensor]: The total deflection angle in the x and y directions.
         """
-        ax = torch.zeros_like(thx)
-        ay = torch.zeros_like(thx)
+        ax = torch.zeros_like(x)
+        ay = torch.zeros_like(x)
         for lens in self.lenses:
-            ax_cur, ay_cur = lens.alpha(thx, thy, z_s, x)
+            ax_cur, ay_cur = lens.reduced_deflection_angle(x, y, z_s, params)
             ax = ax + ax_cur
             ay = ay + ay_cur
         return ax, ay
 
-    def kappa(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def convergence(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the total projected mass density by summing the mass densities of all individual lenses.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The total projected mass density.
         """
-        kappa = torch.zeros_like(thx)
+        convergence = torch.zeros_like(x)
         for lens in self.lenses:
-            kappa_cur = lens.kappa(thx, thy, z_s, x)
-            kappa = kappa + kappa_cur
-        return kappa
+            convergence_cur = lens.convergence(x, y, z_s, params)
+            convergence = convergence + convergence_cur
+        return convergence
 
-    def Psi(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def potential(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the total lensing potential by summing the lensing potentials of all individual lenses.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The total lensing potential.
         """
-        Psi = torch.zeros_like(thx)
+        potential = torch.zeros_like(x)
         for lens in self.lenses:
-            Psi_cur = lens.Psi(thx, thy, z_s, x)
-            Psi = Psi + Psi_cur
-        return Psi
+            potential_cur = lens.potential(x, y, z_s, params)
+            potential = potential + potential_cur
+        return potential

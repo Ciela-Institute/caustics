@@ -9,7 +9,6 @@ from .base import ThinLens
 
 __all__ = ("Point",)
 
-
 class Point(ThinLens):
     """
     Class representing a point mass lens in strong gravitational lensing.
@@ -18,8 +17,8 @@ class Point(ThinLens):
         name (str): The name of the point lens.
         cosmology (Cosmology): The cosmology used for calculations.
         z_l (Optional[Tensor]): Redshift of the lens.
-        thx0 (Optional[Tensor]): x-coordinate of the center of the lens.
-        thy0 (Optional[Tensor]): y-coordinate of the center of the lens.
+        x0 (Optional[Tensor]): x-coordinate of the center of the lens.
+        y0 (Optional[Tensor]): y-coordinate of the center of the lens.
         th_ein (Optional[Tensor]): Einstein radius of the lens.
         s (float): Softening parameter to prevent numerical instabilities.
     """
@@ -28,8 +27,8 @@ class Point(ThinLens):
         name: str,
         cosmology: Cosmology,
         z_l: Optional[Tensor] = None,
-        thx0: Optional[Tensor] = None,
-        thy0: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
         th_ein: Optional[Tensor] = None,
         s: float = 0.0,
     ):
@@ -40,78 +39,78 @@ class Point(ThinLens):
             name (str): The name of the point lens.
             cosmology (Cosmology): The cosmology used for calculations.
             z_l (Optional[Tensor]): Redshift of the lens.
-            thx0 (Optional[Tensor]): x-coordinate of the center of the lens.
-            thy0 (Optional[Tensor]): y-coordinate of the center of the lens.
+            x0 (Optional[Tensor]): x-coordinate of the center of the lens.
+            y0 (Optional[Tensor]): y-coordinate of the center of the lens.
             th_ein (Optional[Tensor]): Einstein radius of the lens.
             s (float): Softening parameter to prevent numerical instabilities.
         """
         super().__init__(name, cosmology, z_l)
 
-        self.add_param("thx0", thx0)
-        self.add_param("thy0", thy0)
+        self.add_param("x0", x0)
+        self.add_param("y0", y0)
         self.add_param("th_ein", th_ein)
         self.s = s
 
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def reduced_deflection_angle(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
 
         Args:
-            thx (Tensor): x-coordinates in the lens plane.
-            thy (Tensor): y-coordinates in the lens plane.
+            x (Tensor): x-coordinates in the lens plane.
+            y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
         """
-        z_l, thx0, thy0, th_ein = self.unpack(x)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + self.s
-        ax = thx / th**2 * th_ein**2
-        ay = thy / th**2 * th_ein**2
+        x, y = translate_rotate(x, y, x0, y0)
+        th = (x**2 + y**2).sqrt() + self.s
+        ax = x / th**2 * th_ein**2
+        ay = y / th**2 * th_ein**2
         return ax, ay
 
-    def Psi(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def potential(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential.
 
         Args:
-            thx (Tensor): x-coordinates in the lens plane.
-            thy (Tensor): y-coordinates in the lens plane.
+            x (Tensor): x-coordinates in the lens plane.
+            y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, thx0, thy0, th_ein = self.unpack(x)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        th = (thx**2 + thy**2).sqrt() + self.s
+        x, y = translate_rotate(x, y, x0, y0)
+        th = (x**2 + y**2).sqrt() + self.s
         return th_ein**2 * th.log()
 
-    def kappa(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def convergence(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
 
         Args:
-            thx (Tensor): x-coordinates in the lens plane.
-            thy (Tensor): y-coordinates in the lens plane.
+            x (Tensor): x-coordinates in the lens plane.
+            y (Tensor): y-coordinates in the lens plane.
             z_s (Tensor): Redshifts of the sources.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The convergence (dimensionless surface mass density).
         """
-        z_l, thx0, thy0, th_ein = self.unpack(x)
+        z_l, x0, y0, th_ein = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0)
-        return torch.where((thx == 0) & (thy == 0), torch.inf, 0.0)
+        x, y = translate_rotate(x, y, x0, y0)
+        return torch.where((x == 0) & (y == 0), torch.inf, 0.0)

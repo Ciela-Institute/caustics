@@ -1,6 +1,7 @@
-from .parameterized import Parametrized
+from . import Parametrized
 
-__all__ = ("Simulator", )
+__all__ = ("Simulator",)
+
 
 class Simulator(Parametrized):
     """A caustic simulator using Parametrized framework.
@@ -14,5 +15,6 @@ class Simulator(Parametrized):
     See `Parametrized` for details on how to add/access parameters.
 
     """
+
     def __call__(self, *args, **kwargs):
         return self.forward(self.pack(args[0]), *args[1:], **kwargs)
