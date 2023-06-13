@@ -1,7 +1,7 @@
 import torch
 
 from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import KappaGrid, PseudoJaffe
+from caustic.lenses import PixelatedConvergence, PseudoJaffe
 from caustic.utils import get_meshgrid
 
 
@@ -23,35 +23,35 @@ def _setup(n_pix, mode, use_next_fast_len):
     th_core = 0.04
     th_s = 0.2
     rho_0 = 1.0
-    kappa_0 = lens_pj.kappa_0(z_l, z_s, rho_0, th_core, th_s, cosmology)
+    kappa_0 = lens_pj.convergence_0(z_l, z_s, rho_0, th_core, th_s, cosmology)
     # z_l, thx0, thy0, kappa_0, th_core, th_s
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
 
     # Exact calculations
-    Psi = lens_pj.Psi(thx, thy, z_l, lens_pj.pack(x_pj))
+    Psi = lens_pj.potential(thx, thy, z_l, lens_pj.pack(x_pj))
     Psi -= Psi.min()
-    alpha_x, alpha_y = lens_pj.alpha(thx, thy, z_l, lens_pj.pack(x_pj))
+    alpha_x, alpha_y = lens_pj.reduced_deflection_angle(thx, thy, z_l, lens_pj.pack(x_pj))
 
     # Approximate calculations
-    lens_kap = KappaGrid(
+    lens_kap = PixelatedConvergence(
         "kg",
         fov,
         n_pix,
         cosmology,
         z_l=z_l,
-        kappa_map_shape=(n_pix, n_pix),
-        mode=mode,
+        convergence_map_shape=(n_pix, n_pix),
+        convolution_mode=mode,
         use_next_fast_len=use_next_fast_len,
     )
-    kappa_map = lens_pj.kappa(thx, thy, z_l, lens_pj.pack(x_pj))
+    kappa_map = lens_pj.convergence(thx, thy, z_l, lens_pj.pack(x_pj))
     x_kap = kappa_map.flatten()
 
-    Psi_approx = lens_kap.Psi(thx, thy, z_l, lens_kap.pack(x_kap))
+    Psi_approx = lens_kap.potential(thx, thy, z_l, lens_kap.pack(x_kap))
     Psi_approx -= Psi_approx.min()
     # Try to remove unobservable constant offset
     Psi_approx += torch.mean(Psi - Psi_approx)
 
-    alpha_x_approx, alpha_y_approx = lens_kap.alpha(
+    alpha_x_approx, alpha_y_approx = lens_kap.reduced_deflection_angle(
         thx, thy, z_l, lens_kap.pack(x_kap)
     )
 
@@ -60,7 +60,7 @@ def _setup(n_pix, mode, use_next_fast_len):
 
 def test_Psi_alpha():
     """
-    Tests whether KappaGrid is fairly accurate using a large image.
+    Tests whether PixelatedConvergence is fairly accurate using a large image.
     """
     for use_next_fast_len in [True, False]:
         Psi, Psi_approx, alpha_x, alpha_x_approx, alpha_y, alpha_y_approx = _setup(

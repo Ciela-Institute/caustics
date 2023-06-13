@@ -18,10 +18,10 @@ class SIE(ThinLens):
         name (str): The name of the lens.
         cosmology (Cosmology): An instance of the Cosmology class.
         z_l (Tensor, optional): The redshift of the lens.
-        thx0 (Tensor, optional): The x-coordinate of the lens center.
-        thy0 (Tensor, optional): The y-coordinate of the lens center.
+        x0 (Tensor, optional): The x-coordinate of the lens center.
+        y0 (Tensor, optional): The y-coordinate of the lens center.
         q (Tensor, optional): The axis ratio of the lens.
-        phi (Tensor, optional): The orientation angle of the lens.
+        phi (Tensor, optional): The orientation angle of the lens (position angle).
         b (Tensor, optional): The Einstein radius of the lens.
         s (float): The core radius of the lens (defaults to 0.0).
     """
@@ -31,9 +31,9 @@ class SIE(ThinLens):
         name: str,
         cosmology: Cosmology,
         z_l: Optional[Tensor] = None,
-        thx0: Optional[Tensor] = None,
-        thy0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,# TODO change to true axis ratio
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
         s: float = 0.0,
@@ -43,14 +43,14 @@ class SIE(ThinLens):
         """
         super().__init__(name, cosmology, z_l)
 
-        self.add_param("thx0", thx0)
-        self.add_param("thy0", thy0)
+        self.add_param("x0", x0)
+        self.add_param("y0", y0)
         self.add_param("q", q)
         self.add_param("phi", phi)
         self.add_param("b", b)
         self.s = s
 
-    def _get_psi(self, x, y, q):
+    def _get_potential(self, x, y, q):
         """
         Compute the radial coordinate in the lens plane.
 
@@ -64,70 +64,74 @@ class SIE(ThinLens):
         """
         return (q**2 * (x**2 + self.s**2) + y**2).sqrt()
 
-    def alpha(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def reduced_deflection_angle(
+        self,
+            x: Tensor,
+            y: Tensor,
+            z_s: Tensor,
+            params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
-        Calculate the deflection angle.
+        Calculate the physical deflection angle.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, thx0, thy0, q, phi, b = self.unpack(x)
+        z_l, x0, y0, q, phi, b = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = self._get_psi(thx, thy, q)
+        x, y = translate_rotate(x, y, x0, y0, phi)
+        psi = self._get_potential(x, y, q)
         f = (1 - q**2).sqrt()
-        ax = b * q.sqrt() / f * (f * thx / (psi + self.s)).atan()
-        ay = b * q.sqrt() / f * (f * thy / (psi + q**2 * self.s)).atanh()
+        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan()
+        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh()
 
         return derotate(ax, ay, phi)
 
-    def Psi(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def potential( 
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, thx0, thy0, q, phi, b = self.unpack(x)
+        z_l, x0, y0, q, phi, b = self.unpack(params)
 
-        ax, ay = self.alpha(thx, thy, z_s, x)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
-        thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        return thx * ax + thy * ay
+        x, y = translate_rotate(x, y, x0, y0, phi)
+        return x * ax + y * ay
 
-    def kappa(
-        self, thx: Tensor, thy: Tensor, z_s: Tensor, x: Optional[dict[str, Any]] = None
+    def convergence(
+        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density.
 
         Args:
-            thx (Tensor): The x-coordinate of the lens.
-            thy (Tensor): The y-coordinate of the lens.
+            x (Tensor): The x-coordinate of the lens.
+            y (Tensor): The y-coordinate of the lens.
             z_s (Tensor): The source redshift.
-            x (Optional[dict[str, Any]]): Additional parameters.
+            params (Packed, optional): Dynamic parameter container.
 
         Returns:
             Tensor: The projected mass.
         """
-        z_l, thx0, thy0, q, phi, b = self.unpack(x)
+        z_l, x0, y0, q, phi, b = self.unpack(params)
 
-        thx, thy = translate_rotate(thx, thy, thx0, thy0, phi)
-        psi = self._get_psi(thx, thy, q)
+        x, y = translate_rotate(x, y, x0, y0, phi)
+        psi = self._get_potential(x, y, q)
         return 0.5 * q.sqrt() * b / psi
