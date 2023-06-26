@@ -22,7 +22,7 @@ class Sersic(Source):
         y0 (Optional[Tensor]): The y-coordinate of the Sersic source's center.
         q (Optional[Tensor]): The axis ratio of the Sersic source.
         phi (Optional[Tensor]): The orientation of the Sersic source (position angle).
-        index (Optional[Tensor]): The Sersic index, which describes the degree of concentration of the source.
+        n (Optional[Tensor]): The Sersic index, which describes the degree of concentration of the source.
         Re (Optional[Tensor]): The scale length of the Sersic source.
         Ie (Optional[Tensor]): The intensity at the effective radius.
         s (float): A small constant for numerical stability.
