@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from torch import Tensor
 
@@ -16,9 +16,9 @@ class ExternalShear(ThinLens):
     Attributes:
         name (str): Identifier for the lens instance.
         cosmology (Cosmology): The cosmological model used for lensing calculations.
-        z_l (Optional[Tensor]): The redshift of the lens.
-        x0, y0 (Optional[Tensor]): Coordinates of the shear center in the lens plane.
-        gamma_1, gamma_2 (Optional[Tensor]): Shear components.
+        z_l (Optional[Union[Tensor, float]]): The redshift of the lens.
+        x0, y0 (Optional[Union[Tensor, float]]): Coordinates of the shear center in the lens plane.
+        gamma_1, gamma_2 (Optional[Union[Tensor, float]]): Shear components.
 
     Note: The shear components gamma_1 and gamma_2 represent an external shear, a gravitational 
     distortion that can be caused by nearby structures outside of the main lens galaxy. 
@@ -27,11 +27,11 @@ class ExternalShear(ThinLens):
         self,
         name: str,
         cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
+        z_l: Optional[Union[Tensor, float]] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        gamma_1: Optional[Union[Tensor, float]] = None,
+        gamma_2: Optional[Union[Tensor, float]] = None,
     ):
         
         super().__init__(name, cosmology, z_l)

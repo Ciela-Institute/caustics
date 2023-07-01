@@ -1,13 +1,14 @@
 from collections import OrderedDict, defaultdict
-from itertools import chain
 from math import prod
 from operator import itemgetter
+from os import stat
 from typing import Optional, Union
 
 import torch
 from torch import Tensor
 
 from .packed import Packed
+from .definitions import NamespaceDict, NestedNamespaceDict
 from .parameter import Parameter
 
 __all__ = ("Parametrized",)
@@ -50,8 +51,8 @@ class Parametrized:
             raise ValueError(f"name must be a string (received {name})")
         self._name = name
         self._parents: list[Parametrized] = []
-        self._params: OrderedDict[str, Parameter] = OrderedDict()
-        self._descendants: OrderedDict[str, Parametrized] = OrderedDict()
+        self._params: NamespaceDict[str, Parameter] = NamespaceDict()
+        self._descendants: OrderedDict[str, Parametrized] = NestedNamespaceDict()
         self._dynamic_size = 0
         self._n_dynamic = 0
         self._n_static = 0
@@ -141,7 +142,7 @@ class Parametrized:
     def add_param(
         self,
         name: str,
-        value: Optional[Tensor] = None,
+        value: Optional[Union[Tensor, float]] = None,
         shape: Optional[tuple[int, ...]] = (),
     ):
         """
@@ -282,9 +283,7 @@ class Parametrized:
             ValueError: If the input is a tensor and the shape does not match the expected shape.
         """
         if isinstance(x, (dict, Packed)):
-            missing_names = [
-                name for name in chain([self.name], self._descendants) if name not in x
-            ]
+            missing_names = [name for name in self.params.dynamic.keys() if name not in x]
             if len(missing_names) > 0:
                 raise ValueError(f"missing x keys for {missing_names}")
 
@@ -293,22 +292,25 @@ class Parametrized:
             return Packed(x)
         elif isinstance(x, list) or isinstance(x, tuple):
             n_passed = len(x)
-            n_expected = (
-                sum([desc.n_dynamic for desc in self._descendants.values()])
-                + self.n_dynamic
-            )
-            if n_passed != n_expected:
+            n_dynamic_params = len(self.params.dynamic.flatten())
+            n_dynamic_modules = len(self.params.dynamic.keys())
+            if n_passed not in [n_dynamic_modules, n_dynamic_params]:
                 # TODO: give component and arg names
                 raise ValueError(
-                    f"{n_passed} dynamic args were passed, but {n_expected} are "
-                    "required."
+                    f"{n_passed} dynamic args were passed, but {n_dynamic_params} parameters or "
+                    " {n_dynamic_modules} Tensor (1 per dynamic module) are required "
                 )
 
-            cur_offset = self.n_dynamic
-            x_repacked = {self.name: x[:cur_offset]}
-            for desc in self._descendants.values():
-                x_repacked[desc.name] = x[cur_offset : cur_offset + desc.n_dynamic]
-                cur_offset += desc.n_dynamic
+            elif n_passed == n_dynamic_params:
+                cur_offset = self.n_dynamic
+                x_repacked = {self.name: x[:cur_offset]}
+                for desc in self._descendants.values():
+                    x_repacked[desc.name] = x[cur_offset : cur_offset + desc.n_dynamic]
+                    cur_offset += desc.n_dynamic
+            elif n_passed == n_dynamic_modules:
+                x_repacked = {}
+                for i, name in enumerate(self.params.dynamic.keys()):
+                    x_repacked[name] = x[i] # expect the list in ordred of init definition
 
             return Packed(x_repacked)
         elif isinstance(x, Tensor):
@@ -429,44 +431,44 @@ class Parametrized:
                 raise e
 
     @property
-    def params(self) -> dict[str, OrderedDict[str, Parameter]]:
+    def module_params(self) -> NestedNamespaceDict[str, NamespaceDict[str, Parameter]]:
         """
-        Gets all of the static and dynamic Params for this component and its descendants
-        in the correct order.
+        Gets the static and dynamic Params for this component 
 
         Returns:
-            dict[str, OrderedDict[str, Parameter]]: Dictionary containing all static and dynamic parameters.
+            NestedNamespaceDict[str, NamespaceDict[str, Parameter]]: Dictionary containing the static and dynamic parameters of the  module.
         """
-        static = OrderedDict()
-        dynamic = OrderedDict()
+        static = NamespaceDict()
+        dynamic = NamespaceDict()
         for name, param in self._params.items():
             if param.static:
                 static[name] = param
             else:
                 dynamic[name] = param
-
-        return {"static": static, "dynamic": dynamic}
-
+        return NestedNamespaceDict([("static", static), ("dynamic", dynamic)])
+    
     @property
-    def static_params(self) -> OrderedDict[str, Parameter]:
+    def params(self) -> NestedNamespaceDict[str, NamespaceDict[str, Parameter]]:
         """
-        Returns all the static parameters of the object.
-
+        Get the static and dynamic Params for this component and its descendants
+        
         Returns:
-            OrderedDict[str, Parameter]: An ordered dictionary of static parameters.
+            NestedNamespaceDict[str, NamespaceDict[str, Parameter]]: Dictionary containing the static and dynamic parameters of the ancestral graph
         """
-        return self.params["static"]
-
-    @property
-    def dynamic_params(self) -> OrderedDict[str, Parameter]:
-        """
-        Returns all the dynamic parameters of the object.
-
-        Returns:
-            OrderedDict[str, Parameter]: An ordered dictionary of dynamic parameters.
-        """
-        return self.params["dynamic"]
-
+        static = NestedNamespaceDict()
+        dynamic = NestedNamespaceDict()
+        def _get_params(module):
+            if module._descendants != {}:
+                for child in module._descendants.values():
+                    _get_params(child)
+            # Don't populate entries with empty dict
+            if module.module_params.static:
+                static[module.name] = module.module_params.static
+            if module.module_params.dynamic:
+                dynamic[module.name] = module.module_params.dynamic
+        _get_params(self)
+        return NestedNamespaceDict([("static", static), ("dynamic", dynamic)])
+            
     def __repr__(self) -> str:
         """
         Returns a string representation of the object.
@@ -484,7 +486,7 @@ class Parametrized:
         Returns:
             str: A string description of the object.
         """
-        static, dynamic = itemgetter("static", "dynamic")(self.params)
+        static, dynamic = itemgetter("static", "dynamic")(self.module_params)
         static_str = ", ".join(list(static.keys()))
         dynamic_str = ", ".join(list(dynamic.keys()))
 
@@ -494,7 +496,7 @@ class Parametrized:
 
         for n, d in self._descendants.items():
             if d.n_dynamic > 0:
-                desc_dynamic_strs.append(f"('{n}': {list(d.params['dynamic'].keys())})")
+                desc_dynamic_strs.append(f"('{n}': {list(d.module_params.dynamic.keys())})")
 
         desc_dynamic_str = ", ".join(desc_dynamic_strs)
 

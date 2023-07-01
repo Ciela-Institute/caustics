@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
@@ -22,12 +22,12 @@ class EPL(ThinLens):
         s (float): Softening length for the elliptical power-law profile.
     
     Parameters:
-        z_l (Tensor, optional): This is the redshift of the lens. In the context of gravitational lensing, the lens is the galaxy or other mass distribution that is bending the light from a more distant source.
-        x0 and y0 (Tensors, optional): These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
-        q (Tensor, optional): This is the axis ratio of the lens, i.e., the ratio of the minor axis to the major axis of the elliptical lens.
-        phi (Tensor, optional): This is the orientation of the lens on the sky, typically given as an angle measured counter-clockwise from some reference direction.
-        b (Tensor, optional): This is the scale length of the lens, which sets the overall scale of the lensing effect. In some contexts, this is referred to as the Einstein radius.
-        t (Tensor, optional): This is the power-law slope parameter of the lens model. In the context of the EPL model, t is equivalent to the gamma parameter minus one, where gamma is the power-law index of the radial mass distribution of the lens.
+        z_l (Optional[Union[Tensor, float]]): This is the redshift of the lens. In the context of gravitational lensing, the lens is the galaxy or other mass distribution that is bending the light from a more distant source.
+        x0 and y0 (Optional[Union[Tensor, float]]): These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
+        q (Optional[Union[Tensor, float]]): This is the axis ratio of the lens, i.e., the ratio of the minor axis to the major axis of the elliptical lens.
+        phi (Optional[Union[Tensor, float]]): This is the orientation of the lens on the sky, typically given as an angle measured counter-clockwise from some reference direction.
+        b (Optional[Union[Tensor, float]]): This is the scale length of the lens, which sets the overall scale of the lensing effect. In some contexts, this is referred to as the Einstein radius.
+        t (Optional[Union[Tensor, float]]): This is the power-law slope parameter of the lens model. In the context of the EPL model, t is equivalent to the gamma parameter minus one, where gamma is the power-law index of the radial mass distribution of the lens.
 
     """
 
@@ -35,13 +35,13 @@ class EPL(ThinLens):
         self,
         name: str,
         cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
+        z_l: Optional[Union[Tensor, float]] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        q: Optional[Union[Tensor, float]] = None,
+        phi: Optional[Union[Tensor, float]] = None,
+        b: Optional[Union[Tensor, float]] = None,
+        t: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         n_iter: int = 18,
     ):

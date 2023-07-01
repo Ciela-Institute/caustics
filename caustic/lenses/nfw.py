@@ -1,5 +1,5 @@
 from math import pi
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
@@ -47,11 +47,11 @@ class NFW(ThinLens):
         self,
         name: str,
         cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
-        c: Optional[Tensor] = None,
+        z_l: Optional[Union[Tensor, float]] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        m: Optional[Union[Tensor, float]] = None,
+        c: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
     ):
         """
@@ -61,13 +61,13 @@ class NFW(ThinLens):
             name (str): Name of the lens instance.
             cosmology (Cosmology): An instance of the Cosmology class which contains 
                 information about the cosmological model and parameters.
-            z_l (Optional[Tensor]): Redshift of the lens. Default is None.
-            x0 (Optional[Tensor]): x-coordinate of the lens center in the lens plane. 
+            z_l (Optional[Union[Tensor, float]]): Redshift of the lens. Default is None.
+            x0 (Optional[Union[Tensor, float]]): x-coordinate of the lens center in the lens plane. 
                 Default is None.
-            y0 (Optional[Tensor]): y-coordinate of the lens center in the lens plane. 
+            y0 (Optional[Union[Tensor, float]]): y-coordinate of the lens center in the lens plane. 
                 Default is None.
-            m (Optional[Tensor]): Mass of the lens. Default is None.
-            c (Optional[Tensor]): Concentration parameter of the lens. Default is None.
+            m (Optional[Union[Tensor, float]]): Mass of the lens. Default is None.
+            c (Optional[Union[Tensor, float]]): Concentration parameter of the lens. Default is None.
             s (float): Softening parameter to avoid singularities at the center of the lens. 
                 Default is 0.0.
         """

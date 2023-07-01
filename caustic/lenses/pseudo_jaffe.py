@@ -1,5 +1,5 @@
 from math import pi
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
@@ -20,12 +20,12 @@ class PseudoJaffe(ThinLens):
     Attributes:
         name (str): The name of the Pseudo Jaffe lens.
         cosmology (Cosmology): The cosmology used for calculations.
-        z_l (Optional[Tensor]): Redshift of the lens.
-        x0 (Optional[Tensor]): x-coordinate of the center of the lens.
-        y0 (Optional[Tensor]): y-coordinate of the center of the lens.
-        convergence_0 (Optional[Tensor]): Central convergence of the lens.
-        core_radius (Optional[Tensor]): Core radius of the lens.
-        scale_radius (Optional[Tensor]): Scaling radius of the lens.
+        z_l (Optional[Union[Tensor, float]]): Redshift of the lens.
+        x0 (Optional[Union[Tensor, float]]): x-coordinate of the center of the lens.
+        y0 (Optional[Union[Tensor, float]]): y-coordinate of the center of the lens.
+        convergence_0 (Optional[Union[Tensor, float]]): Central convergence of the lens.
+        core_radius (Optional[Union[Tensor, float]]): Core radius of the lens.
+        scale_radius (Optional[Union[Tensor, float]]): Scaling radius of the lens.
         s (float): Softening parameter to prevent numerical instabilities.
     """
 
@@ -33,12 +33,12 @@ class PseudoJaffe(ThinLens):
         self,
         name: str,
         cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        convergence_0: Optional[Tensor] = None,
-        core_radius: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Optional[Union[Tensor, float]] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        convergence_0: Optional[Union[Tensor, float]] = None,
+        core_radius: Optional[Union[Tensor, float]] = None,
+        scale_radius: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
     ):
         """
