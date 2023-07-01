@@ -41,7 +41,7 @@ def test_graph():
     sim.get_graph()
 
 
-def test_unpack():
+def test_unpack_all_modules():
     class Sim(Simulator):
         def __init__(self, name="test"):
             super().__init__(name)
@@ -82,6 +82,52 @@ def test_unpack():
     
     # Test semantic list (one tensor per module)
     _map = [cosmo_params, lens_params, source_params]
+    x_semantic = [torch.stack([torch.tensor(_x) for _x in p]) for p in _map]
+    sim.forward(sim.pack(x_semantic))
+    sim(x_semantic)
+
+
+def test_unpack_module_missing():
+    # Repeat previous test, but with one module completely static
+    class Sim(Simulator):
+        def __init__(self, name="test"):
+            super().__init__(name)
+            self.cosmo = FlatLambdaCDM("cosmo")
+            self.epl = EPL("lens", self.cosmo)
+            self.sersic = Sersic("source")
+            self.z_s = torch.tensor(1.0)
+            self.thx, self.thy = get_meshgrid(0.04, 20, 20)
+
+        def forward(self, params):
+            alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
+            bx = self.thx - alphax
+            by = self.thy - alphay
+            return self.sersic.brightness(bx, by, params)
+
+    sim = Sim()
+
+    lens_params = [0.5, 0., 0., 0.8, 0.5, 1.2, 1.1]
+    source_params = [0.0, 0.0, 0.8, 0.0, 1., 0.2, 10.]
+    
+    # test list input
+    x = [torch.tensor(_x) for _x in lens_params + source_params]
+    sim.forward(sim.pack(x))
+    sim(x)
+    
+    # test tensor input
+    x_tensor = torch.stack(x)
+    sim.forward(sim.pack(x))
+    sim(x)
+    
+    # Test dictionary input: Only module with dynamic parameters are required
+    _map = {"source": source_params, "lens": lens_params}
+    x_dict = {k: [torch.tensor(_x) for _x in _map[k]] for k in sim.params.dynamic.keys()}
+    print(x_dict)
+    sim.forward(sim.pack(x_dict))
+    sim(x_dict)
+    
+    # Test semantic list (one tensor per module)
+    _map = [lens_params, source_params]
     x_semantic = [torch.stack([torch.tensor(_x) for _x in p]) for p in _map]
     sim.forward(sim.pack(x_semantic))
     sim(x_semantic)
