@@ -33,7 +33,6 @@ class EPL(ThinLens):
 
     def __init__(
         self,
-        name: str,
         cosmology: Cosmology,
         z_l: Optional[Union[Tensor, float]] = None,
         x0: Optional[Union[Tensor, float]] = None,
@@ -44,6 +43,7 @@ class EPL(ThinLens):
         t: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         n_iter: int = 18,
+        name: str = None,
     ):
         """
         Initialize an EPL lens model.
@@ -61,7 +61,7 @@ class EPL(ThinLens):
             s (float): Softening length for the elliptical power-law profile.
             n_iter (int): Number of iterations for the iterative solver.
         """
-        super().__init__(name, cosmology, z_l)
+        super().__init__(cosmology, z_l, name=name)
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)

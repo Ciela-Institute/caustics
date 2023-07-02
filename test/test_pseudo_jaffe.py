@@ -13,8 +13,8 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
-    lens = PseudoJaffe("pj", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = PseudoJaffe(name="pj", cosmology=cosmology)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

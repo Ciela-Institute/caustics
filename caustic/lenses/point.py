@@ -24,13 +24,13 @@ class Point(ThinLens):
     """
     def __init__(
         self,
-        name: str,
         cosmology: Cosmology,
         z_l: Optional[Union[Tensor, float]] = None,
         x0: Optional[Union[Tensor, float]] = None,
         y0: Optional[Union[Tensor, float]] = None,
         th_ein: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
+        name: str = None,
     ):
         """
         Initialize the Point class.
@@ -44,7 +44,7 @@ class Point(ThinLens):
             th_ein (Optional[Tensor]): Einstein radius of the lens.
             s (float): Softening parameter to prevent numerical instabilities.
         """
-        super().__init__(name, cosmology, z_l)
+        super().__init__(cosmology, z_l, name=name)
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)

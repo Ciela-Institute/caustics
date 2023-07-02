@@ -15,7 +15,6 @@ __all__ = ("PixelatedConvergence",)
 class PixelatedConvergence(ThinLens):
     def __init__(
         self,
-        name: str,
         fov: float,
         n_pix: int,
         cosmology: Cosmology,
@@ -26,6 +25,7 @@ class PixelatedConvergence(ThinLens):
         convergence_map_shape: Optional[tuple[int, ...]] = None,
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
+        name: str = None,
     ):
         """Strong lensing with user provided kappa map
 
@@ -54,7 +54,7 @@ class PixelatedConvergence(ThinLens):
 
         """
         
-        super().__init__(name, cosmology, z_l)
+        super().__init__(cosmology, z_l, name=name)
 
         if convergence_map is not None and convergence_map.ndim != 2:
             raise ValueError(

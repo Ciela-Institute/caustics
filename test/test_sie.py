@@ -14,8 +14,8 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
-    lens = SIE("sie", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = SIE(name="sie", cosmology=cosmology)
     lens_model_list = ["SIE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

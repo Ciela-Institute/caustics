@@ -6,33 +6,31 @@ from caustic.utils import get_meshgrid
 def test_params():
     # Test common simulator structure
     class Sim(Simulator):
-        def __init__(self, name="test"):
-            super().__init__(name)
-            self.cosmo = FlatLambdaCDM("cosmo", h0=None)
-            self.epl = EPL("lens", self.cosmo)
-            self.sersic = Sersic("source")
-            self.z_s = torch.tensor(1.0)
-            self.thx, self.thy = get_meshgrid(0.04, 20, 20)
+        def __init__(self):
+            super().__init__()
+            self.cosmo = FlatLambdaCDM(h0=None)
+            self.epl = EPL(self.cosmo)
+            self.sersic = Sersic()
+            self.add_param("z_s", 1.0)
     
     sim = Sim()
-    assert len(sim.module_params.keys()) == 2
-    assert len(sim.module_params.dynamic.keys()) == 0
-    assert len(sim.module_params.static.keys()) == 0
-    assert len(sim.params.keys()) == 2
-    assert len(sim.params.dynamic.keys()) == 3
-    assert len(sim.params.static.keys()) == 1
-    # Test that total number of dynamic params is respected
-    assert len(sim.params.dynamic.flatten().keys()) == 15
+    assert len(sim.module_params) == 2 # dynamic and static
+    assert len(sim.module_params.dynamic) == 0 # simulator has no dynmaic params
+    assert len(sim.module_params.static) == 1 # and 1 static param (z_s)
+    assert len(sim.params) == 2 # dynamic and static
+    assert len(sim.params.dynamic) == 3 # cosmo, epl and sersic
+    assert len(sim.params.static) == 2 # simulator and cosmo have static params
+    assert len(sim.params.dynamic.flatten()) == 15 # total number of params
 
 
 def test_graph():
     # Test common simulator structure
     class Sim(Simulator):
-        def __init__(self, name="test"):
+        def __init__(self, name="test_simulator"):
             super().__init__(name)
-            self.cosmo = FlatLambdaCDM("cosmo", h0=None)
-            self.epl = EPL("lens", self.cosmo)
-            self.sersic = Sersic("source")
+            self.cosmo = FlatLambdaCDM(h0=None, name="cosmo")
+            self.lens = EPL(self.cosmo, name="lens")
+            self.source = Sersic(name="source")
             self.z_s = torch.tensor(1.0)
             self.thx, self.thy = get_meshgrid(0.04, 20, 20)
 
@@ -41,13 +39,13 @@ def test_graph():
     sim.get_graph()
 
 
-def test_unpack_all_modules():
+def test_unpack_all_modules_dynamic():
     class Sim(Simulator):
         def __init__(self, name="test"):
             super().__init__(name)
-            self.cosmo = FlatLambdaCDM("cosmo", h0=None)
-            self.epl = EPL("lens", self.cosmo)
-            self.sersic = Sersic("source")
+            self.cosmo = FlatLambdaCDM(h0=None, name="cosmo")
+            self.epl = EPL(self.cosmo, name="lens")
+            self.sersic = Sersic(name="source")
             self.z_s = torch.tensor(1.0)
             self.thx, self.thy = get_meshgrid(0.04, 20, 20)
 
@@ -87,14 +85,14 @@ def test_unpack_all_modules():
     sim(x_semantic)
 
 
-def test_unpack_module_missing():
+def test_unpack_some_modules_static():
     # Repeat previous test, but with one module completely static
     class Sim(Simulator):
         def __init__(self, name="test"):
             super().__init__(name)
-            self.cosmo = FlatLambdaCDM("cosmo")
-            self.epl = EPL("lens", self.cosmo)
-            self.sersic = Sersic("source")
+            self.cosmo = FlatLambdaCDM(name="cosmo")
+            self.epl = EPL(self.cosmo, name="lens")
+            self.sersic = Sersic(name="source")
             self.z_s = torch.tensor(1.0)
             self.thx, self.thy = get_meshgrid(0.04, 20, 20)
 
@@ -132,3 +130,63 @@ def test_unpack_module_missing():
     sim.forward(sim.pack(x_semantic))
     sim(x_semantic)
     
+
+def test_default_names():
+    cosmo = FlatLambdaCDM()
+    assert cosmo.name == "FlatLambdaCDM"
+    epl = EPL(cosmo)
+    assert epl.name == "EPL"
+    source = Sersic()
+    assert source.name == "Sersic"
+
+
+def test_parametrized_name_setter():
+    class Sim(Simulator):
+        def __init__(self):
+            super().__init__()
+            self.cosmo = FlatLambdaCDM()
+            self.lens = EPL(self.cosmo, name="lens")
+            self.source = Sersic(name="source")
+    
+    sim = Sim()
+    assert sim.name == "Sim"
+    sim.name = "Test"
+    assert sim.name == "Test"
+
+    # Check that DAG in SIM is being update updated
+    sim.lens.name = "Test Lens"
+    assert sim.lens.name == "Test Lens"
+    assert "Test Lens" in sim.params.dynamic.keys()
+    assert "Test Lens" in sim.cosmo._parents.keys()
+
+
+def test_parametrized_name_collision():
+    # Case 1: Name collision in children of simulator
+    class Sim(Simulator):
+        def __init__(self):
+            super().__init__()
+            self.cosmo = FlatLambdaCDM(h0=None)
+            # These two module are identical and will create a name collision
+            self.lens1 = EPL(self.cosmo)
+            self.lens2 = EPL(self.cosmo)
+    
+    sim = Sim()
+    # Current way names are updated. Could be chnaged so that all params in collision
+    # Get a number
+    assert sim.lens1.name == "EPL"
+    assert sim.lens2.name == "EPL_1"
+
+    # Case 2: name collision in parents of a module
+    cosmo = FlatLambdaCDM(h0=None)
+    lens = EPL(cosmo)
+    class Sim(Simulator):
+        def __init__(self):
+            super().__init__()
+            self.lens = lens
+    
+    sim1 = Sim()
+    sim2 = Sim()
+    assert sim1.name == "Sim"
+    assert sim2.name == "Sim_1"
+    assert "Sim_1" in lens._parents.keys()
+    assert "Sim" in lens._parents.keys()

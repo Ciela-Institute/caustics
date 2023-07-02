@@ -1,14 +1,14 @@
 from collections import OrderedDict, defaultdict
 from math import prod
 from operator import itemgetter
-from os import stat
 from typing import Optional, Union
 
 import torch
+import re
 from torch import Tensor
 
 from .packed import Packed
-from .definitions import NamespaceDict, NestedNamespaceDict
+from .namespace_dict import NamespaceDict, NestedNamespaceDict
 from .parameter import Parameter
 
 __all__ = ("Parametrized",)
@@ -25,119 +25,79 @@ class Parametrized:
     TODO
     - Attributes can be Params, Parametrized, tensor buffers or just normal attributes.
     - Need to make sure an attribute of one of those types isn't rebound to be of a different type.
-    - params: generator returning all the params, with names of parent Parametrized concatenated as key.
 
     Attributes:
-        name (str): The name of the Parametrized object.
-        parents (list[Parametrized]): List of parent Parametrized objects.
+        name (str): The name of the Parametrized object. Default to class name.
+        parents (NestedNamespaceDict): Nested dictionary of parent Parametrized objects (higher level, more abstract modules).
         params (OrderedDict[str, Parameter]): Dictionary of parameters.
-        descendants (OrderedDict[str, Parametrized]): Dictionary of descendant Parametrized objects.
+        childs NestedNamespaceDict: Nested dictionary of childs Parametrized objects (lower level, more specialized modules).
         dynamic_size (int): Size of dynamic parameters.
         n_dynamic (int): Number of dynamic parameters.
         n_static (int): Number of static parameters.
     """
 
-    def __init__(self, name: str):
-        """
-        Initializes an instance of the Parametrized class.
-
-        Args:
-            name (str): The name of the Parametrized object.
-
-        Raises:
-            ValueError: If the provided name is not a string.
-        """
+    def __init__(self, name: str = None):
+        if name is None:
+            name = re.search("([A-Z])\w+", str(self.__class__)).group()
         if not isinstance(name, str):
             raise ValueError(f"name must be a string (received {name})")
         self._name = name
-        self._parents: list[Parametrized] = []
-        self._params: NamespaceDict[str, Parameter] = NamespaceDict()
-        self._descendants: OrderedDict[str, Parametrized] = NestedNamespaceDict()
+        self._parents: OrderedDict[str, Parametrized] = NamespaceDict()
+        self._params: OrderedDict[str, Parameter] = NamespaceDict()
+        self._childs: OrderedDict[str, Parametrized] = NamespaceDict()
         self._dynamic_size = 0
         self._n_dynamic = 0
         self._n_static = 0
 
     @property
     def name(self) -> str:
-        """
-        Returns the name of the Parametrized object.
-
-        Returns:
-            str: The name of the Parametrized object.
-        """
         return self._name
-
+    
     @name.setter
-    def name(self, newname: str):
-        """
-        Prevents the reassignment of the name attribute.
+    def name(self, new_name: str):
+        old_name = self.name
+        for parent in self._parents.values():
+            parent._childs[new_name] = self
+            del parent._childs[old_name]
+        for child in self._childs.values():
+            child._parents[new_name] = self
+            del child._parents[old_name]
+        self._name = new_name
 
-        Raises:
-            NotImplementedError: Always, as reassigning the name attribute is not supported.
+    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
         """
-        raise NotImplementedError()
-
-    def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
-    ):
+        Moves static Params for this component and its childs to the specified device and casts them to the specified data type.
         """
-        Moves static Params for this component and its descendants to the specified device and casts them to the specified data type.
-
-        Args:
-            device (Optional[torch.device], optional): The device to move the values to. Defaults to None.
-            dtype (Optional[torch.dtype], optional): The desired data type. Defaults to None.
-
-        Returns:
-            Parametrized: The Parametrized object itself after moving and casting.
-        """
-        for name in self._params:
+        # TODO I think we should make users specify a separate method so we dont override this behavior
+        for name in self._params.keys():
             param = self._params[name]
             if isinstance(param, torch.Tensor):
                 self._params[name] = param.to(device, dtype)
-
-        for desc in self._descendants.values():
-            desc.to(device, dtype)
-
+        for child in self._childs.values():
+            child.to(device, dtype)
         return self
 
-    def _can_add(self, p: "Parametrized") -> bool:
+    @staticmethod
+    def _generate_unique_name(name, module_names):
+        i = 1
+        while f"{name}_{i}" in module_names:
+            i += 1
+        return f"{name}_{i}"
+                
+    def add_parametrized(self, p: "Parametrized"):
         """
-        Checks if a different model component with the same name is already in the DAG (Directed Acyclic Graph).
-
-        Args:
-            p (Parametrized): The Parametrized object to check.
-
-        Returns:
-            bool: False if a different model component with the same name is already in the DAG, True otherwise.
+        Add a child to this module, and create edges for the DAG
         """
-        if self.name == p.name and self is not p:
-            return False
-
-        if p.name in self._descendants and self._descendants[p.name] is not p:
-            return False
-
-        # Propagate up through all parents
-        for parent in self._parents:
-            if not parent._can_add(p):
-                return False
-
-        return True
-
-    def _merge_descendants_up(self, p: "Parametrized"):
-        """
-        Merges the descendants of the given Parametrized object into this object's descendants,
-        and does the same for all parent objects.
-
-        Args:
-            p (Parametrized): The Parametrized object to merge descendants from.
-        """
-        self._descendants[p.name] = p
-        for desc in p._descendants.values():
-            self._descendants[desc.name] = desc
-
-        # Recur up into parents
-        for parent in self._parents:
-            parent._merge_descendants_up(p)
+        # If self.name is already in the module parents, we need to update self.name
+        if self.name in p._parents.keys():
+            new_name = self._generate_unique_name(self.name, p._parents.keys())
+            self.name = new_name # from name.setter, this updates the DAG edges as well
+        p._parents[self.name] = self
+        # If the module name is already in self._childs, we need to update module name
+        if p.name is self._childs.keys():
+            new_name = self._generate_unique_name(p.name, self._childs.keys())
+            p.name = new_name
+        self._childs[p.name] = p
 
     def add_param(
         self,
@@ -162,65 +122,9 @@ class Parametrized:
         else:
             self._n_static += 1
 
-    def add_parametrized(self, p: "Parametrized"):
-        """
-        Adds a Parametrized object to the current Parametrized object's descendants.
-
-        Args:
-            p (Parametrized): The Parametrized object to be added.
-
-        Raises:
-            KeyError: If a component with the same name already exists in the model DAG.
-        """
-        # Check if new component can be added
-        if not self._can_add(p):
-            val_str = (
-                str(p)
-                .replace("(\n    ", "(")
-                .replace("\n)", ")")
-                .replace("\n    ", " ")
-            )
-            raise KeyError(
-                f"cannot add {val_str}: a component with the name '{p.name}' "
-                "already exists in the model DAG"
-            )
-
-        # Check if its descendants can be added
-        for name, desc in p._descendants.items():
-            if not self._can_add(desc):
-                val_str = (
-                    str(p)
-                    .replace("(\n", "(")
-                    .replace("\n)", ")")
-                    .replace("\n    ", " ")
-                )
-                raise KeyError(
-                    f"cannot add {val_str}: its descendant '{name}' already exists "
-                    "in the model DAG"
-                )
-
-        # Add new component and its descendants to this component's descendants,
-        # as well as those of its parents
-        self._merge_descendants_up(p)
-
-        # Add this component as a parent for the new one
-        p._parents.append(self)
-
     def __setattr__(self, key, val):
-        """
-        Overrides the __setattr__ method to add custom behavior for Parametrized and Parameter objects.
-
-        Args:
-            key (str): The attribute name.
-            val (any): The attribute value.
-
-        Raises:
-            ValueError: If the value is a Parameter object (these should be added using add_param() instead).
-        """
         if isinstance(val, Parameter):
-            raise ValueError(
-                "cannot add Params directly as attributes: use add_param instead"
-            )
+            raise ValueError("cannot add Params directly as attributes: use add_param instead")
         elif isinstance(val, Parametrized):
             self.add_parametrized(val)
             super().__setattr__(key, val)
@@ -229,32 +133,14 @@ class Parametrized:
 
     @property
     def n_dynamic(self) -> int:
-        """
-        Returns the number of dynamic arguments in this Parametrized object.
-
-        Returns:
-            int: The number of dynamic arguments.
-        """
         return self._n_dynamic
 
     @property
     def n_static(self) -> int:
-        """
-        Returns the number of static arguments in this Parametrized object.
-
-        Returns:
-            int: The number of static arguments.
-        """
         return self._n_static
 
     @property
     def dynamic_size(self) -> int:
-        """
-        Returns the total number of dynamic values in this Parametrized object.
-
-        Returns:
-            int: The total number of dynamic values.
-        """
         return self._dynamic_size
 
     def pack(
@@ -267,7 +153,7 @@ class Parametrized:
     ) -> Packed:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
-        into arguments to this component and its descendants.
+        into arguments to this component and its childs.
 
         Args:
             x (Union[list[Tensor], dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]], Tensor):
@@ -288,55 +174,50 @@ class Parametrized:
                 raise ValueError(f"missing x keys for {missing_names}")
 
             # TODO: check structure!
-
             return Packed(x)
+
         elif isinstance(x, list) or isinstance(x, tuple):
             n_passed = len(x)
             n_dynamic_params = len(self.params.dynamic.flatten())
-            n_dynamic_modules = len(self.params.dynamic.keys())
+            n_dynamic_modules = len(self.dynamic_modules)
             if n_passed not in [n_dynamic_modules, n_dynamic_params]:
                 # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} dynamic args were passed, but {n_dynamic_params} parameters or "
-                    " {n_dynamic_modules} Tensor (1 per dynamic module) are required "
+                    f"{n_dynamic_modules} Tensor (1 per dynamic module) are required"
                 )
 
             elif n_passed == n_dynamic_params:
                 cur_offset = self.n_dynamic
                 x_repacked = {self.name: x[:cur_offset]}
-                for desc in self._descendants.values():
-                    x_repacked[desc.name] = x[cur_offset : cur_offset + desc.n_dynamic]
-                    cur_offset += desc.n_dynamic
+                for name, dynamic_module in self.dynamic_modules.items():
+                    x_repacked[name] = x[cur_offset : cur_offset + dynamic_module.n_dynamic]
+                    cur_offset += dynamic_module.n_dynamic
             elif n_passed == n_dynamic_modules:
                 x_repacked = {}
-                for i, name in enumerate(self.params.dynamic.keys()):
-                    x_repacked[name] = x[i] # expect the list in ordred of init definition
-
+                for i, name in enumerate(self.dynamic_modules.keys()):
+                    x_repacked[name] = x[i] 
             return Packed(x_repacked)
+        
         elif isinstance(x, Tensor):
             n_passed = x.shape[-1]
-            n_expected = (
-                sum([desc.dynamic_size for desc in self._descendants.values()])
-                + self.dynamic_size
-            )
+            n_expected = sum([module.dynamic_size for module in self.dynamic_modules.values()]) 
             if n_passed != n_expected:
                 # TODO: give component and arg names
                 raise ValueError(
-                    f"{n_passed} flattened dynamic args were passed, but {n_expected}"
-                    " are required"
+                    f"{n_passed} flattened dynamic args were passed, but {n_expected} "
+                    f"are required"
                 )
 
             cur_offset = self.dynamic_size
             x_repacked = {self.name: x[..., :cur_offset]}
-            for desc in self._descendants.values():
-                x_repacked[desc.name] = x[
-                    ..., cur_offset : cur_offset + desc.dynamic_size
-                ]
+            for desc in self._childs.values():
+                x_repacked[desc.name] = x[..., cur_offset : cur_offset + desc.dynamic_size]
                 cur_offset += desc.dynamic_size
-
             return Packed(x_repacked)
+
         else:
-            raise ValueError("can only repack a list or 1D tensor")
+            raise ValueError("Data structure not supported")
 
     def unpack(
         self, x: Optional[dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]]
@@ -431,15 +312,9 @@ class Parametrized:
                 raise e
 
     @property
-    def module_params(self) -> NestedNamespaceDict[str, NamespaceDict[str, Parameter]]:
-        """
-        Gets the static and dynamic Params for this component 
-
-        Returns:
-            NestedNamespaceDict[str, NamespaceDict[str, Parameter]]: Dictionary containing the static and dynamic parameters of the  module.
-        """
-        static = NamespaceDict()
-        dynamic = NamespaceDict()
+    def module_params(self) -> NestedNamespaceDict:
+        static = NestedNamespaceDict()
+        dynamic = NestedNamespaceDict()
         for name, param in self._params.items():
             if param.static:
                 static[name] = param
@@ -448,53 +323,46 @@ class Parametrized:
         return NestedNamespaceDict([("static", static), ("dynamic", dynamic)])
     
     @property
-    def params(self) -> NestedNamespaceDict[str, NamespaceDict[str, Parameter]]:
-        """
-        Get the static and dynamic Params for this component and its descendants
-        
-        Returns:
-            NestedNamespaceDict[str, NamespaceDict[str, Parameter]]: Dictionary containing the static and dynamic parameters of the ancestral graph
-        """
+    def params(self) -> NestedNamespaceDict:
         static = NestedNamespaceDict()
         dynamic = NestedNamespaceDict()
         def _get_params(module):
-            if module._descendants != {}:
-                for child in module._descendants.values():
+            if module._childs != {}:
+                for child in module._childs.values():
                     _get_params(child)
-            # Don't populate entries with empty dict
             if module.module_params.static:
                 static[module.name] = module.module_params.static
             if module.module_params.dynamic:
                 dynamic[module.name] = module.module_params.dynamic
         _get_params(self)
         return NestedNamespaceDict([("static", static), ("dynamic", dynamic)])
-            
-    def __repr__(self) -> str:
-        """
-        Returns a string representation of the object.
 
-        Returns:
-            str: A string representation of the object.
-        """
+    @property
+    def dynamic_modules(self) -> NamespaceDict[str, "Parametrized"]:
+        # Only catch modules with dynamic parameters
+        modules = NamespaceDict()
+        def _get_childs(module):
+            if module._childs != {}:
+                for child in module._childs.values():
+                    _get_childs(child)
+            if module.module_params.dynamic:
+                modules[module.name] = module
+        _get_childs(self)
+        return modules
+
+    def __repr__(self) -> str:
         # TODO: change
         return str(self)
 
     def __str__(self) -> str:
-        """
-        Returns a string description of the object.
-
-        Returns:
-            str: A string description of the object.
-        """
         static, dynamic = itemgetter("static", "dynamic")(self.module_params)
         static_str = ", ".join(list(static.keys()))
         dynamic_str = ", ".join(list(dynamic.keys()))
-
         desc_dynamic_strs = []
         if self.n_dynamic > 0:
             desc_dynamic_strs.append(f"('{self.name}': {list(dynamic.keys())})")
 
-        for n, d in self._descendants.items():
+        for n, d in self._childs.items():
             if d.n_dynamic > 0:
                 desc_dynamic_strs.append(f"('{n}': {list(d.module_params.dynamic.keys())})")
 
@@ -522,8 +390,6 @@ class Parametrized:
         Returns:
             graphviz.Digraph: The graph representation of the object.
         """
-        from operator import itemgetter
-
         import graphviz
 
         def add_component(p: Parametrized, dot):
@@ -531,7 +397,7 @@ class Parametrized:
             dot.node(p.name, f"{p.__class__.__name__}('{p.name}')")
 
         def add_params(p: Parametrized, dot):
-            static, dynamic = itemgetter("static", "dynamic")(p.params)
+            static, dynamic = itemgetter("static", "dynamic")(p.module_params)
 
             dot.attr("node", style="solid", color="black", shape="box")
             for n in dynamic:
@@ -549,65 +415,15 @@ class Parametrized:
         add_component(self, dot)
         add_params(self, dot)
 
-        for desc in self._descendants.values():
-            add_component(desc, dot)
+        for child in self._childs.values():
+            add_component(child, dot)
 
-            for parent in desc._parents:
-                if parent.name not in self._descendants and parent.name != self.name:
+            for parent in child._parents.values():
+                if parent.name not in self._childs and parent.name != self.name:
                     continue
                 add_component(parent, dot)
-                dot.edge(parent.name, desc.name)
-                add_params(desc, dot)
+                dot.edge(parent.name, child.name)
+                add_params(child, dot)
 
         return dot
 
-
-# class ParametrizedList(Parametrized):
-#     """
-#     TODO
-#         - Many operations require being able to remove descendants from the DAG.
-#     """
-#
-#     def __init__(self, name: str, items: Iterable[Parametrized] = []):
-#         super().__init__(name)
-#         self._children = []
-#         self.extend(items)
-#
-#     def __getitem__(self, idx: int) -> Parametrized:
-#         return self._children[idx]
-#
-#     def __iter__(self) -> Iterator[Parametrized]:
-#         return iter(self._children)
-#
-#     def __iadd__(self, items: Iterable[Parametrized]) -> "ParametrizedList":
-#         self.extend(items)
-#         return self
-#
-#     def extend(self, items: Iterable[Parametrized]) -> "ParametrizedList":
-#         self._children.extend(items)
-#         for p in items:
-#             self.add_parametrized(p)
-#         return self
-#
-#     def append(self, item: Parametrized) -> "ParametrizedList":
-#         self._children.append(item)
-#         self.add_parametrized(item)
-#         return self
-#
-#     def __len__(self) -> int:
-#         return len(self._children)
-#
-#     def __add__(self, other: Iterable[Parametrized]) -> "ParametrizedList":
-#         raise NotImplementedError()
-#
-#     def insert(self, idx: int, item: Parametrized):
-#         raise NotImplementedError()
-#
-#     def __setitem__(self, idx: int, item: Parametrized):
-#         raise NotImplementedError()
-#
-#     def __delitem__(self, idx: Union[int, slice]):
-#         raise NotImplementedError()
-#
-#     def pop(self, idx: Union[int, slice]) -> Parametrized:
-#         raise NotImplementedError()

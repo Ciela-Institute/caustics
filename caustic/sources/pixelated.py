@@ -26,12 +26,12 @@ class Pixelated(Source):
     """
     def __init__(
         self,
-        name: str,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         image: Optional[Tensor] = None, 
         pixelscale: Optional[Tensor] = None,
         image_shape: Optional[tuple[int, ...]] = None,
+        name: str = None,
     ):
         """
         Constructs the `Pixelated` object with the given parameters. 

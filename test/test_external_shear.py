@@ -11,8 +11,8 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
-    lens = ExternalShear("shear", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = ExternalShear(name="shear", cosmology=cosmology)
     lens_model_list = ["SHEAR"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
     print(lens)

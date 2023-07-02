@@ -11,8 +11,8 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
-    lens = Point("point", cosmology, z_l=torch.tensor(0.9))
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = Point(name="point", cosmology=cosmology, z_l=torch.tensor(0.9))
     lens_model_list = ["POINT_MASS"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

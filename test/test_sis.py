@@ -11,14 +11,14 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology = FlatLambdaCDM("cosmo", None)
-    lens = SIS("sis", cosmology, z_l=torch.tensor(0.5))
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = SIS(name="sis", cosmology=cosmology, z_l=torch.tensor(0.5))
     lens_model_list = ["SIS"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([-0.342, 0.51, 1.4, 0.7])
+    x = torch.tensor([-0.342, 0.51, 1.4])
     kwargs_ls = [
         {"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": x[2].item()}
     ]
