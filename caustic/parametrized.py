@@ -57,11 +57,11 @@ class Parametrized:
     def name(self, new_name: str):
         old_name = self.name
         for parent in self._parents.values():
-            parent._childs[new_name] = self
             del parent._childs[old_name]
+            parent._childs[new_name] = self
         for child in self._childs.values():
-            child._parents[new_name] = self
             del child._parents[old_name]
+            child._parents[new_name] = self
         self._name = new_name
 
     def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
@@ -186,7 +186,6 @@ class Parametrized:
                     f"{n_passed} dynamic args were passed, but {n_dynamic_params} parameters or "
                     f"{n_dynamic_modules} Tensor (1 per dynamic module) are required"
                 )
-
             elif n_passed == n_dynamic_params:
                 cur_offset = self.n_dynamic
                 x_repacked = {self.name: x[:cur_offset]}

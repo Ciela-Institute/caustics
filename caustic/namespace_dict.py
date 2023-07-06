@@ -130,14 +130,14 @@ class NestedNamespaceDict(_NestedNamespaceDict):
         #==============================
         # Nested namespace access
         #==============================
-        print(nested_dict.foo.bar.qux)       # Output: 42
+        print(nested_dict.bar.qux)       # Output: 42
         
         #==============================
         # Flatten and collapse method
         #==============================
         print(nested_dict.flatten())
         # Output:
-        # {'foo': 'Hello', 'foo.bar.baz': 'World', 'foo.bar.qux': 42}
+        # {'foo': 'Hello', 'bar.baz': 'World', 'bar.qux': 42}
         
         print(nested_dict.collapse()
         # Output:

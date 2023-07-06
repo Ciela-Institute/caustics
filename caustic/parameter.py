@@ -34,11 +34,10 @@ class Parameter:
         self._value = value
         if value is None:
             if shape is None:
-                raise ValueError("if value is None, a shape must be provided")
+                raise ValueError("If value is None, a shape must be provided")
             self._shape = shape
         else:
-            if isinstance(value, float):
-                value = torch.tensor(value)
+            value = torch.as_tensor(value)
             if shape != value.shape:
                 raise ValueError(
                     f"value's shape {value.shape} does not match provided shape {shape}"

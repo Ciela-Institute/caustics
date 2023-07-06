@@ -71,7 +71,7 @@ class NFW(ThinLens):
             s (float): Softening parameter to avoid singularities at the center of the lens. 
                 Default is 0.0.
         """
-        super().__init__(cosmology, z_l, name)
+        super().__init__(cosmology, z_l, name=name)
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)
