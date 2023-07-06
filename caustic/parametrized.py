@@ -1,6 +1,5 @@
 from collections import OrderedDict, defaultdict
 from math import prod
-from operator import itemgetter
 from typing import Optional, Union
 
 import torch
@@ -176,17 +175,11 @@ class Parametrized:
             # TODO: check structure!
             return Packed(x)
 
-        elif isinstance(x, list) or isinstance(x, tuple):
+        elif isinstance(x, (list, tuple)):
             n_passed = len(x)
             n_dynamic_params = len(self.params.dynamic.flatten())
             n_dynamic_modules = len(self.dynamic_modules)
-            if n_passed not in [n_dynamic_modules, n_dynamic_params]:
-                # TODO: give component and arg names
-                raise ValueError(
-                    f"{n_passed} dynamic args were passed, but {n_dynamic_params} parameters or "
-                    f"{n_dynamic_modules} Tensor (1 per dynamic module) are required"
-                )
-            elif n_passed == n_dynamic_params:
+            if n_passed == n_dynamic_params:
                 cur_offset = self.n_dynamic
                 x_repacked = {self.name: x[:cur_offset]}
                 for name, dynamic_module in self.dynamic_modules.items():
@@ -196,6 +189,11 @@ class Parametrized:
                 x_repacked = {}
                 for i, name in enumerate(self.dynamic_modules.keys()):
                     x_repacked[name] = x[i] 
+            else:
+                raise ValueError(
+                    f"{n_passed} dynamic args were passed, but {n_dynamic_params} parameters or "
+                    f"{n_dynamic_modules} Tensor (1 per dynamic module) are required"
+                )
             return Packed(x_repacked)
         
         elif isinstance(x, Tensor):
@@ -326,9 +324,8 @@ class Parametrized:
         static = NestedNamespaceDict()
         dynamic = NestedNamespaceDict()
         def _get_params(module):
-            if module._childs != {}:
-                for child in module._childs.values():
-                    _get_params(child)
+            for child in module._childs.values():
+                _get_params(child)
             if module.module_params.static:
                 static[module.name] = module.module_params.static
             if module.module_params.dynamic:
@@ -354,7 +351,8 @@ class Parametrized:
         return str(self)
 
     def __str__(self) -> str:
-        static, dynamic = itemgetter("static", "dynamic")(self.module_params)
+        static = self.module_params.static
+        dynamic = self.module_params.dynamic
         static_str = ", ".join(list(static.keys()))
         dynamic_str = ", ".join(list(dynamic.keys()))
         desc_dynamic_strs = []
@@ -396,7 +394,8 @@ class Parametrized:
             dot.node(p.name, f"{p.__class__.__name__}('{p.name}')")
 
         def add_params(p: Parametrized, dot):
-            static, dynamic = itemgetter("static", "dynamic")(p.module_params)
+            static = p.module_params.static
+            dynamic = p.module_params.dynamic
 
             dot.attr("node", style="solid", color="black", shape="box")
             for n in dynamic:

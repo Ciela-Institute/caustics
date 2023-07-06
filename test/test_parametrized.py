@@ -40,6 +40,7 @@ def test_graph():
 
 
 def test_unpack_all_modules_dynamic():
+    n_pix = 20
     class Sim(Simulator):
         def __init__(self, name="test"):
             super().__init__(name)
@@ -47,7 +48,7 @@ def test_unpack_all_modules_dynamic():
             self.epl = EPL(self.cosmo, name="lens")
             self.sersic = Sersic(name="source")
             self.z_s = torch.tensor(1.0)
-            self.thx, self.thy = get_meshgrid(0.04, 20, 20)
+            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
 
         def forward(self, params):
             alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
@@ -63,30 +64,27 @@ def test_unpack_all_modules_dynamic():
     
     # test list input
     x = [torch.tensor(_x) for _x in cosmo_params + lens_params + source_params]
-    sim.forward(sim.pack(x))
-    sim(x)
+    assert sim(x).shape == torch.Size([n_pix, n_pix])
     
     # test tensor input
     x_tensor = torch.stack(x)
-    sim.forward(sim.pack(x))
-    sim(x)
+    assert sim(x_tensor).shape == torch.Size([n_pix, n_pix])
     
     # Test dictionary input: Only module with dynamic parameters are required
     _map = {"cosmo": cosmo_params, "source": source_params, "lens": lens_params}
     x_dict = {k: [torch.tensor(_x) for _x in _map[k]] for k in sim.params.dynamic.keys()}
     print(x_dict)
-    sim.forward(sim.pack(x_dict))
-    sim(x_dict)
+    assert sim(x_dict).shape == torch.Size([n_pix, n_pix])
     
     # Test semantic list (one tensor per module)
     _map = [cosmo_params, lens_params, source_params]
     x_semantic = [torch.stack([torch.tensor(_x) for _x in p]) for p in _map]
-    sim.forward(sim.pack(x_semantic))
-    sim(x_semantic)
+    assert sim(x_semantic).shape == torch.Size([n_pix, n_pix])
 
 
 def test_unpack_some_modules_static():
     # Repeat previous test, but with one module completely static
+    n_pix = 20
     class Sim(Simulator):
         def __init__(self, name="test"):
             super().__init__(name)
@@ -94,7 +92,7 @@ def test_unpack_some_modules_static():
             self.epl = EPL(self.cosmo, name="lens")
             self.sersic = Sersic(name="source")
             self.z_s = torch.tensor(1.0)
-            self.thx, self.thy = get_meshgrid(0.04, 20, 20)
+            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
 
         def forward(self, params):
             alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
@@ -109,26 +107,24 @@ def test_unpack_some_modules_static():
     
     # test list input
     x = [torch.tensor(_x) for _x in lens_params + source_params]
-    sim.forward(sim.pack(x))
-    sim(x)
+    assert sim(x).shape == torch.Size([n_pix, n_pix])
     
     # test tensor input
     x_tensor = torch.stack(x)
-    sim.forward(sim.pack(x))
-    sim(x)
+    assert sim(x_tensor).shape == torch.Size([n_pix, n_pix])
     
     # Test dictionary input: Only module with dynamic parameters are required
     _map = {"source": source_params, "lens": lens_params}
     x_dict = {k: [torch.tensor(_x) for _x in _map[k]] for k in sim.params.dynamic.keys()}
     print(x_dict)
-    sim.forward(sim.pack(x_dict))
+    assert sim(x_dict).shape == torch.Size([n_pix, n_pix])
+
     sim(x_dict)
     
     # Test semantic list (one tensor per module)
     _map = [lens_params, source_params]
     x_semantic = [torch.stack([torch.tensor(_x) for _x in p]) for p in _map]
-    sim.forward(sim.pack(x_semantic))
-    sim(x_semantic)
+    assert sim(x_semantic).shape == torch.Size([n_pix, n_pix])
     
 
 def test_default_names():
