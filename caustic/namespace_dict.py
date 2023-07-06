@@ -59,7 +59,7 @@ class _NestedNamespaceDict(NamespaceDict):
             NamespaceDict: Flattened dictionary as a NamespaceDict
         """
         flattened_dict = NamespaceDict()
-        def _flatten_dict(dictionary, parent_key=""):
+        def _flatten_dict(dictionary):
             for key, value in dictionary.items():
                 if isinstance(value, dict):
                     _flatten_dict(value, key)
