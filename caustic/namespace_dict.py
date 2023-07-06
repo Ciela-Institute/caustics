@@ -62,7 +62,7 @@ class _NestedNamespaceDict(NamespaceDict):
         def _flatten_dict(dictionary):
             for key, value in dictionary.items():
                 if isinstance(value, dict):
-                    _flatten_dict(value, key)
+                    _flatten_dict(value)
                 else:
                     flattened_dict[key] = value
         _flatten_dict(self)
