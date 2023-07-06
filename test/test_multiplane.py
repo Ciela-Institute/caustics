@@ -16,7 +16,7 @@ def test():
 
     # Setup
     z_s = torch.tensor(1.5, dtype=torch.float32)
-    cosmology = FlatLambdaCDM("cosmo")
+    cosmology = FlatLambdaCDM(name="cosmo")
     cosmology.to(dtype=torch.float32)
 
     # Parameters
@@ -28,7 +28,7 @@ def test():
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
     lens = Multiplane(
-        "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
     )
     #lens.effective_reduced_deflection_angle = lens.raytrace
 

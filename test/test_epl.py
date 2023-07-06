@@ -11,8 +11,8 @@ from caustic.lenses import EPL
 
 def test_lenstronomy():
     # Models
-    cosmology = FlatLambdaCDM("cosmo")
-    lens = EPL("epl", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = EPL(name="epl", cosmology=cosmology)
     # There is also an EPL_NUMBA class lenstronomy, but it shouldn't matter much
     lens_model_list = ["EPL"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
@@ -44,8 +44,8 @@ def test_special_case_sie():
     """
     Checks that the deflection field matches an SIE for `t=1`.
     """
-    cosmology = FlatLambdaCDM("cosmo")
-    lens = EPL("epl", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = EPL(name="epl", cosmology=cosmology)
     lens_model_list = ["SIE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

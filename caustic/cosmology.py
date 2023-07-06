@@ -50,7 +50,7 @@ class Cosmology(Parametrized):
         name (str): Name of the cosmological model.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str = None):
         """
         Initialize the Cosmology.
 
@@ -178,10 +178,10 @@ class FlatLambdaCDM(Cosmology):
 
     def __init__(
         self,
-        name: str,
         h0: Optional[Tensor] = torch.tensor(h0_default),
         critical_density_0: Optional[Tensor] = torch.tensor(critical_density_0_default),
         Om0: Optional[Tensor] = torch.tensor(Om0_default),
+        name: str = None,
     ):
         """
         Initialize a new instance of the FlatLambdaCDM class.

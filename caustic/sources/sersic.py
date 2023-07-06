@@ -1,6 +1,5 @@
-from typing import Optional
+from typing import Optional, Union
 
-import torch
 from torch import Tensor
 
 from ..utils import to_elliptical, translate_rotate
@@ -30,16 +29,16 @@ class Sersic(Source):
     """
     def __init__(
         self,
-        name: str,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        n: Optional[Tensor] = None,
-        Re: Optional[Tensor] = None,
-        Ie: Optional[Tensor] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        q: Optional[Union[Tensor, float]] = None,
+        phi: Optional[Union[Tensor, float]] = None,
+        n: Optional[Union[Tensor, float]] = None,
+        Re: Optional[Union[Tensor, float]] = None,
+        Ie: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         use_lenstronomy_k=False,
+        name: str = None,
     ):
         """
         Constructs the `Sersic` object with the given parameters. 

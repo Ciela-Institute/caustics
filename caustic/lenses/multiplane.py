@@ -22,8 +22,8 @@ class Multiplane(ThickLens):
         cosmology (Cosmology): Cosmological parameters used for calculations.
         lenses (list[ThinLens]): List of thin lenses.
     """
-    def __init__(self, name: str, cosmology: Cosmology, lenses: list[ThinLens]):
-        super().__init__(name, cosmology)
+    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None):
+        super().__init__(cosmology, name=name)
         self.lenses = lenses
         for lens in lenses:
             self.add_parametrized(lens)
