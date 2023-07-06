@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 from torch import Tensor
@@ -18,14 +18,14 @@ class Parameter:
     """
 
     def __init__(
-        self, value: Optional[Tensor] = None, shape: Optional[tuple[int, ...]] = ()
+        self, value: Optional[Union[Tensor, float]] = None, shape: Optional[tuple[int, ...]] = ()
     ):
         """
         Initializes an instance of the Parameter class.
 
         Args:
-            value (Optional[Tensor], optional): The value of the parameter. Defaults to None.
-            shape (Optional[tuple[int, ...]], optional): The shape of the parameter. Defaults to an empty tuple.
+            value (Optional[Union[Tensor, float]]: The value of the parameter. Defaults to None.
+            shape (Optional[tuple[int, ...]]): The shape of the parameter. Defaults to an empty tuple.
 
         Raises:
             ValueError: If both value and shape are None, or if shape is provided and doesn't match the shape of the value.
@@ -34,10 +34,11 @@ class Parameter:
         self._value = value
         if value is None:
             if shape is None:
-                raise ValueError("if value is None, a shape must be provided")
+                raise ValueError("If value is None, a shape must be provided")
             self._shape = shape
         else:
-            if shape is not None and shape != value.shape:
+            value = torch.as_tensor(value)
+            if shape != value.shape:
                 raise ValueError(
                     f"value's shape {value.shape} does not match provided shape {shape}"
                 )

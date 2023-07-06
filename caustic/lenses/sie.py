@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from torch import Tensor
 
@@ -17,31 +17,31 @@ class SIE(ThinLens):
     Attributes:
         name (str): The name of the lens.
         cosmology (Cosmology): An instance of the Cosmology class.
-        z_l (Tensor, optional): The redshift of the lens.
-        x0 (Tensor, optional): The x-coordinate of the lens center.
-        y0 (Tensor, optional): The y-coordinate of the lens center.
-        q (Tensor, optional): The axis ratio of the lens.
-        phi (Tensor, optional): The orientation angle of the lens (position angle).
-        b (Tensor, optional): The Einstein radius of the lens.
+        z_l (Optional[Union[Tensor, float]]): The redshift of the lens.
+        x0 (Optional[Union[Tensor, float]]): The x-coordinate of the lens center.
+        y0 (Optional[Union[Tensor, float]]): The y-coordinate of the lens center.
+        q (Optional[Union[Tensor, float]]): The axis ratio of the lens.
+        phi (Optional[Union[Tensor, float]]): The orientation angle of the lens (position angle).
+        b (Optional[Union[Tensor, float]]): The Einstein radius of the lens.
         s (float): The core radius of the lens (defaults to 0.0).
     """
 
     def __init__(
         self,
-        name: str,
         cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,# TODO change to true axis ratio
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
+        z_l: Optional[Union[Tensor, float]] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        q: Optional[Union[Tensor, float]] = None,# TODO change to true axis ratio
+        phi: Optional[Union[Tensor, float]] = None,
+        b: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
+        name: str = None,
     ):
         """
         Initialize the SIE lens model.
         """
-        super().__init__(name, cosmology, z_l)
+        super().__init__(cosmology, z_l, name=name)
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)

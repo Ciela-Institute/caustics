@@ -1,9 +1,21 @@
+# from math import pi
+
+# import lenstronomy.Util.param_util as param_util
 import torch
+from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
+from astropy.cosmology import default_cosmology
+
+# next three imports to get Rs_angle and alpha_Rs in arcsec for lenstronomy
 from lenstronomy.Cosmo.lens_cosmo import LensCosmo
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import get_default_cosmologies, lens_test_helper
+from utils import lens_test_helper
 
+from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustic.lenses import NFW
+
+h0_default = float(default_cosmology.get().h)
+Om0_default = float(default_cosmology.get().Om0)
+Ob0_default = float(default_cosmology.get().Ob0)
 
 
 def test():
@@ -11,10 +23,13 @@ def test():
     rtol = 3e-2
 
     # Models
-    cosmology, cosmology_ap = get_default_cosmologies()
+    cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
-    lens = NFW("nfw", cosmology, z_l=z_l)
-    lens_ls = LensModel(lens_model_list=["NFW"], cosmo=cosmology_ap)
+    lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l)
+    lens_model_list = ["NFW"]
+    lens_ls = LensModel(lens_model_list=lens_model_list)
+
+    print(lens)
 
     # Parameters
     z_s = torch.tensor(0.5)
@@ -26,8 +41,11 @@ def test():
     x = torch.tensor([thx0, thy0, m, c])
 
     # Lenstronomy
-    lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmology_ap)
+    cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
+    lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)
     Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=m, c=c)
+
+    # lenstronomy params ['Rs', 'alpha_Rs', 'center_x', 'center_y']
     kwargs_ls = [
         {"Rs": Rs_angle, "alpha_Rs": alpha_Rs, "center_x": thx0, "center_y": thy0}
     ]

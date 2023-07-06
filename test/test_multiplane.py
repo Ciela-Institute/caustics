@@ -2,8 +2,9 @@ from math import pi
 
 import lenstronomy.Util.param_util as param_util
 import torch
+from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_ap
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import get_default_cosmologies, lens_test_helper
+from utils import lens_test_helper
 
 from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE, Multiplane
@@ -13,8 +14,9 @@ def test():
     rtol = 0
     atol = 5e-3
 
-    z_s = torch.tensor(1.5)
-    cosmology, cosmology_ap = get_default_cosmologies()
+    # Setup
+    z_s = torch.tensor(1.5, dtype=torch.float32)
+    cosmology = FlatLambdaCDM(name="cosmo")
     cosmology.to(dtype=torch.float32)
 
     # Parameters
@@ -23,10 +25,10 @@ def test():
         [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
         [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
     ]
-    x = torch.tensor([p for _xs in xs for p in _xs])
+    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
     lens = Multiplane(
-        "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
     )
     #lens.effective_reduced_deflection_angle = lens.raytrace
 
@@ -45,11 +47,12 @@ def test():
         )
 
     # Use same cosmology
+    cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
     lens_ls = LensModel(
         lens_model_list=["SIE" for _ in range(len(xs))],
         z_source=z_s.item(),
         lens_redshift_list=[_xs[0] for _xs in xs],
-        cosmo=cosmology_ap,
+        cosmo=cosmo_ap,
         multi_plane=True,
     )
 

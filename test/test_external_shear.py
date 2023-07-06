@@ -1,7 +1,8 @@
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import get_default_cosmologies, lens_test_helper
+from utils import lens_test_helper
 
+from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import ExternalShear
 
 
@@ -10,10 +11,11 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology, cosmology_ap = get_default_cosmologies()
-    lens = ExternalShear("shear", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = ExternalShear(name="shear", cosmology=cosmology)
     lens_model_list = ["SHEAR"]
-    lens_ls = LensModel(lens_model_list=lens_model_list, cosmo=cosmology_ap)
+    lens_ls = LensModel(lens_model_list=lens_model_list)
+    print(lens)
 
     # Parameters
     z_s = torch.tensor(2.0)

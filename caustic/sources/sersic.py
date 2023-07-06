@@ -1,6 +1,5 @@
-from typing import Optional
+from typing import Optional, Union
 
-import torch
 from torch import Tensor
 
 from ..utils import to_elliptical, translate_rotate
@@ -22,7 +21,7 @@ class Sersic(Source):
         y0 (Optional[Tensor]): The y-coordinate of the Sersic source's center.
         q (Optional[Tensor]): The axis ratio of the Sersic source.
         phi (Optional[Tensor]): The orientation of the Sersic source (position angle).
-        index (Optional[Tensor]): The Sersic index, which describes the degree of concentration of the source.
+        n (Optional[Tensor]): The Sersic index, which describes the degree of concentration of the source.
         Re (Optional[Tensor]): The scale length of the Sersic source.
         Ie (Optional[Tensor]): The intensity at the effective radius.
         s (float): A small constant for numerical stability.
@@ -30,16 +29,16 @@ class Sersic(Source):
     """
     def __init__(
         self,
-        name: str,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        n: Optional[Tensor] = None,
-        Re: Optional[Tensor] = None,
-        Ie: Optional[Tensor] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        q: Optional[Union[Tensor, float]] = None,
+        phi: Optional[Union[Tensor, float]] = None,
+        n: Optional[Union[Tensor, float]] = None,
+        Re: Optional[Union[Tensor, float]] = None,
+        Ie: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         use_lenstronomy_k=False,
+        name: str = None,
     ):
         """
         Constructs the `Sersic` object with the given parameters. 

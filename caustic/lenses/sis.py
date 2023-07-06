@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
@@ -18,26 +18,26 @@ class SIS(ThinLens):
     Attributes:
         name (str): The name of the SIS lens.
         cosmology (Cosmology): An instance of the Cosmology class.
-        z_l (Optional[Tensor]): The lens redshift.
-        x0 (Optional[Tensor]): The x-coordinate of the lens center.
-        y0 (Optional[Tensor]): The y-coordinate of the lens center.
-        th_ein (Optional[Tensor]): The Einstein radius of the lens.
+        z_l (Optional[Union[Tensor, float]]): The lens redshift.
+        x0 (Optional[Union[Tensor, float]]): The x-coordinate of the lens center.
+        y0 (Optional[Union[Tensor, float]]): The y-coordinate of the lens center.
+        th_ein (Optional[Union[Tensor, float]]): The Einstein radius of the lens.
         s (float): A smoothing factor, default is 0.0.
     """
     def __init__(
         self,
-        name: str,
         cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        z_l: Optional[Union[Tensor, float]] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        th_ein: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
+        name: str = None
     ):
         """
         Initialize the SIS lens model.
         """
-        super().__init__(name, cosmology, z_l)
+        super().__init__(cosmology, z_l, name=name)
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)

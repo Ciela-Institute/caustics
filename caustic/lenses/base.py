@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from functools import partial
 import warnings
 
@@ -22,7 +22,7 @@ class ThickLens(Parametrized):
         cosmology (Cosmology): An instance of a Cosmology class that describes the cosmological parameters of the model.
     """
 
-    def __init__(self, name: str, cosmology: Cosmology):
+    def __init__(self, cosmology: Cosmology, name: str = None):
         """
         Initializes a new instance of the ThickLens class.
 
@@ -178,7 +178,7 @@ class ThinLens(Parametrized):
 
     """
 
-    def __init__(self, name: str, cosmology: Cosmology, z_l: Optional[Tensor] = None):
+    def __init__(self, cosmology: Cosmology, z_l: Optional[Union[Tensor, float]] = None, name: str = None):
         super().__init__(name)
         self.cosmology = cosmology
         self.add_param("z_l", z_l)

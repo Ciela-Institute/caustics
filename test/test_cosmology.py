@@ -17,7 +17,7 @@ def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
     cosmologies = []
     cosmologies.append(
         (
-            CausticFlatLambdaCDM("cosmo"),
+            CausticFlatLambdaCDM(name="cosmo"),
             AstropyFlatLambdaCDM(h0_default, Om0_default, Tcmb0=0),
         )
     )

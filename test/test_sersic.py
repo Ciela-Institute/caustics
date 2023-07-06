@@ -14,7 +14,7 @@ def test():
     nx = 200
     ny = 200
     thx, thy = get_meshgrid(res, nx, ny)
-    sersic = Sersic("sersic", use_lenstronomy_k=True)
+    sersic = Sersic(name="sersic", use_lenstronomy_k=True)
 
     # Lenstronomy setup
     ra_at_xy_0, dec_at_xy_0 = (-5 + res / 2, -5 + res / 2)

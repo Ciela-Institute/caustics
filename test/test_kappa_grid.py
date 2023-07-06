@@ -13,16 +13,17 @@ def _setup(n_pix, mode, use_next_fast_len):
     z_l = torch.tensor(0.5)
     z_s = torch.tensor(2.1)
 
-    cosmology = FlatLambdaCDM("cosmology")
+    cosmology = FlatLambdaCDM(name="cosmology")
     # Use PseudoJaffe since it is compact: 99.16% of its mass is contained in
     # the circle circumscribing this image plane
-    lens_pj = PseudoJaffe("pj", cosmology)
+    lens_pj = PseudoJaffe(name="pj", cosmology=cosmology)
 
-    thx0 = 7.0
-    thy0 = 3.0
-    th_core = 0.04
-    th_s = 0.2
-    rho_0 = 1.0
+    thx0 = torch.tensor(7.0)
+    thy0 = torch.tensor(3.0)
+    th_core = torch.tensor(0.04)
+    th_s = torch.tensor(0.2)
+    rho_0 = torch.tensor(1.0)
+
     kappa_0 = lens_pj.convergence_0(z_l, z_s, rho_0, th_core, th_s, cosmology)
     # z_l, thx0, thy0, kappa_0, th_core, th_s
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
@@ -34,7 +35,6 @@ def _setup(n_pix, mode, use_next_fast_len):
 
     # Approximate calculations
     lens_kap = PixelatedConvergence(
-        "kg",
         fov,
         n_pix,
         cosmology,
@@ -42,6 +42,7 @@ def _setup(n_pix, mode, use_next_fast_len):
         convergence_map_shape=(n_pix, n_pix),
         convolution_mode=mode,
         use_next_fast_len=use_next_fast_len,
+        name="kg",
     )
     kappa_map = lens_pj.convergence(thx, thy, z_l, lens_pj.pack(x_pj))
     x_kap = kappa_map.flatten()

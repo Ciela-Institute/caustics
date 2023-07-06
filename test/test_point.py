@@ -1,7 +1,8 @@
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import get_default_cosmologies, lens_test_helper
+from utils import lens_test_helper
 
+from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import Point
 
 
@@ -10,10 +11,10 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology, cosmology_ap = get_default_cosmologies()
-    lens = Point("point", cosmology, z_l=torch.tensor(0.9))
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = Point(name="point", cosmology=cosmology, z_l=torch.tensor(0.9))
     lens_model_list = ["POINT_MASS"]
-    lens_ls = LensModel(lens_model_list=lens_model_list, cosmo=cosmology_ap)
+    lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
     z_s = torch.tensor(1.2)

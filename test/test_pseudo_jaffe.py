@@ -2,8 +2,9 @@ from collections import defaultdict
 
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import get_default_cosmologies, lens_test_helper
+from utils import lens_test_helper
 
+from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import PseudoJaffe
 
 
@@ -12,10 +13,10 @@ def test():
     rtol = 1e-5
 
     # Models
-    cosmology, cosmology_ap = get_default_cosmologies()
-    lens = PseudoJaffe("pj", cosmology)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = PseudoJaffe(name="pj", cosmology=cosmology)
     lens_model_list = ["PJAFFE"]
-    lens_ls = LensModel(lens_model_list=lens_model_list, cosmo=cosmology_ap)
+    lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters, computing kappa_0 with a helper function
     z_s = torch.tensor(2.1)
