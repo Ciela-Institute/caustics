@@ -12,9 +12,7 @@ on:
     branches:
       - main
       - dev
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
   build:
@@ -28,41 +26,39 @@ jobs:
     steps:
     - name: Checkout caustic
       uses: actions/checkout@v3
-      with:
-        path: caustic
-
-    - name: Checkout torchinterp1d
-      uses: actions/checkout@v3
-      with:
-        repository: aliutkus/torchinterp1d
-        path: torchinterp1d
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Record State
+      run: |
+        pwd
+        echo github.ref is: ${{ github.ref }}
+        echo GITHUB_SHA is: $GITHUB_SHA
+        echo github.event_name is: ${{ github.event_name }}
+        echo github workspace: ${{ github.workspace }}
+        pip --version
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest torch
-        # Install torchinterp1d
-        cd $GITHUB_WORKSPACE/torchinterp1d
-        pip install .
-        # Install other deps
-        cd $GITHUB_WORKSPACE/caustic
+        pip install pytest pytest-cov torch
+        # Install deps
+        cd $GITHUB_WORKSPACE
         pip install -r requirements.txt
       shell: bash
 
-    - name: Install caustic
+    - name: Install Caustic
       run: |
-        cd $GITHUB_WORKSPACE/caustic
-        pip install .
+        cd $GITHUB_WORKSPACE
+        pip install -e .
+        pip show caustic
       shell: bash
 
     - name: Test with pytest
       run: |
-        cd $GITHUB_WORKSPACE/caustic
+        cd $GITHUB_WORKSPACE
         pytest test
       shell: bash
 

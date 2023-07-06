@@ -18,12 +18,6 @@ jobs:
     - name: Checkout caustic
       uses: actions/checkout@v3
 
-    - name: Checkout torchinterp1d
-      uses: actions/checkout@v3
-      with:
-        repository: aliutkus/torchinterp1d
-        path: torchinterp1d
-
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
@@ -40,10 +34,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pytest pytest-cov torch
-        # Install torchinterp1d
-        cd $GITHUB_WORKSPACE/torchinterp1d
-        pip install .
-        # Install other deps
+        # Install deps
         cd $GITHUB_WORKSPACE
         pip install -r requirements.txt
       shell: bash
@@ -57,7 +48,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         pwd
-        pytest --cov-report=xml --cov=src/caustic test/
+        pytest --cov-report=xml --cov=caustic test/
         cat coverage.xml
       shell: bash
     - name: Upload coverage report to Codecov

@@ -1,27 +1,51 @@
 from collections import OrderedDict, defaultdict
+from itertools import chain
 from math import prod
 from operator import itemgetter
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import torch
 from torch import Tensor
 
+from .packed import Packed
 from .parameter import Parameter
 
 __all__ = ("Parametrized",)
 
-
 class Parametrized:
     """
-    Represents a class with Param and Parametrized attributes.
+    Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator
+    that have parameters which need to be tracked during MCMC sampling.
+
+    This class can contain Params, Parametrized, tensor buffers or normal attributes as its attributes.
+    It provides functionalities to manage these attributes, ensuring that an attribute of one type isn't rebound
+    to be of a different type.
 
     TODO
     - Attributes can be Params, Parametrized, tensor buffers or just normal attributes.
     - Need to make sure an attribute of one of those types isn't rebound to be of a different type.
     - params: generator returning all the params, with names of parent Parametrized concatenated as key.
+
+    Attributes:
+        name (str): The name of the Parametrized object.
+        parents (list[Parametrized]): List of parent Parametrized objects.
+        params (OrderedDict[str, Parameter]): Dictionary of parameters.
+        descendants (OrderedDict[str, Parametrized]): Dictionary of descendant Parametrized objects.
+        dynamic_size (int): Size of dynamic parameters.
+        n_dynamic (int): Number of dynamic parameters.
+        n_static (int): Number of static parameters.
     """
 
     def __init__(self, name: str):
+        """
+        Initializes an instance of the Parametrized class.
+
+        Args:
+            name (str): The name of the Parametrized object.
+
+        Raises:
+            ValueError: If the provided name is not a string.
+        """
         if not isinstance(name, str):
             raise ValueError(f"name must be a string (received {name})")
         self._name = name
@@ -34,20 +58,41 @@ class Parametrized:
 
     @property
     def name(self) -> str:
+        """
+        Returns the name of the Parametrized object.
+
+        Returns:
+            str: The name of the Parametrized object.
+        """
         return self._name
 
     @name.setter
     def name(self, newname: str):
+        """
+        Prevents the reassignment of the name attribute.
+
+        Raises:
+            NotImplementedError: Always, as reassigning the name attribute is not supported.
+        """
         raise NotImplementedError()
 
     def to(
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
         """
-        Put static Params for this component and its descendants on the given device.
+        Moves static Params for this component and its descendants to the specified device and casts them to the specified data type.
+
+        Args:
+            device (Optional[torch.device], optional): The device to move the values to. Defaults to None.
+            dtype (Optional[torch.dtype], optional): The desired data type. Defaults to None.
+
+        Returns:
+            Parametrized: The Parametrized object itself after moving and casting.
         """
-        for param in self._params.values():
-            param.to(device, dtype)
+        for name in self._params:
+            param = self._params[name]
+            if isinstance(param, torch.Tensor):
+                self._params[name] = param.to(device, dtype)
 
         for desc in self._descendants.values():
             desc.to(device, dtype)
@@ -56,8 +101,13 @@ class Parametrized:
 
     def _can_add(self, p: "Parametrized") -> bool:
         """
-        Returns False if a different model component with the same name is already
-        in the DAG.
+        Checks if a different model component with the same name is already in the DAG (Directed Acyclic Graph).
+
+        Args:
+            p (Parametrized): The Parametrized object to check.
+
+        Returns:
+            bool: False if a different model component with the same name is already in the DAG, True otherwise.
         """
         if self.name == p.name and self is not p:
             return False
@@ -73,6 +123,13 @@ class Parametrized:
         return True
 
     def _merge_descendants_up(self, p: "Parametrized"):
+        """
+        Merges the descendants of the given Parametrized object into this object's descendants,
+        and does the same for all parent objects.
+
+        Args:
+            p (Parametrized): The Parametrized object to merge descendants from.
+        """
         self._descendants[p.name] = p
         for desc in p._descendants.values():
             self._descendants[desc.name] = desc
@@ -88,7 +145,12 @@ class Parametrized:
         shape: Optional[tuple[int, ...]] = (),
     ):
         """
-        Stores parameter in _params and records its size.
+        Stores a parameter in the _params dictionary and records its size.
+
+        Args:
+            name (str): The name of the parameter.
+            value (Optional[Tensor], optional): The value of the parameter. Defaults to None.
+            shape (Optional[tuple[int, ...]], optional): The shape of the parameter. Defaults to an empty tuple.
         """
         self._params[name] = Parameter(value, shape)
         if value is None:
@@ -100,6 +162,15 @@ class Parametrized:
             self._n_static += 1
 
     def add_parametrized(self, p: "Parametrized"):
+        """
+        Adds a Parametrized object to the current Parametrized object's descendants.
+
+        Args:
+            p (Parametrized): The Parametrized object to be added.
+
+        Raises:
+            KeyError: If a component with the same name already exists in the model DAG.
+        """
         # Check if new component can be added
         if not self._can_add(p):
             val_str = (
@@ -135,6 +206,16 @@ class Parametrized:
         p._parents.append(self)
 
     def __setattr__(self, key, val):
+        """
+        Overrides the __setattr__ method to add custom behavior for Parametrized and Parameter objects.
+
+        Args:
+            key (str): The attribute name.
+            val (any): The attribute value.
+
+        Raises:
+            ValueError: If the value is a Parameter object (these should be added using add_param() instead).
+        """
         if isinstance(val, Parameter):
             raise ValueError(
                 "cannot add Params directly as attributes: use add_param instead"
@@ -148,50 +229,79 @@ class Parametrized:
     @property
     def n_dynamic(self) -> int:
         """
-        Number of dynamic arguments in this object.
+        Returns the number of dynamic arguments in this Parametrized object.
+
+        Returns:
+            int: The number of dynamic arguments.
         """
         return self._n_dynamic
 
     @property
     def n_static(self) -> int:
         """
-        Number of static arguments in this object.
+        Returns the number of static arguments in this Parametrized object.
+
+        Returns:
+            int: The number of static arguments.
         """
         return self._n_static
 
     @property
     def dynamic_size(self) -> int:
         """
-        Total number of dynamic values in this object.
+        Returns the total number of dynamic values in this Parametrized object.
+
+        Returns:
+            int: The total number of dynamic values.
         """
         return self._dynamic_size
 
-    def x_to_dict(
+    def pack(
         self,
         x: Union[
             list[Tensor],
             dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]],
             Tensor,
         ],
-    ) -> dict[str, Any]:
+    ) -> Packed:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
         into arguments to this component and its descendants.
+
+        Args:
+            x (Union[list[Tensor], dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]], Tensor):
+                The input to be packed. Can be a list of tensors, a dictionary of tensors, or a single tensor.
+
+        Returns:
+            Packed: The packed input.
+
+        Raises:
+            ValueError: If the input is not a list, dictionary, or tensor.
+            ValueError: If the input is a dictionary and some keys are missing.
+            ValueError: If the number of dynamic arguments does not match the expected number.
+            ValueError: If the input is a tensor and the shape does not match the expected shape.
         """
-        if isinstance(x, dict):
+        if isinstance(x, (dict, Packed)):
+            missing_names = [
+                name for name in chain([self.name], self._descendants) if name not in x
+            ]
+            if len(missing_names) > 0:
+                raise ValueError(f"missing x keys for {missing_names}")
+
             # TODO: check structure!
-            return x
-        elif isinstance(x, list):
+
+            return Packed(x)
+        elif isinstance(x, list) or isinstance(x, tuple):
             n_passed = len(x)
             n_expected = (
                 sum([desc.n_dynamic for desc in self._descendants.values()])
                 + self.n_dynamic
             )
             if n_passed != n_expected:
-                # TODO: give arg names
+                # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} dynamic args were passed, but {n_expected} are "
-                    "required"
+                    "required."
                 )
 
             cur_offset = self.n_dynamic
@@ -200,7 +310,7 @@ class Parametrized:
                 x_repacked[desc.name] = x[cur_offset : cur_offset + desc.n_dynamic]
                 cur_offset += desc.n_dynamic
 
-            return x_repacked
+            return Packed(x_repacked)
         elif isinstance(x, Tensor):
             n_passed = x.shape[-1]
             n_expected = (
@@ -208,7 +318,7 @@ class Parametrized:
                 + self.dynamic_size
             )
             if n_passed != n_expected:
-                # TODO: give arg names
+                # TODO: give component and arg names
                 raise ValueError(
                     f"{n_passed} flattened dynamic args were passed, but {n_expected}"
                     " are required"
@@ -222,7 +332,7 @@ class Parametrized:
                 ]
                 cur_offset += desc.dynamic_size
 
-            return x_repacked
+            return Packed(x_repacked)
         else:
             raise ValueError("can only repack a list or 1D tensor")
 
@@ -232,6 +342,19 @@ class Parametrized:
         """
         Unpacks a dict of kwargs, list of args or flattened vector of args to retrieve
         this object's static and dynamic parameters.
+
+        Args:
+            x (Optional[dict[str, Union[list[Tensor], dict[str, Tensor], Tensor]]]):
+                The packed object to be unpacked.
+
+        Returns:
+            list[Tensor]: Unpacked static and dynamic parameters of the object.
+
+        Raises:
+            ValueError: If the input is not a dict, list, tuple or tensor.
+            ValueError: If a static parameter is passed dynamically.
+            ValueError: If the argument type is invalid. It must be a dict containing key {self.name}
+                and value containing args as list or flattened tensor, or kwargs.
         """
         my_x = defaultdict(list) if x is None else x[self.name]
         if isinstance(my_x, dict):
@@ -251,7 +374,7 @@ class Parametrized:
                     args.append(p.value)
 
             return args
-        elif isinstance(my_x, list):
+        elif isinstance(my_x, list) or isinstance(x, tuple):
             # Parse dynamic args
             vals = []
             offset = 0
@@ -285,6 +408,15 @@ class Parametrized:
     def __getattribute__(self, key):
         """
         Enables accessing static params as attributes.
+
+        Args:
+            key (str): Name of the attribute.
+
+        Returns:
+            Any: The attribute value if found.
+
+        Raises:
+            AttributeError: If the attribute is not found and it's not a static parameter.
         """
         try:
             return super().__getattribute__(key)
@@ -301,6 +433,9 @@ class Parametrized:
         """
         Gets all of the static and dynamic Params for this component and its descendants
         in the correct order.
+
+        Returns:
+            dict[str, OrderedDict[str, Parameter]]: Dictionary containing all static and dynamic parameters.
         """
         static = OrderedDict()
         dynamic = OrderedDict()
@@ -314,17 +449,41 @@ class Parametrized:
 
     @property
     def static_params(self) -> OrderedDict[str, Parameter]:
+        """
+        Returns all the static parameters of the object.
+
+        Returns:
+            OrderedDict[str, Parameter]: An ordered dictionary of static parameters.
+        """
         return self.params["static"]
 
     @property
     def dynamic_params(self) -> OrderedDict[str, Parameter]:
+        """
+        Returns all the dynamic parameters of the object.
+
+        Returns:
+            OrderedDict[str, Parameter]: An ordered dictionary of dynamic parameters.
+        """
         return self.params["dynamic"]
 
     def __repr__(self) -> str:
+        """
+        Returns a string representation of the object.
+
+        Returns:
+            str: A string representation of the object.
+        """
         # TODO: change
         return str(self)
 
     def __str__(self) -> str:
+        """
+        Returns a string description of the object.
+
+        Returns:
+            str: A string description of the object.
+        """
         static, dynamic = itemgetter("static", "dynamic")(self.params)
         static_str = ", ".join(list(static.keys()))
         dynamic_str = ", ".join(list(dynamic.keys()))
@@ -351,6 +510,16 @@ class Parametrized:
     def get_graph(
         self, show_dynamic_params: bool = False, show_static_params: bool = False
     ) -> "graphviz.Digraph":  # type: ignore
+        """
+        Returns a graph representation of the object and its parameters.
+
+        Args:
+            show_dynamic_params (bool, optional): If true, the dynamic parameters are shown in the graph. Defaults to False.
+            show_static_params (bool, optional): If true, the static parameters are shown in the graph. Defaults to False.
+
+        Returns:
+            graphviz.Digraph: The graph representation of the object.
+        """
         from operator import itemgetter
 
         import graphviz

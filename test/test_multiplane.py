@@ -5,16 +5,17 @@ import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import get_default_cosmologies, lens_test_helper
 
-from caustic.lenses import SIE, MultiplaneLens
+from caustic.cosmology import FlatLambdaCDM
+from caustic.lenses import SIE, Multiplane
 
 
 def test():
     rtol = 0
     atol = 5e-3
 
-    # Setup
     z_s = torch.tensor(1.5)
     cosmology, cosmology_ap = get_default_cosmologies()
+    cosmology.to(dtype=torch.float32)
 
     # Parameters
     xs = [
@@ -24,9 +25,10 @@ def test():
     ]
     x = torch.tensor([p for _xs in xs for p in _xs])
 
-    lens = MultiplaneLens(
+    lens = Multiplane(
         "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
     )
+    #lens.effective_reduced_deflection_angle = lens.raytrace
 
     # lenstronomy
     kwargs_ls = []
@@ -54,7 +56,6 @@ def test():
     lens_test_helper(
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
-
 
 if __name__ == "__main__":
     test()
