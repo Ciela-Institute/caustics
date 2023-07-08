@@ -55,7 +55,7 @@ class Sersic(Source):
             s (float): A small constant for numerical stability.
             use_lenstronomy_k (bool): A flag indicating whether to use lenstronomy to compute the value of k.
         """
-        super().__init__(name)
+        super().__init__(name=name)
         self.add_param("x0", x0)
         self.add_param("y0", y0)
         self.add_param("q", q)

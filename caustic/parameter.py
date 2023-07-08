@@ -1,7 +1,9 @@
 from typing import Optional, Union
+from collections import OrderedDict
 
 import torch
 from torch import Tensor
+from caustic.namespace_dict import NamespaceDict
 
 __all__ = ("Parameter",)
 
@@ -31,6 +33,8 @@ class Parameter:
             ValueError: If both value and shape are None, or if shape is provided and doesn't match the shape of the value.
         """
         # Must assign one of value or shape
+        self._parents = NamespaceDict()
+        self._childs = None # A Parameter will always be a leaf node of the DAG
         self._value = value
         if value is None:
             if shape is None:

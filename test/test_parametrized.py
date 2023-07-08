@@ -1,6 +1,8 @@
 import torch
+from torch import vmap
 from caustic import Simulator, EPL, Sersic, FlatLambdaCDM
-from caustic.utils import get_meshgrid
+from utils import setup_image_simulator, setup_simulator
+import pytest
 
 
 def test_params():
@@ -24,46 +26,17 @@ def test_params():
 
 
 def test_graph():
-    # Test common simulator structure
-    class Sim(Simulator):
-        def __init__(self, name="test_simulator"):
-            super().__init__(name)
-            self.cosmo = FlatLambdaCDM(h0=None, name="cosmo")
-            self.lens = EPL(self.cosmo, name="lens")
-            self.source = Sersic(name="source")
-            self.z_s = torch.tensor(1.0)
-            self.thx, self.thy = get_meshgrid(0.04, 20, 20)
-
-    sim = Sim()
+    sim, _ = setup_simulator()
     sim.get_graph(True, True)
     sim.get_graph()
 
 
 def test_unpack_all_modules_dynamic():
-    n_pix = 20
-    class Sim(Simulator):
-        def __init__(self, name="test"):
-            super().__init__(name)
-            self.cosmo = FlatLambdaCDM(h0=None, name="cosmo")
-            self.epl = EPL(self.cosmo, name="lens")
-            self.sersic = Sersic(name="source")
-            self.z_s = torch.tensor(1.0)
-            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
-
-        def forward(self, params):
-            alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
-            bx = self.thx - alphax
-            by = self.thy - alphay
-            return self.sersic.brightness(bx, by, params)
-
-    sim = Sim()
-
-    cosmo_params = [0.7]
-    lens_params = [0.5, 0., 0., 0.8, 0.5, 1.2, 1.1]
-    source_params = [0.0, 0.0, 0.8, 0.0, 1., 0.2, 10.]
+    sim, (cosmo_params, lens_params, source_params) = setup_simulator()
+    n_pix = sim.n_pix
     
     # test list input
-    x = [torch.tensor(_x) for _x in cosmo_params + lens_params + source_params]
+    x = cosmo_params + lens_params + source_params
     assert sim(x).shape == torch.Size([n_pix, n_pix])
     
     # test tensor input
@@ -71,42 +44,22 @@ def test_unpack_all_modules_dynamic():
     assert sim(x_tensor).shape == torch.Size([n_pix, n_pix])
     
     # Test dictionary input: Only module with dynamic parameters are required
-    _map = {"cosmo": cosmo_params, "source": source_params, "lens": lens_params}
-    x_dict = {k: [torch.tensor(_x) for _x in _map[k]] for k in sim.params.dynamic.keys()}
+    x_dict = {"cosmo": cosmo_params, "source": source_params, "lens": lens_params}
     print(x_dict)
     assert sim(x_dict).shape == torch.Size([n_pix, n_pix])
     
     # Test semantic list (one tensor per module)
-    _map = [cosmo_params, lens_params, source_params]
-    x_semantic = [torch.stack([torch.tensor(_x) for _x in p]) for p in _map]
+    x_semantic = [torch.stack(module) for module in [cosmo_params, lens_params, source_params]]
     assert sim(x_semantic).shape == torch.Size([n_pix, n_pix])
 
 
 def test_unpack_some_modules_static():
-    # Repeat previous test, but with one module completely static
-    n_pix = 20
-    class Sim(Simulator):
-        def __init__(self, name="test"):
-            super().__init__(name)
-            self.cosmo = FlatLambdaCDM(name="cosmo")
-            self.epl = EPL(self.cosmo, name="lens")
-            self.sersic = Sersic(name="source")
-            self.z_s = torch.tensor(1.0)
-            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
+    # same test as above but cosmo is completely static so not fed in the forward method
+    sim, (_, lens_params, source_params) = setup_simulator(cosmo_static=True)
+    n_pix = sim.n_pix
 
-        def forward(self, params):
-            alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
-            bx = self.thx - alphax
-            by = self.thy - alphay
-            return self.sersic.brightness(bx, by, params)
-
-    sim = Sim()
-
-    lens_params = [0.5, 0., 0., 0.8, 0.5, 1.2, 1.1]
-    source_params = [0.0, 0.0, 0.8, 0.0, 1., 0.2, 10.]
-    
     # test list input
-    x = [torch.tensor(_x) for _x in lens_params + source_params]
+    x = lens_params + source_params
     assert sim(x).shape == torch.Size([n_pix, n_pix])
     
     # test tensor input
@@ -114,18 +67,14 @@ def test_unpack_some_modules_static():
     assert sim(x_tensor).shape == torch.Size([n_pix, n_pix])
     
     # Test dictionary input: Only module with dynamic parameters are required
-    _map = {"source": source_params, "lens": lens_params}
-    x_dict = {k: [torch.tensor(_x) for _x in _map[k]] for k in sim.params.dynamic.keys()}
+    x_dict = {"source": source_params, "lens": lens_params}
     print(x_dict)
     assert sim(x_dict).shape == torch.Size([n_pix, n_pix])
-
-    sim(x_dict)
     
     # Test semantic list (one tensor per module)
-    _map = [lens_params, source_params]
-    x_semantic = [torch.stack([torch.tensor(_x) for _x in p]) for p in _map]
+    x_semantic = [torch.stack(module) for module in [lens_params, source_params]]
     assert sim(x_semantic).shape == torch.Size([n_pix, n_pix])
-    
+
 
 def test_default_names():
     cosmo = FlatLambdaCDM()
@@ -186,3 +135,87 @@ def test_parametrized_name_collision():
     assert sim2.name == "Sim_1"
     assert "Sim_1" in lens._parents.keys()
     assert "Sim" in lens._parents.keys()
+
+
+def test_vmapped_simulator():
+    sim, (cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
+    n_pix = sim.n_pix
+    print(sim.params)
+ 
+    # test list input
+    x = cosmo_params + lens_params + source_params
+    print(x[0].shape)
+    assert vmap(sim)(x).shape == torch.Size([2, n_pix, n_pix])
+    
+    # test tensor input
+    x_tensor = torch.stack(x, dim=1)
+    print(x_tensor.shape)
+    assert vmap(sim)(x_tensor).shape == torch.Size([2, n_pix, n_pix])
+    
+    # Test dictionary input: Only module with dynamic parameters are required
+    x_dict = {"cosmo": cosmo_params, "source": source_params, "lens": lens_params}
+    print(x_dict)
+    assert vmap(sim)(x_dict).shape == torch.Size([2, n_pix, n_pix])
+    
+    # Test semantic list (one tensor per module)
+    x_semantic = [cosmo_params, lens_params, source_params]
+    assert vmap(sim)(x_semantic).shape == torch.Size([2, n_pix, n_pix])
+
+def test_vmapped_simulator_with_pixelated_modules():
+    sim, (cosmo_params, lens_params, kappa, source) = setup_image_simulator(batched_params=True)
+    n_pix = sim.n_pix
+    print(sim.params)
+ 
+    # test list input
+    x = cosmo_params + lens_params + kappa + source 
+    print(x[2].shape)
+    assert vmap(sim)(x).shape == torch.Size([2, n_pix, n_pix])
+    
+    # test tensor input
+    x_tensor = torch.stack(x, dim=1)
+    print(x_tensor.shape)
+    assert vmap(sim)(x_tensor).shape == torch.Size([2, n_pix, n_pix])
+    
+    # Test dictionary input: Only module with dynamic parameters are required
+    x_dict = {"cosmo": cosmo_params, "source": source_params, "lens": lens_params, "kappa": kappa}
+    print(x_dict)
+    assert vmap(sim)(x_dict).shape == torch.Size([2, n_pix, n_pix])
+    
+    # Test passing tensor in source and kappa instead of list
+    x_dict = {"cosmo": cosmo_params, "source": source[0], "lens": lens_params, "kappa": kappa[0]}
+    print(x_dict)
+    assert vmap(sim)(x_dict).shape == torch.Size([2, n_pix, n_pix])
+    
+    # Test semantic list (one tensor per module)
+    x_semantic = [cosmo_params, lens_params, kappa, source]
+    assert vmap(sim)(x_semantic).shape == torch.Size([2, n_pix, n_pix])
+
+
+# TODO make the params attribute -> parameters and make it more intuitive
+def test_to_method():
+    sim, (cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
+    n_pix = sim.n_pix
+    print(sim.params)
+   
+    # Check that static params have correct type 
+    module = Sersic(x0=0.5)
+    print(module.params.static)
+    assert module.params.static.x0.dtype == torch.float32
+
+    module = Sersic(x0=torch.tensor(0.5))
+    assert module.params.static.x0.dtype == torch.float32
+
+    module = Sersic(x0=np.array(0.5))
+    assert module.params.static.x0.dtype == torch.float32
+  
+
+# def test_static_param_definition():
+    # sim, (cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
+
+
+    # # Make a test to catch parameters not in order
+    # x_wrong_semantic = [lens_params, cosmo_params, source_params]
+    # with pytest.raises(L):
+        # vmap(sim)(x_wrong_semantic)
+
+

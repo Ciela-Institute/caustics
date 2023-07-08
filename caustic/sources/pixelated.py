@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from torch import Tensor
 
@@ -26,10 +26,10 @@ class Pixelated(Source):
     """
     def __init__(
         self,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
         image: Optional[Tensor] = None, 
-        pixelscale: Optional[Tensor] = None,
+        x0: Optional[Union[Tensor, float]] = None,
+        y0: Optional[Union[Tensor, float]] = None,
+        pixelscale: Optional[Union[Tensor, float]] = None,
         image_shape: Optional[tuple[int, ...]] = None,
         name: str = None,
     ):
@@ -44,7 +44,7 @@ class Pixelated(Source):
             pixelscale (Optional[Tensor]): The pixelscale of the source image in the lens plane in units of arcsec/pixel.
             image_shape (Optional[tuple[int, ...]]): The shape of the source image.
         """
-        super().__init__(name)
+        super().__init__(name=name)
         self.add_param("x0", x0)
         self.add_param("y0", y0)
         self.add_param("image", image, image_shape)

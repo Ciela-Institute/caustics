@@ -114,7 +114,7 @@ class Parametrized:
         """
         self._params[name] = Parameter(value, shape)
         if value is None:
-            assert isinstance(shape, tuple)  # quiet pyright error
+            assert isinstance(shape, (list, tuple))  # quiet pyright error
             size = prod(shape)
             self._dynamic_size += size
             self._n_dynamic += 1
