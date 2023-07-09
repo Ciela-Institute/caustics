@@ -24,7 +24,7 @@ def _setup(n_pix, mode, use_next_fast_len):
     th_s = torch.tensor(0.2)
     rho_0 = torch.tensor(1.0)
 
-    kappa_0 = lens_pj.convergence_0(z_l, z_s, rho_0, th_core, th_s, cosmology)
+    kappa_0 = lens_pj.central_convergence(z_l, z_s, rho_0, th_core, th_s, cosmology)
     # z_l, thx0, thy0, kappa_0, th_core, th_s
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
 
@@ -39,7 +39,7 @@ def _setup(n_pix, mode, use_next_fast_len):
         n_pix,
         cosmology,
         z_l=z_l,
-        convergence_map_shape=(n_pix, n_pix),
+        shape=(n_pix, n_pix),
         convolution_mode=mode,
         use_next_fast_len=use_next_fast_len,
         name="kg",

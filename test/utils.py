@@ -11,15 +11,18 @@ from caustic.utils import get_meshgrid
 from caustic import Simulator, EPL, Sersic, FlatLambdaCDM, Pixelated, PixelatedConvergence
 
 
-def setup_simulator(cosmo_static=False, batched_params=False):
+def setup_simulator(cosmo_static=False, simulator_static=False, batched_params=False):
     n_pix = 20
     class Sim(Simulator):
-        def __init__(self, name="test"):
+        def __init__(self, name="simulator"):
             super().__init__(name)
+            if simulator_static:
+                self.add_param("z_s", 1.0)
+            else:
+                self.add_param("z_s", None)
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
             self.epl = EPL(self.cosmo, z_l=0.5, name="lens")
             self.sersic = Sersic(name="source")
-            self.z_s = torch.tensor(1.0)
             self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
             self.n_pix = n_pix
 
@@ -29,6 +32,8 @@ def setup_simulator(cosmo_static=False, batched_params=False):
             by = self.thy - alphay
             return self.sersic.brightness(bx, by, params)
 
+    # default simulator params
+    z_s = torch.tensor([1.0, 1.5])
     # default cosmo params
     h0 = torch.tensor([0.68, 0.75])
     # default lens params 
@@ -46,15 +51,17 @@ def setup_simulator(cosmo_static=False, batched_params=False):
     n = torch.tensor([1., 4.])
     Re = torch.tensor([.2, .5])
     Ie = torch.tensor([1.2, 10.])
-    
+   
+    sim_params = [z_s]
     cosmo_params = [h0]
     lens_params = [x0, y0, q, phi, b, t]
     source_params = [x0s, y0s, qs, phis, n, Re, Ie]
     if not batched_params:
+        sim_params = [_x[0] for _x in sim_params]
         cosmo_params = [_x[0] for _x in cosmo_params]
         lens_params = [_x[0] for _x in lens_params]
         source_params = [_x[0] for _x in source_params]
-    return Sim(), (cosmo_params, lens_params, source_params)
+    return Sim(), (sim_params, cosmo_params, lens_params, source_params)
 
 
 def setup_image_simulator(cosmo_static=False, batched_params=False):
@@ -68,8 +75,8 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
             self.z_s = torch.tensor(1.0)
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
-            self.kappa = PixelatedConvergence(fov, n_pix, self.cosmo, z_l=z_l, convergence_map_shape=[n_pix, n_pix])
-            self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, image_shape=[n_pix, n_pix])
+            self.kappa = PixelatedConvergence(fov, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix))
+            self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, shape=(n_pix, n_pix))
             self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix)
             self.n_pix = n_pix
 

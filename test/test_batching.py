@@ -4,12 +4,12 @@ from utils import setup_image_simulator, setup_simulator
 import pytest
 
 def test_vmapped_simulator():
-    sim, (cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
+    sim, (sim_params, cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
     n_pix = sim.n_pix
     print(sim.params)
  
     # test list input
-    x = cosmo_params + lens_params + source_params
+    x = sim_params + cosmo_params + lens_params + source_params
     print(x[0].shape)
     assert vmap(sim)(x).shape == torch.Size([2, n_pix, n_pix])
     
@@ -19,12 +19,12 @@ def test_vmapped_simulator():
     assert vmap(sim)(x_tensor).shape == torch.Size([2, n_pix, n_pix])
     
     # Test dictionary input: Only module with dynamic parameters are required
-    x_dict = {"cosmo": cosmo_params, "source": source_params, "lens": lens_params}
+    x_dict = {"simulator": sim_params, "cosmo": cosmo_params, "source": source_params, "lens": lens_params}
     print(x_dict)
     assert vmap(sim)(x_dict).shape == torch.Size([2, n_pix, n_pix])
     
     # Test semantic list (one tensor per module)
-    x_semantic = [cosmo_params, lens_params, source_params]
+    x_semantic = [sim_params, cosmo_params, lens_params, source_params]
     assert vmap(sim)(x_semantic).shape == torch.Size([2, n_pix, n_pix])
 
 

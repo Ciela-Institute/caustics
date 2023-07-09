@@ -17,4 +17,11 @@ class Simulator(Parametrized):
     """
 
     def __call__(self, *args, **kwargs):
-        return self.forward(self.pack(args[0]), *args[1:], **kwargs)
+        packed_args = self.pack(args[0])
+        return self.forward(packed_args, *args[1:], **kwargs)
+        # packed_args, batched = self.pack(args[0])
+        # out = self.forward(packed_args, *args[1:], **kwargs)
+        # if batched:
+            # return out
+        # else:
+            # return out[0] # removes the singleton batch dimension used internally

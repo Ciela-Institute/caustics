@@ -96,7 +96,7 @@ class PseudoJaffe(ThinLens):
         )
 
     @staticmethod
-    def convergence_0(
+    def central_convergence(
         z_l,
         z_s,
         rho_0,
