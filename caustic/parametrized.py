@@ -455,8 +455,6 @@ def unpack(n_leading_args=0):
                 trailing_args = []
                 for i in range(n_leading_args, n_params):
                     param = method_params[i]
-                    if param == "params":
-                        continue
                     if param in kwargs:
                         trailing_args.append(kwargs.pop(param))
                     elif args:
@@ -473,21 +471,3 @@ def unpack(n_leading_args=0):
         return wrapped
 
     return decorator
-
-    
-# def unpack(n_leading_args=0):
-#     # TODO: handle case of having leading args in kwargs
-#     def decorator(method):
-#         @functools.wraps(method)
-#         def wrapped(self, *args, **kwargs):
-#             leading_args = args[:n_leading_args]
-
-#             if len(args) == (n_leading_args+1) and isinstance(args[n_leading_args], Packed):
-#                 x = args[n_leading_args]
-#             else:
-#                 x = self.pack(args[n_leading_args:])
-#             return method(self, *leading_args, *self.unpack(x), params = x)
-
-#         return wrapped
-
-#     return decorator
