@@ -22,8 +22,6 @@ class Parameter:
         self, value: Optional[Union[Tensor, float]] = None, shape: Optional[tuple[int, ...]] = ()
     ):
         # Must assign one of value or shape
-        self._parents = NamespaceDict()
-        self._childs = None # A Parameter will always be a leaf node of the DAG
         if value is None:
             if shape is None:
                 raise ValueError("If value is None, a shape must be provided")
@@ -72,9 +70,7 @@ class Parameter:
     def set_static(self):
         self.value = None
 
-    def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
-    ):
+    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
         """
         Moves and/or casts the values of the parameter.
 
@@ -84,6 +80,7 @@ class Parameter:
         """
         if self.static:
             self.value = self._value.to(device=device, dtype=dtype)
+        return self
 
     def __repr__(self) -> str:
         if self.static:

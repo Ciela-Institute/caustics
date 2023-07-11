@@ -101,11 +101,8 @@ class Parametrized:
         """
         Moves static Params for this component and its childs to the specified device and casts them to the specified data type.
         """
-        # TODO I think we should make users specify a separate method so we dont override this behavior
-        for name in self._params.keys():
-            param = self._params[name]
-            if isinstance(param, torch.Tensor):
-                self._params[name] = param.to(device, dtype)
+        for name, p in self._params.items():
+            self._params[name] = p.to(device, dtype)
         for child in self._childs.values():
             child.to(device, dtype)
         return self

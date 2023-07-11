@@ -156,6 +156,12 @@ def test_to_method():
 
     module = Sersic(x0=np.array(0.5))
     assert module.x0.dtype == torch.float32
+    
+    # Check that all parameters are converted to correct type
+    sim.to(dtype=torch.float16)
+    assert sim.z_s.dtype is None # dynamic parameter
+    assert sim.lens.cosmo.Om0.dtype == torch.float16
+    assert sim.cosmo.Om0.dtype == torch.float16
   
 
 def test_parameter_redefinition():
