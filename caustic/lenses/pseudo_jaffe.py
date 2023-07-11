@@ -103,6 +103,7 @@ class PseudoJaffe(ThinLens):
         core_radius,
         scale_radius,
         cosmology: Cosmology,
+        *args,
         params: Optional["Packed"] = None,
     ):
         """
@@ -126,10 +127,10 @@ class PseudoJaffe(ThinLens):
             * core_radius
             * scale_radius
             / (core_radius + scale_radius)
-            / cosmology.critical_surface_density(z_l, z_s, params)
+            / cosmology.critical_surface_density(z_l, z_s, params = params)
         )
 
-    @unapck(3)
+    @unpack(3)
     def reduced_deflection_angle(
         self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:

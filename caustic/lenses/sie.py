@@ -89,7 +89,7 @@ class SIE(ThinLens):
 
         return derotate(ax, ay, phi)
 
-    @unapck(3)
+    @unpack(3)
     def potential( 
         self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, *args, params: Optional["Packed"] = None
     ) -> Tensor:
@@ -110,7 +110,7 @@ class SIE(ThinLens):
         x, y = translate_rotate(x, y, x0, y0, phi)
         return x * ax + y * ay
 
-    @unapck(3)
+    @unpack(3)
     def convergence(
         self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, *args, params: Optional["Packed"] = None
     ) -> Tensor:

@@ -74,7 +74,7 @@ class Point(ThinLens):
         ay = y / th**2 * th_ein**2
         return ax, ay
 
-    @unapck(3)
+    @unpack(3)
     def potential(
         self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> Tensor:

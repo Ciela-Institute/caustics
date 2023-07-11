@@ -14,6 +14,7 @@ def test():
 
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
+    print(cosmology)
     lens = PseudoJaffe(name="pj", cosmology=cosmology)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
@@ -22,7 +23,7 @@ def test():
     z_s = torch.tensor(2.1)
     x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
     x[3] = kappa_0 = lens.convergence_0(
-        x[0], z_s, torch.tensor(1.0), x[4], x[5], cosmology, defaultdict(list)
+        x[0], z_s, torch.tensor(1.0), x[4], x[5], cosmology, cosmology.pack() # defaultdict(list)
     )
     kwargs_ls = [
         {
