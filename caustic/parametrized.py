@@ -1,6 +1,6 @@
 from collections import OrderedDict, defaultdict
 from math import prod
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 import torch
 import re
@@ -137,7 +137,7 @@ class Parametrized:
     def add_param(
         self,
         name: str,
-        value: Optional[Union[Tensor, float]] = None,
+        value: Optional[Union[Tensor, float, Parameter, Callable]] = None,
         shape: Optional[tuple[int, ...]] = (),
     ):
         """
@@ -151,13 +151,12 @@ class Parametrized:
         self._params[name] = Parameter(value, shape)
         # __setattr__ inside add_param to catch all uses of this method
         super().__setattr__(name, self._params[name]) 
-        if value is None:
+        if getattr(self, name).dynamic:
             size = prod(shape)
             self._dynamic_size += size
             self._n_dynamic += 1
         else:
             self._n_static += 1
-
 
     @property
     def n_dynamic(self) -> int:
@@ -263,60 +262,44 @@ class Parametrized:
 
         Raises:
             ValueError: If the input is not a dict, list, tuple or tensor.
-            ValueError: If a static parameter is passed dynamically.
             ValueError: If the argument type is invalid. It must be a dict containing key {self.name}
                 and value containing args as list or flattened tensor, or kwargs.
         """
-        # Bug, this is not the correct approach since x won't have the key to a completely static module
-        my_x = defaultdict(list) if x is None else x[self.name]
-        if isinstance(my_x, dict):
-            # Parse dynamic kwargs
-            args = []
-            for name, p in self._params.items():
-                if p.value is None:
-                    # Dynamic Param
-                    args.append(my_x[name])
-                else:
-                    if name in my_x:
-                        raise ValueError(
-                            f"{name} was passed dynamically as a kwarg for {self.name}, "
-                            "but it is a static parameter"
-                        )
-
-                    args.append(p.value)
-
-            return args
-        elif isinstance(my_x, list) or isinstance(x, tuple):
-            # Parse dynamic args
-            vals = []
-            offset = 0
-            for param in self._params.values():
-                if not param.dynamic:
-                    vals.append(param.value)
-                else:
-                    vals.append(my_x[offset])
+        # Check if module has dynamic parameters
+        if self.module_params.dynamic:
+            dynamic_x = x[self.name]
+        else: # all parameters are static and module is not present in x
+            dynamic_x = []
+            if isinstance(x, dict):
+                if self.name in x.keys() and x.get(self.name, {}):
+                    print(f"Module {self.name} is static, the parameters {' '.join(x[self.name].keys())} passed dynamically will be ignored ignored")
+        unpacked_x = []
+        offset = 0
+        for name, param in self._params.items():
+            if param.dynamic:
+                if isinstance(dynamic_x, dict):
+                    param_value = dynamic_x[name]
+                elif isinstance(dynamic_x, (list, tuple)):
+                    param_value = dynamic_x[offset]
                     offset += 1
-
-            return vals
-        elif isinstance(my_x, Tensor):
-            # Parse dynamic parameter vector
-            vals = []
-            offset = 0
-            for param in self._params.values():
-                if not param.dynamic:
-                    vals.append(param.value)
-                else:
+                elif isinstance(dynamic_x, Tensor):
                     size = prod(param.shape)
-                    vals.append(my_x[..., offset : offset + size].reshape(param.shape))
+                    param_value = dynamic_x[..., offset: offset + size].reshape(param.shape)
                     offset += size
-
-            return vals
+                else:
+                    raise ValueError(f"Invalid data type found when unpacking parameters for {self.name}."
+                                     f"Expected argument of unpack to be a list/tuple/dict of Tensor, or simply a flattened tensor"
+                                     f"but found {type(dynamic_x)}.")
+            else: # param is static
+                param_value = param.value
+            if not isinstance(param_value, Tensor):
+                raise ValueError(f"Invalid data type found when unpacking parameters for {self.name}."
+                                 f"Argument of unpack must contain Tensor, but found {type(param_value)}")
+            unpacked_x.append(param_value)
+        if len(unpacked_x) == 1:
+            return unpacked_x[0]
         else:
-            raise ValueError(
-                f"invalid argument type: must be a dict containing key {self.name} "
-                "and value containing args as list or flattened tensor, or kwargs"
-            )
-
+            return unpacked_x
 
     @property
     def module_params(self) -> NestedNamespaceDict:

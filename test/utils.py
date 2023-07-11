@@ -8,10 +8,10 @@ from lenstronomy.LensModel.lens_model import LensModel
 from caustic.lenses import ThinLens
 from caustic.lenses.base import ThickLens
 from caustic.utils import get_meshgrid
-from caustic import Simulator, EPL, Sersic, FlatLambdaCDM, Pixelated, PixelatedConvergence
+from caustic import Simulator, EPL, NFW, Sersic, FlatLambdaCDM, Pixelated, PixelatedConvergence
 
 
-def setup_simulator(cosmo_static=False, simulator_static=False, batched_params=False):
+def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False):
     n_pix = 20
     class Sim(Simulator):
         def __init__(self, name="simulator"):
@@ -20,29 +20,44 @@ def setup_simulator(cosmo_static=False, simulator_static=False, batched_params=F
                 self.add_param("z_s", 1.0)
             else:
                 self.add_param("z_s", None)
+            z_l = 0.5
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
-            self.epl = EPL(self.cosmo, z_l=0.5, name="lens")
+            if use_nfw:
+                self.lens = NFW(self.cosmo, z_l=z_l, name="lens") # NFW  wactually depend on cosmology, so a better test for Parametrized
+            else:
+                self.lens = EPL(self.cosmo, z_l=z_l, name="lens")
             self.sersic = Sersic(name="source")
             self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
             self.n_pix = n_pix
 
         def forward(self, params):
-            alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
+            z_s = self.unpack(params)
+            alphax, alphay = self.lens.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=z_s, params=params) 
             bx = self.thx - alphax
             by = self.thy - alphay
             return self.sersic.brightness(bx, by, params)
 
     # default simulator params
     z_s = torch.tensor([1.0, 1.5])
+    sim_params = [z_s]
     # default cosmo params
     h0 = torch.tensor([0.68, 0.75])
+    cosmo_params = [h0]
     # default lens params 
-    x0 = torch.tensor([0, 0.1])
-    y0 = torch.tensor([0, 0.1])
-    q = torch.tensor([0.9, 0.8])
-    phi = torch.tensor([-0.56, 0.8])
-    b = torch.tensor([1.5, 1.2])
-    t = torch.tensor([1.2, 1.0])
+    if use_nfw:
+        x0 = torch.tensor([0., 0.1])
+        y0 = torch.tensor([0., 0.1])
+        m = torch.tensor([1e12, 1e13])
+        c = torch.tensor([10, 5])
+        lens_params = [x0, y0, m, c]
+    else:
+        x0 = torch.tensor([0, 0.1])
+        y0 = torch.tensor([0, 0.1])
+        q = torch.tensor([0.9, 0.8])
+        phi = torch.tensor([-0.56, 0.8])
+        b = torch.tensor([1.5, 1.2])
+        t = torch.tensor([1.2, 1.0])
+        lens_params = [x0, y0, q, phi, b, t]
     # default source params    
     x0s = torch.tensor([0, 0.1])
     y0s = torch.tensor([0, 0.1])
@@ -51,11 +66,8 @@ def setup_simulator(cosmo_static=False, simulator_static=False, batched_params=F
     n = torch.tensor([1., 4.])
     Re = torch.tensor([.2, .5])
     Ie = torch.tensor([1.2, 10.])
-   
-    sim_params = [z_s]
-    cosmo_params = [h0]
-    lens_params = [x0, y0, q, phi, b, t]
     source_params = [x0s, y0s, qs, phis, n, Re, Ie]
+   
     if not batched_params:
         sim_params = [_x[0] for _x in sim_params]
         cosmo_params = [_x[0] for _x in cosmo_params]
@@ -75,8 +87,8 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
             self.z_s = torch.tensor(1.0)
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
-            self.kappa = PixelatedConvergence(fov, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix))
-            self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, shape=(n_pix, n_pix))
+            self.kappa = PixelatedConvergence(fov, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix), name="kappa")
+            self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, shape=(n_pix, n_pix), name="source")
             self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix)
             self.n_pix = n_pix
 
