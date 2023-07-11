@@ -36,6 +36,7 @@ class Parametrized:
     """
 
     def __init__(self, name: str = None):
+        super().__init__() # Make sure it is here for multiple inheritance
         if name is None:
             name = self._default_name()
         if not isinstance(name, str):
