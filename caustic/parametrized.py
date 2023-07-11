@@ -1,6 +1,6 @@
 from collections import OrderedDict, defaultdict
 from math import prod
-from typing import Optional, Union, Callable
+from typing import Optional, Union
 
 import torch
 import re
@@ -134,7 +134,7 @@ class Parametrized:
     def add_param(
         self,
         name: str,
-        value: Optional[Union[Tensor, float, Parameter, Callable]] = None,
+        value: Optional[Union[Tensor, float]] = None,
         shape: Optional[tuple[int, ...]] = (),
     ):
         """
