@@ -169,11 +169,15 @@ def test_parameter_redefinition():
     # make sure z_s is still a parameter
     
     # sim.__setattr__("z_s", 42)
-    assert sim.z_s.value == torch.tensor(42).float()
+    assert sim.z_s.value() == torch.tensor(42).float()
     assert sim.z_s.static is True
+    assert "z_s" not in sim.params.dynamic.keys()
+    assert sim.name not in sim.dynamic_modules.keys()
     sim.z_s = None
-    assert sim.z_s.value is None
+    assert sim.z_s.value() is None
     assert sim.z_s.dynamic is True
+    assert "z_s" not sim.params.dynamic.keys()
+    assert sim.name in sim.dynamic_modules.keys()
     
 
 

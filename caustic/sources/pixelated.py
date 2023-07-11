@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 from torch import Tensor
-from torch import vmap
+from torch.nn import functional as F
 
 from ..utils import interp2d
 from .base import Source
@@ -32,6 +32,7 @@ class Pixelated(Source):
         y0: Optional[Union[Tensor, float]] = None,
         pixelscale: Optional[Union[Tensor, float]] = None,
         shape: Optional[tuple[int, ...]] = None,
+        pad: int = 0,
         name: str = None,
     ):
         """
@@ -58,6 +59,8 @@ class Pixelated(Source):
         self.add_param("y0", y0)
         self.add_param("image", image, shape)
         self.add_param("pixelscale", pixelscale)
+        # self.pad = pad
+        # self.channel = 0
     
     def brightness(self, x, y, params: Optional["Packed"]):
         """
@@ -77,4 +80,9 @@ class Pixelated(Source):
             determined by interpolating values from the source image.
         """
         x0, y0, image, pixelscale = self.unpack(params)
+        # if self.pad:
+            # image = F.pad(images, pad=(1, 1, 1, 1))
+        # vmap over channel dimension 
+        # if image.ndim = 3:
+            # return
         return interp2d(image, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale).reshape(x.shape)

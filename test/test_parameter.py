@@ -1,5 +1,7 @@
 import torch
-from caustic import EPL, Simulator, Sersic, FlatLambdaCDM, Pixelated, PixelatedConvergence
+from caustic import Simulator, FlatLambdaCDM, PixelatedConvergence
+from utils import setup_simulator
+
 import pytest
 
 # For future PR currently this test fails
@@ -28,3 +30,34 @@ def test_shape_error_messages():
         # wrong number of dimensions
         PixelatedConvergence(fov, n_pix, cosmo, shape=(8,))
 
+
+
+def test_static_parameter():
+    class Module(Simulator):
+        def __init__(self, name="module"):
+            super().__init__(name)
+            self.add_param("a", None)
+            self.add_param("b", self.a)
+    
+        def forward(self, x):
+            a, b = self.unpack(x)
+            return a, b
+    
+
+
+def test_symbolic_link():
+    class Module(Simulator):
+        def __init__(self, name="module"):
+            super().__init__(name)
+            self.add_param("a", None)
+            self.add_param("b", self.a)
+    
+        def forward(self, x):
+            a, b = self.unpack(x)
+            return a, b
+
+    module = Module()
+    x = torch.tensor([42]).float()
+    a, b = module(x)
+    assert a == torch.tensor(42).float()
+    assert a == b

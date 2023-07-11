@@ -260,14 +260,8 @@ class FlatLambdaCDM(Cosmology):
             Tensor: Comoving distance to redshift z.
         """
         h0, _, Om0 = self.unpack(params)
-
         Ode0 = 1 - Om0
         ratio = (Om0 / Ode0) ** (1 / 3)
-        return (
-            self.hubble_distance(h0)
-            * (
-                self._comoving_distance_helper((1 + z) * ratio, params)
-                - self._comoving_distance_helper(ratio, params)
-            )
-            / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))
-        )
+        Dz = self._comoving_distance_helper((1 + z) * ratio, params)
+        Dratio = self._comoving_distance_helper(ratio, params)
+        return self.hubble_distance(h0) * (Dz - Dratio) / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))
