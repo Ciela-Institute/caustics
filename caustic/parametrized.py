@@ -425,3 +425,19 @@ class Parametrized:
 
         return dot
 
+def unpack(n_leading_args=0):
+    # TODO: handle case of having leading args in kwargs
+    def decorator(method):
+        @functools.wraps(method)
+        def wrapped(self, *args, **kwargs):
+            leading_args = args[:n_leading_args]
+
+            if len(args) == (n_leading_args+1) and isinstance(args[n_leading_args], Packed):
+                x = args[n_leading_args]
+            else:
+                x = self.pack(args[n_leading_args:])
+            return method(self, *leading_args, *self.unpack(x), params = x)
+
+        return wrapped
+
+    return decorator

@@ -9,7 +9,7 @@ from torch import Tensor
 
 from .utils import interp1d
 from .constants import G_over_c2, c_Mpc_s, km_to_Mpc
-from .parametrized import Parametrized
+from .parametrized import Parametrized, unpack
 
 __all__ = (
     "h0_default",
@@ -217,7 +217,8 @@ class FlatLambdaCDM(Cosmology):
         """
         return c_Mpc_s / (100 * km_to_Mpc) / h0
 
-    def critical_density(self, z: Tensor, params: Optional["Packed"] = None) -> torch.Tensor:
+    @unpack(1)
+    def critical_density(self, z: Tensor, h0, central_critical_density, Om0, *args, params: Optional["Packed"] = None) -> torch.Tensor:
         """
         Calculate the critical density at redshift z.
 
@@ -228,9 +229,8 @@ class FlatLambdaCDM(Cosmology):
         Returns:
             torch.Tensor: Critical density at redshift z.
         """
-        _, critical_density_0, Om0 = self.unpack(params)
         Ode0 = 1 - Om0
-        return critical_density_0 * (Om0 * (1 + z) ** 3 + Ode0)
+        return central_critical_density * (Om0 * (1 + z) ** 3 + Ode0)
 
     def _comoving_distance_helper(self, x: Tensor, params: Optional["Packed"]) -> Tensor:
         """
@@ -248,7 +248,8 @@ class FlatLambdaCDM(Cosmology):
             torch.atleast_1d(x),
         ).reshape(x.shape)
 
-    def comoving_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
+    @unpack(1)
+    def comoving_distance(self, z: Tensor, h0, central_critical_density, Om0, *args, params: Optional["Packed"] = None) -> Tensor:
         """
         Calculate the comoving distance to redshift z.
 
@@ -259,8 +260,6 @@ class FlatLambdaCDM(Cosmology):
         Returns:
             Tensor: Comoving distance to redshift z.
         """
-        h0, _, Om0 = self.unpack(params)
-
         Ode0 = 1 - Om0
         ratio = (Om0 / Ode0) ** (1 / 3)
         return (

@@ -5,6 +5,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
+from ..parametrized import unpack
 
 __all__ = ("SIE",)
 
@@ -64,12 +65,9 @@ class SIE(ThinLens):
         """
         return (q**2 * (x**2 + self.s**2) + y**2).sqrt()
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self,
-            x: Tensor,
-            y: Tensor,
-            z_s: Tensor,
-            params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, *args, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the physical deflection angle.
@@ -83,8 +81,6 @@ class SIE(ThinLens):
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, x0, y0, q, phi, b = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
         f = (1 - q**2).sqrt()
@@ -93,8 +89,9 @@ class SIE(ThinLens):
 
         return derotate(ax, ay, phi)
 
+    @unapck(3)
     def potential( 
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -108,15 +105,14 @@ class SIE(ThinLens):
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, q, phi, b = self.unpack(params)
-
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
         x, y = translate_rotate(x, y, x0, y0, phi)
         return x * ax + y * ay
 
+    @unapck(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density.
@@ -130,8 +126,6 @@ class SIE(ThinLens):
         Returns:
             Tensor: The projected mass.
         """
-        z_l, x0, y0, q, phi, b = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
         return 0.5 * q.sqrt() * b / psi

@@ -4,6 +4,7 @@ from torch import Tensor
 
 from ..utils import interp2d
 from .base import Source
+from ..parametrized import unpack
 
 __all__ = ("Pixelated",)
 
@@ -50,7 +51,8 @@ class Pixelated(Source):
         self.add_param("image", image, image_shape)
         self.add_param("pixelscale", pixelscale)
 
-    def brightness(self, x, y, params: Optional["Packed"]):
+    @unpack(2)
+    def brightness(self, x, y, x0, y0, image, pixelscale, *args, params: Optional["Packed"] = None):
         """
         Implements the `brightness` method for `Pixelated`. The brightness at a given point is 
         determined by interpolating values from the source image.
@@ -67,7 +69,6 @@ class Pixelated(Source):
             Tensor: The brightness of the source at the given coordinate(s). The brightness is 
             determined by interpolating values from the source image.
         """
-        x0, y0, image, pixelscale = self.unpack(params)
         return interp2d(
             image, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale
         ).reshape(x.shape)
