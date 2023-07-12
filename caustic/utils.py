@@ -4,6 +4,7 @@ from typing import Callable, Optional, Tuple, Union
 import torch
 from torch import Tensor
 
+north = pi/2
 
 def flip_axis_ratio(q, phi):
     """

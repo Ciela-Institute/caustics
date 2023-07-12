@@ -35,6 +35,7 @@ def test_lenstronomy():
     ]
 
     # Different tolerances for difference quantities
+    x[4] += pi/2
     alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=6e-5)
     kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100)
     Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100)
@@ -65,6 +66,7 @@ def test_special_case_sie():
     ]
 
     # Different tolerances for difference quantities
+    x[4] += pi/2
     alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=6e-5)
     kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=6e-5, atol=1e-100)
     Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100)
