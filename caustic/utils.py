@@ -4,8 +4,6 @@ from typing import Callable, Optional, Tuple, Union
 import torch
 from torch import Tensor
 
-north = pi/2
-
 def flip_axis_ratio(q, phi):
     """
     Makes the value of 'q' positive, then swaps x and y axes if 'q' is larger than 1.

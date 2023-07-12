@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from torch import Tensor
 
-from ..utils import to_elliptical, translate_rotate, north
+from ..utils import to_elliptical, translate_rotate
 from .base import Source
 from ..parametrized import unpack
 
@@ -94,7 +94,7 @@ class Sersic(Source):
             If `lenstronomy_k_mode` is True, we use the approximation from Lenstronomy, 
             otherwise, we use the approximation from Ciotti & Bertin (1999).
         """
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        x, y = translate_rotate(x, y, x0, y0, phi)
         ex, ey = to_elliptical(x, y, q)
         e = (ex**2 + ey**2).sqrt() + self.s
 

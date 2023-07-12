@@ -33,7 +33,6 @@ def test():
         }
     ]
 
-    x[4] += pi/2
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
 
 

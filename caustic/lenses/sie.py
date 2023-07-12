@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 from torch import Tensor
 
 from ..cosmology import Cosmology
-from ..utils import derotate, translate_rotate, north
+from ..utils import derotate, translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
 
@@ -81,13 +81,13 @@ class SIE(ThinLens):
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
         f = (1 - q**2).sqrt()
         ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan()
         ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh()
 
-        return derotate(ax, ay, phi - north)
+        return derotate(ax, ay, phi)
 
     @unpack(3)
     def potential( 
@@ -106,8 +106,8 @@ class SIE(ThinLens):
             Tensor: The lensing potential.
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        ax, ay = derotate(ax, ay, -(phi - north))
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        ax, ay = derotate(ax, ay, -phi)
+        x, y = translate_rotate(x, y, x0, y0, phi)
         return x * ax + y * ay
 
     @unpack(3)
@@ -126,6 +126,6 @@ class SIE(ThinLens):
         Returns:
             Tensor: The projected mass.
         """
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
         return 0.5 * q.sqrt() * b / psi

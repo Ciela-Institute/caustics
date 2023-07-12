@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 
 from ..cosmology import Cosmology
-from ..utils import derotate, translate_rotate, north
+from ..utils import derotate, translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
 
@@ -90,7 +90,7 @@ class EPL(ThinLens):
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angles in the x and y directions.
         """
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        x, y = translate_rotate(x, y, x0, y0, phi)
 
         # follow Tessore et al 2015 (eq. 5)
         z = q * x + y * 1j
@@ -102,7 +102,7 @@ class EPL(ThinLens):
 
         alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
         alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
-        return derotate(alpha_real, alpha_imag, phi - north)
+        return derotate(alpha_real, alpha_imag, phi)
 
     def _r_omega(self, z, t, q):
         """
@@ -148,8 +148,8 @@ class EPL(ThinLens):
             Tensor: The lensing potential.
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        ax, ay = derotate(ax, ay, -(phi - north))
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        ax, ay = derotate(ax, ay, -phi)
+        x, y = translate_rotate(x, y, x0, y0, phi)
         return (x * ax + y * ay) / (2 - t)
 
     @unpack(3)
@@ -168,6 +168,6 @@ class EPL(ThinLens):
         Returns:
             Tensor: The convergence of the lens.
         """
-        x, y = translate_rotate(x, y, x0, y0, phi - north)
+        x, y = translate_rotate(x, y, x0, y0, phi)
         psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()
         return (2 - t) / 2 * (b / psi) ** t
