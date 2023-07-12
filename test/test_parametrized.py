@@ -51,7 +51,7 @@ def test_unpack_all_modules_dynamic():
             self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
 
         def forward(self, params):
-            alphax, alphay = self.epl.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=self.z_s, params=params) 
+            alphax, alphay = self.epl.reduced_deflection_angle(self.thx, self.thy, self.z_s, params) 
             bx = self.thx - alphax
             by = self.thy - alphay
             return self.sersic.brightness(bx, by, params)

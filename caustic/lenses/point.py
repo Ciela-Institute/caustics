@@ -6,6 +6,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
+from ..parametrized import unpack
 
 __all__ = ("Point",)
 
@@ -51,8 +52,9 @@ class Point(ThinLens):
         self.add_param("th_ein", th_ein)
         self.s = s
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -66,16 +68,15 @@ class Point(ThinLens):
         Returns:
             tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
         """
-        z_l, x0, y0, th_ein = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         ax = x / th**2 * th_ein**2
         ay = y / th**2 * th_ein**2
         return ax, ay
 
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -89,14 +90,13 @@ class Point(ThinLens):
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, th_ein = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         return th_ein**2 * th.log()
 
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
@@ -110,7 +110,5 @@ class Point(ThinLens):
         Returns:
             Tensor: The convergence (dimensionless surface mass density).
         """
-        z_l, x0, y0, th_ein = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         return torch.where((x == 0) & (y == 0), torch.inf, 0.0)

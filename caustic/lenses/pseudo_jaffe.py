@@ -7,6 +7,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
+from ..parametrized import unpack
 
 __all__ = ("PseudoJaffe",)
 
@@ -64,7 +65,8 @@ class PseudoJaffe(ThinLens):
         self.add_param("scale_radius", scale_radius)
         self.s = s
 
-    def mass_enclosed_2d(self, theta, z_s, params: Optional["Packed"] = None):
+    @unpack(2)
+    def mass_enclosed_2d(self, theta, z_s, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None):
         """
         Calculate the mass enclosed within a two-dimensional radius.
 
@@ -76,8 +78,6 @@ class PseudoJaffe(ThinLens):
         Returns:
             Tensor: The mass enclosed within the given radius.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
-
         theta = theta + self.s
         surface_density_0 = convergence_0 * self.cosmology.critical_surface_density(z_l, z_s, params)
         return (
@@ -103,6 +103,7 @@ class PseudoJaffe(ThinLens):
         core_radius,
         scale_radius,
         cosmology: Cosmology,
+        *args,
         params: Optional["Packed"] = None,
     ):
         """
@@ -126,11 +127,12 @@ class PseudoJaffe(ThinLens):
             * core_radius
             * scale_radius
             / (core_radius + scale_radius)
-            / cosmology.critical_surface_density(z_l, z_s, params)
+            / cosmology.critical_surface_density(z_l, z_s, params = params)
         )
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """ Calculate the deflection angle.
 
@@ -143,8 +145,6 @@ class PseudoJaffe(ThinLens):
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         R = (x**2 + y**2).sqrt() + self.s
         f = R / core_radius / (1 + (1 + (R / core_radius) ** 2).sqrt()) - R / scale_radius / (
@@ -155,8 +155,9 @@ class PseudoJaffe(ThinLens):
         ay = alpha * y / R
         return ax, ay
 
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential. This calculation is based on equation A18.
@@ -170,8 +171,6 @@ class PseudoJaffe(ThinLens):
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         R_squared = x**2 + y**2 + self.s
         coeff = -2 * convergence_0 * core_radius * scale_radius / (scale_radius - core_radius)
@@ -182,8 +181,9 @@ class PseudoJaffe(ThinLens):
             - scale_radius * (scale_radius + (scale_radius**2 + R_squared).sqrt()).log()
         )
 
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density, based on equation A6.
@@ -197,8 +197,6 @@ class PseudoJaffe(ThinLens):
         Returns:
             Tensor: The projected mass density.
         """
-        z_l, x0, y0, convergence_0, core_radius, scale_radius = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         R_squared = x**2 + y**2 + self.s
         coeff = convergence_0 * core_radius * scale_radius / (scale_radius - core_radius)
