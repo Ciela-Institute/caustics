@@ -150,11 +150,11 @@ class Parametrized:
 
     @property
     def n_dynamic(self) -> int:
-        return len(self.module_params.dynamic.values())
+        return len(self.module_params.dynamic)
 
     @property
     def n_static(self) -> int:
-        return len(self.module_params.static.values())
+        return len(self.module_params.static)
 
     @property
     def dynamic_size(self) -> int:
