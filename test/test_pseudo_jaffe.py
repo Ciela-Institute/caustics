@@ -22,8 +22,8 @@ def test():
     # Parameters, computing kappa_0 with a helper function
     z_s = torch.tensor(2.1)
     x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
-    x[3] = kappa_0 = lens.convergence_0(
-        x[0], z_s, torch.tensor(1.0), x[4], x[5], cosmology, cosmology.pack() # defaultdict(list)
+    x[3] = kappa_0 = lens.central_convergence(
+        x[0], z_s, torch.tensor(1.0), x[4], x[5], cosmology, defaultdict(list)
     )
     kwargs_ls = [
         {

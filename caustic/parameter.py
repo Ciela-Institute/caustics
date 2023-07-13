@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 import torch
 from torch import Tensor
+from caustic.namespace_dict import NamespaceDict
 
 __all__ = ("Parameter",)
 
@@ -20,21 +21,12 @@ class Parameter:
     def __init__(
         self, value: Optional[Union[Tensor, float]] = None, shape: Optional[tuple[int, ...]] = ()
     ):
-        """
-        Initializes an instance of the Parameter class.
-
-        Args:
-            value (Optional[Union[Tensor, float]]: The value of the parameter. Defaults to None.
-            shape (Optional[tuple[int, ...]]): The shape of the parameter. Defaults to an empty tuple.
-
-        Raises:
-            ValueError: If both value and shape are None, or if shape is provided and doesn't match the shape of the value.
-        """
         # Must assign one of value or shape
-        self._value = value
         if value is None:
             if shape is None:
                 raise ValueError("If value is None, a shape must be provided")
+            if not isinstance(shape, tuple):
+                raise TypeError("The shape of a parameter must be a tuple")
             self._shape = shape
         else:
             value = torch.as_tensor(value)
@@ -42,52 +34,43 @@ class Parameter:
                 raise ValueError(
                     f"value's shape {value.shape} does not match provided shape {shape}"
                 )
-            self._value = value
             self._shape = value.shape
+        self._value = value
+        self._dtype = None if value is None else value.dtype
 
     @property
     def static(self) -> bool:
-        """
-        Checks if the parameter is static.
-
-        Returns:
-            bool: True if the parameter is static, False otherwise.
-        """
         return not self.dynamic
 
     @property
     def dynamic(self) -> bool:
-        """
-        Checks if the parameter is dynamic.
-
-        Returns:
-            bool: True if the parameter is dynamic, False otherwise.
-        """
         return self._value is None
 
     @property
     def value(self) -> Optional[Tensor]:
-        """
-        Returns the value of the parameter.
-
-        Returns:
-            Optional[Tensor]: The value of the parameter, or None if the parameter is dynamic.
-        """
         return self._value
+    
+    @value.setter
+    def value(self, value: Union[None, Tensor, float]):
+        if value is not None:
+            value = torch.as_tensor(value)
+            if value.shape != self.shape:
+                raise ValueError(f"Cannot set Parameter value with a different shape. Received {value.shape}, expected {self.shape}")
+        self._value = value
+        self._dtype = None if value is None else value.dtype
+    
+    @property
+    def dtype(self):
+        return self._dtype
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """
-        Returns the shape of the parameter.
-
-        Returns:
-            tuple[int, ...]: The shape of the parameter.
-        """
         return self._shape
+    
+    def set_static(self):
+        self.value = None
 
-    def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
-    ):
+    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
         """
         Moves and/or casts the values of the parameter.
 
@@ -95,17 +78,12 @@ class Parameter:
             device (Optional[torch.device], optional): The device to move the values to. Defaults to None.
             dtype (Optional[torch.dtype], optional): The desired data type. Defaults to None.
         """
-        if self._value is not None:
-            self._value = self._value.to(device=device, dtype=dtype)
+        if self.static:
+            self.value = self._value.to(device=device, dtype=dtype)
+        return self
 
     def __repr__(self) -> str:
-        """
-        Returns a string representation of the Parameter object.
-
-        Returns:
-            str: A string representation of the Parameter object.
-        """
         if self.static:
-            return f"Param(value={self.value})"
+            return f"Param(value={self.value}, dtype={str(self.dtype)[-1]})"
         else:
             return f"Param(shape={self.shape})"

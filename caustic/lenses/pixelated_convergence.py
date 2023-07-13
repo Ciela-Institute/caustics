@@ -23,7 +23,7 @@ class PixelatedConvergence(ThinLens):
         x0: Optional[Tensor] = torch.tensor(0.0),
         y0: Optional[Tensor] = torch.tensor(0.0),
         convergence_map: Optional[Tensor] = None,
-        convergence_map_shape: Optional[tuple[int, ...]] = None,
+        shape: Optional[tuple[int, ...]] = None,
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
         name: str = None,
@@ -46,7 +46,7 @@ class PixelatedConvergence(ThinLens):
             x0 (Optional[Tensor]): The x-coordinate of the center of the grid.
             y0 (Optional[Tensor]): The y-coordinate of the center of the grid.
             convergence_map (Optional[Tensor]): A 2D tensor representing the convergence map.
-            convergence_map_shape (Optional[tuple[int, ...]]): The shape of the convergence map.
+            shape (Optional[tuple[int, ...]]): The shape of the convergence map.
             convolution_mode (str, optional): The convolution mode for calculating deflection angles and lensing potential.
                 It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution). Default is "fft".
             use_next_fast_len (bool, optional): If True, adds additional padding to speed up the FFT by calling
@@ -59,16 +59,16 @@ class PixelatedConvergence(ThinLens):
 
         if convergence_map is not None and convergence_map.ndim != 2:
             raise ValueError(
-                f"convergence_map must be 2D (received {convergence_map.ndim}D tensor)"
+                f"convergence_map must be 2D. Received a {convergence_map.ndim}D tensor)"
             )
-        elif convergence_map_shape is not None and len(convergence_map_shape) != 2:
+        elif shape is not None and len(shape) != 2:
             raise ValueError(
-                f"convergence_map_shape must be 2D (received {len(convergence_map_shape)}D)"
+                f"shape must specify a 2D tensor. Received shape={shape}"
             )
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)
-        self.add_param("convergence_map", convergence_map, convergence_map_shape)
+        self.add_param("convergence_map", convergence_map, shape)
 
         self.n_pix = n_pix
         self.fov = fov
