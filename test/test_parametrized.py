@@ -154,7 +154,7 @@ def test_to_method():
     assert module.x0.dtype == torch.float32
 
     module = Sersic(x0=np.array(0.5))
-    assert module.x0.dtype == torch.float32
+    assert module.x0.dtype == torch.float64 # Decided against default type, so gets numpy type here
     
     # Check that all parameters are converted to correct type
     sim.to(dtype=torch.float16)

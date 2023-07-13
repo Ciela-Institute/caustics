@@ -1,6 +1,8 @@
 from collections import OrderedDict, defaultdict
 from math import prod
 from typing import Optional, Union
+import functools
+import inspect
 
 import torch
 import re
@@ -173,7 +175,7 @@ class Parametrized:
             list[Tensor],
             dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]],
             Tensor,
-        ],
+        ] = Packed(),
     ) -> Packed:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
@@ -419,3 +421,47 @@ class Parametrized:
 
         return dot
 
+def unpack(n_leading_args=0):
+    def decorator(method):
+        sig = inspect.signature(method)
+        method_params = list(sig.parameters.keys())[1:]  # exclude 'self'
+        n_params = len(method_params)
+
+        @functools.wraps(method)
+        def wrapped(self, *args, **kwargs):
+            args = list(args)
+            leading_args = []
+            
+            # Handle leading args given as kwargs
+            for i in range(n_leading_args):
+                param = method_params[i]
+                if param in kwargs:
+                    leading_args.append(kwargs.pop(param))
+                elif args:
+                    leading_args.append(args.pop(0))
+                                
+            if args and isinstance(args[0], Packed):
+                x = args.pop(0)
+            elif "params" in kwargs:
+                x = kwargs["params"]
+            else:
+                # Handle args given as kwargs
+                trailing_args = []
+                for i in range(n_leading_args, n_params):
+                    param = method_params[i]
+                    if param in kwargs:
+                        trailing_args.append(kwargs.pop(param))
+                    elif args:
+                        trailing_args.append(args.pop(0))
+                if len(trailing_args) == 1 and trailing_args[0] is None:
+                    x = Packed()
+                else:
+                    x = self.pack(trailing_args)
+            unpacked_args = self.unpack(x)
+            kwargs['params'] = x
+
+            return method(self, *leading_args, *unpacked_args, **kwargs)
+
+        return wrapped
+
+    return decorator
