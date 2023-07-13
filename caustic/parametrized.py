@@ -46,9 +46,6 @@ class Parametrized:
         self._parents: OrderedDict[str, Parametrized] = NamespaceDict()
         self._params: OrderedDict[str, Parameter] = NamespaceDict()
         self._childs: OrderedDict[str, Parametrized] = NamespaceDict()
-        self._dynamic_size = 0
-        self._n_dynamic = 0
-        self._n_static = 0
         self._module_key_map = {}
    
     def _default_name(self):
@@ -150,24 +147,18 @@ class Parametrized:
         self._params[name] = Parameter(value, shape)
         # __setattr__ inside add_param to catch all uses of this method
         super().__setattr__(name, self._params[name]) 
-        if getattr(self, name).dynamic:
-            size = prod(shape)
-            self._dynamic_size += size
-            self._n_dynamic += 1
-        else:
-            self._n_static += 1
 
     @property
     def n_dynamic(self) -> int:
-        return self._n_dynamic
+        return len(self.module_params.dynamic.values())
 
     @property
     def n_static(self) -> int:
-        return self._n_static
+        return len(self.module_params.static.values())
 
     @property
     def dynamic_size(self) -> int:
-        return self._dynamic_size
+        return sum(prod(dyn.shape) for dyn in self.module_params.dynamic.values())
 
     def pack(
         self,
