@@ -29,7 +29,7 @@ class Parameter:
                 raise TypeError("The shape of a parameter must be a tuple")
             self._shape = shape
         else:
-            value = torch.as_tensor(value).float() # set float32 as default dtype here
+            value = torch.as_tensor(value)
             if shape != value.shape:
                 raise ValueError(
                     f"value's shape {value.shape} does not match provided shape {shape}"
