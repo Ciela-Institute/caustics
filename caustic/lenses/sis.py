@@ -6,6 +6,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
+from ..parametrized import unpack
 
 __all__ = ("SIS",)
 
@@ -44,8 +45,9 @@ class SIS(ThinLens):
         self.add_param("th_ein", th_ein)
         self.s = s
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the SIS lens.
@@ -59,16 +61,15 @@ class SIS(ThinLens):
         Returns:
             Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
         """
-        z_l, x0, y0, th_ein = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         R = (x**2 + y**2).sqrt() + self.s
         ax = th_ein * x / R
         ay = th_ein * y / R
         return ax, ay
 
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential of the SIS lens.
@@ -82,14 +83,13 @@ class SIS(ThinLens):
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, th_ein = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         return th_ein * th
 
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Calculate the projected mass density of the SIS lens.
@@ -103,8 +103,6 @@ class SIS(ThinLens):
         Returns:
             Tensor: The projected mass density.
         """
-        z_l, x0, y0, th_ein = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         return 0.5 * th_ein / th

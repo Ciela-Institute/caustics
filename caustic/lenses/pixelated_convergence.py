@@ -9,6 +9,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
 from .base import ThinLens
+from ..parametrized import unpack
 
 __all__ = ("PixelatedConvergence",)
 
@@ -22,7 +23,7 @@ class PixelatedConvergence(ThinLens):
         x0: Optional[Tensor] = torch.tensor(0.0),
         y0: Optional[Tensor] = torch.tensor(0.0),
         convergence_map: Optional[Tensor] = None,
-        convergence_map_shape: Optional[tuple[int, ...]] = None,
+        shape: Optional[tuple[int, ...]] = None,
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
         name: str = None,
@@ -45,7 +46,7 @@ class PixelatedConvergence(ThinLens):
             x0 (Optional[Tensor]): The x-coordinate of the center of the grid.
             y0 (Optional[Tensor]): The y-coordinate of the center of the grid.
             convergence_map (Optional[Tensor]): A 2D tensor representing the convergence map.
-            convergence_map_shape (Optional[tuple[int, ...]]): The shape of the convergence map.
+            shape (Optional[tuple[int, ...]]): The shape of the convergence map.
             convolution_mode (str, optional): The convolution mode for calculating deflection angles and lensing potential.
                 It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution). Default is "fft".
             use_next_fast_len (bool, optional): If True, adds additional padding to speed up the FFT by calling
@@ -58,16 +59,16 @@ class PixelatedConvergence(ThinLens):
 
         if convergence_map is not None and convergence_map.ndim != 2:
             raise ValueError(
-                f"convergence_map must be 2D (received {convergence_map.ndim}D tensor)"
+                f"convergence_map must be 2D. Received a {convergence_map.ndim}D tensor)"
             )
-        elif convergence_map_shape is not None and len(convergence_map_shape) != 2:
+        elif shape is not None and len(shape) != 2:
             raise ValueError(
-                f"convergence_map_shape must be 2D (received {len(convergence_map_shape)}D)"
+                f"shape must specify a 2D tensor. Received shape={shape}"
             )
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)
-        self.add_param("convergence_map", convergence_map, convergence_map_shape)
+        self.add_param("convergence_map", convergence_map, shape)
 
         self.n_pix = n_pix
         self.fov = fov
@@ -190,8 +191,9 @@ class PixelatedConvergence(ThinLens):
 
         self._convolution_mode = convolution_mode
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -205,8 +207,6 @@ class PixelatedConvergence(ThinLens):
         Returns:
             tuple[Tensor, Tensor]: The x and y components of the deflection angles at the specified positions.
         """
-        z_l, x0, y0, convergence_map = self.unpack(params)
-
         if self.convolution_mode == "fft":
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_fft(convergence_map)
         else:
@@ -262,8 +262,9 @@ class PixelatedConvergence(ThinLens):
         )
         return self._unpad_conv2d(deflection_angle_x), self._unpad_conv2d(deflection_angle_y)
 
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -277,8 +278,6 @@ class PixelatedConvergence(ThinLens):
         Returns:
             Tensor: The lensing potential at the specified positions.
         """
-        z_l, x0, y0, convergence_map = self.unpack(params)
-
         if self.convolution_mode == "fft":
             potential_map = self._potential_fft(convergence_map)
         else:
@@ -324,8 +323,9 @@ class PixelatedConvergence(ThinLens):
         )
         return self._unpad_conv2d(potential)
 
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None
     ) -> Tensor:
         """
         Compute the convergence at the specified positions. This method is not implemented.
@@ -342,7 +342,6 @@ class PixelatedConvergence(ThinLens):
         Raises:
             NotImplementedError: This method is not implemented.
         """
-        x0, y0, convergence_map, pixelscale = self.unpack(params)
         return interp2d(
             convergence_map, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale
         ).reshape(x.shape)

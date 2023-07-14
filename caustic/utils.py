@@ -4,7 +4,6 @@ from typing import Callable, Optional, Tuple, Union
 import torch
 from torch import Tensor
 
-
 def flip_axis_ratio(q, phi):
     """
     Makes the value of 'q' positive, then swaps x and y axes if 'q' is larger than 1.
@@ -276,7 +275,7 @@ def interp2d(
         raise ValueError(f"{method} is not a valid interpolation method")
 
     if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result[idxs_out_of_bounds] = torch.zeros_like(result[idxs_out_of_bounds])
+        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
 
     return result
 
