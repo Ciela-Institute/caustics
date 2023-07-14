@@ -44,7 +44,7 @@ class ExternalShear(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, gamma_1, gamma_2, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, gamma_1, gamma_2, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -66,7 +66,7 @@ class ExternalShear(ThinLens):
 
     @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, gamma_1, gamma_2, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, gamma_1, gamma_2, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Calculates the lensing potential.
@@ -86,7 +86,7 @@ class ExternalShear(ThinLens):
 
     @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, gamma_1, gamma_2, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, gamma_1, gamma_2, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         The convergence is undefined for an external shear.

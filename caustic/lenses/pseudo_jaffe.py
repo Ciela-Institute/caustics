@@ -66,7 +66,7 @@ class PseudoJaffe(ThinLens):
         self.s = s
 
     @unpack(2)
-    def mass_enclosed_2d(self, theta, z_s, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None):
+    def mass_enclosed_2d(self, theta, z_s, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None, **kwargs):
         """
         Calculate the mass enclosed within a two-dimensional radius.
 
@@ -104,7 +104,7 @@ class PseudoJaffe(ThinLens):
         scale_radius,
         cosmology: Cosmology,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional["Packed"] = None, **kwargs,
     ):
         """
         Compute the central convergence.
@@ -132,7 +132,7 @@ class PseudoJaffe(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """ Calculate the deflection angle.
 
@@ -157,7 +157,7 @@ class PseudoJaffe(ThinLens):
 
     @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential. This calculation is based on equation A18.
@@ -183,7 +183,7 @@ class PseudoJaffe(ThinLens):
 
     @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_0, core_radius, scale_radius, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Calculate the projected mass density, based on equation A6.

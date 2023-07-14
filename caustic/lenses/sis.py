@@ -47,7 +47,7 @@ class SIS(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the SIS lens.
@@ -69,7 +69,7 @@ class SIS(ThinLens):
 
     @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential of the SIS lens.
@@ -89,7 +89,7 @@ class SIS(ThinLens):
 
     @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, th_ein, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Calculate the projected mass density of the SIS lens.

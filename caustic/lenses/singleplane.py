@@ -33,7 +33,7 @@ class SinglePlane(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the total deflection angle by summing the deflection angles of all individual lenses.
@@ -57,7 +57,7 @@ class SinglePlane(ThinLens):
 
     @unpack(3)
     def convergence(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Calculate the total projected mass density by summing the mass densities of all individual lenses.
@@ -79,7 +79,7 @@ class SinglePlane(ThinLens):
 
     @unpack(3)
     def potential(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the total lensing potential by summing the lensing potentials of all individual lenses.

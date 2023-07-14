@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from torch import Tensor
 
-from ..parametrized import Parametrized
+from ..parametrized import Parametrized, unpack
 
 __all__ = ("Source",)
 
@@ -19,8 +19,9 @@ class Source(Parametrized):
     subclass. This method calculates the brightness of the source at given coordinates.
     """
     @abstractmethod
+    @unpack(2)
     def brightness(
-        self, x: Tensor, y: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Abstract method that calculates the brightness of the source at the given coordinates. 
