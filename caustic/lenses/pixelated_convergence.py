@@ -193,7 +193,7 @@ class PixelatedConvergence(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -264,7 +264,7 @@ class PixelatedConvergence(ThinLens):
 
     @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -325,7 +325,7 @@ class PixelatedConvergence(ThinLens):
 
     @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the convergence at the specified positions. This method is not implemented.

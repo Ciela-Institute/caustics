@@ -80,7 +80,7 @@ class NFW(ThinLens):
         self.s = s
 
     @unpack(0)
-    def get_scale_radius(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"]) -> Tensor:
+    def get_scale_radius(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Calculate the scale radius of the lens.
 
@@ -98,7 +98,7 @@ class NFW(ThinLens):
         return 1 / c * r_delta
 
     @unpack(0)
-    def get_scale_density(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None) -> Tensor:
+    def get_scale_density(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Calculate the scale density of the lens.
 
@@ -119,7 +119,7 @@ class NFW(ThinLens):
         )
 
     @unpack(1)
-    def get_convergence_s(self, z_s, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None) -> Tensor:
+    def get_convergence_s(self, z_s, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Calculate the dimensionless surface mass density of the lens.
 
@@ -203,7 +203,7 @@ class NFW(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angle.
@@ -243,7 +243,7 @@ class NFW(ThinLens):
 
     @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
@@ -268,7 +268,7 @@ class NFW(ThinLens):
 
     @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential.

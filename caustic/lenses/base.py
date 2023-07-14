@@ -8,7 +8,7 @@ from torch import Tensor
 
 from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
-from ..parametrized import Parametrized
+from ..parametrized import Parametrized, unpack
 from .utils import get_magnification
 
 __all__ = ("ThinLens", "ThickLens")
@@ -33,8 +33,9 @@ class ThickLens(Parametrized):
         super().__init__(name)
         self.cosmology = cosmology
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         ThickLens objects do not have a reduced deflection angle since the distance D_ls is undefined
@@ -51,8 +52,9 @@ class ThickLens(Parametrized):
         warnings.warn("ThickLens objects do not have a reduced deflection angle since they have no unique lens redshift. The distance D_{ls} is undefined in the equation $\alpha_{reduced} = \frac{D_{ls}}{D_s}\alpha_{physical}$. See `effective_reduced_deflection_angle`. Now using effective_reduced_deflection_angle, please switch functions to remove this warning")
         return self.effective_reduced_deflection_angle(x, y, z_s, params)
 
+    @unpack(3)
     def effective_reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """ThickLens objects do not have a reduced deflection angle since the
         distance D_ls is undefined. Instead we define an effective
@@ -71,9 +73,10 @@ class ThickLens(Parametrized):
         """
         bx, by = self.raytrace(x, y, z_s, params)
         return x - bx, y - by
-    
+
+    @unpack(3)
     def physical_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """Physical deflection angles are computed with respect to a lensing
         plane. ThickLens objects have no unique definition of a lens
@@ -92,8 +95,9 @@ class ThickLens(Parametrized):
         raise NotImplementedError("Physical deflection angles are computed with respect to a lensing plane. ThickLens objects have no unique definition of a lens plane and so cannot compute a physical_deflection_angle")
 
     @abstractmethod
+    @unpack(3)
     def raytrace(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """Performs ray tracing by computing the angular position on the
         source plance associated with a given input observed angular
@@ -112,8 +116,9 @@ class ThickLens(Parametrized):
         ...
 
     @abstractmethod
+    @unpack(3)
     def surface_density(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the projected mass density at given coordinates.
@@ -130,8 +135,9 @@ class ThickLens(Parametrized):
         ...
 
     @abstractmethod
+    @unpack(3)
     def time_delay(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the gravitational time delay at given coordinates.
@@ -147,7 +153,8 @@ class ThickLens(Parametrized):
         """
         ...
 
-    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None) -> Tensor:
+    @unpack(3)
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Computes the gravitational lensing magnification at given coordinates.
     
@@ -184,8 +191,9 @@ class ThinLens(Parametrized):
         self.add_param("z_l", z_l)
 
     @abstractmethod
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -201,8 +209,9 @@ class ThinLens(Parametrized):
         """
         ...
 
+    @unpack(3)
     def physical_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
@@ -224,8 +233,9 @@ class ThinLens(Parametrized):
         return (d_s / d_ls) * deflection_angle_x, (d_s / d_ls) * deflection_angle_y
 
     @abstractmethod
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the convergence of the lens at given coordinates.
@@ -242,8 +252,9 @@ class ThinLens(Parametrized):
         ...
 
     @abstractmethod
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the gravitational lensing potential at given coordinates.
@@ -258,8 +269,9 @@ class ThinLens(Parametrized):
         """
         ...
 
+    @unpack(3)
     def surface_density(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
@@ -279,8 +291,9 @@ class ThinLens(Parametrized):
         critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, params)
         return self.convergence(x, y, z_s, params) * critical_surface_density
 
+    @unpack(3)
     def raytrace(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Perform a ray-tracing operation by subtracting the deflection angles from the input coordinates.
@@ -297,8 +310,9 @@ class ThinLens(Parametrized):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         return x - ax, y - ay
 
+    @unpack(3)
     def time_delay(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ):
         """
         Compute the gravitational time delay for light passing through the lens at given coordinates.
@@ -323,8 +337,9 @@ class ThinLens(Parametrized):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
         return factor * fp * arcsec_to_rad**2
 
+    @unpack(3)
     def _lensing_jacobian_fft_method(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing Jacobian using the Fast Fourier Transform method.
@@ -357,7 +372,8 @@ class ThinLens(Parametrized):
         jacobian = torch.stack([j1, j2], dim=-1)
         return jacobian
 
-    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None) -> Tensor:
+    @unpack(3)
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
 

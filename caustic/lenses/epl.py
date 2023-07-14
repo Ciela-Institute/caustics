@@ -76,7 +76,7 @@ class EPL(ThinLens):
 
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, t, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angles of the lens.
@@ -133,7 +133,7 @@ class EPL(ThinLens):
 
     @unpack(3)
     def potential(
-            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, t, *args, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, t, *args, params: Optional["Packed"] = None, **kwargs
     ):
         """
         Compute the lensing potential of the lens.
@@ -154,7 +154,7 @@ class EPL(ThinLens):
 
     @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, t, *args, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, q, phi, b, t, *args, params: Optional["Packed"] = None, **kwargs
     ):
         """
         Compute the convergence of the lens, which describes the local density of the lens.

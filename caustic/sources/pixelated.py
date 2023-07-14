@@ -61,7 +61,7 @@ class Pixelated(Source):
         self.add_param("pixelscale", pixelscale)
 
     @unpack(2)
-    def brightness(self, x, y, x0, y0, image, pixelscale, *args, params: Optional["Packed"] = None):
+    def brightness(self, x, y, x0, y0, image, pixelscale, *args, params: Optional["Packed"] = None, **kwargs):
         """
         Implements the `brightness` method for `Pixelated`. The brightness at a given point is 
         determined by interpolating values from the source image.
