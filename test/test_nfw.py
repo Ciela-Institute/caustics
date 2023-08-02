@@ -39,7 +39,7 @@ def test():
     m = 1e12
     c = 8.0
     x = torch.tensor([thx0, thy0, m, c])
-
+    
     # Lenstronomy
     cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
     lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)

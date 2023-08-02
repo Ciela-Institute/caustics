@@ -58,7 +58,7 @@ def test_unpack_some_modules_static():
     # same test as above but cosmo is completely static so not fed in the forward method
     sim, (_, _, lens_params, source_params) = setup_simulator(cosmo_static=True, simulator_static=True)
     n_pix = sim.n_pix
-
+    
     # test list input
     x = lens_params + source_params
     assert sim(x).shape == torch.Size([n_pix, n_pix])
