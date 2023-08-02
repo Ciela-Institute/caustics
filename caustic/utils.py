@@ -97,18 +97,8 @@ def get_meshgrid(
     Returns:
         Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
     """
-    xs = (
-        torch.linspace(-1, 1, nx, device=device, dtype=dtype)
-        * resolution
-        * (nx - 1)
-        / 2
-    )
-    ys = (
-        torch.linspace(-1, 1, ny, device=device, dtype=dtype)
-        * resolution
-        * (ny - 1)
-        / 2
-    )
+    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * resolution * (nx - 1) / 2
+    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * resolution * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
