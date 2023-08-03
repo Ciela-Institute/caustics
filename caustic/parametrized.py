@@ -381,8 +381,8 @@ class Parametrized:
             dot.node(p.name, f"{p.__class__.__name__}('{p.name}')")
 
         def add_params(p: Parametrized, dot):
-            static = p.module_params.static
-            dynamic = p.module_params.dynamic
+            static = p.module_params.static.keys()
+            dynamic = p.module_params.dynamic.keys()
 
             dot.attr("node", style="solid", color="black", shape="box")
             for n in dynamic:
