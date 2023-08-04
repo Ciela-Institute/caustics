@@ -373,6 +373,28 @@ class ThinLens(Parametrized):
         return jacobian
 
     @unpack(3)
+    def jacobian_reduced_deflection_angle(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Ensure the x,y coordinates track gradients
+        x = x.detach().requires_grad_()
+        y = y.detach().requires_grad_()
+
+        # Compute deflection angles
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
+
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,0], = torch.autograd.grad(ax, x, grad_outputs = torch.ones_like(ax), create_graph = True)
+        J[...,0,1], = torch.autograd.grad(ax, y, grad_outputs = torch.ones_like(ax), create_graph = True)
+        J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
+        J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
+        return J.detach()
+
+    @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
