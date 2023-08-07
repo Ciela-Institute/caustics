@@ -19,6 +19,7 @@ authors:
     orcid: 0000-0001-7071-5528
     affiliation: "1, 2"
   - name: Andreas Filipp
+    orcid: 0000-0003-4701-3469
     affiliation: "1, 2"
   - name: Ronan Legin
     orcid: 0000-0001-9459-6316
