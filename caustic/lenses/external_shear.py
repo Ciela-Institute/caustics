@@ -60,8 +60,9 @@ class ExternalShear(ThinLens):
         """
         x, y = translate_rotate(x, y, x0, y0)
         # Meneghetti eq 3.83
-        a1 = x * gamma_1 + y * gamma_2
-        a2 = x * gamma_2 - y * gamma_1
+        th = (x**2 + y**2).sqrt() + self.s
+        a1 = x/th + x * gamma_1 + y * gamma_2
+        a2 = y/th + x * gamma_2 - y * gamma_1
         return a1, a2  # I'm not sure but I think no derotation necessary
 
     @unpack(3)
