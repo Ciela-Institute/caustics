@@ -233,7 +233,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def physical_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
@@ -247,8 +247,6 @@ class ThinLens(Parametrized):
         Returns:
             tuple[Tensor, Tensor]: Physical deflection angle in x and y directions in arcseconds.
         """
-        z_l, = self.unpack(params)
-
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(x, y, z_s, params)
@@ -293,7 +291,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def surface_density(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
@@ -307,9 +305,6 @@ class ThinLens(Parametrized):
         Returns:
             Tensor: Surface mass density at the given coordinates in solar masses per Mpc^2.
         """
-        # Superclass params come before subclass ones
-        z_l, = self.unpack(params)
-
         critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, params)
         return self.convergence(x, y, z_s, params) * critical_surface_density
 
@@ -334,7 +329,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def time_delay(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ):
         """
         Compute the gravitational time delay for light passing through the lens at given coordinates.
@@ -348,8 +343,6 @@ class ThinLens(Parametrized):
         Returns:
             Tensor: Time delay at the given coordinates.
         """
-        z_l, = self.unpack(params)
-
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
