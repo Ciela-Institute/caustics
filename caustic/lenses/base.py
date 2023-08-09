@@ -327,6 +327,27 @@ class ThinLens(Parametrized):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         return x - ax, y - ay
 
+    @unpack(4)
+    def forward_raytrace(
+            self, bx: Tensor, by: Tensor, z_s: Tensor, epsilon, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[Tensor, Tensor]:
+        """
+        Perform a ray-tracing operation by subtracting the deflection angles from the input coordinates.
+
+        Args:
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
+            z_s (Tensor): Tensor of source redshifts.
+            epsilon (Tensor): maximum distance between two images before they are considered the same image
+            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
+
+        Returns:
+            tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
+        """
+        
+        x, y = batch_lm(guesses, bxy, self.reduced_deflection_angle, f_args = (z_s, epsilon, params))
+        return x, y
+
     @unpack(3)
     def time_delay(
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs

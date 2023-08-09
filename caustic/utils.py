@@ -338,3 +338,68 @@ def get_cluster_means(xs: Tensor, k: int):
         mean_idxs.append(new_idx)
 
     return torch.stack(means)
+
+def batch_lm(
+        X, # B, Din
+        Y, # B, Dout
+        f, # Din -> Dout
+        C = None, # B, Dout, Dout
+        epsilon = 1e-1,
+        L = 1e-2,
+        L_dn = 3.,
+        L_up = 2.,
+        max_iter = 15,
+        L_min = 1e-9,
+        L_max = 1e9,
+        f_args = (),
+        f_kwargs = {},
+):
+    B, Din = X.shape
+    B, Dout = Y.shape
+    
+    if len(X) != len(Y):
+        raise ValueError("x and y must having matching batch dimension")
+
+    if C is None:
+        C = torch.eye(Dout).repeat(B, 1, 1)
+    Cinv = torch.linalg.inv(C)
+    
+    f_v = torch.vmap(lambda x: f(*x, *f_args, **f_kwargs))
+
+    J_v = torch.vmap(lambda x: torch.autograd.functional.jacobian(lambda xx: f(*xx, *f_args, **f_kwargs), x, vectorize = True, strategy = "forward-mode")[0])
+
+    fY = f_v(X)
+    chi2_prev = ((Y - fY) @ Cinv @ (Y - fY)).sum(-1)
+    ypred = f_v(X)
+
+    for _ in range(max_iter):
+
+        # Jacobian
+        J = J_v(X)
+
+        # Gradient
+        dY = (Y - ypred)
+        grad = J.transpose(-2,-1) @ Cinv @ dY
+        
+        # Hessian
+        hess = J.transpose(-2,-1) @ Cinv @ J
+        H_perturb = L * torch.diag(hess)
+
+        # Step
+        h = torch.linalg.solve(hess + H_perturb, grad)
+
+        # New statistic
+        ynew = f_v(X + h)
+        chi2_new = ((Y - ynew) @ Cinv @ (Y - ynew)).sum(-1)
+
+        # Descision
+        rho = torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))
+        if (chi2_prev - chi2_new)/rho > epsilon:
+            X = X + h
+            chi2_prev = chi2_new
+            ypred = ynew
+            L = max(L / L_dn, L_min)
+        else:
+            L = min(L * L_up, L_max)
+
+    return X
