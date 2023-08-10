@@ -355,15 +355,20 @@ class ThinLens(Parametrized):
         """
         potential = self.potential(x, y, z_s, params)
         # quick dirty work to get kx and ky. Assumes x and y come from meshgrid... TODO Might want to get k differently
-        n = x.shape[-1]
-        k = torch.fft.fftfreq(2 * n, d=pixelscale)
-        kx, ky = torch.meshgrid([k, k], indexing="xy")
+        fx = torch.fft.fftshift(torch.fft.fftfreq(2 * x.shape[-1], d=pixelscale))
+        fy = torch.fft.fftshift(torch.fft.fftfreq(2 * x.shape[-2], d=pixelscale))
+        
+        kx, ky = torch.meshgrid((fx, fy), indexing="xy")
         # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
-        pad = 2 * n
-        potential_tilde = torch.fft.fft2(potential, (pad, pad))
-        potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :n, :n]
-        potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :n, :n]
-        potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :n, :n]
+        padx = len(fx) // 2
+        pady = len(fy) // 2
+
+        p = torch.nn.ReflectionPad2d((padx-1, padx-1, pady-1, pady-1))
+        potential_tilde = torch.fft.fft2(p(potential.unsqueeze(0)).squeeze(),s=(2*pady,2*padx))
+        potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :pady, :padx]
+        potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :pady, :padx]
+        potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :pady, :padx]
+        
         j1 = torch.stack(
             [1 - potential_xx, -potential_xy], dim=-1
         )  # Equation 2.33 from Meneghetti lensing lectures
