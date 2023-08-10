@@ -1,6 +1,6 @@
 [project]
 name = "caustic"
-version = "0.4.2"
+version = "0.4.3"
 authors = [
     {name="Connor Stone", email="connorstone628@gmail.com"},
     {name="Adam Coogan", email="dr.adam.coogan@gmail.com"}
