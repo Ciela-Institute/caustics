@@ -337,9 +337,9 @@ class ThinLens(Parametrized):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
         return factor * fp * arcsec_to_rad**2
 
-    @unpack(3)
+    @unpack(4)
     def _lensing_jacobian_fft_method(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing Jacobian using the Fast Fourier Transform method.
@@ -356,12 +356,11 @@ class ThinLens(Parametrized):
         potential = self.potential(x, y, z_s, params)
         # quick dirty work to get kx and ky. Assumes x and y come from meshgrid... TODO Might want to get k differently
         n = x.shape[-1]
-        d = torch.abs(x[0, 0] - x[0, 1])
-        k = torch.fft.fftfreq(2 * n, d=d)
+        k = torch.fft.fftfreq(2 * n, d=pixelscale)
         kx, ky = torch.meshgrid([k, k], indexing="xy")
         # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
         pad = 2 * n
-        potential_tilde = torch.fft.fft(potential, (pad, pad))
+        potential_tilde = torch.fft.fft2(potential, (pad, pad))
         potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :n, :n]
         potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :n, :n]
         potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :n, :n]
@@ -373,7 +372,7 @@ class ThinLens(Parametrized):
         return jacobian
 
     @unpack(3)
-    def jacobian_reduced_deflection_angle(
+    def _jacobian_reduced_deflection_angle_autograd(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
@@ -393,6 +392,25 @@ class ThinLens(Parametrized):
         J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
         J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
         return J.detach()
+    
+    @unpack(3)
+    def jacobian_reduced_deflection_angle(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_reduced_deflection_angle_autograd(x, y, z_s, params)
+        elif method == "fft":
+            if pixelscale is None:
+                raise ValueError("FFT lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._lensing_jacobian_fft_method(x, y, z_s, pixelscale, params)
+        else:
+            raise ValueError("method should be one of: autograd, fft")
 
     @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
