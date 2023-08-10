@@ -32,6 +32,7 @@ class ExternalShear(ThinLens):
         y0: Optional[Union[Tensor, float]] = None,
         gamma_1: Optional[Union[Tensor, float]] = None,
         gamma_2: Optional[Union[Tensor, float]] = None,
+        s: float = 0.0,
         name: str = None,
     ):
         
@@ -41,6 +42,7 @@ class ExternalShear(ThinLens):
         self.add_param("y0", y0)
         self.add_param("gamma_1", gamma_1)
         self.add_param("gamma_2", gamma_2)
+        self.s = s
 
     @unpack(3)
     def reduced_deflection_angle(
@@ -60,8 +62,13 @@ class ExternalShear(ThinLens):
         """
         x, y = translate_rotate(x, y, x0, y0)
         # Meneghetti eq 3.83
+        # TODO, why is it not:
+        #th = (x**2 + y**2).sqrt() + self.s
+        #a1 = x/th + x * gamma_1 + y * gamma_2
+        #a2 = y/th + x * gamma_2 - y * gamma_1
         a1 = x * gamma_1 + y * gamma_2
         a2 = x * gamma_2 - y * gamma_1
+        
         return a1, a2  # I'm not sure but I think no derotation necessary
 
     @unpack(3)

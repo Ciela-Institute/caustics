@@ -8,7 +8,7 @@ from utils import lens_test_helper
 
 from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE, Multiplane
-
+from caustic.utils import get_meshgrid
 
 def test():
     rtol = 0
@@ -60,5 +60,31 @@ def test():
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
 
+def test_jacobian():
+    # Setup
+    z_s = torch.tensor(1.5, dtype=torch.float32)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    cosmology.to(dtype=torch.float32)
+
+    # Parameters
+    xs = [
+        [0.5, 0.9, -0.4, 0.9999, 3 * pi / 4, 0.8],
+        [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
+        [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
+    ]
+    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
+
+    lens = Multiplane(
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
+    )
+    thx, thy = get_meshgrid(0.1, 10, 10)
+    
+    # Parameters
+    z_s = torch.tensor(1.2)
+    x = torch.tensor(xs).flatten()
+    J = lens.jacobian_effective_reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    assert J.shape == (10,10,2,2)
+
+    
 if __name__ == "__main__":
     test()
