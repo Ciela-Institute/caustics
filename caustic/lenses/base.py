@@ -338,46 +338,23 @@ class ThinLens(Parametrized):
         return factor * fp * arcsec_to_rad**2
 
     @unpack(4)
-    def _lensing_jacobian_fft_method(
+    def _jacobian_lens_equation_finitediff(
             self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
-        Compute the lensing Jacobian using the Fast Fourier Transform method.
-
-        Args:
-            x (Tensor): Tensor of x coordinates in the lens plane.
-            y (Tensor): Tensor of y coordinates in the lens plane.
-            z_s (Tensor): Tensor of source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns:
-            Tensor: Lensing Jacobian at the given coordinates.
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
         """
-        potential = self.potential(x, y, z_s, params)
-        # quick dirty work to get kx and ky. Assumes x and y come from meshgrid... TODO Might want to get k differently
-        fx = torch.fft.fftshift(torch.fft.fftfreq(2 * x.shape[-1], d=pixelscale))
-        fy = torch.fft.fftshift(torch.fft.fftfreq(2 * x.shape[-2], d=pixelscale))
-        
-        kx, ky = torch.meshgrid((fx, fy), indexing="xy")
-        # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
-        padx = len(fx) // 2
-        pady = len(fy) // 2
+        # Compute deflection angles
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
 
-        p = torch.nn.ReflectionPad2d((padx-1, padx-1, pady-1, pady-1))
-        potential_tilde = torch.fft.fft2(p(potential.unsqueeze(0)).squeeze(),s=(2*pady,2*padx))
-        potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :pady, :padx]
-        potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :pady, :padx]
-        potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :pady, :padx]
-        
-        j1 = torch.stack(
-            [1 - potential_xx, -potential_xy], dim=-1
-        )  # Equation 2.33 from Meneghetti lensing lectures
-        j2 = torch.stack([-potential_xy, 1 - potential_yy], dim=-1)
-        jacobian = torch.stack([j1, j2], dim=-1)
-        return jacobian
-
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,1], J[...,0,0] = torch.gradient(ax, spacing = pixelscale)
+        J[...,1,1], J[...,1,0] = torch.gradient(ay, spacing = pixelscale)
+        return torch.eye(2) - J
+    
     @unpack(3)
-    def _jacobian_reduced_deflection_angle_autograd(
+    def _jacobian_lens_equation_autograd(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
@@ -396,10 +373,10 @@ class ThinLens(Parametrized):
         J[...,0,1], = torch.autograd.grad(ax, y, grad_outputs = torch.ones_like(ax), create_graph = True)
         J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
         J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
-        return J.detach()
+        return torch.eye(2) - J.detach()
     
     @unpack(3)
-    def jacobian_reduced_deflection_angle(
+    def jacobian_lens_equation(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
     ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
@@ -409,13 +386,13 @@ class ThinLens(Parametrized):
         """
 
         if method == "autograd":
-            return self._jacobian_reduced_deflection_angle_autograd(x, y, z_s, params)
-        elif method == "fft":
+            return self._jacobian_lens_equation_autograd(x, y, z_s, params)
+        elif method == "finitediff":
             if pixelscale is None:
-                raise ValueError("FFT lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
-            return self._lensing_jacobian_fft_method(x, y, z_s, pixelscale, params)
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params)
         else:
-            raise ValueError("method should be one of: autograd, fft")
+            raise ValueError("method should be one of: autograd, finitediff")
 
     @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
