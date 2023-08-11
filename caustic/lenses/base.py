@@ -354,8 +354,10 @@ class ThinLens(Parametrized):
         if fov is None:
             raise ValueError("fov must be given to generate initial guesses")
 
+        # Random starting points in image plane
         guesses = torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5) # Has shape (n_init, Din:2)
-        
+
+        # Optimize guesses in image plane
         x, l, c = batch_lm(
             guesses,
             bxy,
@@ -363,15 +365,18 @@ class ThinLens(Parametrized):
             f_args = (z_s, params)
         )
 
+        # Clip points that didn't converge
         x = x[c < 1e-2*epsilon**2]
-        
+
+        # Cluster results into n-images
         res = []
         while len(x) > 0:
             res.append(x[0])
             d = torch.linalg.norm(x - x[0], dim = -1)
             x = x[d > epsilon]
-            
-        return torch.stack(res,dim = 0)
+
+        res = torch.stack(res,dim = 0)
+        return res[...,0], res[...,1]
 
     @unpack(3)
     def time_delay(
