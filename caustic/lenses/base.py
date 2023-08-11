@@ -10,6 +10,7 @@ from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
 from ..parametrized import Parametrized, unpack
 from .utils import get_magnification
+from ..utils import batch_lm
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -327,26 +328,50 @@ class ThinLens(Parametrized):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         return x - ax, y - ay
 
-    @unpack(4)
+    @unpack(3)
     def forward_raytrace(
-            self, bx: Tensor, by: Tensor, z_s: Tensor, epsilon, *args, params: Optional["Packed"] = None, **kwargs
+            self, bx: Tensor, by: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, epsilon = 1e-2, n_init = 50, fov = 5., **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
-        Perform a ray-tracing operation by subtracting the deflection angles from the input coordinates.
+        Perform a forward ray-tracing operation which maps from the source plane to the image plane.
 
         Args:
-            x (Tensor): Tensor of x coordinates in the lens plane.
-            y (Tensor): Tensor of y coordinates in the lens plane.
+            bx (Tensor): Tensor of x coordinate in the source plane (scalar).
+            by (Tensor): Tensor of y coordinate in the source plane (scalar).
             z_s (Tensor): Tensor of source redshifts.
-            epsilon (Tensor): maximum distance between two images before they are considered the same image
             params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
+            epsilon (Tensor): maximum distance between two images (arcsec) before they are considered the same image.
+            n_init (int): number of random initialization points used to try and find image plane points.
+            fov (float): the field of view in which the initial random samples are taken.
 
         Returns:
             tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
         """
         
-        x, y = batch_lm(guesses, bxy, self.reduced_deflection_angle, f_args = (z_s, epsilon, params))
-        return x, y
+        bxy = torch.stack((bx, by)).repeat(n_init,1) # has shape (n_init, Dout:2)
+
+        # TODO make FOV more general so that it doesnt have to be centered on zero,zero
+        if fov is None:
+            raise ValueError("fov must be given to generate initial guesses")
+
+        guesses = torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5) # Has shape (n_init, Din:2)
+        
+        x, l, c = batch_lm(
+            guesses,
+            bxy,
+            lambda *a, **k: torch.stack(self.raytrace(a[0][...,0], a[0][...,1], *a[1:], **k), dim = -1),
+            f_args = (z_s, params)
+        )
+
+        x = x[c < 1e-2*epsilon**2]
+        
+        res = []
+        while len(x) > 0:
+            res.append(x[0])
+            d = torch.linalg.norm(x - x[0], dim = -1)
+            x = x[d > epsilon]
+            
+        return torch.stack(res,dim = 0)
 
     @unpack(3)
     def time_delay(

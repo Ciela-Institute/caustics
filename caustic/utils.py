@@ -1,8 +1,10 @@
 from math import pi
 from typing import Callable, Optional, Tuple, Union
+from functools import partial
 
 import torch
 from torch import Tensor
+from torch.func import jacfwd
 
 def flip_axis_ratio(q, phi):
     """
@@ -339,18 +341,56 @@ def get_cluster_means(xs: Tensor, k: int):
 
     return torch.stack(means)
 
+def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
+
+    # Forward
+    fY = f(X)
+    dY = Y - fY
+    
+    # Jacobian
+    J = jacfwd(f)(X)
+    J = J.to(dtype = X.dtype)
+    chi2 = (dY @ Cinv @ dY).sum(-1)
+    
+    # Gradient
+    grad = J.T @ Cinv @ dY
+    
+    # Hessian
+    hess = J.T @ Cinv @ J
+    hess_perturb = L * (torch.diag(hess) + 0.1*torch.eye(hess.shape[0]))
+    hess = hess + hess_perturb
+
+    # Step
+    h = torch.linalg.solve(hess, grad)
+    
+    # New chi^2
+    fYnew = f(X + h)
+    dYnew = Y - fYnew
+    chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
+
+    # Test
+    rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))
+
+    # Update
+    X = torch.where(rho >= epsilon, X + h, X)
+    chi2 = torch.where(rho > epsilon, chi2_new, chi2)
+    L = torch.clamp(torch.where(rho >= epsilon, L / Ldn, L * Lup), 1e-9, 1e9)
+
+    return X, L, chi2
+
 def batch_lm(
         X, # B, Din
         Y, # B, Dout
         f, # Din -> Dout
         C = None, # B, Dout, Dout
         epsilon = 1e-1,
-        L = 1e-2,
-        L_dn = 3.,
-        L_up = 2.,
-        max_iter = 15,
+        L = 1e0,
+        L_dn = 11.,
+        L_up = 9.,
+        max_iter = 50,
         L_min = 1e-9,
         L_max = 1e9,
+        stopping = 1e-4,
         f_args = (),
         f_kwargs = {},
 ):
@@ -364,42 +404,15 @@ def batch_lm(
         C = torch.eye(Dout).repeat(B, 1, 1)
     Cinv = torch.linalg.inv(C)
     
-    f_v = torch.vmap(lambda x: f(*x, *f_args, **f_kwargs))
-
-    J_v = torch.vmap(lambda x: torch.autograd.functional.jacobian(lambda xx: f(*xx, *f_args, **f_kwargs), x, vectorize = True, strategy = "forward-mode")[0])
-
-    fY = f_v(X)
-    chi2_prev = ((Y - fY) @ Cinv @ (Y - fY)).sum(-1)
-    ypred = f_v(X)
-
+    v_lm_step = torch.vmap(partial(_lm_step, lambda x: f(x, *f_args, **f_kwargs)))
+    L = L * torch.ones(B)
+    Lup = L_up * torch.ones(B)
+    Ldn = L_dn * torch.ones(B)
+    e = epsilon * torch.ones(B)
     for _ in range(max_iter):
-
-        # Jacobian
-        J = J_v(X)
-
-        # Gradient
-        dY = (Y - ypred)
-        grad = J.transpose(-2,-1) @ Cinv @ dY
+        Xnew, L, C = v_lm_step(X, Y, Cinv, L, Lup, Ldn, e)
+        if torch.all((Xnew - X).abs() < stopping) and torch.sum(L < 1e-2).item() > B/3:
+            break
+        X = Xnew
         
-        # Hessian
-        hess = J.transpose(-2,-1) @ Cinv @ J
-        H_perturb = L * torch.diag(hess)
-
-        # Step
-        h = torch.linalg.solve(hess + H_perturb, grad)
-
-        # New statistic
-        ynew = f_v(X + h)
-        chi2_new = ((Y - ynew) @ Cinv @ (Y - ynew)).sum(-1)
-
-        # Descision
-        rho = torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))
-        if (chi2_prev - chi2_new)/rho > epsilon:
-            X = X + h
-            chi2_prev = chi2_new
-            ypred = ynew
-            L = max(L / L_dn, L_min)
-        else:
-            L = min(L * L_up, L_max)
-
-    return X
+    return X, L, C
