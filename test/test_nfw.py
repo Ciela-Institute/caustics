@@ -23,9 +23,9 @@ def test():
     rtol = 3e-2
 
     # Models
-    cosmology = CausticFlatLambdaCDM("cosmo")
+    cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
-    lens = NFW("nfw", cosmology, z_l=z_l)
+    lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l)
     lens_model_list = ["NFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
@@ -39,7 +39,7 @@ def test():
     m = 1e12
     c = 8.0
     x = torch.tensor([thx0, thy0, m, c])
-
+    
     # Lenstronomy
     cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
     lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)

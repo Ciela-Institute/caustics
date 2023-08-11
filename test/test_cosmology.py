@@ -15,7 +15,7 @@ def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
     cosmologies = []
     cosmologies.append(
         (
-            CausticFlatLambdaCDM("cosmo"),
+            CausticFlatLambdaCDM(name="cosmo"),
             AstropyFlatLambdaCDM(h0_default, Om0_default, Tcmb0=0),
         )
     )
@@ -28,7 +28,7 @@ def test_comoving_dist():
 
     zs = torch.linspace(0.05, 3, 10)
     for cosmology, cosmology_ap in get_cosmologies():
-        vals = cosmology.comoving_dist(zs).numpy()
+        vals = cosmology.comoving_distance(zs).numpy()
         vals_ref = cosmology_ap.comoving_distance(zs).value / 1e2  # type: ignore
         assert np.allclose(vals, vals_ref, rtol, atol)
 

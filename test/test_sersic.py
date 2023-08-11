@@ -1,3 +1,5 @@
+from math import pi
+
 import lenstronomy.Util.param_util as param_util
 import numpy as np
 import torch
@@ -14,7 +16,7 @@ def test():
     nx = 200
     ny = 200
     thx, thy = get_meshgrid(res, nx, ny)
-    sersic = Sersic("sersic", use_lenstronomy_k=True)
+    sersic = Sersic(name="sersic", use_lenstronomy_k=True)
 
     # Lenstronomy setup
     ra_at_xy_0, dec_at_xy_0 = (-5 + res / 2, -5 + res / 2)
@@ -33,12 +35,16 @@ def test():
     # Parameters
     thx0_src = 0.05
     thy0_src = 0.01
-    phi_src = 0.8
+    phi_src = 0.
     q_src = 0.5
     index_src = 1.5
     th_e_src = 0.1
     I_e_src = 100
-    x = torch.tensor([thx0_src, thy0_src, q_src, phi_src, index_src, th_e_src, I_e_src])
+    # NOTE: in several places we use np.sqrt(q_src) in order to match
+    # the definition used by lenstronomy. This only works when phi = 0.
+    # any other angle will not give the same results between the
+    # two codes.
+    x = torch.tensor([thx0_src * np.sqrt(q_src), thy0_src, np.sqrt(q_src), phi_src, index_src, th_e_src, I_e_src])
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi_src, q=q_src)
     kwargs_light_source = [
         {
@@ -52,9 +58,10 @@ def test():
         }
     ]
 
-    brightness = sersic.brightness(thx, thy, sersic.pack(x))
+    brightness = sersic.brightness(thx*np.sqrt(q_src), thy, sersic.pack(x))
+    x_ls, y_ls = pixel_grid.coordinate_grid(nx, ny)
     brightness_ls = sersic_ls.surface_brightness(
-        *pixel_grid.coordinate_grid(nx, ny), kwargs_light_source
+        x_ls, y_ls, kwargs_light_source
     )
 
     assert np.allclose(brightness.numpy(), brightness_ls)
