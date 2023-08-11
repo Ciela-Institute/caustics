@@ -45,7 +45,7 @@ def test_jacobian():
     # Parameters
     z_s = torch.tensor(1.2)
     x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
-    J = lens.jacobian_reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    J = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
     assert J.shape == (10,10,2,2)
     
 if __name__ == "__main__":
