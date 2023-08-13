@@ -9,32 +9,21 @@ from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE
 from caustic.utils import get_meshgrid
 
-
-def test():
-    atol = 1e-5
-    rtol = 1e-5
-
+def test_jacobian_autograd_vs_finitediff():
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
     lens = SIE(name="sie", cosmology=cosmology)
-    lens_model_list = ["SIE"]
-    lens_ls = LensModel(lens_model_list=lens_model_list)
-
+    thx, thy = get_meshgrid(0.01, 20, 20)
+    
     # Parameters
     z_s = torch.tensor(1.2)
     x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
-    e1, e2 = param_util.phi_q2_ellipticity(phi=x[4].item(), q=x[3].item())
-    kwargs_ls = [
-        {
-            "theta_E": x[5].item(),
-            "e1": e1,
-            "e2": e2,
-            "center_x": x[1].item(),
-            "center_y": x[2].item(),
-        }
-    ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+    # Evaluate Jacobian
+    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    J_finitediff = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x), method = "finitediff", pixelscale = torch.tensor(0.01))
+    
+    assert torch.sum(((J_autograd - J_finitediff)/J_autograd).abs() < 1e-3) > 0.8 * J_autograd.numel()
 
     
 if __name__ == "__main__":
