@@ -114,7 +114,7 @@ def safe_divide(num, denom, places = 7):
         Tensor: The result of the division, with zero where the denominator was zero.
     """
     out = torch.zeros_like(num)
-    where = denom.abs() < 10**(-places)# != 0
+    where = denom != 0
     out[where] = num[where] / denom[where]
     return out
 
