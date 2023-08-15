@@ -103,9 +103,9 @@ def test_multiplane_effective_convergence():
     # Parameters
     z_s = torch.tensor(1.2)
     x = torch.tensor(xs).flatten()
-    C = lens.effective_convergence(thx, thy, z_s, lens.pack(x))
+    C = lens.effective_convergence_div(thx, thy, z_s, lens.pack(x))
     assert C.shape == (10,10)
-    curl = lens.curl_effective_deflection_angle(thx, thy, z_s, lens.pack(x))
+    curl = lens.effective_convergence_curl(thx, thy, z_s, lens.pack(x))
     assert curl.shape == (10,10)
 
 if __name__ == "__main__":
