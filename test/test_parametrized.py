@@ -3,8 +3,7 @@ from torch import vmap
 import numpy as np
 from caustic import Simulator, EPL, Sersic, FlatLambdaCDM
 from caustic.parameter import Parameter
-from utils import setup_image_simulator, setup_simulator
-import pytest
+from utils import setup_simulator
 
 
 def test_params():
@@ -155,7 +154,7 @@ def test_to_method():
     assert module.x0.dtype == torch.float32
 
     module = Sersic(x0=np.array(0.5))
-    assert module.x0.dtype == torch.float32
+    assert module.x0.dtype == torch.float64 # Decided against default type, so gets numpy type here
     
     # Check that all parameters are converted to correct type
     sim.to(dtype=torch.float16)
@@ -173,19 +172,9 @@ def test_parameter_redefinition():
     # Now test __setattr__ method, we need to catch the redefinition here and keep z_s a parameter
     sim.z_s = 42
     # make sure z_s is still a parameter
-    
-    # sim.__setattr__("z_s", 42)
     assert sim.z_s.value == torch.tensor(42).float()
     assert sim.z_s.static is True
     sim.z_s = None
     assert sim.z_s.value is None
     assert sim.z_s.dynamic is True
     
-
-
-    # # Make a test to catch parameters not in order
-    # x_wrong_semantic = [lens_params, cosmo_params, source_params]
-    # with pytest.raises(L):
-        # vmap(sim)(x_wrong_semantic)
-
-

@@ -4,6 +4,7 @@ from torch import Tensor
 
 from ..utils import to_elliptical, translate_rotate
 from .base import Source
+from ..parametrized import unpack
 
 __all__ = ("Sersic",)
 
@@ -67,7 +68,8 @@ class Sersic(Source):
 
         self.lenstronomy_k_mode = use_lenstronomy_k
 
-    def brightness(self, x, y, params: Optional["Packed"] = None):
+    @unpack(2)
+    def brightness(self, x, y, x0, y0, q, phi, n, Re, Ie, *args, params: Optional["Packed"] = None, **kwargs):
         """
         Implements the `brightness` method for `Sersic`. The brightness at a given point is 
         determined by the Sersic profile formula.
@@ -92,8 +94,6 @@ class Sersic(Source):
             If `lenstronomy_k_mode` is True, we use the approximation from Lenstronomy, 
             otherwise, we use the approximation from Ciotti & Bertin (1999).
         """
-        x0, y0, q, phi, n, Re, Ie = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0, phi)
         ex, ey = to_elliptical(x, y, q)
         e = (ex**2 + ey**2).sqrt() + self.s

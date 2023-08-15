@@ -8,11 +8,11 @@ from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
+from ..parametrized import unpack
 
 DELTA = 200.0
 
 __all__ = ("NFW",)
-
 
 class NFW(ThinLens):
     """
@@ -79,7 +79,8 @@ class NFW(ThinLens):
         self.add_param("c", c)
         self.s = s
 
-    def get_scale_radius(self, z_l, m, c, params: Optional["Packed"]) -> Tensor:
+    @unpack(0)
+    def get_scale_radius(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Calculate the scale radius of the lens.
 
@@ -96,7 +97,8 @@ class NFW(ThinLens):
         r_delta = (3 * m / (4 * pi * DELTA * critical_density)) ** (1 / 3)
         return 1 / c * r_delta
 
-    def get_scale_density(self, z_l, c, params: Optional["Packed"]) -> Tensor:
+    @unpack(0)
+    def get_scale_density(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Calculate the scale density of the lens.
 
@@ -116,7 +118,8 @@ class NFW(ThinLens):
             / ((1 + c).log() - c / (1 + c))
         )
 
-    def get_convergence_s(self, z_l, z_s, m, c, params) -> Tensor:
+    @unpack(1)
+    def get_convergence_s(self, z_s, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Calculate the dimensionless surface mass density of the lens.
 
@@ -131,7 +134,7 @@ class NFW(ThinLens):
             Tensor: The dimensionless surface mass density of the lens.
         """
         critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, params)
-        return self.get_scale_density(z_l, c, params) * self.get_scale_radius(z_l, m, c, params) / critical_surface_density
+        return self.get_scale_density(params) * self.get_scale_radius(params) / critical_surface_density
 
     @staticmethod
     def _f(x: Tensor) -> Tensor:
@@ -198,8 +201,9 @@ class NFW(ThinLens):
         )
         return term_2
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angle.
@@ -213,12 +217,10 @@ class NFW(ThinLens):
         Returns:
             tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions.
         """
-        z_l, x0, y0, m, c = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        scale_radius = self.get_scale_radius(z_l, m, c, params)
+        scale_radius = self.get_scale_radius(params)
         xi = d_l * th * arcsec_to_rad
         r = xi / scale_radius
 
@@ -226,7 +228,7 @@ class NFW(ThinLens):
             16
             * pi
             * G_over_c2
-            * self.get_scale_density(z_l, c, params)
+            * self.get_scale_density(params)
             * scale_radius**3
             * self._h(r)
             * rad_to_arcsec
@@ -239,8 +241,9 @@ class NFW(ThinLens):
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         return ax * d_ls / d_s, ay * d_ls / d_s
 
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
@@ -254,19 +257,18 @@ class NFW(ThinLens):
         Returns:
             Tensor: The convergence (dimensionless surface mass density).
         """
-        z_l, x0, y0, m, c = self.unpack(params)
-        
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        scale_radius = self.get_scale_radius(z_l, m, c, params)
+        scale_radius = self.get_scale_radius(params)
         xi = d_l * th * arcsec_to_rad
         r = xi / scale_radius  # xi / xi_0
-        convergence_s = self.get_convergence_s(z_l, z_s, m, c, params)
+        convergence_s = self.get_convergence_s(z_s, params)
         return 2 * convergence_s * self._f(r) / (r**2 - 1)
 
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -280,13 +282,11 @@ class NFW(ThinLens):
         Returns:
             Tensor: The lensing potential.
         """
-        z_l, x0, y0, m, c = self.unpack(params)
-
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        scale_radius = self.get_scale_radius(z_l, m, c, params)
+        scale_radius = self.get_scale_radius(params)
         xi = d_l * th * arcsec_to_rad
         r = xi / scale_radius  # xi / xi_0
-        convergence_s = self.get_convergence_s(z_l, z_s, m, c, params)
+        convergence_s = self.get_convergence_s(z_s, params)
         return 2 * convergence_s * self._g(r) * scale_radius**2 / (d_l**2 * arcsec_to_rad**2)

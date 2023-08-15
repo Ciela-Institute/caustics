@@ -14,6 +14,7 @@ def test():
 
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
+    print(cosmology)
     lens = PseudoJaffe(name="pj", cosmology=cosmology)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
