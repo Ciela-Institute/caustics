@@ -177,4 +177,4 @@ def test_parameter_redefinition():
     sim.z_s = None
     assert sim.z_s.value is None
     assert sim.z_s.dynamic is True
-    
+

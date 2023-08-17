@@ -1,4 +1,5 @@
 from math import pi
+from astropy.cosmology import Cosmology
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -69,6 +70,15 @@ def test_special_case_sie():
     kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=6e-5, atol=1e-100)
     Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100)
 
+
+def test_order_of_parameters():
+    # We make sure the order of the parameters is always the same
+    cosmo = FlatLambdaCDM()
+    module = EPL(cosmo, name="epl1")
+    assert list(module.params.dynamic.epl1.keys()) == ["z_l", "x0", "y0", "q", "phi", "b", "t"]
+
+    module = EPL(cosmo, name="epl2", z_l=0.5)
+    assert list(module.params.dynamic.epl2.keys()) == ["x0", "y0", "q", "phi", "b", "t"]
 
 if __name__ == "__main__":
     test_lenstronomy()
