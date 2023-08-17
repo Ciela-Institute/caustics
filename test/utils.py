@@ -31,7 +31,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
             self.n_pix = n_pix
 
         def forward(self, params):
-            z_s = self.unpack(params)
+            z_s, = self.unpack(params)
             alphax, alphay = self.lens.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=z_s, params=params) 
             bx = self.thx - alphax
             by = self.thy - alphay
@@ -82,12 +82,11 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
         def __init__(self, name="test"):
             super().__init__(name)
             pixel_scale = 0.04
-            fov = n_pix * pixel_scale
             z_l = 0.5
             self.z_s = torch.tensor(1.0)
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
-            self.kappa = PixelatedConvergence(fov, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix), name="kappa")
+            self.kappa = PixelatedConvergence(pixel_scale, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix), name="kappa")
             self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, shape=(n_pix, n_pix), name="source")
             self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix)
             self.n_pix = n_pix

@@ -154,6 +154,28 @@ class ThickLens(Parametrized):
         ...
 
     @unpack(3)
+    def jacobian_effective_reduced_deflection_angle(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Ensure the x,y coordinates track gradients
+        x = x.detach().requires_grad_()
+        y = y.detach().requires_grad_()
+
+        # Compute deflection angles
+        ax, ay = self.effective_reduced_deflection_angle(x, y, z_s, params)
+        
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,0], = torch.autograd.grad(ax, x, grad_outputs = torch.ones_like(ax), create_graph = True)
+        J[...,0,1], = torch.autograd.grad(ax, y, grad_outputs = torch.ones_like(ax), create_graph = True)
+        J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
+        J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
+        return J.detach()
+    
+    @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
         Computes the gravitational lensing magnification at given coordinates.
@@ -211,7 +233,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def physical_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
@@ -225,8 +247,6 @@ class ThinLens(Parametrized):
         Returns:
             tuple[Tensor, Tensor]: Physical deflection angle in x and y directions in arcseconds.
         """
-        z_l = self.unpack(params)[0]
-
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(x, y, z_s, params)
@@ -271,7 +291,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def surface_density(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
@@ -285,9 +305,6 @@ class ThinLens(Parametrized):
         Returns:
             Tensor: Surface mass density at the given coordinates in solar masses per Mpc^2.
         """
-        # Superclass params come before subclass ones
-        z_l = self.unpack(params)[0]
-
         critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, params)
         return self.convergence(x, y, z_s, params) * critical_surface_density
 
@@ -312,7 +329,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def time_delay(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ):
         """
         Compute the gravitational time delay for light passing through the lens at given coordinates.
@@ -326,8 +343,6 @@ class ThinLens(Parametrized):
         Returns:
             Tensor: Time delay at the given coordinates.
         """
-        z_l = self.unpack(params)[0]
-
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
@@ -337,40 +352,62 @@ class ThinLens(Parametrized):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
         return factor * fp * arcsec_to_rad**2
 
+    @unpack(4)
+    def _jacobian_lens_equation_finitediff(
+            self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Compute deflection angles
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
+
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,1], J[...,0,0] = torch.gradient(ax, spacing = pixelscale)
+        J[...,1,1], J[...,1,0] = torch.gradient(ay, spacing = pixelscale)
+        return torch.eye(2) - J
+    
     @unpack(3)
-    def _lensing_jacobian_fft_method(
+    def _jacobian_lens_equation_autograd(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
-        Compute the lensing Jacobian using the Fast Fourier Transform method.
-
-        Args:
-            x (Tensor): Tensor of x coordinates in the lens plane.
-            y (Tensor): Tensor of y coordinates in the lens plane.
-            z_s (Tensor): Tensor of source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns:
-            Tensor: Lensing Jacobian at the given coordinates.
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
         """
-        potential = self.potential(x, y, z_s, params)
-        # quick dirty work to get kx and ky. Assumes x and y come from meshgrid... TODO Might want to get k differently
-        n = x.shape[-1]
-        d = torch.abs(x[0, 0] - x[0, 1])
-        k = torch.fft.fftfreq(2 * n, d=d)
-        kx, ky = torch.meshgrid([k, k], indexing="xy")
-        # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
-        pad = 2 * n
-        potential_tilde = torch.fft.fft(potential, (pad, pad))
-        potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :n, :n]
-        potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :n, :n]
-        potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :n, :n]
-        j1 = torch.stack(
-            [1 - potential_xx, -potential_xy], dim=-1
-        )  # Equation 2.33 from Meneghetti lensing lectures
-        j2 = torch.stack([-potential_xy, 1 - potential_yy], dim=-1)
-        jacobian = torch.stack([j1, j2], dim=-1)
-        return jacobian
+        # Ensure the x,y coordinates track gradients
+        x = x.detach().requires_grad_()
+        y = y.detach().requires_grad_()
+
+        # Compute deflection angles
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
+
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,0], = torch.autograd.grad(ax, x, grad_outputs = torch.ones_like(ax), create_graph = True)
+        J[...,0,1], = torch.autograd.grad(ax, y, grad_outputs = torch.ones_like(ax), create_graph = True)
+        J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
+        J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
+        return torch.eye(2) - J.detach()
+    
+    @unpack(3)
+    def jacobian_lens_equation(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_lens_equation_autograd(x, y, z_s, params)
+        elif method == "finitediff":
+            if pixelscale is None:
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params)
+        else:
+            raise ValueError("method should be one of: autograd, finitediff")
 
     @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:

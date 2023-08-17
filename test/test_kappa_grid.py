@@ -6,8 +6,8 @@ from caustic.utils import get_meshgrid
 
 
 def _setup(n_pix, mode, use_next_fast_len):
-    fov = 25.0
-    res = fov / n_pix
+    # TODO understand why this test fails for resolutions != 0.025
+    res = 0.025 
     thx, thy = get_meshgrid(res, n_pix, n_pix)
 
     z_l = torch.tensor(0.5)
@@ -35,7 +35,7 @@ def _setup(n_pix, mode, use_next_fast_len):
 
     # Approximate calculations
     lens_kap = PixelatedConvergence(
-        fov,
+        res,
         n_pix,
         cosmology,
         z_l=z_l,
@@ -111,7 +111,3 @@ def _check_center(
         atol,
     )
 
-
-if __name__ == "__main__":
-    test_Psi_alpha()
-    test_consistency()

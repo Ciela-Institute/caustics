@@ -287,10 +287,7 @@ class Parametrized:
                 raise ValueError(f"Invalid data type found when unpacking parameters for {self.name}."
                                  f"Argument of unpack must contain Tensor, but found {type(param_value)}")
             unpacked_x.append(param_value)
-        if len(unpacked_x) == 1:
-            return unpacked_x[0]
-        else:
-            return unpacked_x
+        return unpacked_x
 
     @property
     def module_params(self) -> NestedNamespaceDict:
@@ -382,8 +379,8 @@ class Parametrized:
             dot.node(p.name, f"{p.__class__.__name__}('{p.name}')")
 
         def add_params(p: Parametrized, dot):
-            static = p.module_params.static
-            dynamic = p.module_params.dynamic
+            static = p.module_params.static.keys()
+            dynamic = p.module_params.dynamic.keys()
 
             dot.attr("node", style="solid", color="black", shape="box")
             for n in dynamic:
@@ -451,7 +448,6 @@ def unpack(n_leading_args=0):
                     x = self.pack(trailing_args)
             unpacked_args = self.unpack(x)
             kwargs['params'] = x
-
             return method(self, *leading_args, *unpacked_args, **kwargs)
 
         return wrapped

@@ -21,11 +21,11 @@ class SinglePlane(ThinLens):
         lenses (List[ThinLens]): A list of ThinLens objects that are being combined into a single lensing plane.
     """
 
-    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None):
+    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None, **kwargs):
         """
         Initialize the SinglePlane lens model.
         """
-        super().__init__(cosmology, name=name)
+        super().__init__(cosmology, name=name, **kwargs)
         self.lenses = lenses
         for lens in lenses:
             self.add_parametrized(lens)
