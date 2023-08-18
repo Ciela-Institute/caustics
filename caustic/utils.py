@@ -102,7 +102,7 @@ def get_meshgrid(
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
-def safe_divide(num, denom):
+def safe_divide(num, denom, places = 7):
     """
     Safely divides two tensors, returning zero where the denominator is zero.
 
