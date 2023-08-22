@@ -8,7 +8,7 @@ from astropy.cosmology import LambdaCDM as AstropyLambdaCDM
 
 from caustic.cosmology import Cosmology
 from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
-from caustic.cosmology import LambdaCDM as CausticLambdaCDM
+#from caustic.cosmology import LambdaCDM as CausticLambdaCDM
 from caustic.cosmology.FlatLambdaCDM import Om0_default, h0_default
 
 
