@@ -7,7 +7,7 @@ import torch
 from torch import Tensor
 
 from ..constants import arcsec_to_rad, c_Mpc_s
-from ..cosmology import Cosmology
+from ..cosmology.base import Cosmology
 from ..parametrized import Parametrized, unpack
 from .utils import get_magnification
 
