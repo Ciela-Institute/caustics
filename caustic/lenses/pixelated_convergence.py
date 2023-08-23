@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from scipy.fft import next_fast_len
 from torch import Tensor
 
-from ..cosmology.base import Cosmology
+from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
 from .base import ThinLens
 from ..parametrized import unpack

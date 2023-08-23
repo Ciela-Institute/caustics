@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 import torch
 from torch import Tensor
 
-from ..cosmology.base import Cosmology
+from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack

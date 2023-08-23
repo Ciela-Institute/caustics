@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
-from ..cosmology.base import Cosmology
+from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack

@@ -4,7 +4,7 @@ from typing import Any, Optional
 import torch
 from torch import Tensor
 
-from ..cosmology.base import Cosmology
+from ..cosmology import Cosmology
 from .base import ThickLens, ThinLens
 from ..parametrized import unpack
 
