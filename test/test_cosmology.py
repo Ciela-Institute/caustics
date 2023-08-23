@@ -9,7 +9,7 @@ from astropy.cosmology import LambdaCDM as AstropyLambdaCDM
 from caustic.cosmology import Cosmology
 from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 #from caustic.cosmology import LambdaCDM as CausticLambdaCDM
-from caustic.cosmology.FlatLambdaCDM import Om0_default, h0_default
+from caustic.cosmology.FlatLambdaCDM import Om0_default, H0_default
 
 
 def get_cosmologies_flat_lcdm() -> List[Tuple[Cosmology,  Cosmology_AP]]:
@@ -20,7 +20,7 @@ def get_cosmologies_flat_lcdm() -> List[Tuple[Cosmology,  Cosmology_AP]]:
     cosmologies.append(
         (
             CausticFlatLambdaCDM(name="cosmo"),
-            AstropyFlatLambdaCDM(h0_default, Om0_default, Tcmb0=0),
+            AstropyFlatLambdaCDM(H0_default, Om0_default, Tcmb0=0),
         )
     )
     return cosmologies
@@ -45,7 +45,7 @@ def get_cosmologies_lcdm() -> List[Tuple[Cosmology,  Cosmology_AP]]:
     cosmologies.append(
         (
 	    CausticLambdaCDM(name="cosmo_phytorch"),
-            AstropyFlatLambdaCDM(h0_default, Om0_default, Tcmb0=0),
+            AstropyFlatLambdaCDM(H0_default, Om0_default, Tcmb0=0),
         )
     )
     return cosmologies
