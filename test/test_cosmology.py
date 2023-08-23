@@ -33,7 +33,7 @@ def test_comoving_dist_flat_lcdm():
     zs = torch.linspace(0.05, 3, 10)
     for cosmology, cosmology_ap in get_cosmologies_flat_lcdm():
         vals = cosmology.comoving_distance(zs).numpy()
-        vals_ref = cosmology_ap.comoving_distance(zs).value / 1e2  # type: ignore
+        vals_ref = cosmology_ap.comoving_distance(zs).value  # type: ignore
         assert np.allclose(vals, vals_ref, rtol, atol)
 
 
@@ -58,7 +58,7 @@ def test_comoving_dist_lcdm():
     zs = torch.linspace(0.05, 3, 10)
     for cosmology, cosmology_ap in get_cosmologies_flat_lcdm():
         vals = cosmology.comoving_distance(zs).numpy()
-        vals_ref = cosmology_ap.comoving_distance(zs).value / 1e2  # type: ignore
+        vals_ref = cosmology_ap.comoving_distance(zs).value  # type: ignore
         assert np.allclose(vals, vals_ref, rtol, atol)
 
 
