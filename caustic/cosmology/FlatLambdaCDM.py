@@ -14,7 +14,7 @@ __all__ = (
     "FlatLambdaCDM",
 )
 
-h0_default = float(default_cosmology.get().h)
+H0_default = float(default_cosmology.get().h)*100
 critical_density_0_default = float(
     default_cosmology.get().critical_density(0).to("solMass/Mpc^3").value
 )
@@ -37,7 +37,7 @@ class FlatLambdaCDM(Cosmology):
 
     def __init__(
         self,
-        h0: Optional[Tensor] = torch.tensor(h0_default),
+        H0: Optional[Tensor] = torch.tensor(H0_default),
         critical_density_0: Optional[Tensor] = torch.tensor(critical_density_0_default),
         Om0: Optional[Tensor] = torch.tensor(Om0_default),
         name: str = None,
@@ -53,7 +53,7 @@ class FlatLambdaCDM(Cosmology):
         """
         super().__init__(name)
 
-        self.add_param("h0", h0)
+        self.add_param("H0", H0)
         self.add_param("critical_density_0", critical_density_0)
         self.add_param("Om0", Om0)
 
@@ -64,7 +64,7 @@ class FlatLambdaCDM(Cosmology):
             dtype=torch.float32
         )
 
-    def hubble_distance(self, h0):
+    def hubble_distance(self, H0):
         """
         Calculate the Hubble distance.
 
@@ -74,10 +74,10 @@ class FlatLambdaCDM(Cosmology):
         Returns:
             Tensor: Hubble distance.
         """
-        return c_Mpc_s / (100 * km_to_Mpc) / h0
+        return c_Mpc_s / (km_to_Mpc) / H0
 
     @unpack(1)
-    def critical_density(self, z: Tensor, h0, central_critical_density, Om0, *args, params: Optional["Packed"] = None) -> torch.Tensor:
+    def critical_density(self, z: Tensor, H0, central_critical_density, Om0, *args, params: Optional["Packed"] = None) -> torch.Tensor:
         """
         Calculate the critical density at redshift z.
 
@@ -109,7 +109,7 @@ class FlatLambdaCDM(Cosmology):
         ).reshape(x.shape)
 
     @unpack(1)
-    def comoving_distance(self, z: Tensor, h0, central_critical_density, Om0, *args, params: Optional["Packed"] = None) -> Tensor:
+    def comoving_distance(self, z: Tensor, H0, central_critical_density, Om0, *args, params: Optional["Packed"] = None) -> Tensor:
         """
         Calculate the comoving distance to redshift z.
 
@@ -123,7 +123,7 @@ class FlatLambdaCDM(Cosmology):
         Ode0 = 1 - Om0
         ratio = (Om0 / Ode0) ** (1 / 3)
         return (
-            self.hubble_distance(h0)
+            self.hubble_distance(H0)
             * (
                 self._comoving_distance_helper((1 + z) * ratio, params)
                 - self._comoving_distance_helper(ratio, params)
