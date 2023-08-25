@@ -61,7 +61,7 @@ jobs:
       uses: egor-tensin/build-boost@v1
       with:
         version: 1.71.0
-        libraries: filesystem program_options system
+        libraries: filesystem program_options system preprocessor
         platform: x64
         configuration: Release
       
