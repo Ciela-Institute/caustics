@@ -62,7 +62,7 @@ jobs:
       with:
         version: 1.83.0
         libraries: filesystem program_options system python
-        platform: x86
+        platform: x64
         configuration: Release
       
     - name: Show paths
