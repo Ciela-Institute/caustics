@@ -6,6 +6,7 @@ from torch import Tensor
 
 from ..cosmology import Cosmology
 from .base import ThickLens, ThinLens
+from ..parametrized import unpack
 
 __all__ = ("Multiplane",)
 
@@ -28,7 +29,8 @@ class Multiplane(ThickLens):
         for lens in lenses:
             self.add_parametrized(lens)
 
-    def get_z_ls(self, params: Optional["Packed"]) -> list[Tensor]:
+    @unpack(0)
+    def get_z_ls(self, *args, params: Optional["Packed"] = None, **kwargs) -> list[Tensor]:
         """
         Get the redshifts of each lens in the multiplane.
 
@@ -42,8 +44,9 @@ class Multiplane(ThickLens):
         # be the case for a ThinLens
         return [lens.unpack(params)[0] for lens in self.lenses]
 
+    @unpack(3)
     def raytrace(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """Calculate the angular source positions corresponding to the
         observer positions x,y. See Margarita et al. 2013 for the
@@ -107,15 +110,17 @@ class Multiplane(ThickLens):
             return x, y
         else:
             return X_ip1 / D_0_s, Y_ip1 / D_0_s
-        
+
+    @unpack(3)
     def effective_reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         bx, by = self.raytrace(x, y, z_s, params)
         return x - bx, y - by
 
+    @unpack(3)
     def surface_density(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Calculate the projected mass density.
@@ -135,8 +140,9 @@ class Multiplane(ThickLens):
         # TODO: rescale mass densities of each lens and sum
         raise NotImplementedError()
 
+    @unpack(3)
     def time_delay(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the time delay of light caused by the lensing.

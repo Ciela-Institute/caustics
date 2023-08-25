@@ -3,8 +3,7 @@ from torch import vmap
 import numpy as np
 from caustic import Simulator, EPL, Sersic, FlatLambdaCDM
 from caustic.parameter import Parameter
-from utils import setup_image_simulator, setup_simulator
-import pytest
+from utils import setup_simulator
 
 
 def test_params():
@@ -47,7 +46,7 @@ def test_unpack_all_modules_dynamic():
     
     # Test dictionary input: Only module with dynamic parameters are required
     x_dict = {"simulator": sim_params, "cosmo": cosmo_params, "source": source_params, "lens": lens_params}
-    print(x_dict)
+    
     assert sim(x_dict).shape == torch.Size([n_pix, n_pix])
     
     # Test semantic list (one tensor per module)
@@ -59,7 +58,7 @@ def test_unpack_some_modules_static():
     # same test as above but cosmo is completely static so not fed in the forward method
     sim, (_, _, lens_params, source_params) = setup_simulator(cosmo_static=True, simulator_static=True)
     n_pix = sim.n_pix
-
+    
     # test list input
     x = lens_params + source_params
     assert sim(x).shape == torch.Size([n_pix, n_pix])
@@ -70,7 +69,7 @@ def test_unpack_some_modules_static():
     
     # Test dictionary input: Only module with dynamic parameters are required
     x_dict = {"source": source_params, "lens": lens_params}
-    print(x_dict)
+    
     assert sim(x_dict).shape == torch.Size([n_pix, n_pix])
     
     # Test semantic list (one tensor per module)
@@ -144,31 +143,32 @@ def test_parametrized_name_collision():
 # TODO make the params attribute -> parameters and make it more intuitive
 def test_to_method():
     sim, (sim_params, cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
-    print(sim.params)
    
     # Check that static params have correct type 
     module = Sersic(x0=0.5)
-    print(module.params.static)
     assert module.x0.dtype == torch.float32
 
     module = Sersic(x0=torch.tensor(0.5))
     assert module.x0.dtype == torch.float32
 
     module = Sersic(x0=np.array(0.5))
-    assert module.x0.dtype == torch.float32
+    assert module.x0.dtype == torch.float64 # Decided against default type, so gets numpy type here
+    
+    # Check that all parameters are converted to correct type
+    sim.to(dtype=torch.float16)
+    assert sim.z_s.dtype is None # dynamic parameter
+    assert sim.lens.cosmo.Om0.dtype == torch.float16
+    assert sim.cosmo.Om0.dtype == torch.float16
   
 
 def test_parameter_redefinition():
     sim, _ = setup_simulator()
     
-    print(sim)
     # Make sure the __getattribute__ method works as intended
     assert isinstance(sim.z_s, Parameter)
     # Now test __setattr__ method, we need to catch the redefinition here and keep z_s a parameter
     sim.z_s = 42
     # make sure z_s is still a parameter
-    
-    # sim.__setattr__("z_s", 42)
     assert sim.z_s.value() == torch.tensor(42).float()
     assert sim.z_s.static is True
     assert "z_s" not in sim.params.dynamic.keys()
@@ -176,14 +176,6 @@ def test_parameter_redefinition():
     sim.z_s = None
     assert sim.z_s.value() is None
     assert sim.z_s.dynamic is True
-    assert "z_s" not sim.params.dynamic.keys()
+    assert "z_s" not in sim.params.dynamic.keys()
     assert sim.name in sim.dynamic_modules.keys()
     
-
-
-    # # Make a test to catch parameters not in order
-    # x_wrong_semantic = [lens_params, cosmo_params, source_params]
-    # with pytest.raises(L):
-        # vmap(sim)(x_wrong_semantic)
-
-

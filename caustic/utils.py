@@ -4,7 +4,6 @@ from typing import Callable, Optional, Tuple, Union
 import torch
 from torch import Tensor
 
-
 def flip_axis_ratio(q, phi):
     """
     Makes the value of 'q' positive, then swaps x and y axes if 'q' is larger than 1.
@@ -98,22 +97,12 @@ def get_meshgrid(
     Returns:
         Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
     """
-    xs = (
-        torch.linspace(-1, 1, nx, device=device, dtype=dtype)
-        * resolution
-        * (nx - 1)
-        / 2
-    )
-    ys = (
-        torch.linspace(-1, 1, ny, device=device, dtype=dtype)
-        * resolution
-        * (ny - 1)
-        / 2
-    )
+    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * resolution * (nx - 1) / 2
+    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * resolution * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
-def safe_divide(num, denom):
+def safe_divide(num, denom, places = 7):
     """
     Safely divides two tensors, returning zero where the denominator is zero.
 
@@ -276,7 +265,7 @@ def interp2d(
         raise ValueError(f"{method} is not a valid interpolation method")
 
     if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result[idxs_out_of_bounds] = torch.zeros_like(result[idxs_out_of_bounds])
+        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
 
     return result
 

@@ -20,17 +20,18 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
                 self.add_param("z_s", 1.0)
             else:
                 self.add_param("z_s", None)
+            z_l = 0.5
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
             if use_nfw:
-                self.lens = NFW(self.cosmo, z_l=0.5, name="lens") # NFW  wactually depend on cosmology, so a better test for Parametrized
+                self.lens = NFW(self.cosmo, z_l=z_l, name="lens") # NFW  wactually depend on cosmology, so a better test for Parametrized
             else:
-                self.lens = EPL(self.cosmo, z_l=0.5, name="lens")
+                self.lens = EPL(self.cosmo, z_l=z_l, name="lens")
             self.sersic = Sersic(name="source")
             self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
             self.n_pix = n_pix
 
         def forward(self, params):
-            z_s = self.unpack(params)
+            z_s, = self.unpack(params)
             alphax, alphay = self.lens.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=z_s, params=params) 
             bx = self.thx - alphax
             by = self.thy - alphay
@@ -81,12 +82,11 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
         def __init__(self, name="test"):
             super().__init__(name)
             pixel_scale = 0.04
-            fov = n_pix * pixel_scale
             z_l = 0.5
             self.z_s = torch.tensor(1.0)
             self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
-            self.kappa = PixelatedConvergence(fov, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix), name="kappa")
+            self.kappa = PixelatedConvergence(pixel_scale, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix), name="kappa")
             self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, shape=(n_pix, n_pix), name="source")
             self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix)
             self.n_pix = n_pix
@@ -145,8 +145,6 @@ def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
     alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
-    print(alpha_x.numpy()[:10,:10])
-    print(alpha_x_ls[:10,:10])
     assert np.allclose(alpha_x.numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.numpy(), alpha_y_ls, rtol, atol)
 

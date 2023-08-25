@@ -9,8 +9,7 @@ from utils import lens_test_helper
 from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE, Multiplane
 
-
-def test():
+def test_multiplane():
     rtol = 0
     atol = 5e-3
 
@@ -47,7 +46,7 @@ def test():
         )
 
     # Use same cosmology
-    cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
+    cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value(), cosmology.Om0.value(), Tcmb0=0)
     lens_ls = LensModel(
         lens_model_list=["SIE" for _ in range(len(xs))],
         z_source=z_s.item(),
@@ -60,5 +59,7 @@ def test():
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
 
+
+    
 if __name__ == "__main__":
     test()

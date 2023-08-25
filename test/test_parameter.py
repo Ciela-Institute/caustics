@@ -50,7 +50,7 @@ def test_symbolic_link():
         def __init__(self, name="module"):
             super().__init__(name)
             self.add_param("a", None)
-            self.add_param("b", self.a)
+            self.add_param("b", self.a) # make a symbolic link between a and b
     
         def forward(self, x):
             a, b = self.unpack(x)
@@ -58,6 +58,10 @@ def test_symbolic_link():
 
     module = Module()
     x = torch.tensor([42]).float()
+    assert module.a.dynamic
+    assert module.b.symbolic
+    assert module.b.static # make sure symbolic parameter is treated as static
+
     a, b = module(x)
     assert a == torch.tensor(42).float()
     assert a == b

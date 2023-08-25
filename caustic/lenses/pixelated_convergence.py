@@ -9,13 +9,14 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
 from .base import ThinLens
+from ..parametrized import unpack
 
 __all__ = ("PixelatedConvergence",)
 
 class PixelatedConvergence(ThinLens):
     def __init__(
         self,
-        fov: float,
+        pixelscale: float,
         n_pix: int,
         cosmology: Cosmology,
         z_l: Optional[Tensor] = None,
@@ -70,15 +71,15 @@ class PixelatedConvergence(ThinLens):
         self.add_param("convergence_map", convergence_map, shape)
 
         self.n_pix = n_pix
-        self.fov = fov
-        self.res = fov / n_pix
+        self.pixelscale = pixelscale
+        self.fov = self.n_pix * self.pixelscale
         self.use_next_fast_len = use_next_fast_len
 
         # Construct kernels
-        x_mg, y_mg = get_meshgrid(self.res, 2 * self.n_pix, 2 * self.n_pix)
+        x_mg, y_mg = get_meshgrid(self.pixelscale, 2 * self.n_pix, 2 * self.n_pix)
         # Shift to center kernels within pixel at index n_pix
-        x_mg = x_mg - self.res / 2
-        y_mg = y_mg - self.res / 2
+        x_mg = x_mg - self.pixelscale / 2
+        y_mg = y_mg - self.pixelscale / 2
         d2 = x_mg**2 + y_mg**2
         self.potential_kernel = safe_log(d2.sqrt())
         self.ax_kernel = safe_divide(x_mg, d2)
@@ -190,8 +191,9 @@ class PixelatedConvergence(ThinLens):
 
         self._convolution_mode = convolution_mode
 
+    @unpack(3)
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -205,8 +207,6 @@ class PixelatedConvergence(ThinLens):
         Returns:
             tuple[Tensor, Tensor]: The x and y components of the deflection angles at the specified positions.
         """
-        z_l, x0, y0, convergence_map = self.unpack(params)
-
         if self.convolution_mode == "fft":
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_fft(convergence_map)
         else:
@@ -234,10 +234,10 @@ class PixelatedConvergence(ThinLens):
         """
         convergence_tilde = self._fft2_padded(convergence_map)
         deflection_angle_x = torch.fft.irfft2(convergence_tilde * self.ax_kernel_tilde, self._s) * (
-            self.res**2 / pi
+            self.pixelscale**2 / pi
         )
         deflection_angle_y = torch.fft.irfft2(convergence_tilde * self.ay_kernel_tilde, self._s) * (
-            self.res**2 / pi
+            self.pixelscale**2 / pi
         )
         return self._unpad_fft(deflection_angle_x), self._unpad_fft(deflection_angle_y)
 
@@ -255,15 +255,16 @@ class PixelatedConvergence(ThinLens):
         # we actually want the cross-correlation.
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
         deflection_angle_x = F.conv2d(self.ax_kernel[None, None], convergence_map_flipped)[0, 0] * (
-            self.res**2 / pi
+            self.pixelscale**2 / pi
         )
         deflection_angle_y = F.conv2d(self.ay_kernel[None, None], convergence_map_flipped)[0, 0] * (
-            self.res**2 / pi
+            self.pixelscale**2 / pi
         )
         return self._unpad_conv2d(deflection_angle_x), self._unpad_conv2d(deflection_angle_y)
 
+    @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -277,8 +278,6 @@ class PixelatedConvergence(ThinLens):
         Returns:
             Tensor: The lensing potential at the specified positions.
         """
-        z_l, x0, y0, convergence_map = self.unpack(params)
-
         if self.convolution_mode == "fft":
             potential_map = self._potential_fft(convergence_map)
         else:
@@ -302,7 +301,7 @@ class PixelatedConvergence(ThinLens):
         """
         convergence_tilde = self._fft2_padded(convergence_map)
         potential = torch.fft.irfft2(convergence_tilde * self.potential_kernel_tilde, self._s) * (
-            self.res**2 / pi
+            self.pixelscale**2 / pi
         )
         return self._unpad_fft(potential)
 
@@ -320,12 +319,13 @@ class PixelatedConvergence(ThinLens):
         # we actually want the cross-correlation.
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
         potential = F.conv2d(self.potential_kernel[None, None], convergence_map_flipped)[0, 0] * (
-            self.res**2 / pi
+            self.pixelscale**2 / pi
         )
         return self._unpad_conv2d(potential)
 
+    @unpack(3)
     def convergence(
-        self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, convergence_map, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the convergence at the specified positions. This method is not implemented.
@@ -342,7 +342,6 @@ class PixelatedConvergence(ThinLens):
         Raises:
             NotImplementedError: This method is not implemented.
         """
-        x0, y0, convergence_map, pixelscale = self.unpack(params)
         return interp2d(
-            convergence_map, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale
+            convergence_map, (x - x0).view(-1) / self.fov*2, (y - y0).view(-1) / self.fov*2
         ).reshape(x.shape)

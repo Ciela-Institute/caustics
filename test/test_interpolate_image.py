@@ -3,6 +3,7 @@ import torch
 from scipy.interpolate import RegularGridInterpolator
 
 from caustic.utils import get_meshgrid, interp2d
+from caustic.sources import Pixelated
 
 
 def test_random_inbounds():
@@ -52,6 +53,20 @@ def test_consistency():
         assert torch.allclose(image_interpd, image, atol=1e-5)
 
 
-if __name__ == "__main__":
-    test_random_inbounds()
-    test_consistency()
+def test_pixelated_source():
+    # Make sure pixelscale works as expected
+    res = 0.05
+    n = 32
+    x, y = get_meshgrid(res, n, n)
+    image = torch.ones(n, n)
+    source = Pixelated(image=image, x0=0., y0=0., pixelscale=res)
+    im = source.brightness(x, y)
+    print(im)
+    assert torch.all(im == image)
+   
+    # Check smaller res
+    source = Pixelated(image=image, x0=0., y0=0., pixelscale=res/2)
+    im = source.brightness(x, y)
+    expected_im = torch.nn.functional.pad(torch.ones(n//2, n//2), pad=[n//4]*4)
+    print(im)
+    assert torch.all(im == expected_im)
