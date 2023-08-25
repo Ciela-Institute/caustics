@@ -64,11 +64,13 @@ jobs:
         libraries: filesystem program_options system python
         platform: x64
         configuration: Release
+        directory: /usr/lib
       
     - name: Show paths
       run: |
         printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
         printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
+        
       shell: bash
     
     - name: Install phytorch dependencies
