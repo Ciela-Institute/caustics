@@ -91,8 +91,8 @@ jobs:
 
     - name: Modify pytorch
       run: |
-        complex_utils_path = $(LOCAL_VARIABLE="complex_utils.h" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
-        complex_utils_folder = $(LOCAL_VARIABLE="complex_utils.h" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P))
+        complex_utils_path=$(LOCAL_VARIABLE="complex_utils.h" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
+        complex_utils_folder=$(LOCAL_VARIABLE="complex_utils.h" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P))
         rm -rf complex_utils_path
         mv phytorch_forked/complex_utils.h complex_utils_folder
       shell: bash
