@@ -19,7 +19,7 @@ jobs:
 
     runs-on: ${{matrix.os}}
     env:
-      BOOST_ROOT : "/home/runner/work/boost/1.83.0"
+      BOOST_ROOT : "/Users/runner/work//boost/1.83.0"
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
@@ -58,7 +58,12 @@ jobs:
         cd $GITHUB_WORKSPACE
         pip install -e .
         pip show caustic
-        cd ..
+      shell: bash
+      
+    - name: Move to home
+      run: |
+        cd /Users/runner/work/
+        
       shell: bash
 
     - name: Build Boost
@@ -69,7 +74,7 @@ jobs:
         libraries: filesystem program_options system python
         platform: x64
         configuration: Release
-        directory: /home/runner/work
+        directory: /Users/runner/work/
       
     - name: Show paths
       run: |
