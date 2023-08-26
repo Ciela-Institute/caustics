@@ -75,6 +75,8 @@ jobs:
       run: |
         printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
         printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
+        cd /home/runner/work/caustic/boost/
+        ls
         
       shell: bash
      
