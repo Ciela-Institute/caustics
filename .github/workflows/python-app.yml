@@ -19,7 +19,7 @@ jobs:
 
     runs-on: ${{matrix.os}}
     env:
-      BOOST_ROOT : "$GITHUB_WORKSPACE/boost/1.83.0"
+      BOOST_ROOT : "/home/runner/work/boost/1.83.0"
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
@@ -69,6 +69,7 @@ jobs:
         libraries: filesystem program_options system python
         platform: x64
         configuration: Release
+        directory: /home/runner/work
       
     - name: Show paths
       run: |
