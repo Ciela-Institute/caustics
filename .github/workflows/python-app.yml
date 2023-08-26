@@ -58,6 +58,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         pip install -e .
         pip show caustic
+        cd ..
       shell: bash
 
     - name: Build Boost
@@ -68,7 +69,6 @@ jobs:
         libraries: filesystem program_options system python
         platform: x64
         configuration: Release
-        directory: $GITHUB_WORKSPACE
       
     - name: Show paths
       run: |
@@ -112,7 +112,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        cd $GITHUB_WORKSPACE
+        cd $GITHUB_WORKSPACE/caustic
         pytest test
       shell: bash
 
