@@ -63,7 +63,7 @@ jobs:
     - name: Make boost directory
       run: |
         cd /Users/runner/work/
-        makedir boost_1_83_0
+        mkdir boost_1_83_0
         
       shell: bash
 
