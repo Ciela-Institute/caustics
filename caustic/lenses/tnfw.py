@@ -189,7 +189,7 @@ class TNFW(ThinLens):
         a3 = 2 * F
         a4 = - torch.pi / (t**2 + x**2).sqrt()
         a5 = (t**2 - 1) * L / (t * (t**2 + x**2).sqrt())
-        return a1 * (a2 + a3 + a4 + a5) * S / critical_density
+        return a1 * (a2 + a3 + a4 + a5) * S
 
     @unpack(0)
     def get_scale_density(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
@@ -224,7 +224,8 @@ class TNFW(ThinLens):
         a3 = t * torch.pi
         a4 = (t**2 - 1) * t.log()
         a5 = (t**2 + x**2).sqrt() * (-torch.pi + (t**2 - 1) * L / t)
-        return a1 * (a2 + a3 + a4 + a5)
+        S = self.get_scale_density(params) * 16 * torch.pi * self.get_scale_radius(params)**3
+        return S * a1 * (a2 + a3 + a4 + a5)
         
     @unpack(3)
     def reduced_deflection_angle(
@@ -248,8 +249,9 @@ class TNFW(ThinLens):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         x = r * (d_l * arcsec_to_rad / self.get_scale_radius(params))
 
-        dr = self.projected_mass(r, z_s, params) / x**2
-        return dr * theta.cos(), dr * theta.sin()
+        dr = 2 * self.projected_mass(r, z_s, params) / x # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
+        S = 2 * G_over_c2
+        return S * dr * theta.cos(), S * dr * theta.sin()
 
     @unpack(3)
     def potential(
