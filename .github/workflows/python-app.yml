@@ -18,16 +18,16 @@ jobs:
   build:
 
     runs-on: ${{matrix.os}}
-    env:
-      BOOST_ROOT : "/Users/runner/work/boost_1_83_0"
+    #env:
+    #  BOOST_ROOT : "/Users/runner/work/boost_1_83_0"
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-    - name: BOOST_ROOT
-      run: echo $BOOST_ROOT
+    #- name: BOOST_ROOT
+    #  run: echo $BOOST_ROOT
     - name: Checkout caustic
       uses: actions/checkout@v3
 
@@ -59,13 +59,6 @@ jobs:
         pip install -e .
         pip show caustic
       shell: bash
-      
-    - name: Make boost directory
-      run: |
-        cd /Users/runner/work/
-        mkdir boost_1_83_0
-        
-      shell: bash
 
     - name: Build Boost
       id: boost
@@ -75,7 +68,7 @@ jobs:
         libraries: filesystem program_options system python
         platform: x64
         configuration: Release
-        directory: /Users/runner/work/boost_1_83_0
+        directory: $GITHUB_WORKSPACE
       
     - name: Show paths
       run: |
