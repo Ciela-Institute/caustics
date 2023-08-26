@@ -75,7 +75,8 @@ jobs:
       run: |
         printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
         printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
-        cd /home/runner/work/caustic/boost/
+        boost_path=$(LOCAL_VARIABLE="boost" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
+        cd $boost_path
         ls
         
       shell: bash
