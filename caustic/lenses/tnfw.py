@@ -15,12 +15,15 @@ DELTA = 200.0
 __all__ = ("TNFW",)
 
 class TNFW(ThinLens):
-    """
-    fixme
+    """fixme
     
-    NFW lens class. This class models a lens using the Navarro-Frenk-White (NFW) profile.
-    The NFW profile is a spatial density profile of dark matter halo that arises in 
-    cosmological simulations.
+    TNFW lens class. This class models a lens using the truncated
+    Navarro-Frenk-White (NFW) profile.  The NFW profile is a spatial
+    density profile of dark matter halo that arises in cosmological
+    simulations. It is truncated with an extra scaling term which
+    smoothly reduces the density such that it does not diverge to
+    infinity. This is based off the paper by Baltz et al. 2008:
+    https://arxiv.org/abs/0705.0682
 
     Attributes:
         z_l (Optional[Tensor]): Redshift of the lens. Default is None.
@@ -30,7 +33,7 @@ class TNFW(ThinLens):
             Default is None.
         m (Optional[Tensor]): Mass of the lens. Default is None.
         c (Optional[Tensor]): Concentration parameter of the lens. Default is None.
-        t (Optional[Tensor]): Truncation radius.
+        t (Optional[Tensor]): Truncation scale (t = truncation radius / scale radius).
         s (float): Softening parameter to avoid singularities at the center of the lens. 
             Default is 0.0.
 
@@ -45,6 +48,7 @@ class TNFW(ThinLens):
         deflection_angle: Computes the deflection angle.
         convergence: Computes the convergence (dimensionless surface mass density).
         potential: Computes the lensing potential.
+
     """
     def __init__(
         self,
