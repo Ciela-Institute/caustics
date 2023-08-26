@@ -19,7 +19,7 @@ jobs:
 
     runs-on: ${{matrix.os}}
     env:
-      BOOST_ROOT : "/Users/runner/work//boost/1.83.0"
+      BOOST_ROOT : "/Users/runner/work/boost_1_83_0"
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
@@ -60,9 +60,10 @@ jobs:
         pip show caustic
       shell: bash
       
-    - name: Move to home
+    - name: Make boost directory
       run: |
         cd /Users/runner/work/
+        makedir boost_1_83_0
         
       shell: bash
 
@@ -74,7 +75,7 @@ jobs:
         libraries: filesystem program_options system python
         platform: x64
         configuration: Release
-        directory: /Users/runner/work/
+        directory: /Users/runner/work/boost_1_83_0
       
     - name: Show paths
       run: |
