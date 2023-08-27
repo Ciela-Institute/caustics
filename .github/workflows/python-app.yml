@@ -35,6 +35,25 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Build Boost
+      id: boost
+      uses: egor-tensin/build-boost@v1
+      with:
+        version: 1.83.0
+        libraries: filesystem program_options system python
+        platform: x64
+        configuration: Release
+      
+    - name: Show paths
+      run: |
+        printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
+        printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
+        boost_path=$(LOCAL_VARIABLE="boost" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
+        cd $boost_path
+        ls
+        
+      shell: bash
+      
     - name: Record State
       run: |
         pwd
@@ -60,25 +79,6 @@ jobs:
         pip show caustic
         cd $GITHUB_WORKSPACE
         pwd
-      shell: bash
-
-    - name: Build Boost
-      id: boost
-      uses: egor-tensin/build-boost@v1
-      with:
-        version: 1.83.0
-        libraries: filesystem program_options system python
-        platform: x64
-        configuration: Release
-      
-    - name: Show paths
-      run: |
-        printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
-        printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
-        boost_path=$(LOCAL_VARIABLE="boost" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
-        cd $boost_path
-        ls
-        
       shell: bash
      
     - name: Install phytorch dependencies
