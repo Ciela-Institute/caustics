@@ -14,7 +14,7 @@ Simply install caustic from PyPI:
 pip install caustic
 ```
 
-- If you would like to take gradients through cosmological parameters, see [here](https://github.com/Ciela-Institute/caustic/blob/differentiable_cosmo/phytorch_instructions.md). Please note that this part of Caustic is still in beta and largely untested.
+- If you would like to take gradients through cosmological parameters, see [here](https://github.com/Ciela-Institute/caustic/blob/differentiable_cosmo/phytorch_instructions.md) for additional installation instructions.
 
 ## Contributing
 
