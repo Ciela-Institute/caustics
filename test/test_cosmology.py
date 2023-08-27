@@ -61,7 +61,18 @@ def test_comoving_dist_lcdm():
         vals_ref = cosmology_ap.comoving_distance(zs).value  # type: ignore
         assert np.allclose(vals, vals_ref, rtol, atol)
 
+def test_critical_density_lcdm():
+    rtol = 1e-3
+    atol = 0
+
+    zs = torch.linspace(0.05, 3, 10)
+    for cosmology, cosmology_ap in get_cosmologies_lcdm():
+        vals = cosmology.critical_density(zs).numpy()
+        vals_ref = cosmology_ap.critical_density(zs).value  # type: ignore
+        assert np.allclose(vals, vals_ref, rtol, atol)
+
 
 if __name__ == "__main__":
     test_comoving_dist_flat_lcdm()
     test_comoving_dist_lcdm()
+    test_critical_density_lcdm()
