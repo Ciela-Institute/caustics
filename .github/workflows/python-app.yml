@@ -50,7 +50,7 @@ jobs:
         printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
         boost_path=$(LOCAL_VARIABLE="boost" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
         echo apparent path: $boost_path
-        cd /home/runner/work/caustic/boost
+        cd /home/runner/work/caustic/boost/boost
         ls
         
       shell: bash
