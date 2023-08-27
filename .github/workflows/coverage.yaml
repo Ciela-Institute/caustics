@@ -30,6 +30,14 @@ jobs:
         echo github.event_name is: ${{ github.event_name }}
         echo github workspace: ${{ github.workspace }}
         pip --version
+    - name: Build Boost
+      id: boost
+      uses: egor-tensin/build-boost@v1
+      with:
+        version: 1.83.0
+        libraries: filesystem program_options system python
+        platform: x64
+        configuration: Release
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -43,6 +51,37 @@ jobs:
         cd $GITHUB_WORKSPACE
         pip install -e .
         pip show caustic
+      shell: bash
+    - name: Install phytorch dependencies
+      run: |
+        cd $GITHUB_WORKSPACE
+        pip install ninja
+        pip install git+https://github.com/rtqichen/torchdiffeq.git
+        pip show ninja
+        pip show torchdiffeq
+      shell: bash
+      
+    - name: Install phytorch
+      run: |
+        cd $GITHUB_WORKSPACE
+        git clone https://github.com/mjyb16/phytorch_forked.git
+        cd phytorch_forked
+        pip install -e .
+        pip show phytorch
+      shell: bash
+
+    - name: Modify pytorch
+      run: |
+        complex_utils_path=$(LOCAL_VARIABLE="complex_utils.h" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P)/$(basename "$LOCAL_VARIABLE"))
+        complex_utils_folder=$(LOCAL_VARIABLE="complex_utils.h" && echo $(cd $(dirname "$LOCAL_VARIABLE") && pwd -P))
+        rm -rf complex_utils_path
+        mv phytorch_forked/complex_utils.h complex_utils_folder
+      shell: bash
+
+    - name: Build phytorch extensions
+      run: |
+        cd $GITHUB_WORKSPACE/phytorch_forked/phytorch-extensions
+        python setup.py build_ext -b ../phytorch/extensions
       shell: bash
     - name: Test with pytest
       run: |
