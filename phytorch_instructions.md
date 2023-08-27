@@ -36,4 +36,4 @@ To:
 cd phytorch-extensions
 python setup.py build_ext -b ../phytorch/extensions
 ```
-- Finally, you can uncomment the last line in caustic/test/test_cosmology.py if you would like to run tests on phytorch yourself.
+
