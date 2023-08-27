@@ -74,13 +74,13 @@ class LambdaCDM(Cosmology):
             params (Packed, optional): Dynamic parameter container for the computation.
 
         Returns:
-            torch.Tensor: Critical density at redshift z.
+            torch.Tensor: Critical density at redshift z in g/cm^3.
         """
         self.cosmo.H0 = H0 * si.km / si.s / astro.Mpc
         self.cosmo.Om0 = Om0
         self.cosmo.Ob0 = Ob0
         self.cosmo.Ode0 = Ode0
-        return self.cosmo.critical_density(z)
+        return self.cosmo.critical_density(z).to(si.g / si.cm**3)
 
     @unpack(1)
     def comoving_distance(self, z: Tensor, H0, Om0, Ob0, Ode0, *args, params: Optional["Packed"] = None) -> Tensor:
