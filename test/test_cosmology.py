@@ -64,4 +64,4 @@ def test_comoving_dist_lcdm():
 
 if __name__ == "__main__":
     test_comoving_dist_flat_lcdm()
-    #test_comoving_dist_lcdm()
+    test_comoving_dist_lcdm()
