@@ -161,7 +161,7 @@ class PixelatedConvergence(ThinLens):
         Returns:
             Tensor: The input tensor without padding.
         """
-        return x[..., 1:, 1:]
+        return torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
 
     @property
     def convolution_mode(self):
@@ -216,7 +216,6 @@ class PixelatedConvergence(ThinLens):
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_fft(convergence_map)
         else:
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_conv2d(convergence_map)
-
         # Scale is distance from center of image to center of pixel on the edge
         scale = self.fov / 2
         deflection_angle_x = interp2d(
@@ -259,10 +258,10 @@ class PixelatedConvergence(ThinLens):
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
-        deflection_angle_x = F.conv2d(self.ax_kernel[None, None], convergence_map_flipped)[0, 0] * (
+        deflection_angle_x = F.conv2d(self.ax_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
-        deflection_angle_y = F.conv2d(self.ay_kernel[None, None], convergence_map_flipped)[0, 0] * (
+        deflection_angle_y = F.conv2d(self.ay_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
         return self._unpad_conv2d(deflection_angle_x), self._unpad_conv2d(deflection_angle_y)
@@ -323,7 +322,7 @@ class PixelatedConvergence(ThinLens):
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
-        potential = F.conv2d(self.potential_kernel[None, None], convergence_map_flipped)[0, 0] * (
+        potential = F.conv2d(self.potential_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
         return self._unpad_conv2d(potential)
