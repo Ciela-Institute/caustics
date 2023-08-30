@@ -57,7 +57,7 @@ def forward_raytrace(
     thetaxy_max = torch.tensor((thetax_range[1], thetay_range[1]))
     fov = thetaxy_max - thetaxy_min
 
-    while True:
+    for _ in range(10):
         thetaxy_0s = fov[None, :] * torch.rand(n_guesses, 2) + thetaxy_min[None, :]
         thetaxys = minimize_levmarq(
             thetaxy_0s,
