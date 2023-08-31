@@ -18,16 +18,12 @@ jobs:
   build:
 
     runs-on: ${{matrix.os}}
-    #env:
-    #  BOOST_ROOT : "/Users/runner/work/boost_1_83_0"
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
         os: [ubuntu-latest, macOS-latest]
 
     steps:
-    #- name: BOOST_ROOT
-    #  run: echo $BOOST_ROOT
     - name: Checkout caustic
       uses: actions/checkout@v3
 
