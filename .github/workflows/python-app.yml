@@ -162,7 +162,7 @@ jobs:
     - name: Test with pytest
       run: |
         cd $GITHUB_WORKSPACE
-        pytest test --ignore caustic/test/test_cosmology.py
+        pytest test --ignore-glob='*cosmology.py'
       shell: bash
       
 
