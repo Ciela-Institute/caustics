@@ -32,7 +32,7 @@ _comoving_distance_helper_y_grid = torch.as_tensor(
 class FlatLambdaCDM(Cosmology):
     """
     Subclass of Cosmology representing a Flat Lambda Cold Dark Matter (LCDM) cosmology with no radiation.
-    NOTE: THIS IS THE VERSION WITHOUT GRADIENTS AND WHICH USES AN APPROXIMATION SCHEME. It is kept for backwards compatibility.
+    NOTE: THIS IS THE VERSION WITHOUT PRECISE COSMOLOGICAL GRADIENTS AND WHICH USES AN APPROXIMATION SCHEME. It is kept for backwards compatibility. To use autograd through cosmological calculations, follow the installation instructions for phytorch.
     """
 
     def __init__(
