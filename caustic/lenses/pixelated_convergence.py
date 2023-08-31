@@ -139,7 +139,7 @@ class PixelatedConvergence(ThinLens):
         if self.use_next_fast_len:
             pad = next_fast_len(pad)
         self._s = (pad, pad)
-        return torch.fft.rfft2(F.pad(x[None,None], ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode).squeeze(), self._s)
+        return torch.fft.rfft2(x, self._s) # F.pad(x[None,None], ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode).squeeze()
 
     def _unpad_fft(self, x: Tensor) -> Tensor:
         """
