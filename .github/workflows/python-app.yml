@@ -112,4 +112,57 @@ jobs:
         cd $GITHUB_WORKSPACE
         pytest test
       shell: bash
+      
+  build_windows:
+
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10"]
+        os: [windows-latest]
+
+    steps:
+    - name: Checkout caustic
+      uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+      
+    - name: Record State
+      run: |
+        pwd
+        echo github.ref is: ${{ github.ref }}
+        echo GITHUB_SHA is: $GITHUB_SHA
+        echo github.event_name is: ${{ github.event_name }}
+        echo github workspace: ${{ github.workspace }}
+        pip --version
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov torch
+        # Install deps
+        cd $GITHUB_WORKSPACE
+        pip install -r requirements.txt
+      shell: bash
+
+    - name: Install Caustic
+      run: |
+        cd $GITHUB_WORKSPACE
+        pip install -e .
+        pip show caustic
+        cd $GITHUB_WORKSPACE
+        pwd
+      shell: bash
+     
+
+
+    - name: Test with pytest
+      run: |
+        cd $GITHUB_WORKSPACE
+        pytest test --ignore test_cosmology.py
+      shell: bash
+      
 
