@@ -27,6 +27,7 @@ class PixelatedConvergence(ThinLens):
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
         padding_range: float = 1.,
+        padding_mode: str = "constant",
         name: str = None,
     ):
         """Strong lensing with user provided kappa map
@@ -78,6 +79,7 @@ class PixelatedConvergence(ThinLens):
         self.fov = self.n_pix * self.pixelscale
         self.use_next_fast_len = use_next_fast_len
         self.padding_range = padding_range
+        self.padding_mode = padding_mode
 
         # Construct kernels
         x_mg, y_mg = get_meshgrid(self.pixelscale, int((1 + self.padding_range) * self.n_pix), int((1 + self.padding_range) * self.n_pix))
@@ -137,7 +139,7 @@ class PixelatedConvergence(ThinLens):
         if self.use_next_fast_len:
             pad = next_fast_len(pad)
         self._s = (pad, pad)
-        return torch.fft.rfft2(x, self._s)
+        return torch.fft.rfft2(F.pad(x[None,None], ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode).squeeze(), self._s)
 
     def _unpad_fft(self, x: Tensor) -> Tensor:
         """
@@ -257,7 +259,9 @@ class PixelatedConvergence(ThinLens):
         """
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
-        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
+        
+        pad = int((1. + self.padding_range) * self.n_pix)
+        convergence_map_flipped = F.pad(convergence_map.flip((-1, -2))[None, None], ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
         deflection_angle_x = F.conv2d(self.ax_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
