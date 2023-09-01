@@ -268,7 +268,7 @@ class TNFW(ThinLens):
         x = r / rs
 
         dr = 2 * self.projected_mass(r, z_s, params) / x # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
-        S = 2 * G_over_c2 * rad_to_arcsec / d_l
+        S = 2 * G_over_c2 * rad_to_arcsec * d_l
         return S * dr * theta.cos(), S * dr * theta.sin()
 
     @unpack(3)
@@ -295,7 +295,8 @@ class TNFW(ThinLens):
         F = self._F(x)
         L = self._L(x, t)
 
-        S = 2 * self.get_M0(params) * G_over_c2
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        S = 2 * self.get_M0(params) * G_over_c2 * rad_to_arcsec * d_l**2
         a1 = 1 / (t**2 + 1)**2
         a2 = 2 * torch.pi * t**2 * (t - (t**2 + u).sqrt() + t * (t + (t**2 + u).sqrt()).log())
         a3 = 2 * (t**2 - 1) * t * (t**2 + u).sqrt() * L
