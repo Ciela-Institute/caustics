@@ -152,6 +152,21 @@ class TNFW(ThinLens):
             / ((1 + c).log() - c / (1 + c))
         )
 
+    @unpack(0)
+    def get_M0(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
+        """
+        Calculate the reference mass.
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            c (Tensor): Concentration parameter of the lens.
+            params (Packed, optional): Dynamic parameter container.
+
+        Returns:
+            Tensor: The scale density of the lens in solar masses per Mpc cubed.
+        """
+        return m * (t**2 + 1) / (t**2 * ((t**2 - 1) * t.log() + torch.pi * t - (t**2 + 1)))
+
     @unpack(1)
     def get_convergence_s(self, z_s, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
@@ -178,18 +193,19 @@ class TNFW(ThinLens):
         x, y = translate_rotate(x, y, x0, y0)
         r = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        x = r * (d_l * arcsec_to_rad / self.get_scale_radius(params))
+        rs = self.get_scale_radius(params)
+        x = r * (d_l * arcsec_to_rad / rs)
         F = self._F(x)
         L = self._L(x, t)
-        critical_density = self.cosmology.critical_density(z_l, params)
+        critical_density = self.cosmology.critical_surface_density(z_l, z_s, params)
 
-        S = self.get_convergence_s(z_s, params) / 8.
+        S = self.get_M0(params) / (2 * torch.pi * rs**2)
         a1 = t**2 / (t**2 + 1)**2
         a2 = (t**2 + 1) * (1 - F) / (x**2 - 1)
         a3 = 2 * F
         a4 = - torch.pi / (t**2 + x**2).sqrt()
         a5 = (t**2 - 1) * L / (t * (t**2 + x**2).sqrt())
-        return a1 * (a2 + a3 + a4 + a5) * S
+        return a1 * (a2 + a3 + a4 + a5) * S / critical_density
 
     @unpack(0)
     def get_scale_density(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
@@ -216,7 +232,8 @@ class TNFW(ThinLens):
     def projected_mass(
             self, r: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
-        x = r / self.get_scale_radius(params)
+        rs = self.get_scale_radius(params)
+        x = r / rs
         F = self._F(x)
         L = self._L(x, t)
         a1 = t**2 / (t**2 + 1)**2
@@ -224,7 +241,7 @@ class TNFW(ThinLens):
         a3 = t * torch.pi
         a4 = (t**2 - 1) * t.log()
         a5 = (t**2 + x**2).sqrt() * (-torch.pi + (t**2 - 1) * L / t)
-        S = self.get_scale_density(params) * 16 * torch.pi * self.get_scale_radius(params)**3
+        S = self.get_M0(params)
         return S * a1 * (a2 + a3 + a4 + a5)
         
     @unpack(3)
@@ -235,27 +252,28 @@ class TNFW(ThinLens):
         Compute the reduced deflection angle.
 
         Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
+            x (Tensor): x-coordinates in the lens plane (arcsec).
+            y (Tensor): y-coordinates in the lens plane (arcsec).
             z_s (Tensor): Redshifts of the sources.
             params (Packed, optional): Dynamic parameter container.
 
         Returns:
-            tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions.
+            tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions (arcsec).
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        r = (x**2 + y**2).sqrt() + self.s
-        theta = torch.arctan2(y,x)
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        x = r * (d_l * arcsec_to_rad / self.get_scale_radius(params))
+        rs = self.get_scale_radius(params)
+        x, y = translate_rotate(x, y, x0, y0)
+        r = ((x**2 + y**2).sqrt() + self.s) * d_l * arcsec_to_rad
+        theta = torch.arctan2(y,x)
+        x = r / rs
 
         dr = 2 * self.projected_mass(r, z_s, params) / x # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
-        S = 2 * G_over_c2
+        S = 2 * G_over_c2 * rad_to_arcsec / d_l
         return S * dr * theta.cos(), S * dr * theta.sin()
 
     @unpack(3)
     def potential(
-        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs
+        self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -271,11 +289,13 @@ class TNFW(ThinLens):
         """
         x, y = translate_rotate(x, y, x0, y0)
         r = (x**2 + y**2).sqrt() + self.s
-        x = r / self.get_scale_radius(params)
+        rs = self.get_scale_radius(params)
+        x = r / rs
         u = x**2
         F = self._F(x)
         L = self._L(x, t)
-        
+
+        S = 2 * self.get_M0(params) * G_over_c2
         a1 = 1 / (t**2 + 1)**2
         a2 = 2 * torch.pi * t**2 * (t - (t**2 + u).sqrt() + t * (t + (t**2 + u).sqrt()).log())
         a3 = 2 * (t**2 - 1) * t * (t**2 + u).sqrt() * L
@@ -285,4 +305,4 @@ class TNFW(ThinLens):
         a7 = t**2 * ((t**2 - 1) * t.log() - t**2 - 1) * u.log()
         a8 = t**2 * ((t**2 - 1) * t.log() * (4*t).log() + 2 * (t/2).log() - 2 * t * (t - torch.pi) * (2*t).log())
 
-        return a1 * (a2 + a3 + a4 + a5 + a6 + a7 + a8)
+        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 + a8)
