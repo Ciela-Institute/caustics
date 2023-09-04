@@ -39,8 +39,6 @@ class TNFW(ThinLens):
 
     Methods:
         get_scale_radius: Returns the scale radius of the lens.
-        get_scale_density: Returns the scale density of the lens.
-        get_convergence_s: Returns the dimensionless surface mass density of the lens.
         _f: Helper method for computing deflection angles.
         _g: Helper method for computing lensing potential.
         _h: Helper method for computing reduced deflection angles.
@@ -90,22 +88,31 @@ class TNFW(ThinLens):
 
     @staticmethod
     def _F(x):
+        """
+        Helper method from Baltz et al. 2008 equation A.5
+        """
         return torch.where(x == 1, torch.ones_like(x), ((1 / x.to(dtype=torch.cdouble)).arccos() / (x.to(dtype=torch.cdouble)**2 - 1).sqrt()).abs())
 
     @staticmethod
     def _L(x, t):
+        """
+        Helper method from Baltz et al. 2008 equation A.6
+        """
         return (x / (t + (t**2 + x**2).sqrt())).log()
 
     @unpack(0)
     def get_scale_radius(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
-        Calculate the scale radius of the lens.
+        Calculate the scale radius of the lens. This is the same formula used for the classic NFW profile.
 
         Args:
             z_l (Tensor): Redshift of the lens.
-            m (Tensor): Mass of the lens.
-            c (Tensor): Concentration parameter of the lens.
-            x (dict): Dynamic parameter container.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
 
         Returns:
             Tensor: The scale radius of the lens in Mpc.
@@ -121,75 +128,57 @@ class TNFW(ThinLens):
 
         Args:
             z_l (Tensor): Redshift of the lens.
-            m (Tensor): Mass of the lens.
-            c (Tensor): Concentration parameter of the lens.
-            x (dict): Dynamic parameter container.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
 
         Returns:
             Tensor: The truncation radius of the lens in Mpc.
         """
         return t * self.get_scale_radius(params)
 
-
-    @unpack(0)
-    def get_scale_density(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
-        """
-        Calculate the scale density of the lens.
-
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            c (Tensor): Concentration parameter of the lens.
-            params (Packed, optional): Dynamic parameter container.
-
-        Returns:
-            Tensor: The scale density of the lens in solar masses per Mpc cubed.
-        """
-        return (
-            DELTA
-            / 3
-            * self.cosmology.critical_density(z_l, params)
-            * c**3
-            / ((1 + c).log() - c / (1 + c))
-        )
-
     @unpack(0)
     def get_M0(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
-        Calculate the reference mass.
+        Calculate the reference mass. This is an abstract reference mass used internally in the equations from Baltz et al. 2008.
 
         Args:
             z_l (Tensor): Redshift of the lens.
-            c (Tensor): Concentration parameter of the lens.
-            params (Packed, optional): Dynamic parameter container.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
 
         Returns:
-            Tensor: The scale density of the lens in solar masses per Mpc cubed.
+            Tensor: The reference mass of the lens in Msol.
         """
         return m * (t**2 + 1) / (t**2 * ((t**2 - 1) * t.log() + torch.pi * t - (t**2 + 1)))
-
-    @unpack(1)
-    def get_convergence_s(self, z_s, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
-        """
-        Calculate the dimensionless surface mass density of the lens.
-
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            z_s (Tensor): Redshift of the source.
-            m (Tensor): Mass of the lens.
-            c (Tensor): Concentration parameter of the lens.
-            params (Packed, optional): Dynamic parameter container.
-
-        Returns:
-            Tensor: The dimensionless surface mass density of the lens.
-        """
-        critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, params)
-        return self.get_scale_density(params) * self.get_scale_radius(params) / critical_surface_density
-    
 
     @unpack(3)
     def convergence(
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
+        """
+        TNFW convergence as given in Baltz et al. 2008. This is unitless since it is Sigma(x) / Sigma_crit.
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
+
+        Returns:
+            Tensor: unitless convergence at requested position
+        
+        """
         x, y = translate_rotate(x, y, x0, y0)
         r = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
@@ -207,31 +196,25 @@ class TNFW(ThinLens):
         a5 = (t**2 - 1) * L / (t * (t**2 + x**2).sqrt())
         return a1 * (a2 + a3 + a4 + a5) * S / critical_density
 
-    @unpack(0)
-    def get_scale_density(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
-        """
-        Calculate the scale density of the lens.
-
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            c (Tensor): Concentration parameter of the lens.
-            params (Packed, optional): Dynamic parameter container.
-
-        Returns:
-            Tensor: The scale density of the lens in solar masses per Mpc cubed.
-        """
-        return (
-            DELTA
-            / 3
-            * self.cosmology.critical_density(z_l, params)
-            * c**3
-            / ((1 + c).log() - c / (1 + c))
-        )
-
     @unpack(2)
     def projected_mass(
             self, r: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
+        """
+        Total projected mass (Msol) within a radius r (Mpc).
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
+
+        Returns:
+            Tensor: Integrated mass projected in infinite cylinder within radius r.
+        """
         rs = self.get_scale_radius(params)
         x = r / rs
         F = self._F(x)
@@ -245,30 +228,36 @@ class TNFW(ThinLens):
         return S * a1 * (a2 + a3 + a4 + a5)
         
     @unpack(3)
-    def reduced_deflection_angle(
+    def physical_deflection_angle(
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
-        """
-        Compute the reduced deflection angle.
+        """Compute the physical deflection angle (arcsec) for this lens at
+        the requested position. Note that the NFW profile is more
+        naturally represented as a physical deflection angle, this is
+        easily internally converted to a reduced deflection angle.
 
         Args:
-            x (Tensor): x-coordinates in the lens plane (arcsec).
-            y (Tensor): y-coordinates in the lens plane (arcsec).
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+            z_l (Tensor): Redshift of the lens.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
 
         Returns:
-            tuple[Tensor, Tensor]: The reduced deflection angles in the x and y directions (arcsec).
+            tuple[Tensor, Tensor]: The physical deflection angles in the x and y directions (arcsec).
+
         """
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         rs = self.get_scale_radius(params)
         x, y = translate_rotate(x, y, x0, y0)
         r = ((x**2 + y**2).sqrt() + self.s) * d_l * arcsec_to_rad
         theta = torch.arctan2(y,x)
-        x = r / rs
 
-        dr = 2 * self.projected_mass(r, z_s, params) / x # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
-        S = 2 * G_over_c2 * rad_to_arcsec * d_l
+        # The below actually equally comes from eq 2.13 in Meneghetti notes
+        dr = self.projected_mass(r, z_s, params) / r # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
+        S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
     @unpack(3)
@@ -276,13 +265,18 @@ class TNFW(ThinLens):
         self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
-        Compute the lensing potential.
+        Compute the lensing potential. Note that this is not a unitless potential! This is the potential as given in Baltz et al. 2008.
+
+        TODO: convert to dimensionless potential.
 
         Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+            z_l (Tensor): Redshift of the lens.
+            x0 (Tensor): Center of lens position on x-axis (arcsec). 
+            y0 (Tensor): Center of lens position on y-axis (arcsec). 
+            m (Tensor): Mass of the lens (Msol).
+            c (Tensor): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Tensor): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+            params (dict): Dynamic parameter container.
 
         Returns:
             Tensor: The lensing potential.
@@ -295,8 +289,8 @@ class TNFW(ThinLens):
         F = self._F(x)
         L = self._L(x, t)
 
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        S = 2 * self.get_M0(params) * G_over_c2 * rad_to_arcsec * d_l**2
+        #d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        S = 2 * self.get_M0(params) * G_over_c2# * rad_to_arcsec * d_l**2
         a1 = 1 / (t**2 + 1)**2
         a2 = 2 * torch.pi * t**2 * (t - (t**2 + u).sqrt() + t * (t + (t**2 + u).sqrt()).log())
         a3 = 2 * (t**2 - 1) * t * (t**2 + u).sqrt() * L

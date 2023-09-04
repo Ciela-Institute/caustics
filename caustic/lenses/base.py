@@ -308,10 +308,9 @@ class ThinLens(Parametrized):
         self.cosmology = cosmology
         self.add_param("z_l", z_l)
 
-    @abstractmethod
     @unpack(3)
     def reduced_deflection_angle(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+            self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -325,7 +324,10 @@ class ThinLens(Parametrized):
         Returns:
             tuple[Tensor, Tensor]: Reduced deflection angle in x and y directions.
         """
-        ...
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y, z_s, params)
+        return (d_ls / d_s) * deflection_angle_x, (d_ls / d_s) * deflection_angle_y
 
     @unpack(3)
     def physical_deflection_angle(
