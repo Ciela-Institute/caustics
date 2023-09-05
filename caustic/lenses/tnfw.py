@@ -15,15 +15,18 @@ DELTA = 200.0
 __all__ = ("TNFW",)
 
 class TNFW(ThinLens):
-    """fixme
+    """Truncated Navaro-Frenk-White profile
     
     TNFW lens class. This class models a lens using the truncated
     Navarro-Frenk-White (NFW) profile.  The NFW profile is a spatial
     density profile of dark matter halo that arises in cosmological
     simulations. It is truncated with an extra scaling term which
     smoothly reduces the density such that it does not diverge to
-    infinity. This is based off the paper by Baltz et al. 2008:
+    infinity. This is based off the paper by Baltz et al. 2009:
+
     https://arxiv.org/abs/0705.0682
+    
+    https://ui.adsabs.harvard.edu/abs/2009JCAP...01..015B/abstract
 
     Attributes:
         z_l (Optional[Tensor]): Redshift of the lens. Default is None.
@@ -36,17 +39,7 @@ class TNFW(ThinLens):
         t (Optional[Tensor]): Truncation scale (t = truncation radius / scale radius).
         s (float): Softening parameter to avoid singularities at the center of the lens. 
             Default is 0.0.
-
-    Methods:
-        get_scale_radius: Returns the scale radius of the lens.
-        _f: Helper method for computing deflection angles.
-        _g: Helper method for computing lensing potential.
-        _h: Helper method for computing reduced deflection angles.
-        deflection_angle_hat: Computes the reduced deflection angle.
-        deflection_angle: Computes the deflection angle.
-        convergence: Computes the convergence (dimensionless surface mass density).
-        potential: Computes the lensing potential.
-
+    
     """
     def __init__(
         self,
@@ -67,13 +60,12 @@ class TNFW(ThinLens):
             name (str): Name of the lens instance.
             cosmology (Cosmology): An instance of the Cosmology class which contains 
                 information about the cosmological model and parameters.
-            z_l (Optional[Union[Tensor, float]]): Redshift of the lens. Default is None.
-            x0 (Optional[Union[Tensor, float]]): x-coordinate of the lens center in the lens plane. 
-                Default is None.
-            y0 (Optional[Union[Tensor, float]]): y-coordinate of the lens center in the lens plane. 
-                Default is None.
-            m (Optional[Union[Tensor, float]]): Mass of the lens. Default is None.
-            c (Optional[Union[Tensor, float]]): Concentration parameter of the lens. Default is None.
+            z_l (Optional[Tensor]): Redshift of the lens.
+            x0 (Optional[Tensor]): Center of lens position on x-axis (arcsec). 
+            y0 (Optional[Tensor]): Center of lens position on y-axis (arcsec). 
+            m (Optional[Tensor]): Mass of the lens (Msol).
+            c (Optional[Tensor]): Concentration parameter of the lens (r200/rs for a classic NFW).
+            t (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
             s (float): Softening parameter to avoid singularities at the center of the lens. 
                 Default is 0.0.
         """
@@ -89,14 +81,14 @@ class TNFW(ThinLens):
     @staticmethod
     def _F(x):
         """
-        Helper method from Baltz et al. 2008 equation A.5
+        Helper method from Baltz et al. 2009 equation A.5
         """
         return torch.where(x == 1, torch.ones_like(x), ((1 / x.to(dtype=torch.cdouble)).arccos() / (x.to(dtype=torch.cdouble)**2 - 1).sqrt()).abs())
 
     @staticmethod
     def _L(x, t):
         """
-        Helper method from Baltz et al. 2008 equation A.6
+        Helper method from Baltz et al. 2009 equation A.6
         """
         return (x / (t + (t**2 + x**2).sqrt())).log()
 
@@ -143,7 +135,7 @@ class TNFW(ThinLens):
     @unpack(0)
     def get_M0(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
-        Calculate the reference mass. This is an abstract reference mass used internally in the equations from Baltz et al. 2008.
+        Calculate the reference mass. This is an abstract reference mass used internally in the equations from Baltz et al. 2009.
 
         Args:
             z_l (Tensor): Redshift of the lens.
@@ -164,7 +156,7 @@ class TNFW(ThinLens):
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
-        TNFW convergence as given in Baltz et al. 2008. This is unitless since it is Sigma(x) / Sigma_crit.
+        TNFW convergence as given in Baltz et al. 2009. This is unitless since it is Sigma(x) / Sigma_crit.
 
         Args:
             z_l (Tensor): Redshift of the lens.
@@ -183,17 +175,18 @@ class TNFW(ThinLens):
         r = (x**2 + y**2).sqrt() + self.s
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         rs = self.get_scale_radius(params)
-        x = r * (d_l * arcsec_to_rad / rs)
-        F = self._F(x)
-        L = self._L(x, t)
+        g = r * (d_l * arcsec_to_rad / rs)
+        F = self._F(g)
+        L = self._L(g, t)
         critical_density = self.cosmology.critical_surface_density(z_l, z_s, params)
 
         S = self.get_M0(params) / (2 * torch.pi * rs**2)
-        a1 = t**2 / (t**2 + 1)**2
-        a2 = (t**2 + 1) * (1 - F) / (x**2 - 1)
+        t2 = t**2
+        a1 = t2 / (t2 + 1)**2
+        a2 = (t2 + 1) * (1 - F) / (g**2 - 1)
         a3 = 2 * F
-        a4 = - torch.pi / (t**2 + x**2).sqrt()
-        a5 = (t**2 - 1) * L / (t * (t**2 + x**2).sqrt())
+        a4 = - torch.pi / (t2 + g**2).sqrt()
+        a5 = (t2 - 1) * L / (t * (t2 + g**2).sqrt())
         return a1 * (a2 + a3 + a4 + a5) * S / critical_density
 
     @unpack(2)
@@ -216,14 +209,15 @@ class TNFW(ThinLens):
             Tensor: Integrated mass projected in infinite cylinder within radius r.
         """
         rs = self.get_scale_radius(params)
-        x = r / rs
-        F = self._F(x)
-        L = self._L(x, t)
-        a1 = t**2 / (t**2 + 1)**2
-        a2 = (t**2 + 1 + 2*(x**2 - 1)) * F
+        g = r / rs
+        t2 = t**2
+        F = self._F(g)
+        L = self._L(g, t)
+        a1 = t2 / (t2 + 1)**2
+        a2 = (t2 + 1 + 2*(g**2 - 1)) * F
         a3 = t * torch.pi
-        a4 = (t**2 - 1) * t.log()
-        a5 = (t**2 + x**2).sqrt() * (-torch.pi + (t**2 - 1) * L / t)
+        a4 = (t2 - 1) * t.log()
+        a5 = (t2 + g**2).sqrt() * (-torch.pi + (t2 - 1) * L / t)
         S = self.get_M0(params)
         return S * a1 * (a2 + a3 + a4 + a5)
         
@@ -265,7 +259,7 @@ class TNFW(ThinLens):
         self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
-        Compute the lensing potential. Note that this is not a unitless potential! This is the potential as given in Baltz et al. 2008.
+        Compute the lensing potential. Note that this is not a unitless potential! This is the potential as given in Baltz et al. 2009.
 
         TODO: convert to dimensionless potential.
 
@@ -284,20 +278,21 @@ class TNFW(ThinLens):
         x, y = translate_rotate(x, y, x0, y0)
         r = (x**2 + y**2).sqrt() + self.s
         rs = self.get_scale_radius(params)
-        x = r / rs
-        u = x**2
-        F = self._F(x)
-        L = self._L(x, t)
+        g = r / rs
+        t2 = t**2
+        u = g**2
+        F = self._F(g)
+        L = self._L(g, t)
 
         #d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        S = 2 * self.get_M0(params) * G_over_c2# * rad_to_arcsec * d_l**2
-        a1 = 1 / (t**2 + 1)**2
-        a2 = 2 * torch.pi * t**2 * (t - (t**2 + u).sqrt() + t * (t + (t**2 + u).sqrt()).log())
-        a3 = 2 * (t**2 - 1) * t * (t**2 + u).sqrt() * L
-        a4 = t**2 * (t**2 - 1) * L**2
-        a5 = 4 * t**2 * (u - 1) * F
-        a6 = t**2 * (t**2 - 1) * (1 / x).arccos()**2
-        a7 = t**2 * ((t**2 - 1) * t.log() - t**2 - 1) * u.log()
-        a8 = t**2 * ((t**2 - 1) * t.log() * (4*t).log() + 2 * (t/2).log() - 2 * t * (t - torch.pi) * (2*t).log())
+        S = 2 * self.get_M0(params) * G_over_c2 # * rad_to_arcsec * d_l**2
+        a1 = 1 / (t2 + 1)**2
+        a2 = 2 * torch.pi * t2 * (t - (t2 + u).sqrt() + t * (t + (t2 + u).sqrt()).log())
+        a3 = 2 * (t2 - 1) * t * (t2 + u).sqrt() * L
+        a4 = t2 * (t2 - 1) * L**2
+        a5 = 4 * t2 * (u - 1) * F
+        a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs()**2
+        a7 = t2 * ((t2 - 1) * t.log() - t2 - 1) * u.log()
+        a8 = t2 * ((t2 - 1) * t.log() * (4*t).log() + 2 * (t/2).log() - 2 * t * (t - torch.pi) * (2*t).log())
 
         return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 + a8)
