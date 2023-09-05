@@ -69,9 +69,8 @@ def test_runs():
     x = torch.tensor([thx0, thy0, m, c, t])
     
     thx, thy, thx_ls, thy_ls = setup_grids()
-    alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
-    assert torch.all(torch.isfinite(alpha_x))
-    assert torch.all(torch.isfinite(alpha_y))
+    kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
+    assert torch.all(torch.isfinite(kappa))
     
     Psi = lens.potential(thx, thy, z_s, lens.pack(x))
     assert torch.all(torch.isfinite(Psi))
