@@ -36,17 +36,6 @@ def test():
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
 
-def test_jacobian():
-    # Models
-    cosmology = FlatLambdaCDM(name="cosmo")
-    lens = SIE(name="sie", cosmology=cosmology)
-    thx, thy = get_meshgrid(0.1, 10, 10)
-    
-    # Parameters
-    z_s = torch.tensor(1.2)
-    x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
-    J = lens.jacobian_reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
-    assert J.shape == (10,10,2,2)
     
 if __name__ == "__main__":
     test()

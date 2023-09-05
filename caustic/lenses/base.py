@@ -10,6 +10,7 @@ from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
 from ..parametrized import Parametrized, unpack
 from .utils import get_magnification
+from ..utils import batch_lm
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -153,12 +154,28 @@ class ThickLens(Parametrized):
         """
         ...
 
+    @unpack(4)
+    def _jacobian_effective_deflection_angle_finitediff(
+            self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the effective reduced deflection angle vector field. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Compute deflection angles
+        ax, ay = self.effective_reduced_deflection_angle(x, y, z_s, params)
+
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,1], J[...,0,0] = torch.gradient(ax, spacing = pixelscale)
+        J[...,1,1], J[...,1,0] = torch.gradient(ay, spacing = pixelscale)
+        return J
+    
     @unpack(3)
-    def jacobian_effective_reduced_deflection_angle(
+    def _jacobian_effective_deflection_angle_autograd(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
-        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+        Return the jacobian of the effective reduced deflection angle vector field. This equates to a (2,2) matrix at each (x,y) point.
         """
         # Ensure the x,y coordinates track gradients
         x = x.detach().requires_grad_()
@@ -166,7 +183,7 @@ class ThickLens(Parametrized):
 
         # Compute deflection angles
         ax, ay = self.effective_reduced_deflection_angle(x, y, z_s, params)
-        
+
         # Build Jacobian
         J = torch.zeros((*ax.shape, 2, 2))
         J[...,0,0], = torch.autograd.grad(ax, x, grad_outputs = torch.ones_like(ax), create_graph = True)
@@ -175,6 +192,86 @@ class ThickLens(Parametrized):
         J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
         return J.detach()
     
+    @unpack(3)
+    def jacobian_effective_deflection_angle(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the effective reduced deflection angle vector field. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_effective_deflection_angle_autograd(x, y, z_s, params)
+        elif method == "finitediff":
+            if pixelscale is None:
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_effective_deflection_angle_finitediff(x, y, z_s, pixelscale, params)
+        else:
+            raise ValueError("method should be one of: autograd, finitediff")
+
+    @unpack(4)
+    def _jacobian_lens_equation_finitediff(
+            self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Build Jacobian
+        J = self._jacobian_effective_deflection_angle_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+        return torch.eye(2) - J
+    
+    @unpack(3)
+    def _jacobian_lens_equation_autograd(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Build Jacobian
+        J = self._jacobian_effective_deflection_angle_autograd(x, y, z_s, params, **kwargs)
+        return torch.eye(2) - J.detach()
+    
+    @unpack(3)
+    def jacobian_lens_equation(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_lens_equation_autograd(x, y, z_s, params, **kwargs)
+        elif method == "finitediff":
+            if pixelscale is None:
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+        else:
+            raise ValueError("method should be one of: autograd, finitediff")
+
+    @unpack(3)
+    def effective_convergence_div(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> Tensor:
+        """
+        Using the divergence of the effective reduced delfection angle we can compute the divergence component of the effective convergence field. This field produces a single plane convergence field which reproduces as much of the deflection field as possible for a single plane. See: https://arxiv.org/pdf/2006.07383.pdf see also the `effective_convergence_curl` method.
+        """
+        J = self.jacobian_effective_deflection_angle(x, y, z_s, params, **kwargs)
+        return 0.5*(J[...,0,0] + J[...,1,1])
+
+    @unpack(3)
+    def effective_convergence_curl(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> Tensor:
+        """
+        Use the curl of the effective reduced deflection angle vector field to compute an effective convergence which derrives specifically from the curl of the deflection field. This field is purely a result of multiplane lensing and cannot occur in single plane lensing. See: https://arxiv.org/pdf/2006.07383.pdf
+        """
+        J = self.jacobian_effective_deflection_angle(x, y, z_s, params, **kwargs)
+        return 0.5 * (J[...,1,0] - J[...,0,1])
+
     @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
         """
@@ -328,6 +425,56 @@ class ThinLens(Parametrized):
         return x - ax, y - ay
 
     @unpack(3)
+    def forward_raytrace(
+            self, bx: Tensor, by: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, epsilon = 1e-2, n_init = 50, fov = 5., **kwargs
+    ) -> tuple[Tensor, Tensor]:
+        """
+        Perform a forward ray-tracing operation which maps from the source plane to the image plane.
+
+        Args:
+            bx (Tensor): Tensor of x coordinate in the source plane (scalar).
+            by (Tensor): Tensor of y coordinate in the source plane (scalar).
+            z_s (Tensor): Tensor of source redshifts.
+            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
+            epsilon (Tensor): maximum distance between two images (arcsec) before they are considered the same image.
+            n_init (int): number of random initialization points used to try and find image plane points.
+            fov (float): the field of view in which the initial random samples are taken.
+
+        Returns:
+            tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
+        """
+        
+        bxy = torch.stack((bx, by)).repeat(n_init,1) # has shape (n_init, Dout:2)
+
+        # TODO make FOV more general so that it doesnt have to be centered on zero,zero
+        if fov is None:
+            raise ValueError("fov must be given to generate initial guesses")
+
+        # Random starting points in image plane
+        guesses = torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5) # Has shape (n_init, Din:2)
+
+        # Optimize guesses in image plane
+        x, l, c = batch_lm(
+            guesses,
+            bxy,
+            lambda *a, **k: torch.stack(self.raytrace(a[0][...,0], a[0][...,1], *a[1:], **k), dim = -1),
+            f_args = (z_s, params)
+        )
+
+        # Clip points that didn't converge
+        x = x[c < 1e-2*epsilon**2]
+
+        # Cluster results into n-images
+        res = []
+        while len(x) > 0:
+            res.append(x[0])
+            d = torch.linalg.norm(x - x[0], dim = -1)
+            x = x[d > epsilon]
+
+        res = torch.stack(res,dim = 0)
+        return res[...,0], res[...,1]
+
+    @unpack(3)
     def time_delay(
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ):
@@ -352,43 +499,24 @@ class ThinLens(Parametrized):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
         return factor * fp * arcsec_to_rad**2
 
-    @unpack(3)
-    def _lensing_jacobian_fft_method(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @unpack(4)
+    def _jacobian_deflection_angle_finitediff(
+            self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
-        Compute the lensing Jacobian using the Fast Fourier Transform method.
-
-        Args:
-            x (Tensor): Tensor of x coordinates in the lens plane.
-            y (Tensor): Tensor of y coordinates in the lens plane.
-            z_s (Tensor): Tensor of source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns:
-            Tensor: Lensing Jacobian at the given coordinates.
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
         """
-        potential = self.potential(x, y, z_s, params)
-        # quick dirty work to get kx and ky. Assumes x and y come from meshgrid... TODO Might want to get k differently
-        n = x.shape[-1]
-        d = torch.abs(x[0, 0] - x[0, 1])
-        k = torch.fft.fftfreq(2 * n, d=d)
-        kx, ky = torch.meshgrid([k, k], indexing="xy")
-        # Now we compute second derivatives in Fourier space, then inverse Fourier transform and unpad
-        pad = 2 * n
-        potential_tilde = torch.fft.fft(potential, (pad, pad))
-        potential_xx = torch.abs(torch.fft.ifft2(-(kx**2) * potential_tilde))[..., :n, :n]
-        potential_yy = torch.abs(torch.fft.ifft2(-(ky**2) * potential_tilde))[..., :n, :n]
-        potential_xy = torch.abs(torch.fft.ifft2(-kx * ky * potential_tilde))[..., :n, :n]
-        j1 = torch.stack(
-            [1 - potential_xx, -potential_xy], dim=-1
-        )  # Equation 2.33 from Meneghetti lensing lectures
-        j2 = torch.stack([-potential_xy, 1 - potential_yy], dim=-1)
-        jacobian = torch.stack([j1, j2], dim=-1)
-        return jacobian
+        # Compute deflection angles
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
 
+        # Build Jacobian
+        J = torch.zeros((*ax.shape, 2, 2))
+        J[...,0,1], J[...,0,0] = torch.gradient(ax, spacing = pixelscale)
+        J[...,1,1], J[...,1,0] = torch.gradient(ay, spacing = pixelscale)
+        return J
+    
     @unpack(3)
-    def jacobian_reduced_deflection_angle(
+    def _jacobian_deflection_angle_autograd(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
         """
@@ -408,6 +536,66 @@ class ThinLens(Parametrized):
         J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
         J[...,1,1], = torch.autograd.grad(ay, y, grad_outputs = torch.ones_like(ay), create_graph = True)
         return J.detach()
+    
+    @unpack(3)
+    def jacobian_deflection_angle(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the deflection angle vector. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_deflection_angle_autograd(x, y, z_s, params)
+        elif method == "finitediff":
+            if pixelscale is None:
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale, params)
+        else:
+            raise ValueError("method should be one of: autograd, finitediff")
+
+    @unpack(4)
+    def _jacobian_lens_equation_finitediff(
+            self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Build Jacobian
+        J = self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+        return torch.eye(2) - J
+    
+    @unpack(3)
+    def _jacobian_lens_equation_autograd(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+        """
+        # Build Jacobian
+        J = self._jacobian_deflection_angle_autograd(x, y, z_s, params, **kwargs)
+        return torch.eye(2) - J.detach()
+    
+    @unpack(3)
+    def jacobian_lens_equation(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_lens_equation_autograd(x, y, z_s, params, **kwargs)
+        elif method == "finitediff":
+            if pixelscale is None:
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+        else:
+            raise ValueError("method should be one of: autograd, finitediff")
 
     @unpack(3)
     def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
