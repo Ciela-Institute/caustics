@@ -1,12 +1,13 @@
-import setuptools, find_packages
+import os
+from setuptools import setup, find_packages
 import caustic.__init__ as caustic
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 def read_lines(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read_lines()
+    return open(os.path.join(os.path.dirname(__file__), fname)).readlines()
 
-setuptools.setup(
+setup(
     name = "caustic",
     version=caustic.__version__,
     description="A gravitational lensing simulator for the future",
