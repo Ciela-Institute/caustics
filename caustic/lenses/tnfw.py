@@ -28,17 +28,22 @@ class TNFW(ThinLens):
     
     https://ui.adsabs.harvard.edu/abs/2009JCAP...01..015B/abstract
 
-    Attributes:
-        z_l (Optional[Tensor]): Redshift of the lens. Default is None.
-        x0 (Optional[Tensor]): x-coordinate of the lens center in the lens plane. 
-            Default is None.
-        y0 (Optional[Tensor]): y-coordinate of the lens center in the lens plane. 
-            Default is None.
-        m (Optional[Tensor]): Mass of the lens. Default is None.
-        c (Optional[Tensor]): Concentration parameter of the lens. Default is None.
-        t (Optional[Tensor]): Truncation scale (t = truncation radius / scale radius).
+    Args:
+        name (str): Name of the lens instance.
+        cosmology (Cosmology): An instance of the Cosmology class which contains 
+            information about the cosmological model and parameters.
+        z_l (Optional[Tensor]): Redshift of the lens.
+        x0 (Optional[Tensor]): Center of lens position on x-axis (arcsec). 
+        y0 (Optional[Tensor]): Center of lens position on y-axis (arcsec). 
+        m (Optional[Tensor]): Mass of the lens (Msol).
+        c (Optional[Tensor]): Concentration parameter of the lens (r200/rs for a classic NFW).
+        t (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
         s (float): Softening parameter to avoid singularities at the center of the lens. 
             Default is 0.0.
+        interpret_m_total_mass (bool): Indicates how to interpret the mass variable "m". If true
+            the mass is intepreted as the total mass of the halo (good because it makes sense). If
+            false it is intepreted as what the mass would have been within R200 of a an NFW that
+            isn't truncated (good because it is easily compared with an NFW).
     
     """
     def __init__(
@@ -51,23 +56,12 @@ class TNFW(ThinLens):
         c: Optional[Union[Tensor, float]] = None,
         t: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
+        interpret_m_total_mass: bool = True,
         name: str = None,
     ):
         """
-        Initialize an instance of the NFW lens class.
+        Initialize an instance of the TNFW lens class.
 
-        Args:
-            name (str): Name of the lens instance.
-            cosmology (Cosmology): An instance of the Cosmology class which contains 
-                information about the cosmological model and parameters.
-            z_l (Optional[Tensor]): Redshift of the lens.
-            x0 (Optional[Tensor]): Center of lens position on x-axis (arcsec). 
-            y0 (Optional[Tensor]): Center of lens position on y-axis (arcsec). 
-            m (Optional[Tensor]): Mass of the lens (Msol).
-            c (Optional[Tensor]): Concentration parameter of the lens (r200/rs for a classic NFW).
-            t (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            s (float): Softening parameter to avoid singularities at the center of the lens. 
-                Default is 0.0.
         """
         super().__init__(cosmology, z_l, name=name)
 
@@ -77,6 +71,7 @@ class TNFW(ThinLens):
         self.add_param("c", c)
         self.add_param("t", t)
         self.s = s
+        self.interpret_m_total_mass = interpret_m_total_mass
 
     @staticmethod
     def _F(x):
@@ -149,7 +144,32 @@ class TNFW(ThinLens):
         Returns:
             Tensor: The reference mass of the lens in Msol.
         """
-        return m * (t**2 + 1) / (t**2 * ((t**2 - 1) * t.log() + torch.pi * t - (t**2 + 1)))
+        if self.interpret_m_total_mass:
+            return m * (t**2 + 1) / (t**2 * ((t**2 - 1) * t.log() + torch.pi * t - (t**2 + 1)))
+        else:
+            return 4 * torch.pi * self.get_scale_radius(params)**3 * self.get_scale_density(params)
+
+
+    @unpack(0)
+    def get_scale_density(self, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
+        """
+        Calculate the scale density of the lens.
+
+        Args:
+            z_l (Tensor): Redshift of the lens.
+            c (Tensor): Concentration parameter of the lens.
+            params (Packed, optional): Dynamic parameter container.
+
+        Returns:
+            Tensor: The scale density of the lens in solar masses per Mpc cubed.
+        """
+        return (
+            DELTA
+            / 3
+            * self.cosmology.critical_density(z_l, params)
+            * c**3
+            / ((1 + c).log() - c / (1 + c))
+        )
 
     @unpack(3)
     def convergence(
@@ -181,9 +201,10 @@ class TNFW(ThinLens):
         critical_density = self.cosmology.critical_surface_density(z_l, z_s, params)
 
         S = self.get_M0(params) / (2 * torch.pi * rs**2)
+            
         t2 = t**2
         a1 = t2 / (t2 + 1)**2
-        a2 = (t2 + 1) * (1 - F) / (g**2 - 1)
+        a2 = torch.where(g == 1, (t2 + 1) / 3., (t2 + 1) * (1 - F) / (g**2 - 1))
         a3 = 2 * F
         a4 = - torch.pi / (t2 + g**2).sqrt()
         a5 = (t2 - 1) * L / (t * (t2 + g**2).sqrt())
@@ -226,7 +247,7 @@ class TNFW(ThinLens):
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> tuple[Tensor, Tensor]:
         """Compute the physical deflection angle (arcsec) for this lens at
-        the requested position. Note that the NFW profile is more
+        the requested position. Note that the NFW/TNFW profile is more
         naturally represented as a physical deflection angle, this is
         easily internally converted to a reduced deflection angle.
 
@@ -295,4 +316,4 @@ class TNFW(ThinLens):
         a7 = t2 * ((t2 - 1) * t.log() - t2 - 1) * u.log()
         a8 = t2 * ((t2 - 1) * t.log() * (4*t).log() + 2 * (t/2).log() - 2 * t * (t - torch.pi) * (2*t).log())
 
-        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 + a8)
+        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)

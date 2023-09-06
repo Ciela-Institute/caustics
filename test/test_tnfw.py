@@ -25,7 +25,7 @@ def test():
     # Models
     cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
-    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l)
+    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l, interpret_m_total_mass = False)
     lens_model_list = ["TNFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
@@ -48,10 +48,10 @@ def test():
 
     # lenstronomy params ['Rs', 'alpha_Rs', 'center_x', 'center_y']
     kwargs_ls = [
-        {"Rs": Rs_angle, "alpha_Rs": alpha_Rs, "r_trunc": alpha_Rs * t, "center_x": thx0, "center_y": thy0}
+        {"Rs": Rs_angle, "alpha_Rs": alpha_Rs, "r_trunc": Rs_angle * t, "center_x": thx0, "center_y": thy0}
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, test_Psi = False, test_kappa = False)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, test_alpha = True, test_Psi = False, test_kappa = True)
 
 def test_runs():
     cosmology = CausticFlatLambdaCDM(name="cosmo")
@@ -69,8 +69,6 @@ def test_runs():
     x = torch.tensor([thx0, thy0, m, c, t])
     
     thx, thy, thx_ls, thy_ls = setup_grids()
-    kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
-    assert torch.all(torch.isfinite(kappa))
     
     Psi = lens.potential(thx, thy, z_s, lens.pack(x))
     assert torch.all(torch.isfinite(Psi))

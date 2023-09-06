@@ -163,6 +163,7 @@ def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
     kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
+    print(kappa / kappa_ls)
     assert np.allclose(kappa.numpy(), kappa_ls, rtol, atol)
 
 
