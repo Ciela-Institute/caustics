@@ -5,7 +5,10 @@ import caustic.__init__ as caustic
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 def read_lines(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).readlines()
+    
+    ret = list(open(os.path.join(os.path.dirname(__file__), fname)).readlines())
+    print(ret)
+    return ret
 
 setup(
     name = "caustic",
