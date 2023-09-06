@@ -14,7 +14,6 @@ def test():
 
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
-    print(cosmology)
     lens = PseudoJaffe(name="pj", cosmology=cosmology)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
@@ -22,9 +21,14 @@ def test():
     # Parameters, computing kappa_0 with a helper function
     z_s = torch.tensor(2.1)
     x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
-    x[3] = kappa_0 = lens.central_convergence(
-        x[0], z_s, torch.tensor(1.0), x[4], x[5], cosmology, defaultdict(list)
+    d_l = cosmology.angular_diameter_distance(x[0])
+    arcsec_to_rad = 1 / (180 / torch.pi * 60 ** 2)
+    kappa_0 = lens.central_convergence(
+        x[0], z_s, torch.tensor(1.0), x[4] * d_l * arcsec_to_rad, x[5] * d_l * arcsec_to_rad, cosmology.critical_surface_density(x[0], z_s)
     )
+    print(kappa_0, cosmology.critical_surface_density(x[0], z_s))
+    x[3] = 2 * torch.pi * kappa_0 * cosmology.critical_surface_density(x[0], z_s) * x[4] * x[5] * (d_l * arcsec_to_rad)**2
+    print(x[3])
     kwargs_ls = [
         {
             "sigma0": kappa_0.item(),
