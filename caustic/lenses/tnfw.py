@@ -28,6 +28,16 @@ class TNFW(ThinLens):
     
     https://ui.adsabs.harvard.edu/abs/2009JCAP...01..015B/abstract
 
+    Note:
+        The mass `m` in the TNFW profile corresponds to the total mass
+        of the lens. This is different from the NFW profile where the
+        mass `m` parameter corresponds to the mass within R200. If you
+        prefer the "mass within R200" version you can set:
+        `interpret_m_total_mass = False` on initialization of the
+        object. However, the mass within R200 will be computed for an
+        NFW profile, not a TNFW profile. This is in line with how
+        lenstronomy inteprets the mass parameter.
+
     Args:
         name (str): Name of the lens instance.
         cosmology (Cosmology): An instance of the Cosmology class which contains 
@@ -44,7 +54,7 @@ class TNFW(ThinLens):
             the mass is intepreted as the total mass of the halo (good because it makes sense). If
             false it is intepreted as what the mass would have been within R200 of a an NFW that
             isn't truncated (good because it is easily compared with an NFW).
-    
+
     """
     def __init__(
         self,
