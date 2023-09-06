@@ -21,7 +21,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
             else:
                 self.add_param("z_s", None)
             z_l = 0.5
-            self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
+            self.cosmo = FlatLambdaCDM(H0=70 if cosmo_static else None, name="cosmo")
             if use_nfw:
                 self.lens = NFW(self.cosmo, z_l=z_l, name="lens") # NFW  wactually depend on cosmology, so a better test for Parametrized
             else:
@@ -41,8 +41,8 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
     z_s = torch.tensor([1.0, 1.5])
     sim_params = [z_s]
     # default cosmo params
-    h0 = torch.tensor([0.68, 0.75])
-    cosmo_params = [h0]
+    H0 = torch.tensor([68, 75])
+    cosmo_params = [H0]
     # default lens params 
     if use_nfw:
         x0 = torch.tensor([0., 0.1])
@@ -84,7 +84,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
             pixel_scale = 0.04
             z_l = 0.5
             self.z_s = torch.tensor(1.0)
-            self.cosmo = FlatLambdaCDM(h0=0.7 if cosmo_static else None, name="cosmo")
+            self.cosmo = FlatLambdaCDM(H0=70 if cosmo_static else None, name="cosmo")
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
             self.kappa = PixelatedConvergence(pixel_scale, n_pix, self.cosmo, z_l=z_l, shape=(n_pix, n_pix), name="kappa")
             self.source = Pixelated(x0=0., y0=0., pixelscale=pixel_scale/2, shape=(n_pix, n_pix), name="source")
@@ -99,7 +99,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
             return self.source.brightness(bx, by, params)
 
     # default cosmo params
-    h0 = torch.tensor([0.68, 0.75])
+    H0 = torch.tensor([68, 75])
     # default lens params 
     x0 = torch.tensor([0, 0.1])
     y0 = torch.tensor([0, 0.1])
@@ -111,7 +111,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
     kappa = torch.randn([2, n_pix, n_pix])
     source = torch.randn([2, n_pix, n_pix])
 
-    cosmo_params = [h0]
+    cosmo_params = [H0]
     lens_params = [x0, y0, q, phi, b, t]
     if not batched_params:
         cosmo_params = [_x[0] for _x in cosmo_params]

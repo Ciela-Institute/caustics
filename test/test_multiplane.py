@@ -47,7 +47,7 @@ def test():
         )
 
     # Use same cosmology
-    cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
+    cosmo_ap = FlatLambdaCDM_ap(cosmology.H0.value, cosmology.Om0.value, Tcmb0=0)
     lens_ls = LensModel(
         lens_model_list=["SIE" for _ in range(len(xs))],
         z_source=z_s.item(),

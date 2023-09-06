@@ -11,7 +11,7 @@ def test_params():
     class Sim(Simulator):
         def __init__(self):
             super().__init__()
-            self.cosmo = FlatLambdaCDM(h0=None)
+            self.cosmo = FlatLambdaCDM(H0=None)
             self.epl = EPL(self.cosmo)
             self.sersic = Sersic()
             self.add_param("z_s", 1.0)
@@ -111,7 +111,7 @@ def test_parametrized_name_collision():
     class Sim(Simulator):
         def __init__(self):
             super().__init__()
-            self.cosmo = FlatLambdaCDM(h0=None)
+            self.cosmo = FlatLambdaCDM(H0=None)
             # These two module are identical and will create a name collision
             self.lens1 = EPL(self.cosmo)
             self.lens2 = EPL(self.cosmo)
@@ -123,7 +123,7 @@ def test_parametrized_name_collision():
     assert sim.lens2.name == "EPL_1"
 
     # Case 2: name collision in parents of a module
-    cosmo = FlatLambdaCDM(h0=None)
+    cosmo = FlatLambdaCDM(H0=None)
     lens = EPL(cosmo)
     class Sim(Simulator):
         def __init__(self):
