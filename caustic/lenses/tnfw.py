@@ -278,11 +278,11 @@ class TNFW(ThinLens):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         rs = self.get_scale_radius(params)
         x, y = translate_rotate(x, y, x0, y0)
-        r = ((x**2 + y**2).sqrt() + self.s) * d_l * arcsec_to_rad
+        r = ((x**2 + y**2).sqrt() + self.s) 
         theta = torch.arctan2(y,x)
 
         # The below actually equally comes from eq 2.13 in Meneghetti notes
-        dr = self.mass_enclosed_2d(r, z_s, params) / r # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
+        dr = self.mass_enclosed_2d(r, z_s, params) / (r * d_l * arcsec_to_rad) # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
         S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
