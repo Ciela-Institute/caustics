@@ -53,10 +53,10 @@ class PixelatedConvergence(ThinLens):
             use_next_fast_len (bool, optional): If True, adds additional padding to speed up the FFT by calling
                 `scipy.fft.next_fast_len`. The speed boost can be substantial when `n_pix` is a multiple of a
                 small prime number. Default is True.
-            padding_range (Optional[float]): This is the amount of padding to add in units of the image size n_pix. A value
-                of 0 means no padding (useful for periodic mass sheet), 1 means padding equal to the size of the image (default).
-            padding_mode (str): Specifies the type of padding to use. "constant" will do zero padding, "circular" will do
-                cyclic boundaries. This mode is not yet fully implemented and is only included for testing.
+            padding (str): Specifies the type of padding to use. "zero" will do zero padding, "circular" will do
+                cyclic boundaries. "reflect" will do reflection padding. "tile" will tile the image at 2x2 which
+                basically identical to circular padding, but is easier. Generally you should use either "zero"
+                or "tile".
 
         """
         
