@@ -146,8 +146,7 @@ class PixelatedConvergence(ThinLens):
         elif self.padding == "tile":
             x = torch.tile(x, (2,2))
 
-        self.pretype = x.dtype
-        return torch.fft.rfft2(x.to(dtype=torch.float64), self._s)
+        return torch.fft.rfft2(x, self._s)
     
     def _unpad_fft(self, x: Tensor) -> Tensor:
         """
@@ -159,7 +158,7 @@ class PixelatedConvergence(ThinLens):
         Returns:
             Tensor: The input tensor without padding.
         """
-        return torch.roll(x.to(dtype=self.pretype), (-self._s[0]//2,-self._s[1]//2), dims = (-2,-1))[..., :self.n_pix, :self.n_pix]
+        return torch.roll(x, (-self._s[0]//2,-self._s[1]//2), dims = (-2,-1))[..., :self.n_pix, :self.n_pix]
 
     def _unpad_conv2d(self, x: Tensor) -> Tensor:
         """
@@ -193,9 +192,9 @@ class PixelatedConvergence(ThinLens):
         """
         if convolution_mode == "fft":
             # Create FFTs of kernels
-            self.potential_kernel_tilde = self._fft2_padded(self.potential_kernel.to(dtype = torch.float64))
-            self.ax_kernel_tilde = self._fft2_padded(self.ax_kernel.to(dtype = torch.float64))
-            self.ay_kernel_tilde = self._fft2_padded(self.ay_kernel.to(dtype = torch.float64))
+            self.potential_kernel_tilde = self._fft2_padded(self.potential_kernel)
+            self.ax_kernel_tilde = self._fft2_padded(self.ax_kernel)
+            self.ay_kernel_tilde = self._fft2_padded(self.ay_kernel)
         elif convolution_mode == "conv2d":
             # Drop FFTs of kernels
             self.potential_kernel_tilde = None
@@ -246,7 +245,7 @@ class PixelatedConvergence(ThinLens):
         Returns:
             tuple[Tensor, Tensor]: The x and y components of the deflection angles.
         """
-        convergence_tilde = self._fft2_padded(convergence_map.to(dtype = torch.float64))
+        convergence_tilde = self._fft2_padded(convergence_map)
         deflection_angle_x = torch.fft.irfft2(convergence_tilde * self.ax_kernel_tilde, self._s).real * (
             self.pixelscale**2 / pi
         )
