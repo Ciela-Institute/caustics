@@ -221,11 +221,11 @@ class TNFW(ThinLens):
         return a1 * (a2 + a3 + a4 + a5) * S / critical_density
 
     @unpack(2)
-    def projected_mass(
+    def mass_enclosed_2d(
             self, r: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
-        Total projected mass (Msol) within a radius r (Mpc).
+        Total projected mass (Msol) within a radius r (arcsec).
 
         Args:
             z_l (Tensor): Redshift of the lens.
@@ -240,7 +240,8 @@ class TNFW(ThinLens):
             Tensor: Integrated mass projected in infinite cylinder within radius r.
         """
         rs = self.get_scale_radius(params)
-        g = r / rs
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        g = r * d_l * arcsec_to_rad / rs
         t2 = t**2
         F = self._F(g)
         L = self._L(g, t)
