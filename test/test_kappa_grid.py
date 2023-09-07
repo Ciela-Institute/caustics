@@ -24,7 +24,10 @@ def _setup(n_pix, mode, use_next_fast_len):
     th_s = torch.tensor(0.2)
     rho_0 = torch.tensor(1.0)
 
-    kappa_0 = lens_pj.central_convergence(z_l, z_s, rho_0, th_core, th_s, cosmology)
+    d_l = cosmology.angular_diameter_distance(z_l)
+    arcsec_to_rad = 1 / (180 / torch.pi * 60 ** 2)
+    
+    kappa_0 = lens_pj.central_convergence(z_l, z_s, rho_0, th_core * d_l * arcsec_to_rad, th_s * d_l * arcsec_to_rad, cosmology.critical_surface_density(z_l, z_s))
     # z_l, thx0, thy0, kappa_0, th_core, th_s
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
 
