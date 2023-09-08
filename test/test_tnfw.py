@@ -45,6 +45,8 @@ def test():
     cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
     lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)
     Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=m, c=c)
+    print(Rs_angle)
+    x[3] = Rs_angle
 
     # lenstronomy params ['Rs', 'alpha_Rs', 'center_x', 'center_y']
     kwargs_ls = [
@@ -64,9 +66,9 @@ def test_runs():
     thx0 = 0.457
     thy0 = 0.141
     m = 1e12
-    c = 8.0
+    rs = 8.0
     t = 3.0
-    x = torch.tensor([thx0, thy0, m, c, t])
+    x = torch.tensor([thx0, thy0, m, rs, t])
     
     thx, thy, thx_ls, thy_ls = setup_grids()
     
