@@ -23,9 +23,9 @@ class Lens_Source(Simulator):
        cosmo = caustic.FlatLambdaCDM()
        lens = caustic.lenses.SIS(cosmology = cosmo, x0 = 0., y0 = 0., th_ein = 1.)
        source = caustic.sources.Sersic(x0 = 0., y0 = 0., q = 0.5, phi = 0.4, n = 2., Re = 1., Ie = 1.)
-       sim = caustic.sims.Lens_Source(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2)
+       sim = caustic.sims.Lens_Source(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
        
-       img = sim([1.])
+       img = sim()
        plt.imshow(img, origin = "lower")
        plt.show()
 

@@ -17,6 +17,13 @@ class Simulator(Parametrized):
     """
 
     def __call__(self, *args, **kwargs):
-        packed_args = self.pack(args[0])
-        return self.forward(packed_args, *args[1:], **kwargs)
+        if len(args) > 0:
+            packed_args = self.pack(args[0])
+            rest_args = args[1:]
+        else:
+            packed_args = self.pack()
+            rest_args = tuple()
+        
+            
+        return self.forward(packed_args, *rest_args, **kwargs)
 
