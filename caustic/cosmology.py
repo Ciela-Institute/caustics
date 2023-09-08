@@ -42,6 +42,7 @@ class Cosmology(Parametrized):
     This class provides an interface for cosmological computations used in lensing
     such as comoving distance and critical surface density.
 
+    Distance relations drawn from http://background.uchicago.edu/~whu/courses/Ast448/dist_ref.pdf
     Units:
         - Distance: Mpc
         - Mass: solar mass
@@ -87,9 +88,7 @@ class Cosmology(Parametrized):
         """
         ...
 
-    def comoving_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None
-    ) -> Tensor:
+    def comoving_distance_z1z2(self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the comoving distance between two redshifts.
 
@@ -103,6 +102,34 @@ class Cosmology(Parametrized):
         """
         return self.comoving_distance(z2, params) - self.comoving_distance(z1, params)
 
+    def transverse_comoving_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
+        """
+        Compute the transverse comoving distance to redshift z.
+
+        Args:
+            z (Tensor): The redshits.
+            params (Packed, optional): Dynamic parameter contained for the computation
+
+        Returns:
+            Tensor: The transverse comoving distance to each redshift
+        """
+        ...
+
+    def transverse_comoving_distance_z1z2(self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None) -> Tensor:
+        """
+        Compute the transverse comoving distance between two redshifts.
+
+        Args:
+            z1 (Tensor): The starting redshits.
+            z2 (Tensor): The ending redshits.
+            params (Packed, optional): Dynamic parameter contained for the computation
+
+        Returns:
+            Tensor: The transverse comoving distance between each pair of redshift
+        """
+        ...
+
+
     def angular_diameter_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the angular diameter distance to redshift z.
@@ -114,11 +141,9 @@ class Cosmology(Parametrized):
         Returns:
             Tensor: The angular diameter distance to each redshift.
         """
-        return self.comoving_distance(z, params) / (1 + z)
+        return self.transverse_comoving_distance(z, params) / (1 + z)
 
-    def angular_diameter_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None
-    ) -> Tensor:
+    def angular_diameter_distance_z1z2(self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the angular diameter distance between two redshifts.
 
@@ -130,11 +155,9 @@ class Cosmology(Parametrized):
         Returns:
             Tensor: The angular diameter distance between each pair of redshifts.
         """
-        return self.comoving_distance_z1z2(z1, z2, params) / (1 + z2)
+        ...
 
-    def time_delay_distance(
-        self, z_l: Tensor, z_s: Tensor, params: Optional["Packed"] = None
-    ) -> Tensor:
+    def time_delay_distance(self, z_l: Tensor, z_s: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the time delay distance between lens and source planes.
 
@@ -151,9 +174,7 @@ class Cosmology(Parametrized):
         d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
         return (1 + z_l) * d_l * d_s / d_ls
 
-    def critical_surface_density(
-        self, z_l: Tensor, z_s: Tensor, params: Optional["Packed"] = None
-    ) -> Tensor:
+    def critical_surface_density(self, z_l: Tensor, z_s: Tensor, params: Optional["Packed"] = None) -> Tensor:
         """
         Compute the critical surface density between lens and source planes.
 
@@ -271,3 +292,49 @@ class FlatLambdaCDM(Cosmology):
             )
             / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))
         )
+
+    def transverse_comoving_distance(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
+        """
+        Compute the transverse comoving distance to redshift z.
+
+        This is the same as the comoving distance if Ok0 = 0 (flat universe)
+
+        Args:
+            z (Tensor): The redshits.
+            params (Packed, optional): Dynamic parameter contained for the computation
+
+        Returns:
+            Tensor: The transverse comoving distance to each redshift
+        """
+        return self.comoving_distance(z, params)
+
+    def transverse_comoving_distance_z1z2(self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None) -> Tensor:
+        """
+        Compute the transverse comoving distance between two redshifts.
+
+        Args:
+            z1 (Tensor): The starting redshits.
+            z2 (Tensor): The ending redshits.
+            params (Packed, optional): Dynamic parameter contained for the computation
+
+        Returns:
+            Tensor: The transverse comoving distance between each pair of redshift
+        """
+        return self.transverse_comoving_distance(z2) - self.transverse_comoving_distance(z1)
+
+    def angular_diameter_distance_z1z2(self, z1: Tensor, z2: Tensor, params: Optional["Packed"] = None) -> Tensor:
+        """
+        Compute the angular diameter distance between two redshifts.
+
+        This method only works for flat or open curvatures
+        Args:
+            z1 (Tensor): The starting redshifts.
+            z2 (Tensor): The ending redshifts.
+            params (Packed, optional): Dynamic parameter container for the computation.
+
+        Returns:
+            Tensor: The angular diameter distance between each pair of redshifts.
+        """
+        return 1 / (1 + z2) * (self.transverse_comoving_distance(z2) - self.transverse_comoving_distance(z1))
+
+

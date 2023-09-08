@@ -79,7 +79,7 @@ class NFW(ThinLens):
         self.add_param("c", c)
         self.s = s
 
-    def get_scale_radius(self, z_l, m, c, params: Optional["Packed"]) -> Tensor:
+    def get_scale_radius(self, z_l, m, c, params: Optional["Packed"] = None) -> Tensor:
         """
         Calculate the scale radius of the lens.
 
@@ -96,7 +96,7 @@ class NFW(ThinLens):
         r_delta = (3 * m / (4 * pi * DELTA * critical_density)) ** (1 / 3)
         return 1 / c * r_delta
 
-    def get_scale_density(self, z_l, c, params: Optional["Packed"]) -> Tensor:
+    def get_scale_density(self, z_l, c, params: Optional["Packed"] = None) -> Tensor:
         """
         Calculate the scale density of the lens.
 
@@ -116,7 +116,7 @@ class NFW(ThinLens):
             / ((1 + c).log() - c / (1 + c))
         )
 
-    def get_convergence_s(self, z_l, z_s, m, c, params) -> Tensor:
+    def get_convergence_s(self, z_l, z_s, m, c, params: Optional["Packed"] = None) -> Tensor:
         """
         Calculate the dimensionless surface mass density of the lens.
 

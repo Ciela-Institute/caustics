@@ -323,6 +323,24 @@ class ThinLens(Parametrized):
         fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
         return factor * fp * arcsec_to_rad**2
 
+
+    def reduced_deflection_angle_fft(
+            self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
+    ) -> tuple[Tensor, Tensor]:
+        """
+        Computes the reduced deflection angle of the lens at given coordinates [arcsec].
+
+        Args:
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
+            z_s (Tensor): Tensor of source redshifts.
+            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
+
+        Returns:
+            tuple[Tensor, Tensor]: Reduced deflection angle in x and y directions.
+        """
+        ...
+
     def _lensing_jacobian_fft_method(
         self, x: Tensor, y: Tensor, z_s: Tensor, params: Optional["Packed"] = None
     ) -> Tensor:

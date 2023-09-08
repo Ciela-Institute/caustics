@@ -2,8 +2,10 @@ from .base import *
 from .epl import *
 from .external_shear import *
 from .pixelated_convergence import *
+from .multiplane_ls import *
 from .multiplane import *
 from .nfw import *
+from .tnfw import *
 from .point import *
 from .pseudo_jaffe import *
 from .sie import *
