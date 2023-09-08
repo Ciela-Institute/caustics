@@ -75,6 +75,10 @@ def test_runs():
     Psi = lens.potential(thx, thy, z_s, lens.pack(x))
     assert torch.all(torch.isfinite(Psi))
 
+    Rt = lens.get_truncation_radius(lens.pack(x))
+
+    assert Rt == (rs * t)
+
 
 if __name__ == "__main__":
     test()
