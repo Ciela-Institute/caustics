@@ -174,7 +174,7 @@ class Cosmology(Parametrized):
         d_l = self.angular_diameter_distance(z_l, params)
         d_s = self.angular_diameter_distance(z_s, params)
         d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
-        return d_s / d_l / d_ls / (4 * pi * G_over_c2)
+        return d_s / (4 * pi * G_over_c2 * d_l * d_ls)
 
 
 class FlatLambdaCDM(Cosmology):
