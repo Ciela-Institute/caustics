@@ -1,13 +1,19 @@
 from math import pi
 
-import lenstronomy.Util.param_util as param_util
+from lenstronomy.Cosmo.lens_cosmo import LensCosmo
 import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_ap
+from astropy.cosmology import default_cosmology
+
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
 from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import SIE, Multiplane
+from caustic.lenses import NFW, Multiplane_ls
+
+h0_default = float(default_cosmology.get().h)
+Om0_default = float(default_cosmology.get().Om0)
+Ob0_default = float(default_cosmology.get().Ob0)
 
 
 def test():
@@ -21,35 +27,39 @@ def test():
 
     # Parameters
     xs = [
-        [0.7, 0.9, -0.4, 0.9999, 3 * pi / 4, 0.8],
-        [0.5, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
-        [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
+        [0.4, 0.457, 0.141, 1e13, 8.0],
+        [0.7, -1.0, 0.5, 1e13, 8],
+        [1.1, -0.4, -1.3, 1e13, 8],
     ]
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
-    lens = Multiplane(
-        "multiplane", cosmology, [SIE(f"sie-{i}", cosmology) for i in range(len(xs))]
+    lens = Multiplane_ls(
+        "multiplane", cosmology, [NFW(f"nfw-{i}", cosmology) for i in range(len(xs))]
     )
     #lens.effective_reduced_deflection_angle = lens.raytrace
 
     # lenstronomy
+
+    # Use same cosmology
+    # cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
+    cosmo_ap = FlatLambdaCDM_ap(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
+
+
     kwargs_ls = []
     for _xs in xs:
-        e1, e2 = param_util.phi_q2_ellipticity(phi=_xs[4], q=_xs[3])
+        lens_cosmo = LensCosmo(z_lens=_xs[0], z_source=z_s.item(), cosmo=cosmo_ap)
+        Rs, alpha_Rs = lens_cosmo.nfw_physical2angle(M=_xs[3], c=_xs[4])
         kwargs_ls.append(
             {
-                "theta_E": _xs[5],
-                "e1": e1,
-                "e2": e2,
+                "Rs": Rs,
+                "alpha_Rs": alpha_Rs,
                 "center_x": _xs[1],
                 "center_y": _xs[2],
             }
         )
 
-    # Use same cosmology
-    cosmo_ap = FlatLambdaCDM_ap(cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
     lens_ls = LensModel(
-        lens_model_list=["SIE" for _ in range(len(xs))],
+        lens_model_list=["NFW" for _ in range(len(xs))],
         z_source=z_s.item(),
         lens_redshift_list=[_xs[0] for _xs in xs],
         cosmo=cosmo_ap,
