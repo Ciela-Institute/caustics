@@ -221,11 +221,11 @@ class TNFW(ThinLens):
         return a1 * (a2 + a3 + a4 + a5) * S / critical_density
 
     @unpack(2)
-    def projected_mass(
+    def mass_enclosed_2d(
             self, r: Tensor, z_s: Tensor, z_l, x0, y0, m, c, t, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
         """
-        Total projected mass (Msol) within a radius r (Mpc).
+        Total projected mass (Msol) within a radius r (arcsec).
 
         Args:
             z_l (Tensor): Redshift of the lens.
@@ -240,7 +240,8 @@ class TNFW(ThinLens):
             Tensor: Integrated mass projected in infinite cylinder within radius r.
         """
         rs = self.get_scale_radius(params)
-        g = r / rs
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        g = r * d_l * arcsec_to_rad / rs
         t2 = t**2
         F = self._F(g)
         L = self._L(g, t)
@@ -277,11 +278,11 @@ class TNFW(ThinLens):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         rs = self.get_scale_radius(params)
         x, y = translate_rotate(x, y, x0, y0)
-        r = ((x**2 + y**2).sqrt() + self.s) * d_l * arcsec_to_rad
+        r = ((x**2 + y**2).sqrt() + self.s) 
         theta = torch.arctan2(y,x)
 
         # The below actually equally comes from eq 2.13 in Meneghetti notes
-        dr = self.projected_mass(r, z_s, params) / r # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
+        dr = self.mass_enclosed_2d(r, z_s, params) / (r * d_l * arcsec_to_rad) # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2
         S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
