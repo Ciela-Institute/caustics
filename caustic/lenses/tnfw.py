@@ -156,7 +156,7 @@ class TNFW(ThinLens):
             Tensor: The reference mass of the lens in Msol.
         """
         if self.interpret_m_total_mass:
-            return mass * (tau**2 + 1) / (tau**2 * ((tau**2 - 1) * tau.log() + torch.pi * tau - (tau**2 + 1)))
+            return mass * (tau**2 + 1)**2 / (tau**2 * ((tau**2 - 1) * tau.log() + torch.pi * tau - (tau**2 + 1)))
         else:
             d_l = self.cosmology.angular_diameter_distance(z_l, params)
             return 4 * torch.pi * (scale_radius * d_l * arcsec_to_rad)**3 * self.get_scale_density(params)
