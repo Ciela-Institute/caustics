@@ -70,6 +70,12 @@ def test_runs():
     
     Psi = lens.potential(thx, thy, z_s, lens.pack(x))
     assert torch.all(torch.isfinite(Psi))
+    alpha = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    assert torch.all(torch.isfinite(alpha[0]))
+    assert torch.all(torch.isfinite(alpha[1]))
+    kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
+    assert torch.all(torch.isfinite(kappa))
+    
 
 if __name__ == "__main__":
     test()
