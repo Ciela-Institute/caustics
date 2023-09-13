@@ -54,6 +54,9 @@ class TNFW(ThinLens):
             the mass is intepreted as the total mass of the halo (good because it makes sense). If
             false it is intepreted as what the mass would have been within R200 of a an NFW that
             isn't truncated (good because it is easily compared with an NFW).
+        use_case (str): Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
+            specifically cant be both batchable and differentiable. You may select which version
+            you wish to use by setting this parameter to one of: batchable, differentiable.
 
     """
     def __init__(

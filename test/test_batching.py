@@ -4,7 +4,7 @@ from utils import setup_image_simulator, setup_simulator
 import pytest
 
 def test_vmapped_simulator():
-    sim, (sim_params, cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True, use_nfw = False)
+    sim, (sim_params, cosmo_params, lens_params, source_params) = setup_simulator(batched_params=True)
     n_pix = sim.n_pix
     print(sim.params)
  

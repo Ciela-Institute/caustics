@@ -30,6 +30,9 @@ class NFW(ThinLens):
         c (Optional[Tensor]): Concentration parameter of the lens. Default is None.
         s (float): Softening parameter to avoid singularities at the center of the lens. 
             Default is 0.0.
+        use_case (str): Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
+            specifically cant be both batchable and differentiable. You may select which version
+            you wish to use by setting this parameter to one of: batchable, differentiable.
 
     Methods:
         get_scale_radius: Returns the scale radius of the lens.
@@ -52,6 +55,7 @@ class NFW(ThinLens):
         m: Optional[Union[Tensor, float]] = None,
         c: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
+        use_case = "batchable",
         name: str = None,
     ):
         """
@@ -78,6 +82,16 @@ class NFW(ThinLens):
         self.add_param("m", m)
         self.add_param("c", c)
         self.s = s
+        if use_case == "batchable":
+            self._f = self._f_batchable
+            self._h = self._h_batchable
+            self._g = self._g_batchable
+        elif use_case == "differentiable":
+            self._f = self._f_differentiable
+            self._h = self._h_differentiable
+            self._g = self._g_differentiable
+        else:
+            raise ValueError("use case should be one of: batchable, differentiable")
 
     @unpack(0)
     def get_scale_radius(self, z_l, x0, y0, m, c, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
@@ -137,7 +151,7 @@ class NFW(ThinLens):
         return self.get_scale_density(params) * self.get_scale_radius(params) / critical_surface_density
 
     @staticmethod
-    def _f(x: Tensor) -> Tensor:
+    def _f_differentiable(x: Tensor) -> Tensor:
         """
         Helper method for computing deflection angles.
 
@@ -152,9 +166,30 @@ class NFW(ThinLens):
         f[x > 1] = 1 - 2 / (x[x > 1]**2 - 1).sqrt() * ((x[x > 1] - 1) / (x[x > 1] + 1)).sqrt().arctan()
         f[x < 1] = 1 - 2 / (1 - x[x < 1]**2).sqrt() * ((1 - x[x < 1]) / (1 + x[x < 1])).sqrt().arctanh()
         return f
+    @staticmethod
+    def _f_batchable(x: Tensor) -> Tensor:
+        """
+        Helper method for computing deflection angles.
+
+        Args:
+            x (Tensor): The scaled radius (xi / xi_0).
+
+        Returns:
+            Tensor: Result of the deflection angle computation.
+        """
+        # TODO: generalize beyond torch, or patch Tensor
+        return torch.where(
+            x > 1,
+            1 - 2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
+            torch.where(
+                x < 1,
+                1 - 2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
+                torch.zeros_like(x), # x == 1
+            )
+        )
 
     @staticmethod
-    def _g(x: Tensor) -> Tensor:
+    def _g_differentiable(x: Tensor) -> Tensor:
         """
         Helper method for computing lensing potential.
 
@@ -170,9 +205,32 @@ class NFW(ThinLens):
         term_2[x > 1] = (1 / x[x > 1]).arccos() ** 2
         term_2[x < 1] = -(1 / x[x < 1]).arccosh() ** 2
         return term_1 + term_2
+    @staticmethod
+    def _g_batchable(x: Tensor) -> Tensor:
+        """
+        Helper method for computing lensing potential.
+
+        Args:
+            x (Tensor): The scaled radius (xi / xi_0).
+
+        Returns:
+            Tensor: Result of the lensing potential computation.
+        """
+        # TODO: generalize beyond torch, or patch Tensor
+        term_1 = (x / 2).log() ** 2
+        term_2 = torch.where(
+            x > 1,
+            (1 / x).arccos() ** 2,
+            torch.where(
+                x < 1,
+                -(1 / x).arccosh() ** 2,
+                torch.zeros_like(x), # x == 1
+            )
+        )
+        return term_1 + term_2
 
     @staticmethod
-    def _h(x: Tensor) -> Tensor:
+    def _h_differentiable(x: Tensor) -> Tensor:
         """
         Helper method for computing reduced deflection angles.
 
@@ -187,6 +245,29 @@ class NFW(ThinLens):
         term_2[x > 1] = (1 / x[x > 1]).arccos() * 1 / (x[x > 1]**2 - 1).sqrt()
         term_2[x < 1] = (1 / x[x < 1]).arccosh() * 1 / (1 - x[x < 1]**2).sqrt()
         return term_1 + term_2
+    @staticmethod
+    def _h_batchable(x: Tensor) -> Tensor:
+        """
+        Helper method for computing reduced deflection angles.
+
+        Args:
+            x (Tensor): The scaled radius (xi / xi_0).
+
+        Returns:
+            Tensor: Result of the reduced deflection angle computation.
+        """
+        term_1 = (x / 2).log()
+        term_2 = torch.where(
+            x > 1,
+            (1 / x).arccos() * 1 / (x**2 - 1).sqrt(),
+            torch.where(
+                x < 1,
+                (1 / x).arccosh() * 1 / (1 - x**2).sqrt(),
+                torch.ones_like(x)
+            )
+        )
+        return term_1 + term_2
+    
 
     @unpack(3)
     def reduced_deflection_angle(
