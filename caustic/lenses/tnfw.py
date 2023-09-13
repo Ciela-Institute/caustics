@@ -88,8 +88,11 @@ class TNFW(ThinLens):
         """
         Helper method from Baltz et al. 2009 equation A.5
         """
-        return torch.where(x == 1, torch.ones_like(x), ((1 / x.to(dtype=torch.cdouble)).arccos() / (x.to(dtype=torch.cdouble)**2 - 1).sqrt()).abs())
-
+        f = torch.ones_like(x)
+        f[x < 1] = torch.arctanh((1. - x[x < 1]**2).sqrt()) / (1. - x[x < 1]**2).sqrt()
+        f[x > 1] = torch.arctan((x[x > 1]**2 - 1.).sqrt()) / (x[x > 1]**2 - 1.).sqrt()
+        return f
+    
     @staticmethod
     def _L(x, tau):
         """

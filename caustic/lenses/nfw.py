@@ -148,15 +148,10 @@ class NFW(ThinLens):
             Tensor: Result of the deflection angle computation.
         """
         # TODO: generalize beyond torch, or patch Tensor
-        return torch.where(
-            x > 1,
-            1 - 2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
-            torch.where(
-                x < 1,
-                1 - 2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
-                0.0,
-            ),
-        )
+        f = torch.zeros_like(x)
+        f[x > 1] = 1 - 2 / (x[x > 1]**2 - 1).sqrt() * ((x[x > 1] - 1) / (x[x > 1] + 1)).sqrt().arctan()
+        f[x < 1] = 1 - 2 / (1 - x[x < 1]**2).sqrt() * ((1 - x[x < 1]) / (1 + x[x < 1])).sqrt().arctanh()
+        return f
 
     @staticmethod
     def _g(x: Tensor) -> Tensor:
@@ -171,11 +166,9 @@ class NFW(ThinLens):
         """
         # TODO: generalize beyond torch, or patch Tensor
         term_1 = (x / 2).log() ** 2
-        term_2 = torch.where(
-            x > 1,
-            (1 / x).arccos() ** 2,
-            torch.where(x < 1, -(1 / x).arccosh() ** 2, 0.0),
-        )
+        term_2 = torch.zeros_like(x)
+        term_2[x > 1] = (1 / x[x > 1]).arccos() ** 2
+        term_2[x < 1] = -(1 / x).arccosh() ** 2
         return term_1 + term_2
 
     @staticmethod
@@ -190,16 +183,10 @@ class NFW(ThinLens):
             Tensor: Result of the reduced deflection angle computation.
         """
         term_1 = (x / 2).log()
-        term_2 = torch.where(
-            x > 1,
-            term_1 + (1 / x).arccos() * 1 / (x**2 - 1).sqrt(),
-            torch.where(
-                x < 1,
-                term_1 + (1 / x).arccosh() * 1 / (1 - x**2).sqrt(),
-                1.0 + torch.tensor(1 / 2).log(),
-            ),
-        )
-        return term_2
+        term_2 = torch.ones_like(x)
+        term_2[x > 1] = (1 / x[x > 1]).arccos() * 1 / (x[x > 1]**2 - 1).sqrt()
+        term_2[x < 1] = (1 / x[x < 1]).arccosh() * 1 / (1 - x[x < 1]**2).sqrt()
+        return term_1 + term_2
 
     @unpack(3)
     def reduced_deflection_angle(
