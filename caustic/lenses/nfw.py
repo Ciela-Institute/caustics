@@ -168,7 +168,7 @@ class NFW(ThinLens):
         term_1 = (x / 2).log() ** 2
         term_2 = torch.zeros_like(x)
         term_2[x > 1] = (1 / x[x > 1]).arccos() ** 2
-        term_2[x < 1] = -(1 / x).arccosh() ** 2
+        term_2[x < 1] = -(1 / x[x < 1]).arccosh() ** 2
         return term_1 + term_2
 
     @staticmethod
