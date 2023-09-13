@@ -57,7 +57,7 @@ def test():
 def test_runs():
     cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
-    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l)
+    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l, use_case = "differentiable")
     
     # Parameters
     z_s = torch.tensor(0.5)
