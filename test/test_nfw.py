@@ -8,7 +8,7 @@ from astropy.cosmology import default_cosmology
 # next three imports to get Rs_angle and alpha_Rs in arcsec for lenstronomy
 from lenstronomy.Cosmo.lens_cosmo import LensCosmo
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import lens_test_helper
+from utils import lens_test_helper, setup_grids
 
 from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustic.lenses import NFW
@@ -52,6 +52,30 @@ def test():
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
 
+def test_runs():
+    cosmology = CausticFlatLambdaCDM(name="cosmo")
+    z_l = torch.tensor(0.1)
+    lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case = "differentiable")
+    
+    # Parameters
+    z_s = torch.tensor(0.5)
+
+    thx0 = 0.457
+    thy0 = 0.141
+    m = 1e12
+    rs = 8.0
+    x = torch.tensor([thx0, thy0, m, rs])
+    
+    thx, thy, thx_ls, thy_ls = setup_grids()
+    
+    Psi = lens.potential(thx, thy, z_s, lens.pack(x))
+    assert torch.all(torch.isfinite(Psi))
+    alpha = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    assert torch.all(torch.isfinite(alpha[0]))
+    assert torch.all(torch.isfinite(alpha[1]))
+    kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
+    assert torch.all(torch.isfinite(kappa))
+    
 
 if __name__ == "__main__":
     test()
