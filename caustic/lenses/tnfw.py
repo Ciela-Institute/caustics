@@ -54,6 +54,9 @@ class TNFW(ThinLens):
             the mass is intepreted as the total mass of the halo (good because it makes sense). If
             false it is intepreted as what the mass would have been within R200 of a an NFW that
             isn't truncated (good because it is easily compared with an NFW).
+        use_case (str): Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
+            specifically cant be both batchable and differentiable. You may select which version
+            you wish to use by setting this parameter to one of: batchable, differentiable.
 
     """
     def __init__(
@@ -67,6 +70,7 @@ class TNFW(ThinLens):
         tau: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         interpret_m_total_mass: bool = True,
+        use_case = "batchable",
         name: str = None,
     ):
         """
@@ -82,14 +86,27 @@ class TNFW(ThinLens):
         self.add_param("tau", tau)
         self.s = s
         self.interpret_m_total_mass = interpret_m_total_mass
-
+        if use_case == "batchable":
+            self._F = self._F_batchable
+        elif use_case == "differentiable":
+            self._F = self._F_differentiable
+        else:
+            raise ValueError("use case should be one of: batchable, differentiable")
+        
     @staticmethod
-    def _F(x):
+    def _F_batchable(x):
         """
         Helper method from Baltz et al. 2009 equation A.5
         """
         return torch.where(x == 1, torch.ones_like(x), ((1 / x.to(dtype=torch.cdouble)).arccos() / (x.to(dtype=torch.cdouble)**2 - 1).sqrt()).abs())
 
+    @staticmethod
+    def _F_differentiable(x):
+        f = torch.ones_like(x)
+        f[x < 1] = torch.arctanh((1. - x[x < 1]**2).sqrt()) / (1. - x[x < 1]**2).sqrt()
+        f[x > 1] = torch.arctan((x[x > 1]**2 - 1.).sqrt()) / (x[x > 1]**2 - 1.).sqrt()
+        return f
+    
     @staticmethod
     def _L(x, tau):
         """

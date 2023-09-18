@@ -12,7 +12,7 @@ from .packed import Packed
 from .namespace_dict import NamespaceDict, NestedNamespaceDict
 from .parameter import Parameter
 
-__all__ = ("Parametrized",)
+__all__ = ("Parametrized","unpack")
 
 class Parametrized:
     """
