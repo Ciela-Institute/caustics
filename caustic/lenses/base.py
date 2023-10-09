@@ -165,7 +165,7 @@ class ThickLens(Parametrized):
         ax, ay = self.effective_reduced_deflection_angle(x, y, z_s, params)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2))
+        J = torch.zeros((*ax.shape, 2, 2)).to(device=ax.device, dtype=ax.dtype)
         J[...,0,1], J[...,0,0] = torch.gradient(ax, spacing = pixelscale)
         J[...,1,1], J[...,1,0] = torch.gradient(ay, spacing = pixelscale)
         return J
@@ -185,7 +185,7 @@ class ThickLens(Parametrized):
         ax, ay = self.effective_reduced_deflection_angle(x, y, z_s, params)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2))
+        J = torch.zeros((*ax.shape, 2, 2)).to(device=ax.device, dtype=ax.dtype)
         J[...,0,0], = torch.autograd.grad(ax, x, grad_outputs = torch.ones_like(ax), create_graph = True)
         J[...,0,1], = torch.autograd.grad(ax, y, grad_outputs = torch.ones_like(ax), create_graph = True)
         J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
@@ -512,7 +512,7 @@ class ThinLens(Parametrized):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2))
+        J = torch.zeros((*ax.shape, 2, 2)).to(device=ax.device, dtype=ax.dtype)
         J[...,0,1], J[...,0,0] = torch.gradient(ax, spacing = pixelscale)
         J[...,1,1], J[...,1,0] = torch.gradient(ay, spacing = pixelscale)
         return J
@@ -532,7 +532,7 @@ class ThinLens(Parametrized):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2))
+        J = torch.zeros((*ax.shape, 2, 2)).to(device=ax.device, dtype=ax.dtype)
         J[...,0,0], = torch.autograd.grad(ax, x, grad_outputs = torch.ones_like(ax), create_graph = True)
         J[...,0,1], = torch.autograd.grad(ax, y, grad_outputs = torch.ones_like(ax), create_graph = True)
         J[...,1,0], = torch.autograd.grad(ay, x, grad_outputs = torch.ones_like(ay), create_graph = True)
