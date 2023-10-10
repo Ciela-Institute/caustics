@@ -37,6 +37,8 @@ jobs:
         # Install deps
         cd $GITHUB_WORKSPACE
         pip install -r requirements.txt
+        pip list
+        pip show astropy
       shell: bash
     - name: Install Caustic
       run: |
