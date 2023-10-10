@@ -1,4 +1,5 @@
 from math import pi
+from operator import mul
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -89,10 +90,17 @@ def test_params():
     params = [torch.randn(pixels, pixels) for i in range(10)]
 
     # Test out the computation of a few quantities to make sure params are passed correctly
+    
+    # First case, params as list of tensors
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
     assert kappa_eff.shape == torch.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, z_s, params)
 
+    # Test that we can pass a dictionary
+    params = {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
+    kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
+    assert kappa_eff.shape == torch.Size([32, 32])
+    alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, z_s, params)
 
     
 if __name__ == "__main__":
