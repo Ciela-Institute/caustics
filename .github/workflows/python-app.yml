@@ -46,15 +46,13 @@ jobs:
         pip install pytest pytest-cov torch wheel
         # Install deps
         cd $GITHUB_WORKSPACE
-        cat requirements.txt
-        ls
         pip install -r requirements.txt
       shell: bash
 
     - name: Install Caustic
       run: |
         cd $GITHUB_WORKSPACE
-        pip install -e .
+        pip install -e .[dev]
         pip show caustic
       shell: bash
 
