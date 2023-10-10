@@ -413,7 +413,6 @@ def unpack(n_leading_args=0):
     def decorator(method):
         sig = inspect.signature(method)
         method_params = list(sig.parameters.keys())[1:]  # exclude 'self'
-        print(method_params)
         n_params = len(method_params)
 
         @functools.wraps(method)
