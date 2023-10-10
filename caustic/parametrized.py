@@ -450,7 +450,7 @@ def unpack(n_leading_args=0):
                     # params were part of a collection already (don't double wrap them)
                     x = self.pack(trailing_args[0])
                 else:
-                    # all parameters were passed indiviually in args or kwargs
+                    # all parameters were passed individually in args or kwargs
                     x = self.pack(trailing_args)
             unpacked_args = self.unpack(x)
             kwargs['params'] = x
