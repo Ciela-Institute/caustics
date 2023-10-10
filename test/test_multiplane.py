@@ -96,6 +96,11 @@ def test_params():
     assert kappa_eff.shape == torch.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, z_s, params)
 
+    # Second case, params given as a kwargs 
+    kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params=params)
+    assert kappa_eff.shape == torch.Size([32, 32])
+    alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, z_s, params=params)
+
     # Test that we can pass a dictionary
     params = {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
