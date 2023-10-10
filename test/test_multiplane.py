@@ -5,9 +5,10 @@ import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_ap
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
+import numpy as np
 
 from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import SIE, Multiplane
+from caustic.lenses import SIE, Multiplane, PixelatedConvergence
 from caustic.utils import get_meshgrid
 
 def test():
@@ -59,6 +60,38 @@ def test():
     lens_test_helper(
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
+
+
+def test_params():
+    z_s = 1
+    n_planes = 10
+    cosmology = FlatLambdaCDM()
+    pixel_size = 0.04
+    pixels = 16
+    z = np.linspace(1e-2, 1, n_planes)
+    planes = []
+    for p in range(n_planes):
+        lens = PixelatedConvergence(
+                name=f"plane_{p}",
+                pixelscale=pixel_size,
+                n_pix=pixels,
+                cosmology=cosmology,
+                z_l=z[p],
+                x0=0.,
+                y0=0.,
+                shape=(pixels, pixels),
+                padding="tile"
+                )
+        planes.append(lens) 
+    multiplane_lens = Multiplane(cosmology=cosmology, lenses=planes)
+    z_s = torch.tensor(z_s)
+    x, y = get_meshgrid(pixel_size, 32, 32)
+    params = [torch.randn(pixels, pixels) for i in range(10)]
+
+    # Test out the computation of a few quantities to make sure params are passed correctly
+    kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
+    assert kappa_eff.shape == torch.Size([32, 32])
+    alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, z_s, params)
 
 
     

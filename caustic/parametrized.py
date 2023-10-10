@@ -413,14 +413,14 @@ def unpack(n_leading_args=0):
     def decorator(method):
         sig = inspect.signature(method)
         method_params = list(sig.parameters.keys())[1:]  # exclude 'self'
+        print(method_params)
         n_params = len(method_params)
 
         @functools.wraps(method)
         def wrapped(self, *args, **kwargs):
             args = list(args)
             leading_args = []
-            
-            # Handle leading args given as kwargs
+            # Collect leading args and separate them from module parameters (trailing args)
             for i in range(n_leading_args):
                 param = method_params[i]
                 if param in kwargs:
@@ -428,12 +428,15 @@ def unpack(n_leading_args=0):
                 elif args:
                     leading_args.append(args.pop(0))
                                 
+            # Collect module parameters passed in argument (dynamic or otherwise)
             if args and isinstance(args[0], Packed):
+                # Case 1: Params is already Packed (or no params were passed)
                 x = args.pop(0)
             elif "params" in kwargs:
+                # Case 2: params was passed explicitly as a kwargs, i.e. user used signature "method(*leading_args, params=params)"
                 x = kwargs["params"]
             else:
-                # Handle args given as kwargs
+                # Case 3 (most common): params were passed as the trailing arguments of the method
                 trailing_args = []
                 for i in range(n_leading_args, n_params):
                     param = method_params[i]
@@ -441,9 +444,14 @@ def unpack(n_leading_args=0):
                         trailing_args.append(kwargs.pop(param))
                     elif args:
                         trailing_args.append(args.pop(0))
-                if len(trailing_args) == 1 and trailing_args[0] is None:
+                if not trailing_args or (len(trailing_args) == 1 and trailing_args[0] is None):
+                    # No params were passed, module is static and was expecting no params
                     x = Packed()
+                elif isinstance(trailing_args[0], (list, dict)):
+                    # params were part of a collection already (don't double wrap them)
+                    x = self.pack(trailing_args[0])
                 else:
+                    # all parameters were passed indiviually in args or kwargs
                     x = self.pack(trailing_args)
             unpacked_args = self.unpack(x)
             kwargs['params'] = x
