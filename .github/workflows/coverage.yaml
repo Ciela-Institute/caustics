@@ -39,6 +39,7 @@ jobs:
         pip install -r requirements.txt
         pip list
         pip show astropy
+        pip install astropy
       shell: bash
     - name: Install Caustic
       run: |
