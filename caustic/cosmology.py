@@ -242,6 +242,11 @@ class FlatLambdaCDM(Cosmology):
         self._comoving_distance_helper_y_grid = _comoving_distance_helper_y_grid.to(
             dtype=torch.float32
         )
+    
+    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
+        super().to(device, dtype)
+        self._comoving_distance_helper_y_grid = self._comoving_distance_helper_y_grid.to(device, dtype)
+        self._comoving_distance_helper_x_grid = self._comoving_distance_helper_x_grid.to(device, dtype)
 
     def hubble_distance(self, h0):
         """

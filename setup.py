@@ -21,6 +21,12 @@ setup(
     license="MIT license",
     packages=find_packages(),
     install_requires=read_lines("requirements.txt"),
+    extras_require={
+        "dev": [
+            "lenstronomy==1.11.1",
+            "setuptools>=67.2.0",
+        ],
+    },
     keywords = [
         "gravitational lensing",
         "astrophysics",
