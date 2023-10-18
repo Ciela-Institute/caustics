@@ -33,5 +33,16 @@ def test_comoving_dist():
         assert np.allclose(vals, vals_ref, rtol, atol)
 
 
+def test_to_method_flatlambdacdm():
+    cosmo = CausticFlatLambdaCDM()
+    # Make sure private tensors are created on float32 by default
+    assert cosmo._comoving_distance_helper_x_grid.dtype == torch.float32
+    assert cosmo._comoving_distance_helper_y_grid.dtype == torch.float32
+    cosmo.to(dtype=torch.float64)
+    # Make sure distance helper get sent to proper dtype and device
+    assert cosmo._comoving_distance_helper_x_grid.dtype == torch.float64
+    assert cosmo._comoving_distance_helper_y_grid.dtype == torch.float64
+
+
 if __name__ == "__main__":
     test_comoving_dist()

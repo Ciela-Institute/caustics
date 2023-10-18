@@ -28,3 +28,10 @@ def test_shape_error_messages():
         # wrong number of dimensions
         PixelatedConvergence(fov, n_pix, cosmo, shape=(8,))
 
+
+def test_repr():
+    cosmo = FlatLambdaCDM()
+    print(cosmo.h0)
+    assert cosmo.h0.__repr__() == f"Param(value={cosmo.h0.value}, dtype={str(cosmo.h0.dtype)})"
+    cosmo = FlatLambdaCDM(h0=None)
+    assert cosmo.h0.__repr__() == f"Param(shape={cosmo.h0.shape})"

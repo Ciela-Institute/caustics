@@ -80,6 +80,6 @@ class Parameter:
 
     def __repr__(self) -> str:
         if self.static:
-            return f"Param(value={self.value}, dtype={str(self.dtype)[-1]})"
+            return f"Param(value={self.value}, dtype={str(self.dtype)})"
         else:
             return f"Param(shape={self.shape})"
