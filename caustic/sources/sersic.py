@@ -4,7 +4,7 @@ from torch import Tensor
 
 from ..utils import to_elliptical, translate_rotate
 from .base import Source
-from ..parametrized import unpack
+from ..sims import unpack
 
 __all__ = ("Sersic",)
 

@@ -6,7 +6,7 @@ from torch import Tensor
 
 from ..cosmology import Cosmology
 from .base import ThickLens, ThinLens
-from ..parametrized import unpack
+from ..sims import unpack
 
 __all__ = ("Multiplane",)
 

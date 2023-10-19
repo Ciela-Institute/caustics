@@ -5,6 +5,7 @@ from functools import partial
 import torch
 from torch import Tensor
 from torch.func import jacfwd
+import numpy as np
 
 def flip_axis_ratio(q, phi):
     """
@@ -416,3 +417,17 @@ def batch_lm(
         X = Xnew
         
     return X, L, C
+
+def gaussian(nx, ny, pixelscale, sigma, upsample = 1, dtype = torch.float32, device = None):
+    
+    X, Y = np.meshgrid(
+        np.linspace(-(nx*upsample - 1) * pixelscale / 2, (nx*upsample - 1) * pixelscale / 2, nx*upsample),
+        np.linspace(-(ny*upsample - 1) * pixelscale / 2, (ny*upsample - 1) * pixelscale / 2, ny*upsample),
+        indexing = "xy",
+    )
+
+    Z = np.exp(- 0.5 * (X**2 + Y**2) / sigma**2)
+    
+    Z = Z.reshape(ny, upsample, nx, upsample).sum(axis=(1, 3))
+
+    return torch.tensor(Z / np.sum(Z), dtype = dtype, device = device)

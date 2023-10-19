@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from torch import Tensor
 
-from ..parametrized import Parametrized, unpack
+from ..sims import Parametrized, unpack
 
 __all__ = ("Source",)
 

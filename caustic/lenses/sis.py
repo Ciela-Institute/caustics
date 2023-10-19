@@ -6,7 +6,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
-from ..parametrized import unpack
+from ..sims import unpack
 
 __all__ = ("SIS",)
 
