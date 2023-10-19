@@ -63,7 +63,7 @@ class Lens_Source(Simulator):
         self.lens_mass = lens_mass
         self.source_light = source_light
         self.lens_light = lens_light
-        self.psf = torch.as_tensor(psf)
+        self.psf = None if psf is None else torch.as_tensor(psf)
         self.add_param("z_s", z_s)
 
         # Image grid
