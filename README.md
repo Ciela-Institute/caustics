@@ -1,4 +1,5 @@
 [![tests](https://github.com/Ciela-Institute/caustic/actions/workflows/python-app.yml/badge.svg?branch=main)](https://github.com/Ciela-Institute/caustic/actions)
+[![Docs](https://github.com/Ciela-Institute/caustic/actions/workflows/documentation.yaml/badge.svg)](https://github.com/Ciela-Institute/caustic/actions/workflows/documentation.yaml)
 [![PyPI version](https://badge.fury.io/py/caustic.svg)](https://pypi.org/project/caustic/)
 [![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustic)](https://app.codecov.io/gh/Ciela-Institute/caustic)
 # caustic
