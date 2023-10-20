@@ -428,7 +428,7 @@ class ThinLens(Parametrized):
 
     @unpack(3)
     def forward_raytrace(
-            self, bx: Tensor, by: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, epsilon = 1e-2, n_init = 50, fov = 5., **kwargs
+            self, bx: Tensor, by: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, epsilon = 1e-4, n_init = 100, fov = 5., **kwargs
     ) -> tuple[Tensor, Tensor]:
         """
         Perform a forward ray-tracing operation which maps from the source plane to the image plane.
@@ -438,7 +438,7 @@ class ThinLens(Parametrized):
             by (Tensor): Tensor of y coordinate in the source plane (scalar).
             z_s (Tensor): Tensor of source redshifts.
             params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-            epsilon (Tensor): maximum distance between two images (arcsec) before they are considered the same image.
+            epsilon (Tensor): maximum distance between two images (arcsec) before they are considered the same image. Also used as constraint to select failed optimizations; After fitting in image plane, points are raytraced back to source plane and must fall within a radius of epsilon of the input bx,by to be accepted.
             n_init (int): number of random initialization points used to try and find image plane points.
             fov (float): the field of view in which the initial random samples are taken.
 
@@ -463,8 +463,10 @@ class ThinLens(Parametrized):
             f_args = (z_s, params)
         )
 
-        # Clip points that didn't converge
-        x = x[c < 1e-2*epsilon**2]
+        # Clip points that didn't converge to the source point
+        bx_fit, by_fit = self.raytrace(x[...,0], x[...,1], z_s, params)
+        R = torch.sqrt((bx_fit - bx)**2 + (by_fit - by)**2)
+        x = x[R < epsilon]
 
         # Cluster results into n-images
         res = []
