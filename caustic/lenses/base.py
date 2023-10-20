@@ -14,7 +14,13 @@ from ..utils import batch_lm
 
 __all__ = ("ThinLens", "ThickLens")
 
-class ThickLens(Parametrized):
+class Lens(Parametrized):
+    """
+    Base class for all lenses
+    """
+    pass
+
+class ThickLens(Lens):
     """
     Base class for modeling gravitational lenses that cannot be treated using the thin lens approximation.
     It is an abstract class and should be subclassed for different types of lens models.
@@ -288,7 +294,7 @@ class ThickLens(Parametrized):
         """
         return get_magnification(partial(self.raytrace, params = params), x, y, z_s)
 
-class ThinLens(Parametrized):
+class ThinLens(Lens):
     """Base class for thin gravitational lenses.
 
     This class provides an interface for thin gravitational lenses,

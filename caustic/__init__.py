@@ -8,5 +8,5 @@ from .forward_raytrace import *
 from .packed import *
 from .parametrized import *
 from .simulator import *
-from .sources import *
+from .light import *
 from .utils import *
