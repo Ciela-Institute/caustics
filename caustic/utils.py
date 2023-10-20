@@ -85,13 +85,13 @@ def to_elliptical(x, y, q: Tensor):
 
 
 def get_meshgrid(
-    resolution, nx, ny, device=None, dtype=torch.float32
+    pixelscale, nx, ny, device=None, dtype=torch.float32
 ) -> Tuple[Tensor, Tensor]:
     """
-    Generates a 2D meshgrid based on the provided resolution and dimensions.
+    Generates a 2D meshgrid based on the provided pixelscale and dimensions.
 
     Args:
-        resolution (float): The scale of the meshgrid in each dimension.
+        pixelscale (float): The scale of the meshgrid in each dimension.
         nx (int): The number of grid points along the x-axis.
         ny (int): The number of grid points along the y-axis.
         device (torch.device, optional): The device on which to create the tensor. Defaults to None.
@@ -100,8 +100,8 @@ def get_meshgrid(
     Returns:
         Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
     """
-    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * resolution * (nx - 1) / 2
-    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * resolution * (ny - 1) / 2
+    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2
+    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
@@ -418,7 +418,7 @@ def batch_lm(
         
     return X, L, C
 
-def gaussian(nx, ny, pixelscale, sigma, upsample = 1, dtype = torch.float32, device = None):
+def gaussian(pixelscale, nx, ny, sigma, upsample = 1, dtype = torch.float32, device = None):
     
     X, Y = np.meshgrid(
         np.linspace(-(nx*upsample - 1) * pixelscale / 2, (nx*upsample - 1) * pixelscale / 2, nx*upsample),
