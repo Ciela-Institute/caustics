@@ -50,7 +50,7 @@ class Pixelated(Source):
             raise ValueError(
                 f"image must be 2D or 3D (channels first). Received a {image.ndim}D tensor)"
             )
-        elif shape is None and len(shape) not in [2, 3]:
+        elif shape is not None and len(shape) not in [2, 3]:
             raise ValueError(
                 f"shape must be specify 2D or 3D tensors. Received shape={shape}"
             )
@@ -61,7 +61,7 @@ class Pixelated(Source):
         self.add_param("pixelscale", pixelscale)
 
     @unpack(2)
-    def brightness(self, x, y, x0, y0, image, pixelscale, *args, params: Optional["Packed"] = None):
+    def brightness(self, x, y, x0, y0, image, pixelscale, *args, params: Optional["Packed"] = None, **kwargs):
         """
         Implements the `brightness` method for `Pixelated`. The brightness at a given point is 
         determined by interpolating values from the source image.
@@ -78,6 +78,8 @@ class Pixelated(Source):
             Tensor: The brightness of the source at the given coordinate(s). The brightness is 
             determined by interpolating values from the source image.
         """
+        fov_x = pixelscale * image.shape[0]
+        fov_y = pixelscale * image.shape[1]
         return interp2d(
-            image, (x - x0).view(-1) / pixelscale, (y - y0).view(-1) / pixelscale
+            image, (x - x0).view(-1) / fov_x*2, (y - y0).view(-1) / fov_y*2 # make coordinates bounds at half the fov
         ).reshape(x.shape)

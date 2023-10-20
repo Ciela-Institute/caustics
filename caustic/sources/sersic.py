@@ -69,7 +69,7 @@ class Sersic(Source):
         self.lenstronomy_k_mode = use_lenstronomy_k
 
     @unpack(2)
-    def brightness(self, x, y, x0, y0, q, phi, n, Re, Ie, *args, params: Optional["Packed"] = None):
+    def brightness(self, x, y, x0, y0, q, phi, n, Re, Ie, *args, params: Optional["Packed"] = None, **kwargs):
         """
         Implements the `brightness` method for `Sersic`. The brightness at a given point is 
         determined by the Sersic profile formula.

@@ -1,4 +1,5 @@
-__version__ = '0.4.1'
+__version__ = '0.4.10'
+__author__ = "Ciela"
 
 from .constants import *
 from .lenses import *

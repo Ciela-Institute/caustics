@@ -30,10 +30,6 @@ class Parameter:
             self._shape = shape
         else:
             value = torch.as_tensor(value)
-            if shape != value.shape:
-                raise ValueError(
-                    f"value's shape {value.shape} does not match provided shape {shape}"
-                )
             self._shape = value.shape
         self._value = value
         self._dtype = None if value is None else value.dtype
@@ -84,6 +80,6 @@ class Parameter:
 
     def __repr__(self) -> str:
         if self.static:
-            return f"Param(value={self.value}, dtype={str(self.dtype)[-1]})"
+            return f"Param(value={self.value}, dtype={str(self.dtype)})"
         else:
             return f"Param(shape={self.shape})"
