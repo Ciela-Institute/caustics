@@ -1,7 +1,7 @@
 __version__ = '0.4.10'
 __author__ = "Ciela"
 
-from . import lenses, sources, utils, sims, demo
+from . import lenses, sources, utils, sims
 from .constants import *
 # from .lenses import *
 from .cosmology import *
