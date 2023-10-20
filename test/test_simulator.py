@@ -17,12 +17,12 @@ def test_simulator_runs():
     source = Sersic(name="source", x0 = 0.01, y0 = -0.03, q = 0.6, phi = -pi/4, n = 2., Re = 0.5, Ie = 1.)
     lenslight = Sersic(name="lenslight", x0 = 0.0, y0 = 0.01, q = 0.7, phi = pi/4, n = 3., Re = 0.7, Ie = 1.)
 
-    psf = gaussian(11, 11, 0.05, 0.2, upsample = 2)
+    psf = gaussian(0.05, 11, 11, 0.2, upsample = 2)
     
-    sim = Lens_Source(lens_mass = lensmass, source_light = source, lens_light = lenslight, psf = psf, z_s = 2.)
+    sim = Lens_Source(lens = lensmass, source = source, pixelscale = 0.05, pixels_x = 50, lens_light = lenslight, psf = psf, z_s = 2.)
 
     assert torch.all(torch.isfinite(sim()))
-    assert torch.all(torch.isfinite(sim({}, sourcelight=True, lenslight=True, lenssource=True, psfconvolve=False)))
-    assert torch.all(torch.isfinite(sim({}, sourcelight=True, lenslight=True, lenssource=False, psfconvolve=True)))
-    assert torch.all(torch.isfinite(sim({}, sourcelight=True, lenslight=False, lenssource=True, psfconvolve=True)))
-    assert torch.all(torch.isfinite(sim({}, sourcelight=False, lenslight=True, lenssource=True, psfconvolve=True)))
+    assert torch.all(torch.isfinite(sim({}, source_light=True, lens_light=True, lens_source=True, psf_convolve=False)))
+    assert torch.all(torch.isfinite(sim({}, source_light=True, lens_light=True, lens_source=False, psf_convolve=True)))
+    assert torch.all(torch.isfinite(sim({}, source_light=True, lens_light=False, lens_source=True, psf_convolve=True)))
+    assert torch.all(torch.isfinite(sim({}, source_light=False, lens_light=True, lens_source=True, psf_convolve=True)))
