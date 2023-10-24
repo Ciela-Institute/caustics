@@ -25,6 +25,7 @@ setup(
         "dev": [
             "lenstronomy==1.11.1",
             "setuptools>=67.2.0",
+            "matplotlib",
         ],
     },
     keywords = [
