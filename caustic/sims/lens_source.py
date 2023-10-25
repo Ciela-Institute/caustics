@@ -1,7 +1,11 @@
-from .simulator import Simulator
+from copy import copy
+
+from scipy.fft import next_fast_len
 from torch.nn.functional import avg_pool2d, conv2d
 from typing import Tuple, Optional
 import torch
+
+from .simulator import Simulator
 
 __all__ = ("Lens_Source",)
 
@@ -54,6 +58,7 @@ class Lens_Source(Simulator):
         pixels_y: Optional[int] = None,
         upsample_factor: int = 1,
         psf_pad = True,
+        psf_mode = "fft",
         z_s = None,
         name: str = "sim",
     ):
@@ -76,6 +81,7 @@ class Lens_Source(Simulator):
         self.gridding = (pixels_x, pixels_y)
 
         # PSF padding if needed
+        self.psf_mode = psf_mode
         if psf_pad and self.psf is not None:
             self.psf_pad = (self.psf.shape[1]//2 + 1, self.psf.shape[0]//2 + 1)
         else:
@@ -83,11 +89,42 @@ class Lens_Source(Simulator):
 
         # Build the imaging grid
         self.upsample_factor = upsample_factor
-        npix = (self.gridding[0] + self.psf_pad[0]*2, self.gridding[1] + self.psf_pad[1]*2)
-        tx = torch.linspace(-0.5 * (pixelscale * npix[0]), 0.5 * (pixelscale * npix[0]), npix[0]*upsample_factor)
-        ty = torch.linspace(-0.5 * (pixelscale * npix[1]), 0.5 * (pixelscale * npix[1]), npix[1]*upsample_factor)
+        self.n_pix = (self.gridding[0] + self.psf_pad[0]*2, self.gridding[1] + self.psf_pad[1]*2)
+        tx = torch.linspace(-0.5 * (pixelscale * self.n_pix[0]), 0.5 * (pixelscale * self.n_pix[0]), self.n_pix[0]*upsample_factor)
+        ty = torch.linspace(-0.5 * (pixelscale * self.n_pix[1]), 0.5 * (pixelscale * self.n_pix[1]), self.n_pix[1]*upsample_factor)
         self.grid = torch.meshgrid(tx, ty, indexing = "xy")
+
+        if self.psf is not None:
+            self.psf_fft = self._fft2_padded(self.psf)            
         
+    def _fft2_padded(self, x):
+        """
+        Compute the 2D Fast Fourier Transform (FFT) of a tensor with zero-padding.
+
+        Args:
+            x (Tensor): The input tensor to be transformed.
+
+        Returns:
+            Tensor: The 2D FFT of the input tensor with zero-padding.
+        """
+        npix = copy(self.n_pix)
+        npix = (next_fast_len(npix[0]), next_fast_len(npix[1]))
+        self._s = npix
+        
+        return torch.fft.rfft2(x, self._s)
+    
+    def _unpad_fft(self, x):
+        """
+        Remove padding from the result of a 2D FFT.
+
+        Args:
+            x (Tensor): The input tensor with padding.
+
+        Returns:
+            Tensor: The input tensor without padding.
+        """
+        return torch.roll(x, (-self.psf_pad[0],-self.psf_pad[1]), dims = (-2,-1))[..., :self.n_pix[0], :self.n_pix[1]]
+
     def forward(self, params, source_light=True, lens_light=True, lens_source=True, psf_convolve=True):
         """
         params: Packed object
@@ -117,7 +154,13 @@ class Lens_Source(Simulator):
 
         # Convolve the PSF
         if psf_convolve and self.psf is not None:
-            mu = conv2d(mu[None, None], self.psf[None, None], padding = "same").squeeze()
+            if self.psf_mode == "fft":
+                mu_fft = self._fft2_padded(mu)
+                mu = self._unpad_fft(torch.fft.irfft2(mu_fft * self.psf_fft, self._s).real)
+            elif self.psf_mode == "conv2d":
+                mu = conv2d(mu[None, None], self.psf[None, None], padding = "same").squeeze()
+            else:
+                raise ValueError(f"psf_mode should be one of 'fft' or 'conv2d', not {self.psf_mode}")
 
         # Return to the desired image
         mu_native_resolution = avg_pool2d(mu[None, None], self.upsample_factor, divisor_override = 1).squeeze()
