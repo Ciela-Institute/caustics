@@ -26,6 +26,7 @@ class PixelatedConvergence(ThinLens):
         shape: Optional[tuple[int, ...]] = None,
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
+        padding = "zero",
         name: str = None,
     ):
         """Strong lensing with user provided kappa map
@@ -52,6 +53,10 @@ class PixelatedConvergence(ThinLens):
             use_next_fast_len (bool, optional): If True, adds additional padding to speed up the FFT by calling
                 `scipy.fft.next_fast_len`. The speed boost can be substantial when `n_pix` is a multiple of a
                 small prime number. Default is True.
+            padding (str): Specifies the type of padding to use. "zero" will do zero padding, "circular" will do
+                cyclic boundaries. "reflect" will do reflection padding. "tile" will tile the image at 2x2 which
+                basically identical to circular padding, but is easier. Generally you should use either "zero"
+                or "tile".
 
         """
         
@@ -74,6 +79,7 @@ class PixelatedConvergence(ThinLens):
         self.pixelscale = pixelscale
         self.fov = self.n_pix * self.pixelscale
         self.use_next_fast_len = use_next_fast_len
+        self.padding = padding
 
         # Construct kernels
         x_mg, y_mg = get_meshgrid(self.pixelscale, 2 * self.n_pix, 2 * self.n_pix)
@@ -132,8 +138,16 @@ class PixelatedConvergence(ThinLens):
         if self.use_next_fast_len:
             pad = next_fast_len(pad)
         self._s = (pad, pad)
-        return torch.fft.rfft2(x, self._s)
+        
+        if self.padding == "zero":
+            pass
+        elif self.padding in ["reflect", "circular"]:
+            x = F.pad(x[None,None], (0, self.n_pix-1, 0, self.n_pix-1), mode = self.padding).squeeze()
+        elif self.padding == "tile":
+            x = torch.tile(x, (2,2))
 
+        return torch.fft.rfft2(x, self._s)
+    
     def _unpad_fft(self, x: Tensor) -> Tensor:
         """
         Remove padding from the result of a 2D FFT.
@@ -144,7 +158,7 @@ class PixelatedConvergence(ThinLens):
         Returns:
             Tensor: The input tensor without padding.
         """
-        return x[..., -self.n_pix :, -self.n_pix :]
+        return torch.roll(x, (-self._s[0]//2,-self._s[1]//2), dims = (-2,-1))[..., :self.n_pix, :self.n_pix]
 
     def _unpad_conv2d(self, x: Tensor) -> Tensor:
         """
@@ -156,7 +170,7 @@ class PixelatedConvergence(ThinLens):
         Returns:
             Tensor: The input tensor without padding.
         """
-        return x[..., 1:, 1:]
+        return x # torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
 
     @property
     def convolution_mode(self):
@@ -211,7 +225,6 @@ class PixelatedConvergence(ThinLens):
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_fft(convergence_map)
         else:
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_conv2d(convergence_map)
-
         # Scale is distance from center of image to center of pixel on the edge
         scale = self.fov / 2
         deflection_angle_x = interp2d(
@@ -233,10 +246,10 @@ class PixelatedConvergence(ThinLens):
             tuple[Tensor, Tensor]: The x and y components of the deflection angles.
         """
         convergence_tilde = self._fft2_padded(convergence_map)
-        deflection_angle_x = torch.fft.irfft2(convergence_tilde * self.ax_kernel_tilde, self._s) * (
+        deflection_angle_x = torch.fft.irfft2(convergence_tilde * self.ax_kernel_tilde, self._s).real * (
             self.pixelscale**2 / pi
         )
-        deflection_angle_y = torch.fft.irfft2(convergence_tilde * self.ay_kernel_tilde, self._s) * (
+        deflection_angle_y = torch.fft.irfft2(convergence_tilde * self.ay_kernel_tilde, self._s).real * (
             self.pixelscale**2 / pi
         )
         return self._unpad_fft(deflection_angle_x), self._unpad_fft(deflection_angle_y)
@@ -253,11 +266,13 @@ class PixelatedConvergence(ThinLens):
         """
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
-        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
-        deflection_angle_x = F.conv2d(self.ax_kernel[None, None], convergence_map_flipped)[0, 0] * (
+        
+        pad = 2 * self.n_pix
+        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None] # F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
+        deflection_angle_x = F.conv2d(self.ax_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
-        deflection_angle_y = F.conv2d(self.ay_kernel[None, None], convergence_map_flipped)[0, 0] * (
+        deflection_angle_y = F.conv2d(self.ay_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
         return self._unpad_conv2d(deflection_angle_x), self._unpad_conv2d(deflection_angle_y)
@@ -318,7 +333,7 @@ class PixelatedConvergence(ThinLens):
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
-        potential = F.conv2d(self.potential_kernel[None, None], convergence_map_flipped)[0, 0] * (
+        potential = F.conv2d(self.potential_kernel[None, None], convergence_map_flipped, padding = "same").squeeze() * (
             self.pixelscale**2 / pi
         )
         return self._unpad_conv2d(potential)

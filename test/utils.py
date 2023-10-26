@@ -31,7 +31,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
             self.n_pix = n_pix
 
         def forward(self, params):
-            z_s = self.unpack(params)
+            z_s, = self.unpack(params)
             alphax, alphay = self.lens.reduced_deflection_angle(x=self.thx, y=self.thy, z_s=z_s, params=params) 
             bx = self.thx - alphax
             by = self.thy - alphay

@@ -14,6 +14,10 @@ Simply install caustic from PyPI:
 pip install caustic
 ```
 
+## Documentation
+
+Please see our [documentation page](Ciela-Institute.github.io/caustic/) for more detailed information.
+
 ## Contributing
 
 Please reach out to one of us if you're interested in contributing!

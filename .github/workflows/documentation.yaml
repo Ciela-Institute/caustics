@@ -1,0 +1,51 @@
+name: Docs
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+          
+      - run: |
+          pip install torch wheel        
+          pip install -r requirements.txt
+          
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y pandoc
+          pip install sphinx sphinx_rtd_theme nbsphinx
+          
+      - name: Install Caustic
+        run: |
+          cd $GITHUB_WORKSPACE
+          pip install -e .[dev]
+          pip show caustic
+        shell: bash
+        
+      - name: Clone external Jupyter Notebook repository
+        run: |
+          cd $GITHUB_WORKSPACE/docs/
+          python pull_notebooks.py
+          
+      - name: Sphinx build
+        run: |
+          sphinx-apidoc -f -o docs/ caustic/
+          sphinx-build docs _build
+          
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _build/
+          force_orphan: true

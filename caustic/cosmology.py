@@ -174,7 +174,7 @@ class Cosmology(Parametrized):
         d_l = self.angular_diameter_distance(z_l, params)
         d_s = self.angular_diameter_distance(z_s, params)
         d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
-        return d_s / d_l / d_ls / (4 * pi * G_over_c2)
+        return d_s / (4 * pi * G_over_c2 * d_l * d_ls)
 
 
 class FlatLambdaCDM(Cosmology):
@@ -210,6 +210,11 @@ class FlatLambdaCDM(Cosmology):
         self._comoving_distance_helper_y_grid = _comoving_distance_helper_y_grid.to(
             dtype=torch.float32
         )
+    
+    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
+        super().to(device, dtype)
+        self._comoving_distance_helper_y_grid = self._comoving_distance_helper_y_grid.to(device, dtype)
+        self._comoving_distance_helper_x_grid = self._comoving_distance_helper_x_grid.to(device, dtype)
 
     def hubble_distance(self, h0):
         """
