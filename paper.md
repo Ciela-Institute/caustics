@@ -69,6 +69,15 @@ The goal of `caustic` development has been primarily focused on two aspects, pro
 The simulator framework involves constructing a forward model which behaves as a function of some lensing parameters.
 This useful for generating large samples of images to train machine learning models and can straightforwardly be passed to external libraries which handle sampling, such as `emcee` [@emcee] and `Pyro` [@pyro].
 
+# Performance
+
+Here we discuss the performance enhancements available in Caustic.
+We will generate a mock lensed image and sample the posterior distribution as a demonstration of the speedup possible using GPUs.
+
+![Mock data generated using caustic](media/mock_obs.png)
+
+![Sampling the posterior using caustic combined with NUTS (Pyro implementation)](media/caustic_corner.png)
+
 # Acknowledgements
 
 CS acknowledges the support of a NSERC Postdoctoral Fellowship and a CITA National Fellowship.
