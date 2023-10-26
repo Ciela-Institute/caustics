@@ -35,6 +35,7 @@ authors:
     affiliation: "1, 2, 3, 4"
   - name: Adam Coogan
     orcid: 0000-0002-0055-1780
+    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
 affiliations:
  - name: Department of Physics, Universit{\'e} de Montr{\'e}al, Montr{\'e}al, Qu{\'e}bec, Canada
    index: 1
