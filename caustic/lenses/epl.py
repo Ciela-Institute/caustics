@@ -6,7 +6,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
-from ..sims import unpack
+from ..parametrized import unpack
 
 __all__ = ("EPL",)
 

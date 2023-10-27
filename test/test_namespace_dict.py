@@ -1,4 +1,4 @@
-from caustic.sims.namespace_dict import NestedNamespaceDict
+from caustic.namespace_dict import NestedNamespaceDict
 from pytest import raises
 
 

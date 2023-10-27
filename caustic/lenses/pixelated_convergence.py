@@ -9,7 +9,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
 from .base import ThinLens
-from ..sims import unpack
+from ..parametrized import unpack
 
 __all__ = ("PixelatedConvergence",)
 

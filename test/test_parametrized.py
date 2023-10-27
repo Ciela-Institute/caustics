@@ -1,7 +1,8 @@
 import torch
 from torch import vmap
 import numpy as np
-from caustic.sims import Simulator, Parameter
+from caustic.sims import Simulator
+from caustic.parameter import Parameter
 from caustic.lenses import EPL
 from caustic.sources import Sersic
 from caustic.cosmology import FlatLambdaCDM

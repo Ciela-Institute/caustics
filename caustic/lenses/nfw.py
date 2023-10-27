@@ -8,7 +8,7 @@ from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
-from ..sims import unpack
+from ..parametrized import unpack
 
 DELTA = 200.0
 

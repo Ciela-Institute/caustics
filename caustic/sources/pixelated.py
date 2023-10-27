@@ -5,7 +5,7 @@ from torch import vmap
 
 from ..utils import interp2d
 from .base import Source
-from ..sims import unpack
+from ..parametrized import unpack
 
 __all__ = ("Pixelated",)
 

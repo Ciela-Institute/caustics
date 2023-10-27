@@ -9,7 +9,7 @@ from torch import Tensor
 
 from .utils import interp1d
 from .constants import G_over_c2, c_Mpc_s, km_to_Mpc
-from .sims import Parametrized, unpack
+from .parametrized import Parametrized, unpack
 
 __all__ = (
     "h0_default",

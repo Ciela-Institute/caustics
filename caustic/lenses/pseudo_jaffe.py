@@ -8,7 +8,7 @@ from ..cosmology import Cosmology
 from ..constants import arcsec_to_rad, rad_to_arcsec
 from ..utils import translate_rotate
 from .base import ThinLens
-from ..sims import unpack
+from ..parametrized import unpack
 
 __all__ = ("PseudoJaffe",)
 

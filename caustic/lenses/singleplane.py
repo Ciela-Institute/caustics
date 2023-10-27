@@ -5,7 +5,7 @@ from torch import Tensor
 
 from ..cosmology import Cosmology
 from .base import ThinLens
-from ..sims import unpack
+from ..parametrized import unpack
 
 __all__ = ("SinglePlane",)
 
