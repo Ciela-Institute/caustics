@@ -8,7 +8,7 @@ from torch import Tensor
 
 from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
-from ..parametrized import Parametrized, unpack
+from ..parametrized import Parametrized, unpack 
 from .utils import get_magnification
 from ..utils import batch_lm
 
