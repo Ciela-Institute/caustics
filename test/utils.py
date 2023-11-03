@@ -6,7 +6,7 @@ from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
 
 from caustic.lenses import ThinLens, EPL, NFW, ThickLens, PixelatedConvergence
-from caustic.sources import Sersic, Pixelated
+from caustic.light import Sersic, Pixelated
 from caustic.utils import get_meshgrid
 from caustic.sims import Simulator
 from caustic.cosmology import FlatLambdaCDM

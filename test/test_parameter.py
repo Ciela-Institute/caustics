@@ -2,7 +2,7 @@ import torch
 from caustic.lenses import EPL, PixelatedConvergence
 from caustic.sims import Simulator
 from caustic.cosmology import FlatLambdaCDM
-from caustic.sources import Pixelated
+from caustic.light import Pixelated
 import pytest
 
 # For future PR currently this test fails

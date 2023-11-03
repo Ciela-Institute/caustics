@@ -6,7 +6,7 @@ import torch
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
 
-from caustic.sources import Sersic
+from caustic.light import Sersic
 from caustic.utils import get_meshgrid
 
 
