@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
@@ -21,15 +21,26 @@ class SinglePlane(ThinLens):
         lenses (List[ThinLens]): A list of ThinLens objects that are being combined into a single lensing plane.
     """
 
-    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None, **kwargs):
+    def __init__(self, cosmology: Cosmology, lenses: Union[ThinLens, list[ThinLens]], name: str = None, **kwargs):
         """
         Initialize the SinglePlane lens model.
         """
         super().__init__(cosmology, name=name, **kwargs)
+        if not isinstance(lenses, (tuple, list)):
+            lenses = [lenses]
         self.lenses = lenses
-        for lens in lenses:
+        for i, lens in enumerate(lenses):
             self.add_parametrized(lens)
-        # TODO: assert all z_l are the same?
+            # Link the parameter with the SinglePLane module
+            # if i == 0:
+                # self.add_param("z_l", lens.z_l)
+            # Make sure every thin lens belong to that plane
+            # Case 1: Every z_l are static and the same in the lens given
+            # Case 2: Some z_l are static, some dynamic. Throw an error
+            # Case 3: All z_l are dynamic, link them all together as this parameter will be dynamic
+            # if i > 0:
+                # assert lens.z_l == self.z_l
+                
 
     @unpack(3)
     def reduced_deflection_angle(
