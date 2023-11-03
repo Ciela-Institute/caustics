@@ -1,5 +1,6 @@
 import torch
 from torch import vmap
+import pytest
 import numpy as np
 from caustic.sims import Simulator
 from caustic.parameter import Parameter
@@ -103,11 +104,22 @@ def test_parametrized_name_setter():
     assert sim.name == "Test"
 
     # Check that DAG in SIM is being update updated
-    sim.lens.name = "Test Lens"
-    assert sim.lens.name == "Test Lens"
-    assert "Test Lens" in sim.params.dynamic.keys()
-    assert "Test Lens" in sim.cosmo._parents.keys()
+    sim.lens.name = "test_lens"
+    assert sim.lens.name == "test_lens"
+    assert "test_lens" in sim.params.dynamic.keys()
+    assert "test_lens" in sim.cosmo._parents.keys()
 
+
+def test_parametrized_name_setter_bad_names():
+    # Make sure bad names are catched by our added method. Bad names are name which cannot be used as class attributes.
+    good_names = ["variable", "_variable", "var_iable2"]
+    for name in good_names:
+        module = Sersic(name=name)
+    bad_names = ["for", "2variable", "variable!", "var-iable", "var iable", "def"]
+    for name in bad_names:
+        print(name)
+        with pytest.raises(NameError):
+            module = Sersic(name=name)
 
 def test_parametrized_name_collision():
     # Case 1: Name collision in children of simulator
