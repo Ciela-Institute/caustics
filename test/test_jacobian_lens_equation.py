@@ -41,7 +41,7 @@ def test_multiplane_jacobian():
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
     lens = Multiplane(
-        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))]
     )
     thx, thy = get_meshgrid(0.1, 10, 10)
     
@@ -66,7 +66,7 @@ def test_multiplane_jacobian_autograd_vs_finitediff():
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
     lens = Multiplane(
-        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))]
     )
     thx, thy = get_meshgrid(0.01, 10, 10)
     
@@ -96,7 +96,7 @@ def test_multiplane_effective_convergence():
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
     lens = Multiplane(
-        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))]
     )
     thx, thy = get_meshgrid(0.1, 10, 10)
 

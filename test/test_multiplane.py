@@ -30,7 +30,7 @@ def test():
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
 
     lens = Multiplane(
-        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie-{i}", cosmology=cosmology) for i in range(len(xs))]
+        name="multiplane", cosmology=cosmology, lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))]
     )
     #lens.effective_reduced_deflection_angle = lens.raytrace
 
