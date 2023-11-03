@@ -30,6 +30,7 @@ Read The Docs
 
    getting_started.rst
    install.rst
+   tutorials.rst
    contributing.rst
    citation.rst
    license.rst
