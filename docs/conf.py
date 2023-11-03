@@ -14,7 +14,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../src'))
+#sys.path.insert(0, os.path.abspath('../src'))
 
 
 # -- Project information -----------------------------------------------------
@@ -39,6 +39,7 @@ release = 'v0.4.10'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'nbsphinx',
     'sphinx.ext.autodoc',
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
@@ -184,3 +185,5 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
+# -- Options for nbsphinx --------------------------------------------------
+nbsphinx_execute = 'never'

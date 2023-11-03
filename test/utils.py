@@ -5,11 +5,11 @@ import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
 
-from caustic.lenses import ThinLens
-from caustic.lenses.base import ThickLens
+from caustic.lenses import ThinLens, EPL, NFW, ThickLens, PixelatedConvergence
+from caustic.light import Sersic, Pixelated
 from caustic.utils import get_meshgrid
-from caustic import Simulator, EPL, NFW, Sersic, FlatLambdaCDM, Pixelated, PixelatedConvergence
-
+from caustic.sims import Simulator
+from caustic.cosmology import FlatLambdaCDM
 
 def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False):
     n_pix = 20

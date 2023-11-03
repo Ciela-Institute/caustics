@@ -5,6 +5,7 @@ from functools import partial
 import torch
 from torch import Tensor
 from torch.func import jacfwd
+import numpy as np
 
 def flip_axis_ratio(q, phi):
     """
@@ -84,13 +85,13 @@ def to_elliptical(x, y, q: Tensor):
 
 
 def get_meshgrid(
-    resolution, nx, ny, device=None, dtype=torch.float32
+    pixelscale, nx, ny, device=None, dtype=torch.float32
 ) -> Tuple[Tensor, Tensor]:
     """
-    Generates a 2D meshgrid based on the provided resolution and dimensions.
+    Generates a 2D meshgrid based on the provided pixelscale and dimensions.
 
     Args:
-        resolution (float): The scale of the meshgrid in each dimension.
+        pixelscale (float): The scale of the meshgrid in each dimension.
         nx (int): The number of grid points along the x-axis.
         ny (int): The number of grid points along the y-axis.
         device (torch.device, optional): The device on which to create the tensor. Defaults to None.
@@ -99,8 +100,8 @@ def get_meshgrid(
     Returns:
         Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
     """
-    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * resolution * (nx - 1) / 2
-    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * resolution * (ny - 1) / 2
+    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2
+    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
@@ -416,3 +417,17 @@ def batch_lm(
         X = Xnew
         
     return X, L, C
+
+def gaussian(pixelscale, nx, ny, sigma, upsample = 1, dtype = torch.float32, device = None):
+    
+    X, Y = np.meshgrid(
+        np.linspace(-(nx*upsample - 1) * pixelscale / 2, (nx*upsample - 1) * pixelscale / 2, nx*upsample),
+        np.linspace(-(ny*upsample - 1) * pixelscale / 2, (ny*upsample - 1) * pixelscale / 2, ny*upsample),
+        indexing = "xy",
+    )
+
+    Z = np.exp(- 0.5 * (X**2 + Y**2) / sigma**2)
+    
+    Z = Z.reshape(ny, upsample, nx, upsample).sum(axis=(1, 3))
+
+    return torch.tensor(Z / np.sum(Z), dtype = dtype, device = device)
