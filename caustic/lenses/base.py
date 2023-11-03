@@ -14,18 +14,13 @@ from ..utils import batch_lm
 
 __all__ = ("ThinLens", "ThickLens")
 
-class ThickLens(Parametrized):
+class Lens(Parametrized):
     """
-    Base class for modeling gravitational lenses that cannot be treated using the thin lens approximation.
-    It is an abstract class and should be subclassed for different types of lens models.
-
-    Attributes:
-        cosmology (Cosmology): An instance of a Cosmology class that describes the cosmological parameters of the model.
+    Base class for all lenses
     """
-
     def __init__(self, cosmology: Cosmology, name: str = None):
         """
-        Initializes a new instance of the ThickLens class.
+        Initializes a new instance of the Lens class.
 
         Args:
             name (str): The name of the lens model.
@@ -33,6 +28,101 @@ class ThickLens(Parametrized):
         """
         super().__init__(name)
         self.cosmology = cosmology
+
+    @unpack(3)
+    def jacobian_lens_equation(
+            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
+    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
+        """
+        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
+
+        method: autograd or fft
+        """
+
+        if method == "autograd":
+            return self._jacobian_lens_equation_autograd(x, y, z_s, params, **kwargs)
+        elif method == "finitediff":
+            if pixelscale is None:
+                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
+            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+        else:
+            raise ValueError("method should be one of: autograd, finitediff")
+
+    @unpack(3)
+    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
+        """
+        Compute the gravitational magnification at the given coordinates.
+
+        Args:
+            x (Tensor): Tensor of x coordinates in the lens plane.
+            y (Tensor): Tensor of y coordinates in the lens plane.
+            z_s (Tensor): Tensor of source redshifts.
+            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
+
+        Returns:
+            Tensor: Gravitational magnification at the given coordinates.
+        """
+        return get_magnification(partial(self.raytrace, params = params), x, y, z_s)
+
+    @unpack(3)
+    def forward_raytrace(
+            self, bx: Tensor, by: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, epsilon = 1e-2, n_init = 50, fov = 5., **kwargs
+    ) -> tuple[Tensor, Tensor]:
+        """
+        Perform a forward ray-tracing operation which maps from the source plane to the image plane.
+
+        Args:
+            bx (Tensor): Tensor of x coordinate in the source plane (scalar).
+            by (Tensor): Tensor of y coordinate in the source plane (scalar).
+            z_s (Tensor): Tensor of source redshifts.
+            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
+            epsilon (Tensor): maximum distance between two images (arcsec) before they are considered the same image.
+            n_init (int): number of random initialization points used to try and find image plane points.
+            fov (float): the field of view in which the initial random samples are taken.
+
+        Returns:
+            tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
+        """
+        
+        bxy = torch.stack((bx, by)).repeat(n_init,1) # has shape (n_init, Dout:2)
+
+        # TODO make FOV more general so that it doesnt have to be centered on zero,zero
+        if fov is None:
+            raise ValueError("fov must be given to generate initial guesses")
+
+        # Random starting points in image plane
+        guesses = torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5) # Has shape (n_init, Din:2)
+
+        # Optimize guesses in image plane
+        x, l, c = batch_lm(
+            guesses,
+            bxy,
+            lambda *a, **k: torch.stack(self.raytrace(a[0][...,0], a[0][...,1], *a[1:], **k), dim = -1),
+            f_args = (z_s, params)
+        )
+
+        # Clip points that didn't converge
+        x = x[c < 1e-2*epsilon**2]
+
+        # Cluster results into n-images
+        res = []
+        while len(x) > 0:
+            res.append(x[0])
+            d = torch.linalg.norm(x - x[0], dim = -1)
+            x = x[d > epsilon]
+
+        res = torch.stack(res,dim = 0)
+        return res[...,0], res[...,1]
+
+    
+class ThickLens(Lens):
+    """
+    Base class for modeling gravitational lenses that cannot be treated using the thin lens approximation.
+    It is an abstract class and should be subclassed for different types of lens models.
+
+    Attributes:
+        cosmology (Cosmology): An instance of a Cosmology class that describes the cosmological parameters of the model.
+    """
 
     @unpack(3)
     def reduced_deflection_angle(
@@ -234,25 +324,6 @@ class ThickLens(Parametrized):
         return torch.eye(2) - J.detach()
     
     @unpack(3)
-    def jacobian_lens_equation(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
-    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
-        """
-        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
-
-        method: autograd or fft
-        """
-
-        if method == "autograd":
-            return self._jacobian_lens_equation_autograd(x, y, z_s, params, **kwargs)
-        elif method == "finitediff":
-            if pixelscale is None:
-                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
-            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params, **kwargs)
-        else:
-            raise ValueError("method should be one of: autograd, finitediff")
-
-    @unpack(3)
     def effective_convergence_div(
             self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:
@@ -272,23 +343,8 @@ class ThickLens(Parametrized):
         J = self.jacobian_effective_deflection_angle(x, y, z_s, params, **kwargs)
         return 0.5 * (J[...,1,0] - J[...,0,1])
 
-    @unpack(3)
-    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
-        """
-        Computes the gravitational lensing magnification at given coordinates.
-    
-        Args:
-            x (Tensor): Tensor of x coordinates in the lens plane.
-            y (Tensor): Tensor of y coordinates in the lens plane.
-            z_s (Tensor): Tensor of source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-    
-        Returns:
-            Tensor: The gravitational lensing magnification at the given coordinates.
-        """
-        return get_magnification(partial(self.raytrace, params = params), x, y, z_s)
 
-class ThinLens(Parametrized):
+class ThinLens(Lens):
     """Base class for thin gravitational lenses.
 
     This class provides an interface for thin gravitational lenses,
@@ -305,8 +361,7 @@ class ThinLens(Parametrized):
     """
 
     def __init__(self, cosmology: Cosmology, z_l: Optional[Union[Tensor, float]] = None, name: str = None):
-        super().__init__(name)
-        self.cosmology = cosmology
+        super().__init__(cosmology = cosmology, name = name)
         self.add_param("z_l", z_l)
 
     @unpack(3)
@@ -427,56 +482,6 @@ class ThinLens(Parametrized):
         return x - ax, y - ay
 
     @unpack(3)
-    def forward_raytrace(
-            self, bx: Tensor, by: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, epsilon = 1e-2, n_init = 50, fov = 5., **kwargs
-    ) -> tuple[Tensor, Tensor]:
-        """
-        Perform a forward ray-tracing operation which maps from the source plane to the image plane.
-
-        Args:
-            bx (Tensor): Tensor of x coordinate in the source plane (scalar).
-            by (Tensor): Tensor of y coordinate in the source plane (scalar).
-            z_s (Tensor): Tensor of source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-            epsilon (Tensor): maximum distance between two images (arcsec) before they are considered the same image.
-            n_init (int): number of random initialization points used to try and find image plane points.
-            fov (float): the field of view in which the initial random samples are taken.
-
-        Returns:
-            tuple[Tensor, Tensor]: Ray-traced coordinates in the x and y directions.
-        """
-        
-        bxy = torch.stack((bx, by)).repeat(n_init,1) # has shape (n_init, Dout:2)
-
-        # TODO make FOV more general so that it doesnt have to be centered on zero,zero
-        if fov is None:
-            raise ValueError("fov must be given to generate initial guesses")
-
-        # Random starting points in image plane
-        guesses = torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5) # Has shape (n_init, Din:2)
-
-        # Optimize guesses in image plane
-        x, l, c = batch_lm(
-            guesses,
-            bxy,
-            lambda *a, **k: torch.stack(self.raytrace(a[0][...,0], a[0][...,1], *a[1:], **k), dim = -1),
-            f_args = (z_s, params)
-        )
-
-        # Clip points that didn't converge
-        x = x[c < 1e-2*epsilon**2]
-
-        # Cluster results into n-images
-        res = []
-        while len(x) > 0:
-            res.append(x[0])
-            d = torch.linalg.norm(x - x[0], dim = -1)
-            x = x[d > epsilon]
-
-        res = torch.stack(res,dim = 0)
-        return res[...,0], res[...,1]
-
-    @unpack(3)
     def time_delay(
             self, x: Tensor, y: Tensor, z_s: Tensor, z_l, *args, params: Optional["Packed"] = None, **kwargs
     ):
@@ -557,7 +562,7 @@ class ThinLens(Parametrized):
             return self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale, params)
         else:
             raise ValueError("method should be one of: autograd, finitediff")
-
+        
     @unpack(4)
     def _jacobian_lens_equation_finitediff(
             self, x: Tensor, y: Tensor, z_s: Tensor, pixelscale: Tensor, *args, params: Optional["Packed"] = None, **kwargs
@@ -580,37 +585,3 @@ class ThinLens(Parametrized):
         J = self._jacobian_deflection_angle_autograd(x, y, z_s, params, **kwargs)
         return torch.eye(2) - J.detach()
     
-    @unpack(3)
-    def jacobian_lens_equation(
-            self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, method = "autograd", pixelscale = None, **kwargs
-    ) -> tuple[tuple[Tensor, Tensor],tuple[Tensor, Tensor]]:
-        """
-        Return the jacobian of the lensing equation at specified points. This equates to a (2,2) matrix at each (x,y) point.
-
-        method: autograd or fft
-        """
-
-        if method == "autograd":
-            return self._jacobian_lens_equation_autograd(x, y, z_s, params, **kwargs)
-        elif method == "finitediff":
-            if pixelscale is None:
-                raise ValueError("Finite differences lensing jacobian requires regular grid and known pixelscale. Please include the pixelscale argument")
-            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params, **kwargs)
-        else:
-            raise ValueError("method should be one of: autograd, finitediff")
-
-    @unpack(3)
-    def magnification(self, x: Tensor, y: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs) -> Tensor:
-        """
-        Compute the gravitational magnification at the given coordinates.
-
-        Args:
-            x (Tensor): Tensor of x coordinates in the lens plane.
-            y (Tensor): Tensor of y coordinates in the lens plane.
-            z_s (Tensor): Tensor of source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns:
-            Tensor: Gravitational magnification at the given coordinates.
-        """
-        return get_magnification(partial(self.raytrace, params = params), x, y, z_s)

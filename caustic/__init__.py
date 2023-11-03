@@ -6,7 +6,7 @@ from .lenses import *
 from .cosmology import *
 from .packed import *
 from .parametrized import *
-from .sources import *
+from .light import *
 from .utils import *
 from .sims import *
 # from .demo import *

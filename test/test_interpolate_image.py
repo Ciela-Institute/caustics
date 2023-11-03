@@ -3,7 +3,7 @@ import torch
 from scipy.interpolate import RegularGridInterpolator
 
 from caustic.utils import get_meshgrid, interp2d
-from caustic.sources import Pixelated
+from caustic.light import Pixelated
 
 
 def test_random_inbounds():

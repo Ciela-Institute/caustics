@@ -5,7 +5,7 @@ import torch
 from caustic.sims import Lens_Source
 from caustic.cosmology import FlatLambdaCDM
 from caustic.lenses import SIE
-from caustic.sources import Sersic
+from caustic.light import Sersic
 from caustic.utils import get_meshgrid, gaussian
 
 def test_simulator_runs():
