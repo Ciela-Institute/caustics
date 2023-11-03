@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 import torch
 from torch import Tensor
-from caustic.namespace_dict import NamespaceDict
+from .namespace_dict import NamespaceDict
 
 __all__ = ("Parameter",)
 
