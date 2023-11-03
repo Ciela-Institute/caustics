@@ -88,6 +88,21 @@ class Cosmology(Parametrized):
         """
         ...
 
+    @abstractmethod
+    @unpack(1)
+    def transverse_comoving_distance(self, z: Tensor, *args, params: Optional["Packed"] = None) -> Tensor:
+        """
+        Compute the transverse comoving distance to redshift z (Mpc).
+
+        Args:
+            z (Tensor): The redshifts.
+            params (Packed, optional): Dynamic parameter container for the computation.
+
+        Returns:
+            Tensor: The transverse comoving distance to each redshift in Mpc.
+        """
+        ...
+
     @unpack(2)
     def comoving_distance_z1z2(
             self, z1: Tensor, z2: Tensor, *args, params: Optional["Packed"] = None
@@ -104,6 +119,23 @@ class Cosmology(Parametrized):
             Tensor: The comoving distance between each pair of redshifts.
         """
         return self.comoving_distance(z2, params) - self.comoving_distance(z1, params)
+
+    @unpack(2)
+    def transverse_comoving_distance_z1z2(
+            self, z1: Tensor, z2: Tensor, *args, params: Optional["Packed"] = None
+    ) -> Tensor:
+        """
+        Compute the transverse comoving distance between two redshifts (Mpc).
+
+        Args:
+            z1 (Tensor): The starting redshifts.
+            z2 (Tensor): The ending redshifts.
+            params (Packed, optional): Dynamic parameter container for the computation.
+
+        Returns:
+            Tensor: The transverse comoving distance between each pair of redshifts in Mpc.
+        """
+        return self.transverse_comoving_distance(z2, params) - self.transverse_comoving_distance(z1, params)
 
     @unpack(1)
     def angular_diameter_distance(self, z: Tensor, *args, params: Optional["Packed"] = None) -> Tensor:
@@ -282,3 +314,10 @@ class FlatLambdaCDM(Cosmology):
             )
             / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))
         )
+
+    @unpack(1)
+    def transverse_comoving_distance(
+            self, z: Tensor, h0, central_critical_density, Om0, *args, params: Optional["Packed"] = None
+    ) -> Tensor:
+
+        return self.comoving_distance(z, params)
