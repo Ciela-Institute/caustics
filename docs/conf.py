@@ -24,9 +24,9 @@ copyright = '2023, Ciela Institute'
 author = 'Ciela Institute'
 
 # The short X.Y version
-version = '0.4'
+version = '0.5'
 # The full version, including alpha/beta/rc tags
-release = 'v0.4.10'
+release = 'v0.5.0'
 
 
 # -- General configuration ---------------------------------------------------
