@@ -18,8 +18,8 @@ __all__ = ("Parametrized","unpack")
 
 def check_valid_name(name):
     if keyword.iskeyword(name) or not bool(re.match("^[a-zA-Z_][a-zA-Z0-9_]*$", name)):
-        raise NameError(f"The string {name} contain illegal characters (like space or '-'). "\
-                        "Please use snake case or another valid python variable anming style.")
+        raise NameError(f"The string {name} contains illegal characters (like space or '-'). "\
+                        "Please use snake case or another valid python variable naming style.")
 
 
 class Parametrized:
