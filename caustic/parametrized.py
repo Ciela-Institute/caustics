@@ -6,6 +6,7 @@ import inspect
 
 import torch
 import re
+import keyword
 from torch import Tensor
 
 from .packed import Packed
@@ -13,6 +14,13 @@ from .namespace_dict import NamespaceDict, NestedNamespaceDict
 from .parameter import Parameter
 
 __all__ = ("Parametrized","unpack")
+
+
+def check_valid_name(name):
+    if keyword.iskeyword(name) or not bool(re.match("^[a-zA-Z_][a-zA-Z0-9_]*$", name)):
+        raise NameError(f"The string {name} contains illegal characters (like space or '-'). "\
+                        "Please use snake case or another valid python variable naming style.")
+
 
 class Parametrized:
     """
@@ -40,6 +48,7 @@ class Parametrized:
     def __init__(self, name: str = None):
         if name is None:
             name = self._default_name()
+        check_valid_name(name)
         if not isinstance(name, str):
             raise ValueError(f"name must be a string (received {name})")
         self._name = name
@@ -87,6 +96,7 @@ class Parametrized:
     
     @name.setter
     def name(self, new_name: str):
+        check_valid_name(new_name)
         old_name = self.name
         for parent in self._parents.values():
             del parent._childs[old_name]
