@@ -4,6 +4,7 @@ from typing import Any, Optional
 import torch
 from torch import Tensor
 
+from ..constants import arcsec_to_rad, rad_to_arcsec
 from ..cosmology import Cosmology
 from .base import ThickLens, ThinLens
 from ..parametrized import unpack
@@ -53,6 +54,21 @@ class Multiplane(ThickLens):
         formalism from the GLAMER -II code:
         https://ui.adsabs.harvard.edu/abs/2014MNRAS.445.1954P/abstract
 
+        The primary equation used here is equation 18. With a slight correction it reads:
+
+        .. math::
+
+          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]
+
+        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propogation through regular space to the first plane. Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
+
+        .. math::
+
+          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\vec{\theta}^{i}
+          \vec{\theta}^{i+1} = \vec{\theta}^{i} -  \alpha^i(\vec{x}^{i+1})
+
+        Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer). The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`, and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied), and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0` and begin at the second step in the recursion formula.
+        
         Args:
             x (Tensor): angular x-coordinates from the observer perspective.
             y (Tensor): angular y-coordinates from the observer perspective.
@@ -63,53 +79,50 @@ class Multiplane(ThickLens):
             tuple[Tensor, Tensor]: The reduced deflection angle.
 
         """
-        zero = torch.tensor(0.0, dtype=z_s.dtype, device=z_s.device)
-        # argsort redshifts
+        return self.raytrace_z1z2(x, y, torch.zeros_like(z_s), z_s, params)
+
+    @unpack(4)
+    def raytrace_z1z2(
+            self, x: Tensor, y: Tensor, z_start: Tensor, z_end: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> tuple[Tensor, Tensor]:
+        """
+        Method to do multiplane ray tracing from arbitrary start/end redshift. 
+        """
+
+        # Collect lens redshifts and ensure proper order
         z_ls = self.get_z_ls(params)
-        idxs = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_0_s = self.cosmology.comoving_distance(z_s, params)
-        X_im1 = 0.0
-        Y_im1 = 0.0
-        X_i = self.cosmology.comoving_distance(z_ls[0], params) * x 
-        Y_i = self.cosmology.comoving_distance(z_ls[0], params) * y 
-        X_ip1 = None
-        Y_ip1 = None
+        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
 
-        for i in idxs:
-            z_im1 = zero if i == 0 else z_ls[i - 1]
-            z_i = z_ls[i]
-            z_ip1 = z_s if i == len(z_ls) - 1 else z_ls[i + 1]
+        # Compute physical position on first lens plane
+        D = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_ls[lens_planes[0]], params)
+        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D
 
-            D_im1_i = self.cosmology.comoving_distance_z1z2(z_im1, z_i, params)
-            D_i_ip1 = self.cosmology.comoving_distance_z1z2(z_i, z_ip1, params)
-            D_0_i = self.cosmology.comoving_distance(z_i, params)
-            D_i_s = self.cosmology.comoving_distance_z1z2(z_i, z_s, params)
-            D_ratio = D_0_s / D_i_s
-
-            # Get alphas at next plane
-            ax, ay = self.lenses[i].reduced_deflection_angle(X_i / D_0_i, Y_i / D_0_i, z_ip1, params)
-            X_ip1 = (
-                (D_i_ip1 / D_im1_i + 1) * X_i
-                - (D_i_ip1 / D_im1_i) * X_im1
-                - D_i_ip1 * D_ratio * ax
-            )
-            Y_ip1 = (
-                (D_i_ip1 / D_im1_i + 1) * Y_i
-                - (D_i_ip1 / D_im1_i) * Y_im1
-                - D_i_ip1 * D_ratio * ay
+        # Initial angles are observation angles (negative needed because of negative in propogation term)
+        theta_x, theta_y = x, y
+        
+        for i in lens_planes:
+            # Compute deflection angle at current ray positions
+            D_l = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_ls[i], params)
+            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
+                X * rad_to_arcsec / D_l,
+                Y * rad_to_arcsec / D_l,
+                z_end,
+                params,
             )
 
-            # Advanced indices
-            X_im1 = X_i
-            Y_im1 = Y_i
-            X_i = X_ip1
-            Y_i = Y_ip1
+            # Update angle of rays after passing through lens (sum in eq 18)
+            theta_x = theta_x - alpha_x
+            theta_y = theta_y - alpha_y
 
-        # Handle edge case of lenses = []
-        if X_ip1 is None or Y_ip1 is None:
-            return x, y
-        else:
-            return X_ip1 / D_0_s, Y_ip1 / D_0_s
+            # Propogate rays to next plane (basically eq 18)
+            z_next = z_ls[i+1] if i != lens_planes[-1] else z_end
+            D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next, params)
+            X = X + D * theta_x * arcsec_to_rad
+            Y = Y + D * theta_y * arcsec_to_rad
+
+        # Convert from physical position to angular position on the source plane
+        D_end = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_end, params)
+        return X * rad_to_arcsec / D_end, Y * rad_to_arcsec / D_end
 
     @unpack(3)
     def effective_reduced_deflection_angle(
