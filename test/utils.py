@@ -6,11 +6,11 @@ from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
 
-from caustic.lenses import ThinLens, EPL, NFW, ThickLens, PixelatedConvergence
-from caustic.light import Sersic, Pixelated
-from caustic.utils import get_meshgrid
-from caustic.sims import Simulator
-from caustic.cosmology import FlatLambdaCDM
+from caustics.lenses import ThinLens, EPL, NFW, ThickLens, PixelatedConvergence
+from caustics.light import Sersic, Pixelated
+from caustics.utils import get_meshgrid
+from caustics.sims import Simulator
+from caustics.cosmology import FlatLambdaCDM
 
 def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False):
     n_pix = 20

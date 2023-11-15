@@ -1,8 +1,8 @@
 import torch
-from caustic.lenses import EPL, PixelatedConvergence
-from caustic.sims import Simulator
-from caustic.cosmology import FlatLambdaCDM
-from caustic.light import Pixelated
+from caustics.lenses import EPL, PixelatedConvergence
+from caustics.sims import Simulator
+from caustics.cosmology import FlatLambdaCDM
+from caustics.light import Pixelated
 import pytest
 
 # For future PR currently this test fails

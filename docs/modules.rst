@@ -1,7 +1,7 @@
-caustic
+caustics
 =======
 
 .. toctree::
    :maxdepth: 4
 
-   caustic
+   caustics

@@ -5,14 +5,14 @@ import torch
 from astropy.cosmology import Cosmology as Cosmology_AP
 from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
 
-from caustic.cosmology import Cosmology
-from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
-from caustic.cosmology import Om0_default, h0_default
+from caustics.cosmology import Cosmology
+from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
+from caustics.cosmology import Om0_default, h0_default
 
 
 def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
     """
-    Gets caustic cosmologies and corresponding astropy ones.
+    Gets caustics cosmologies and corresponding astropy ones.
     """
     cosmologies = []
     cosmologies.append(

@@ -2,11 +2,11 @@ import torch
 from torch import vmap
 import pytest
 import numpy as np
-from caustic.sims import Simulator
-from caustic.parameter import Parameter
-from caustic.lenses import EPL
-from caustic.light import Sersic
-from caustic.cosmology import FlatLambdaCDM
+from caustics.sims import Simulator
+from caustics.parameter import Parameter
+from caustics.lenses import EPL
+from caustics.light import Sersic
+from caustics.cosmology import FlatLambdaCDM
 from utils import setup_simulator
 
 

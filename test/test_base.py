@@ -3,8 +3,8 @@ from math import pi
 import torch
 import numpy as np
 
-from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import SIE
+from caustics.cosmology import FlatLambdaCDM
+from caustics.lenses import SIE
 
 def test():
 

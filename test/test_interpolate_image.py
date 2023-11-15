@@ -2,8 +2,8 @@ import numpy as np
 import torch
 from scipy.interpolate import RegularGridInterpolator
 
-from caustic.utils import get_meshgrid, interp2d
-from caustic.light import Pixelated
+from caustics.utils import get_meshgrid, interp2d
+from caustics.light import Pixelated
 
 
 def test_random_inbounds():

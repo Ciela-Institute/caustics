@@ -1,4 +1,4 @@
-.. caustic documentation master file, created by
+.. caustics documentation master file, created by
    sphinx-quickstart on Thu Jun  1 09:33:32 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -17,9 +17,9 @@ Intallation
 
 The easiest way to install is to make a new virtual environment then run::
 
-    pip install caustic
+    pip install caustics
 
-this will install all the required libraries and then install caustic and you are ready to go! You can check out the tutorials afterwards to see some of caustic's capabilities.  If you want to help out with building the caustic code base check out the developer installation instructions instead.
+this will install all the required libraries and then install caustics and you are ready to go! You can check out the tutorials afterwards to see some of caustics's capabilities.  If you want to help out with building the caustics code base check out the developer installation instructions instead.
 
 Read The Docs
 =============

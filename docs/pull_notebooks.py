@@ -1,11 +1,11 @@
 import requests
 
 tutorials = [
-    "https://raw.github.com/Ciela-Institute/caustic-tutorials/main/tutorials/BasicIntroduction.ipynb",
-    "https://raw.github.com/Ciela-Institute/caustic-tutorials/main/tutorials/LensZoo.ipynb",
-    "https://raw.github.com/Ciela-Institute/caustic-tutorials/main/tutorials/VisualizeCaustics.ipynb",
-    "https://raw.github.com/Ciela-Institute/caustic-tutorials/main/tutorials/MultiplaneDemo.ipynb",
-    "https://raw.github.com/Ciela-Institute/caustic-tutorials/main/tutorials/InvertLensEquation.ipynb",
+    "https://raw.github.com/Ciela-Institute/caustics-tutorials/main/tutorials/BasicIntroduction.ipynb",
+    "https://raw.github.com/Ciela-Institute/caustics-tutorials/main/tutorials/LensZoo.ipynb",
+    "https://raw.github.com/Ciela-Institute/caustics-tutorials/main/tutorials/VisualizeCaustics.ipynb",
+    "https://raw.github.com/Ciela-Institute/caustics-tutorials/main/tutorials/MultiplaneDemo.ipynb",
+    "https://raw.github.com/Ciela-Institute/caustics-tutorials/main/tutorials/InvertLensEquation.ipynb",
 ]
 for url in tutorials:
     try:

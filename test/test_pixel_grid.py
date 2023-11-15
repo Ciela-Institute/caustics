@@ -1,7 +1,7 @@
 import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
 
-from caustic.utils import get_meshgrid
+from caustics.utils import get_meshgrid
 
 
 def test_get_meshgrid():

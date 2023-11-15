@@ -10,8 +10,8 @@ from lenstronomy.Cosmo.lens_cosmo import LensCosmo
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper, setup_grids
 
-from caustic.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
-from caustic.lenses import TNFW
+from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
+from caustics.lenses import TNFW
 
 h0_default = float(default_cosmology.get().h)
 Om0_default = float(default_cosmology.get().Om0)

@@ -4,12 +4,12 @@ Contributing
 .. contents:: Table of Contents
    :local:
 
-Thanks for helping make caustic better! Here you will learn the full process needed to contribute to caustic. Following these steps will make the process as painless as possible for everyone.
+Thanks for helping make caustics better! Here you will learn the full process needed to contribute to caustics. Following these steps will make the process as painless as possible for everyone.
 
 Create An Issue
 ---------------
 
-Before actually writing any code, its best to create an issue on the GitHub. Describe the issue in detail and let us know the desired solution. Here it will be possible to address concerns (maybe its aready solved and just not yet documented) and plan out the best solution. We may also assign someone to work on it if that seems better. Note that submitting an issue is a contribution to caustic, we appreciate your ideas! Still, if after discussion it seems that the problem does need some work and you're the person to do it, then we can move on to the next steps.
+Before actually writing any code, its best to create an issue on the GitHub. Describe the issue in detail and let us know the desired solution. Here it will be possible to address concerns (maybe its aready solved and just not yet documented) and plan out the best solution. We may also assign someone to work on it if that seems better. Note that submitting an issue is a contribution to caustics, we appreciate your ideas! Still, if after discussion it seems that the problem does need some work and you're the person to do it, then we can move on to the next steps.
 
 1. Navigate to the **Issues** tab of the GitHub repository.
 2. Click on **New Issue**.
@@ -20,14 +20,14 @@ Before actually writing any code, its best to create an issue on the GitHub. Des
 Install
 -------
 
-Please fork the caustic repo, then follow the developer install instructions at the :doc:`install` page. This will ensure you have a version of caustic that you can tinker with and see the results.
+Please fork the caustics repo, then follow the developer install instructions at the :doc:`install` page. This will ensure you have a version of caustics that you can tinker with and see the results.
 
-The reason you should fork the repo is so that you have full control while making your edits. You will still be able to make a Pull Request later when it is time to merge your code with the main caustic branch. Note that you should keep your fork up to date with the caustic repo to make the merge as smooth as possible.
+The reason you should fork the repo is so that you have full control while making your edits. You will still be able to make a Pull Request later when it is time to merge your code with the main caustics branch. Note that you should keep your fork up to date with the caustics repo to make the merge as smooth as possible.
 
 Notebooks
 ---------
 
-You will likely want to see how your changes affect various features of caustic. A good way to quickly see this is to run the tutorial notebooks which can be found `here <https://github.com/Ciela-Institute/caustic-tutorials>`_. Any change that breaks one of these must be addressed, either by changing the nature of your updates to the code, or by forking and updating the caustic-tutorials repo as well (this is usually pretty easy).
+You will likely want to see how your changes affect various features of caustics. A good way to quickly see this is to run the tutorial notebooks which can be found `here <https://github.com/Ciela-Institute/caustics-tutorials>`_. Any change that breaks one of these must be addressed, either by changing the nature of your updates to the code, or by forking and updating the caustics-tutorials repo as well (this is usually pretty easy).
 
 Resolving the Issue
 -------------------
@@ -43,12 +43,12 @@ As you modify the code, make sure to regularly commit changes and push them to y
 Unit Tests
 ----------
 
-When you think you've solved an issue, please make unit tests related to any code you have added. Any new code added to caustic must have unit tests which match the level of completion of the rest of the code. Generally you should test all cases for the newly added code. Also ensure the previous unit tests run correctly.
+When you think you've solved an issue, please make unit tests related to any code you have added. Any new code added to caustics must have unit tests which match the level of completion of the rest of the code. Generally you should test all cases for the newly added code. Also ensure the previous unit tests run correctly.
 
 Submitting a Pull Request
 -------------------------
 
-Once you think your updates are ready to merge with the rest of caustic you can submit a PR! This should provide a description of what you have changed and if it isn't straightforward, why you made those changes.
+Once you think your updates are ready to merge with the rest of caustics you can submit a PR! This should provide a description of what you have changed and if it isn't straightforward, why you made those changes.
 
 1. Navigate to the **Pull Requests** tab of the original repository.
 2. Click on **New Pull Request**.

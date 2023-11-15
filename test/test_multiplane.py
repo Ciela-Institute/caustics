@@ -8,9 +8,9 @@ from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 import numpy as np
 
-from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import SIE, Multiplane, PixelatedConvergence
-from caustic.utils import get_meshgrid
+from caustics.cosmology import FlatLambdaCDM
+from caustics.lenses import SIE, Multiplane, PixelatedConvergence
+from caustics.utils import get_meshgrid
 
 def test():
     rtol = 0

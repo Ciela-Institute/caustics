@@ -2,8 +2,8 @@ import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
-from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import Point
+from caustics.cosmology import FlatLambdaCDM
+from caustics.lenses import Point
 
 
 def test():
