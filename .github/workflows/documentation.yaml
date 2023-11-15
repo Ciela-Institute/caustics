@@ -24,11 +24,11 @@ jobs:
           sudo apt-get install -y pandoc
           pip install sphinx sphinx_rtd_theme nbsphinx
           
-      - name: Install Caustic
+      - name: Install Caustics
         run: |
           cd $GITHUB_WORKSPACE
           pip install -e .[dev]
-          pip show caustic
+          pip show caustics
         shell: bash
         
       - name: Clone external Jupyter Notebook repository
@@ -38,7 +38,7 @@ jobs:
           
       - name: Sphinx build
         run: |
-          sphinx-apidoc -f -o docs/ caustic/
+          sphinx-apidoc -f -o docs/ caustics/
           sphinx-build docs _build
           
       - name: Deploy
