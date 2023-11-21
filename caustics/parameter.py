@@ -9,7 +9,7 @@ __all__ = ("Parameter",)
 
 class Parameter:
     """
-    Represents a static or dynamic parameter used for strong gravitational lensing simulations in the caustic codebase.
+    Represents a static or dynamic parameter used for strong gravitational lensing simulations in the caustics codebase.
 
     A static parameter has a fixed value, while a dynamic parameter must be passed in each time it's required.
 

@@ -1,8 +1,8 @@
 import torch
 
-from caustic.cosmology import FlatLambdaCDM
-from caustic.lenses import PixelatedConvergence, PseudoJaffe
-from caustic.utils import get_meshgrid
+from caustics.cosmology import FlatLambdaCDM
+from caustics.lenses import PixelatedConvergence, PseudoJaffe
+from caustics.utils import get_meshgrid
 
 
 def _setup(n_pix, mode, use_next_fast_len, padding = "zero"):

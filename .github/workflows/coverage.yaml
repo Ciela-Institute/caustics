@@ -15,7 +15,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout caustic
+    - name: Checkout caustics
       uses: actions/checkout@v3
 
     - name: Set up Python 3.10
@@ -40,17 +40,17 @@ jobs:
         pip install -r requirements.txt
       shell: bash
       
-    - name: Install Caustic
+    - name: Install Caustics
       run: |
         cd $GITHUB_WORKSPACE
         pip install -e .[dev]
-        pip show caustic
+        pip show caustics
       shell: bash
     - name: Test with pytest
       run: |
         cd $GITHUB_WORKSPACE
         pwd
-        pytest --cov-report=xml --cov=caustic test/
+        pytest --cov-report=xml --cov=caustics test/
         cat coverage.xml
       shell: bash
     - name: Upload coverage report to Codecov

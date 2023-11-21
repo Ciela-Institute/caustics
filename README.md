@@ -1,8 +1,15 @@
-[![tests](https://github.com/Ciela-Institute/caustic/actions/workflows/python-app.yml/badge.svg?branch=main)](https://github.com/Ciela-Institute/caustic/actions)
-[![Docs](https://github.com/Ciela-Institute/caustic/actions/workflows/documentation.yaml/badge.svg)](https://github.com/Ciela-Institute/caustic/actions/workflows/documentation.yaml)
-[![PyPI version](https://badge.fury.io/py/caustic.svg)](https://pypi.org/project/caustic/)
-[![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustic)](https://app.codecov.io/gh/Ciela-Institute/caustic)
-# caustic
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Ciela-Institute/caustics/blob/main/media/caustics_logo.png?raw=true">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Ciela-Institute/caustics/blob/main/media/caustics_logo_white.png?raw=true">
+  <img alt="caustics logo" src="media/caustics_logo.png" width="70%">
+</picture>
+
+
+[![tests](https://github.com/Ciela-Institute/caustics/actions/workflows/python-app.yml/badge.svg?branch=main)](https://github.com/Ciela-Institute/caustics/actions)
+[![Docs](https://github.com/Ciela-Institute/caustics/actions/workflows/documentation.yaml/badge.svg)](https://github.com/Ciela-Institute/caustics/actions/workflows/documentation.yaml)
+[![PyPI version](https://badge.fury.io/py/caustics.svg)](https://pypi.org/project/caustics/)
+[![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustics)](https://app.codecov.io/gh/Ciela-Institute/caustics)
+# caustics
 
 The lensing pipeline of the future: GPU-accelerated, automatically-differentiable,
 highly modular. Currently under heavy development: expect interface changes and
@@ -10,14 +17,14 @@ some imprecise/untested calculations.
 
 ## Installation 
 
-Simply install caustic from PyPI:
+Simply install caustics from PyPI:
 ```bash
-pip install caustic
+pip install caustics
 ```
 
 ## Documentation
 
-Please see our [documentation page](Ciela-Institute.github.io/caustic/) for more detailed information.
+Please see our [documentation page](Ciela-Institute.github.io/caustics/) for more detailed information.
 
 ## Contributing
 

@@ -24,7 +24,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-    - name: Checkout caustic
+    - name: Checkout caustics
       uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
@@ -49,11 +49,11 @@ jobs:
         pip install -r requirements.txt
       shell: bash
 
-    - name: Install Caustic
+    - name: Install Caustics
       run: |
         cd $GITHUB_WORKSPACE
         pip install -e .[dev]
-        pip show caustic
+        pip show caustics
       shell: bash
 
     - name: Test with pytest

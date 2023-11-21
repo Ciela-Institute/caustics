@@ -22,23 +22,23 @@ class Lens_Source(Simulator):
     Example usage::
 
        import matplotlib.pyplot as plt
-       import caustic
+       import caustics
 
-       cosmo = caustic.FlatLambdaCDM()
-       lens = caustic.lenses.SIS(cosmology = cosmo, x0 = 0., y0 = 0., th_ein = 1.)
-       source = caustic.sources.Sersic(x0 = 0., y0 = 0., q = 0.5, phi = 0.4, n = 2., Re = 1., Ie = 1.)
-       sim = caustic.sims.Lens_Source(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
+       cosmo = caustics.FlatLambdaCDM()
+       lens = caustics.lenses.SIS(cosmology = cosmo, x0 = 0., y0 = 0., th_ein = 1.)
+       source = caustics.sources.Sersic(x0 = 0., y0 = 0., q = 0.5, phi = 0.4, n = 2., Re = 1., Ie = 1.)
+       sim = caustics.sims.Lens_Source(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
        
        img = sim()
        plt.imshow(img, origin = "lower")
        plt.show()
 
     Attributes:
-      lens: caustic lens mass model object
-      source: caustic light object which defines the background source
+      lens: caustics lens mass model object
+      source: caustics light object which defines the background source
       pixelscale: pixelscale of the sampling grid.
       pixels_x: number of pixels on the x-axis for the sampling grid
-      lens_light (optional): caustic light object which defines the lensing object's light
+      lens_light (optional): caustics light object which defines the lensing object's light
       psf (optional): An image to convolve with the scene. Note that if ``upsample_factor > 1`` the psf must also be at the higher resolution.
       pixels_y (optional): number of pixels on the y-axis for the sampling grid. If left as ``None`` then this will simply be equal to ``gridx``
       upsample_factor (default 1): Amount of upsampling to model the image. For example ``upsample_factor = 2`` indicates that the image will be sampled at double the resolution then summed back to the original resolution (given by pixelscale and gridx/y).

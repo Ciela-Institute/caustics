@@ -19,14 +19,14 @@ import sys
 
 # -- Project information -----------------------------------------------------
 
-project = 'caustic'
+project = 'caustics'
 copyright = '2023, Ciela Institute'
 author = 'Ciela Institute'
 
 # The short X.Y version
-version = '0.4'
+version = '0.5'
 # The full version, including alpha/beta/rc tags
-release = 'v0.4.10'
+release = 'v0.5.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -106,13 +106,13 @@ html_static_path = ['_static']
 # 'searchbox.html']``.
 #
 # html_sidebars = {}
-html_favicon = "../media/caustic_favicon.ico"
+html_favicon = "../media/caustics_favicon.ico"
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'causticdoc'
+htmlhelp_basename = 'causticsdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -139,7 +139,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'caustic.tex', 'caustic Documentation',
+    (master_doc, 'caustics.tex', 'caustics Documentation',
      'Ciela Institute', 'manual'),
 ]
 
@@ -149,7 +149,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'caustic', 'caustic Documentation',
+    (master_doc, 'caustics', 'caustics Documentation',
      [author], 1)
 ]
 
@@ -160,8 +160,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'caustic', 'caustic Documentation',
-     author, 'caustic', 'One line description of project.',
+    (master_doc, 'caustics', 'caustics Documentation',
+     author, 'caustics', 'One line description of project.',
      'Miscellaneous'),
 ]
 

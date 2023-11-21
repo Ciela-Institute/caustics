@@ -6,8 +6,8 @@ import torch
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
 
-from caustic.light import Sersic
-from caustic.utils import get_meshgrid
+from caustics.light import Sersic
+from caustics.utils import get_meshgrid
 
 
 def test():
