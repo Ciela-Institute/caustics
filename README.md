@@ -1,3 +1,10 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Ciela-Institute/caustics/blob/main/media/caustics_logo.png?raw=true">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Ciela-Institute/caustics/blob/main/media/caustics_logo_white.png?raw=true">
+  <img alt="caustics logo" src="media/caustics_logo.png" width="70%">
+</picture>
+
+
 [![tests](https://github.com/Ciela-Institute/caustics/actions/workflows/python-app.yml/badge.svg?branch=main)](https://github.com/Ciela-Institute/caustics/actions)
 [![Docs](https://github.com/Ciela-Institute/caustics/actions/workflows/documentation.yaml/badge.svg)](https://github.com/Ciela-Institute/caustics/actions/workflows/documentation.yaml)
 [![PyPI version](https://badge.fury.io/py/caustics.svg)](https://pypi.org/project/caustics/)
