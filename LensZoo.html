@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Menagerie of Lenses &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Visualize Caustics" href="VisualizeCaustics.html" />
+    <link rel="prev" title="Welcome to Caustic!" href="BasicIntroduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicIntroduction.html">Welcome to Caustic!</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">A Menagerie of Lenses</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Point-(Point)">Point (Point)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Singular-Isothermal-Sphere-(SIS)">Singular Isothermal Sphere (SIS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Singular-Isothermal-Ellipsoid-(SIE)">Singular Isothermal Ellipsoid (SIE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Elliptical-Power-Law-(EPL)">Elliptical Power Law (EPL)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Navarro-Frenk-White-profile-(NFW)">Navarro Frenk White profile (NFW)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Truncated-NFW-profile-(TNFW)">Truncated NFW profile (TNFW)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Pseudo-Jaffe-(PseudoJaffe)">Pseudo Jaffe (PseudoJaffe)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#External-Shear-(ExternalShear)">External Shear (ExternalShear)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Mass-Sheet-(MassSheet)">Mass Sheet (MassSheet)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="VisualizeCaustics.html">Visualize Caustics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiplaneDemo.html">Multiplane Lensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InvertLensEquation.html">Inverting the Lens Equation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">caustics</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">A Menagerie of Lenses</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/LensZoo.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="A-Menagerie-of-Lenses">
+<h1>A Menagerie of Lenses<a class="headerlink" href="#A-Menagerie-of-Lenses" title="Link to this heading"></a></h1>
+<p>Here we have a quick visual demo of every type of lens in caustic. This is a good way to pick out what you need and quickly copy paste. For all of these lenses we have placed a Sersic source with the same parameters as the background, that way you can visualize the differences between them.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%load_ext autoreload
+%autoreload 2
+
+import torch
+from torch.nn.functional import avg_pool2d
+import matplotlib.pyplot as plt
+from ipywidgets import interact
+from astropy.io import fits
+import numpy as np
+from time import process_time as time
+
+import caustic
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>cosmology = caustic.FlatLambdaCDM(name = &quot;cosmo&quot;)
+cosmology.to(dtype=torch.float32)
+z_s = torch.tensor(1.)
+base_sersic = caustic.sources.Sersic(
+    name = &quot;sersic&quot;,
+    x0 = torch.tensor(0.1),
+    y0 = torch.tensor(0.1),
+    q = torch.tensor(0.6),
+    phi = torch.tensor(np.pi/3),
+    n = torch.tensor(2.),
+    Re = torch.tensor(1.),
+    Ie = torch.tensor(1.),
+)
+n_pix = 100
+res = 0.05
+upsample_factor = 2
+fov = res * n_pix
+thx, thy = caustic.get_meshgrid(res/upsample_factor, upsample_factor*n_pix, upsample_factor*n_pix, dtype=torch.float32)
+z_l = torch.tensor(0.5, dtype=torch.float32)
+
+class Zoo_Sim(caustic.Simulator):
+    def __init__(
+        self,
+        lens,
+        name: str = &quot;sim&quot;,
+    ):
+        super().__init__(name) # need this so `Parametrized` can do its magic
+
+        # These are the lens and source objects to keep track of
+        self.lens = lens
+        self.src = base_sersic
+
+    def forward(self, params):# define the forward model
+        # Note this is very similar to before, except the packed up `x` is all the raytrace function needs to work
+        bx, by = self.lens.raytrace(thx, thy, z_s, params)
+        mu_fine = self.src.brightness(bx, by, params)
+
+        # We return the sampled brightness at each pixel location
+        return avg_pool2d(mu_fine.squeeze()[None, None], upsample_factor)[0, 0]
+
+plt.imshow(np.log10(base_sersic.brightness(thx,thy).numpy()), origin = &quot;lower&quot;)
+plt.gca().axis(&quot;off&quot;)
+plt.title(&quot;Base Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_2_0.png" src="_images/LensZoo_2_0.png" />
+</div>
+</div>
+<section id="Point-(Point)">
+<h2>Point (Point)<a class="headerlink" href="#Point-(Point)" title="Link to this heading"></a></h2>
+<p>The simplest lens, an infinitely small point of mass (did someone say black holes?).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.Point(
+    cosmology = cosmology,
+    name = &quot;point&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    th_ein = torch.tensor(1.),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+#convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+#axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;Point Convergence not defined&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_4_0.png" src="_images/LensZoo_4_0.png" />
+</div>
+</div>
+</section>
+<section id="Singular-Isothermal-Sphere-(SIS)">
+<h2>Singular Isothermal Sphere (SIS)<a class="headerlink" href="#Singular-Isothermal-Sphere-(SIS)" title="Link to this heading"></a></h2>
+<p>An SIS is a mass distribution represented by a constant temperature velocity dispersion of masses. Alternatively, a constant temperature gas in a spherical gravitational potential.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.SIS(
+    cosmology = cosmology,
+    name = &quot;sis&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    th_ein = torch.tensor(1.),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;SIS Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_6_0.png" src="_images/LensZoo_6_0.png" />
+</div>
+</div>
+</section>
+<section id="Singular-Isothermal-Ellipsoid-(SIE)">
+<h2>Singular Isothermal Ellipsoid (SIE)<a class="headerlink" href="#Singular-Isothermal-Ellipsoid-(SIE)" title="Link to this heading"></a></h2>
+<p>The SIE is just like the SIS except it has been compressed along one axis.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.SIE(
+    cosmology = cosmology,
+    name = &quot;sie&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    q = torch.tensor(0.6),
+    phi = torch.tensor(np.pi/2),
+    b = torch.tensor(1.),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;SIE Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_8_0.png" src="_images/LensZoo_8_0.png" />
+</div>
+</div>
+</section>
+<section id="Elliptical-Power-Law-(EPL)">
+<h2>Elliptical Power Law (EPL)<a class="headerlink" href="#Elliptical-Power-Law-(EPL)" title="Link to this heading"></a></h2>
+<p>This is a power law mass distribution with an elliptical isodensity contour.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.EPL(
+    cosmology = cosmology,
+    name = &quot;epl&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    q = torch.tensor(0.6),
+    phi = torch.tensor(np.pi/2),
+    b = torch.tensor(1.),
+    t = torch.tensor(0.5),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;EPL Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_10_0.png" src="_images/LensZoo_10_0.png" />
+</div>
+</div>
+</section>
+<section id="Navarro-Frenk-White-profile-(NFW)">
+<h2>Navarro Frenk White profile (NFW)<a class="headerlink" href="#Navarro-Frenk-White-profile-(NFW)" title="Link to this heading"></a></h2>
+<p>The NFW profile is a classic mass profile that approximates the mass distribution of halos in large dark matter simulations.</p>
+<div class="math notranslate nohighlight">
+\[\rho(r) = \frac{\rho_0}{\frac{r}{r_s}\left(1 + \frac{r}{r_s}\right)^2}\]</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.NFW(
+    cosmology = cosmology,
+    name = &quot;nfw&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    m = torch.tensor(1e13),
+    c = torch.tensor(20.),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;NFW Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_12_0.png" src="_images/LensZoo_12_0.png" />
+</div>
+</div>
+</section>
+<section id="Truncated-NFW-profile-(TNFW)">
+<h2>Truncated NFW profile (TNFW)<a class="headerlink" href="#Truncated-NFW-profile-(TNFW)" title="Link to this heading"></a></h2>
+<p>The TNFW profile is a slight modification to the classic NFW mass profile that approximates the mass distribution of halos in large dark matter simulations. The new density profile is defined as:</p>
+<div class="math notranslate nohighlight">
+\[\rho_{\rm tnfw}(r) =  \rho_{\rm nfw}(r)\frac{\tau^2}{\tau^2 + \frac{r^2}{r_s^2}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\tau = \frac{r_t}{r_s}\)</span> is the ratio of the truncation radius to the scale radius. Note that the truncation happens smoothly so there are no sharp boundaries. In the TNFW profile, the mass quantity now actually corresponds the to the total mass since it is no longer divergent. This often means the mass values are larger.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.TNFW(
+    cosmology = cosmology,
+    name = &quot;tnfw&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    mass = torch.tensor(1e12),
+    scale_radius = torch.tensor(1.),
+    tau = torch.tensor(3.),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;Truncated NFW Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_14_0.png" src="_images/LensZoo_14_0.png" />
+</div>
+</div>
+</section>
+<section id="Pseudo-Jaffe-(PseudoJaffe)">
+<h2>Pseudo Jaffe (PseudoJaffe)<a class="headerlink" href="#Pseudo-Jaffe-(PseudoJaffe)" title="Link to this heading"></a></h2>
+<p>The Pseudo Jaffe closely approximates an isothermal mass distribution except that it is easier to compute and has finite mass.</p>
+<div class="math notranslate nohighlight">
+\[\rho(r) = \frac{\rho_0}{\left(1 + \frac{r^2}{r_c^2}\right)\left(1 + \frac{r^2}{r_s^2}\right)}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\rho_0\)</span> is the central density limit, <span class="math notranslate nohighlight">\(r_c\)</span> is the core radius, <span class="math notranslate nohighlight">\(r_s\)</span> is the scale radius.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.PseudoJaffe(
+    cosmology = cosmology,
+    name = &quot;pseudojaffe&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    mass = torch.tensor(1e13),
+    core_radius = torch.tensor(5e-1),
+    scale_radius = torch.tensor(15.)
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;Pseudo Jaffe Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_16_0.png" src="_images/LensZoo_16_0.png" />
+</div>
+</div>
+</section>
+<section id="External-Shear-(ExternalShear)">
+<h2>External Shear (ExternalShear)<a class="headerlink" href="#External-Shear-(ExternalShear)" title="Link to this heading"></a></h2>
+<p>It is often necessary to embed a lens in an external shear field to account for the fact that the lensing mass is not the only mass in the universe.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.ExternalShear(
+    cosmology = cosmology,
+    name = &quot;externalshear&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    gamma_1 = torch.tensor(1.),
+    gamma_2 = torch.tensor(-1.),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+#convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+#axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;External Shear Convergence not defined&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_18_0.png" src="_images/LensZoo_18_0.png" />
+</div>
+</div>
+</section>
+<section id="Mass-Sheet-(MassSheet)">
+<h2>Mass Sheet (MassSheet)<a class="headerlink" href="#Mass-Sheet-(MassSheet)" title="Link to this heading"></a></h2>
+<p>This is a simple case of an external shear field which represents an infinite constant surface density sheet.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>lens = caustic.lenses.MassSheet(
+    cosmology = cosmology,
+    name = &quot;masssheet&quot;,
+    x0 = torch.tensor(0.),
+    y0 = torch.tensor(0.),
+    surface_density = torch.tensor(1.5),
+)
+sim = Zoo_Sim(lens)
+fig, axarr = plt.subplots(1,2, figsize = (14,7))
+convergence = avg_pool2d(lens.convergence(thx, thy, z_s, z_l).squeeze()[None, None], upsample_factor).squeeze()
+axarr[0].imshow(np.log10(convergence.numpy()), origin = &quot;lower&quot;)
+axarr[0].axis(&quot;off&quot;)
+axarr[0].set_title(&quot;Mass Sheet Convergence&quot;)
+axarr[1].imshow(np.log10(sim([z_l]).numpy()), origin = &quot;lower&quot;)
+axarr[1].axis(&quot;off&quot;)
+axarr[1].set_title(&quot;Lensed Sersic&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LensZoo_20_0.png" src="_images/LensZoo_20_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="BasicIntroduction.html" class="btn btn-neutral float-left" title="Welcome to Caustic!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="VisualizeCaustics.html" class="btn btn-neutral float-right" title="Visualize Caustics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

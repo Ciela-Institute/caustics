@@ -1,0 +1,37 @@
+caustics.data package
+=====================
+
+Submodules
+----------
+
+caustics.data.hdf5dataset module
+--------------------------------
+
+.. automodule:: caustics.data.hdf5dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.data.illustris\_kappa module
+-------------------------------------
+
+.. automodule:: caustics.data.illustris_kappa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.data.probes module
+---------------------------
+
+.. automodule:: caustics.data.probes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: caustics.data
+   :members:
+   :undoc-members:
+   :show-inheritance:

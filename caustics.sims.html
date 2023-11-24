@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>caustics.sims package &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="caustics.light package" href="caustics.light.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">caustics</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="caustics.html">caustics package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="caustics.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="caustics.data.html">caustics.data package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html">caustics.lenses package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html">caustics.light package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">caustics.sims package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.constants">caustics.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.cosmology">caustics.cosmology module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.namespace_dict">caustics.namespace_dict module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.packed">caustics.packed module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.parameter">caustics.parameter module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.parametrized">caustics.parametrized module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.utils">caustics.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">caustics</a></li>
+          <li class="breadcrumb-item"><a href="caustics.html">caustics package</a></li>
+      <li class="breadcrumb-item active">caustics.sims package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/caustics.sims.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="caustics-sims-package">
+<h1>caustics.sims package<a class="headerlink" href="#caustics-sims-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-caustics.sims.lens_source">
+<span id="caustics-sims-lens-source-module"></span><h2>caustics.sims.lens_source module<a class="headerlink" href="#module-caustics.sims.lens_source" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.sims.lens_source.</span></span><span class="sig-name descname"><span class="pre">Lens_Source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixels_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lens_light</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixels_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upsample_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'sim'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/sims/lens_source.html#Lens_Source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#caustics.sims.simulator.Simulator" title="caustics.sims.simulator.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulator</span></code></a></p>
+<p>Lens image of a source.</p>
+<p>Striaghtforward simulator to sample a lensed image of a source
+object. Constructs a sampling grid internally based on the
+pixelscale and gridding parameters. It can automatically upscale
+and fine sample an image. This is the most straightforward
+simulator to view the image if you aready have a lens and source
+chosen.</p>
+<p>Example usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">caustics</span>
+
+<span class="n">cosmo</span> <span class="o">=</span> <span class="n">caustics</span><span class="o">.</span><span class="n">FlatLambdaCDM</span><span class="p">()</span>
+<span class="n">lens</span> <span class="o">=</span> <span class="n">caustics</span><span class="o">.</span><span class="n">lenses</span><span class="o">.</span><span class="n">SIS</span><span class="p">(</span><span class="n">cosmology</span> <span class="o">=</span> <span class="n">cosmo</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">th_ein</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="n">source</span> <span class="o">=</span> <span class="n">caustics</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">Sersic</span><span class="p">(</span><span class="n">x0</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">Re</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">Ie</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">caustics</span><span class="o">.</span><span class="n">sims</span><span class="o">.</span><span class="n">Lens_Source</span><span class="p">(</span><span class="n">lens</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">pixelscale</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">gridx</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">gridy</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">upsample_factor</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">z_s</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span>
+
+<span class="n">img</span> <span class="o">=</span> <span class="n">sim</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">origin</span> <span class="o">=</span> <span class="s2">&quot;lower&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.lens">
+<span class="sig-name descname"><span class="pre">lens</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.lens" title="Link to this definition"></a></dt>
+<dd><p>caustics lens mass model object</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.source">
+<span class="sig-name descname"><span class="pre">source</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.source" title="Link to this definition"></a></dt>
+<dd><p>caustics light object which defines the background source</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.pixelscale">
+<span class="sig-name descname"><span class="pre">pixelscale</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.pixelscale" title="Link to this definition"></a></dt>
+<dd><p>pixelscale of the sampling grid.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.pixels_x">
+<span class="sig-name descname"><span class="pre">pixels_x</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.pixels_x" title="Link to this definition"></a></dt>
+<dd><p>number of pixels on the x-axis for the sampling grid</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.lens_light">
+<span class="sig-name descname"><span class="pre">lens_light</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.lens_light" title="Link to this definition"></a></dt>
+<dd><p>caustics light object which defines the lensing object’s light</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.psf">
+<span class="sig-name descname"><span class="pre">psf</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.psf" title="Link to this definition"></a></dt>
+<dd><p>An image to convolve with the scene. Note that if <code class="docutils literal notranslate"><span class="pre">upsample_factor</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> the psf must also be at the higher resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.pixels_y">
+<span class="sig-name descname"><span class="pre">pixels_y</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.pixels_y" title="Link to this definition"></a></dt>
+<dd><p>number of pixels on the y-axis for the sampling grid. If left as <code class="docutils literal notranslate"><span class="pre">None</span></code> then this will simply be equal to <code class="docutils literal notranslate"><span class="pre">gridx</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.upsample_factor">
+<span class="sig-name descname"><span class="pre">upsample_factor</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.upsample_factor" title="Link to this definition"></a></dt>
+<dd><p>Amount of upsampling to model the image. For example <code class="docutils literal notranslate"><span class="pre">upsample_factor</span> <span class="pre">=</span> <span class="pre">2</span></code> indicates that the image will be sampled at double the resolution then summed back to the original resolution (given by pixelscale and gridx/y).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>default 1</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.psf_pad">
+<span class="sig-name descname"><span class="pre">psf_pad</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.psf_pad" title="Link to this definition"></a></dt>
+<dd><p>If convolving the PSF it is important to sample the model in a larger FOV equal to half the PSF size in order to account for light that scatters from outside the requested FOV inwards. Internally this padding will be added before sampling, then cropped off before returning the final image to the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>default True</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.z_s">
+<span class="sig-name descname"><span class="pre">z_s</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.z_s" title="Link to this definition"></a></dt>
+<dd><p>redshift of the source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.name" title="Link to this definition"></a></dt>
+<dd><p>a name for this simulator in the parameter DAG.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>default “sim”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.sims.lens_source.Lens_Source.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_light</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lens_light</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lens_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_convolve</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/sims/lens_source.html#Lens_Source.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.sims.lens_source.Lens_Source.forward" title="Link to this definition"></a></dt>
+<dd><p>params: Packed object
+source_light: when true the source light will be sampled
+lens_light: when true the lens light will be sampled
+lens_source: when true, the source light model will be lensed by the lens mass distribution
+psf_convolve: when true the image will be convolved with the psf</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-caustics.sims.simulator">
+<span id="caustics-sims-simulator-module"></span><h2>caustics.sims.simulator module<a class="headerlink" href="#module-caustics.sims.simulator" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.sims.simulator.Simulator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.sims.simulator.</span></span><span class="sig-name descname"><span class="pre">Simulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/sims/simulator.html#Simulator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.sims.simulator.Simulator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="caustics.html#caustics.parametrized.Parametrized" title="caustics.parametrized.Parametrized"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parametrized</span></code></a></p>
+<p>A caustic simulator using Parametrized framework.</p>
+<p>Defines a simulator class which is a callable function that
+operates on the Parametrized framework. Users define the <cite>forward</cite>
+method which takes as its first argument an object which can be
+packed, all other args and kwargs are simply passed to the forward
+method.</p>
+<p>See <cite>Parametrized</cite> for details on how to add/access parameters.</p>
+</dd></dl>
+
+</section>
+<section id="module-caustics.sims">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-caustics.sims" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="caustics.light.html" class="btn btn-neutral float-left" title="caustics.light package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

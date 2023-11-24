@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>caustics package &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="caustics.data package" href="caustics.data.html" />
+    <link rel="prev" title="caustics" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">caustics</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">caustics package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.data.html">caustics.data package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html">caustics.lenses package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html">caustics.light package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html">caustics.sims package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.constants">caustics.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.cosmology">caustics.cosmology module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.cosmology.Cosmology"><code class="docutils literal notranslate"><span class="pre">Cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.cosmology.FlatLambdaCDM"><code class="docutils literal notranslate"><span class="pre">FlatLambdaCDM</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.namespace_dict">caustics.namespace_dict module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.namespace_dict.NamespaceDict"><code class="docutils literal notranslate"><span class="pre">NamespaceDict</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.namespace_dict.NestedNamespaceDict"><code class="docutils literal notranslate"><span class="pre">NestedNamespaceDict</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.packed">caustics.packed module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.packed.Packed"><code class="docutils literal notranslate"><span class="pre">Packed</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.parameter">caustics.parameter module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.parameter.Parameter"><code class="docutils literal notranslate"><span class="pre">Parameter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.parametrized">caustics.parametrized module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.parametrized.Parametrized"><code class="docutils literal notranslate"><span class="pre">Parametrized</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.parametrized.unpack"><code class="docutils literal notranslate"><span class="pre">unpack()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics.utils">caustics.utils module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.batch_lm"><code class="docutils literal notranslate"><span class="pre">batch_lm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.derotate"><code class="docutils literal notranslate"><span class="pre">derotate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.flip_axis_ratio"><code class="docutils literal notranslate"><span class="pre">flip_axis_ratio()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.get_cluster_means"><code class="docutils literal notranslate"><span class="pre">get_cluster_means()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.get_meshgrid"><code class="docutils literal notranslate"><span class="pre">get_meshgrid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.interp1d"><code class="docutils literal notranslate"><span class="pre">interp1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.interp2d"><code class="docutils literal notranslate"><span class="pre">interp2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.safe_divide"><code class="docutils literal notranslate"><span class="pre">safe_divide()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.safe_log"><code class="docutils literal notranslate"><span class="pre">safe_log()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.to_elliptical"><code class="docutils literal notranslate"><span class="pre">to_elliptical()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.translate_rotate"><code class="docutils literal notranslate"><span class="pre">translate_rotate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caustics.utils.vmap_n"><code class="docutils literal notranslate"><span class="pre">vmap_n()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-caustics">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">caustics</a></li>
+      <li class="breadcrumb-item active">caustics package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/caustics.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="caustics-package">
+<h1>caustics package<a class="headerlink" href="#caustics-package" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="caustics.data.html">caustics.data package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="caustics.data.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.data.html#module-caustics.data.hdf5dataset">caustics.data.hdf5dataset module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.data.html#caustics.data.hdf5dataset.HDF5Dataset"><code class="docutils literal notranslate"><span class="pre">HDF5Dataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.data.html#module-caustics.data.illustris_kappa">caustics.data.illustris_kappa module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.data.html#caustics.data.illustris_kappa.IllustrisKappaDataset"><code class="docutils literal notranslate"><span class="pre">IllustrisKappaDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.data.html#module-caustics.data.probes">caustics.data.probes module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.data.html#caustics.data.probes.PROBESDataset"><code class="docutils literal notranslate"><span class="pre">PROBESDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.data.html#module-caustics.data">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="caustics.lenses.html">caustics.lenses package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.base">caustics.lenses.base module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens"><code class="docutils literal notranslate"><span class="pre">ThickLens</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.cosmology"><code class="docutils literal notranslate"><span class="pre">ThickLens.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.effective_convergence_curl"><code class="docutils literal notranslate"><span class="pre">ThickLens.effective_convergence_curl()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.effective_convergence_div"><code class="docutils literal notranslate"><span class="pre">ThickLens.effective_convergence_div()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.effective_reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThickLens.effective_reduced_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.jacobian_effective_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThickLens.jacobian_effective_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.physical_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThickLens.physical_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.raytrace"><code class="docutils literal notranslate"><span class="pre">ThickLens.raytrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThickLens.reduced_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.surface_density"><code class="docutils literal notranslate"><span class="pre">ThickLens.surface_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThickLens.time_delay"><code class="docutils literal notranslate"><span class="pre">ThickLens.time_delay()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens"><code class="docutils literal notranslate"><span class="pre">ThinLens</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.convergence"><code class="docutils literal notranslate"><span class="pre">ThinLens.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.jacobian_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThinLens.jacobian_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.physical_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThinLens.physical_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.potential"><code class="docutils literal notranslate"><span class="pre">ThinLens.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.raytrace"><code class="docutils literal notranslate"><span class="pre">ThinLens.raytrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ThinLens.reduced_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.surface_density"><code class="docutils literal notranslate"><span class="pre">ThinLens.surface_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.base.ThinLens.time_delay"><code class="docutils literal notranslate"><span class="pre">ThinLens.time_delay()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.epl">caustics.lenses.epl module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.epl.EPL"><code class="docutils literal notranslate"><span class="pre">EPL</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.epl.EPL.n_iter"><code class="docutils literal notranslate"><span class="pre">EPL.n_iter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.epl.EPL.s"><code class="docutils literal notranslate"><span class="pre">EPL.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.epl.EPL.convergence"><code class="docutils literal notranslate"><span class="pre">EPL.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.epl.EPL.potential"><code class="docutils literal notranslate"><span class="pre">EPL.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.epl.EPL.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">EPL.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.external_shear">caustics.lenses.external_shear module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear"><code class="docutils literal notranslate"><span class="pre">ExternalShear</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear.name"><code class="docutils literal notranslate"><span class="pre">ExternalShear.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear.cosmology"><code class="docutils literal notranslate"><span class="pre">ExternalShear.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear.z_l"><code class="docutils literal notranslate"><span class="pre">ExternalShear.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear.convergence"><code class="docutils literal notranslate"><span class="pre">ExternalShear.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear.potential"><code class="docutils literal notranslate"><span class="pre">ExternalShear.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.external_shear.ExternalShear.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">ExternalShear.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.mass_sheet">caustics.lenses.mass_sheet module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet"><code class="docutils literal notranslate"><span class="pre">MassSheet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet.name"><code class="docutils literal notranslate"><span class="pre">MassSheet.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet.cosmology"><code class="docutils literal notranslate"><span class="pre">MassSheet.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet.z_l"><code class="docutils literal notranslate"><span class="pre">MassSheet.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet.convergence"><code class="docutils literal notranslate"><span class="pre">MassSheet.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet.potential"><code class="docutils literal notranslate"><span class="pre">MassSheet.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.mass_sheet.MassSheet.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">MassSheet.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.multiplane">caustics.lenses.multiplane module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane"><code class="docutils literal notranslate"><span class="pre">Multiplane</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.lenses"><code class="docutils literal notranslate"><span class="pre">Multiplane.lenses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.effective_reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">Multiplane.effective_reduced_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.get_z_ls"><code class="docutils literal notranslate"><span class="pre">Multiplane.get_z_ls()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.raytrace"><code class="docutils literal notranslate"><span class="pre">Multiplane.raytrace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.raytrace_z1z2"><code class="docutils literal notranslate"><span class="pre">Multiplane.raytrace_z1z2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.surface_density"><code class="docutils literal notranslate"><span class="pre">Multiplane.surface_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.multiplane.Multiplane.time_delay"><code class="docutils literal notranslate"><span class="pre">Multiplane.time_delay()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.nfw">caustics.lenses.nfw module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW"><code class="docutils literal notranslate"><span class="pre">NFW</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.z_l"><code class="docutils literal notranslate"><span class="pre">NFW.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.x0"><code class="docutils literal notranslate"><span class="pre">NFW.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.y0"><code class="docutils literal notranslate"><span class="pre">NFW.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.m"><code class="docutils literal notranslate"><span class="pre">NFW.m</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.c"><code class="docutils literal notranslate"><span class="pre">NFW.c</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.s"><code class="docutils literal notranslate"><span class="pre">NFW.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.use_case"><code class="docutils literal notranslate"><span class="pre">NFW.use_case</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.get_scale_radius"><code class="docutils literal notranslate"><span class="pre">NFW.get_scale_radius()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.get_scale_density"><code class="docutils literal notranslate"><span class="pre">NFW.get_scale_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.get_convergence_s"><code class="docutils literal notranslate"><span class="pre">NFW.get_convergence_s()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW._f"><code class="docutils literal notranslate"><span class="pre">NFW._f()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW._g"><code class="docutils literal notranslate"><span class="pre">NFW._g()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW._h"><code class="docutils literal notranslate"><span class="pre">NFW._h()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.deflection_angle_hat"><code class="docutils literal notranslate"><span class="pre">NFW.deflection_angle_hat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.deflection_angle"><code class="docutils literal notranslate"><span class="pre">NFW.deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.convergence"><code class="docutils literal notranslate"><span class="pre">NFW.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.potential"><code class="docutils literal notranslate"><span class="pre">NFW.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#id0"><code class="docutils literal notranslate"><span class="pre">NFW.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#id5"><code class="docutils literal notranslate"><span class="pre">NFW.get_convergence_s()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#id6"><code class="docutils literal notranslate"><span class="pre">NFW.get_scale_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#id7"><code class="docutils literal notranslate"><span class="pre">NFW.get_scale_radius()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#id8"><code class="docutils literal notranslate"><span class="pre">NFW.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.nfw.NFW.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">NFW.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.pixelated_convergence">caustics.lenses.pixelated_convergence module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pixelated_convergence.PixelatedConvergence"><code class="docutils literal notranslate"><span class="pre">PixelatedConvergence</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pixelated_convergence.PixelatedConvergence.convergence"><code class="docutils literal notranslate"><span class="pre">PixelatedConvergence.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pixelated_convergence.PixelatedConvergence.convolution_mode"><code class="docutils literal notranslate"><span class="pre">PixelatedConvergence.convolution_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pixelated_convergence.PixelatedConvergence.potential"><code class="docutils literal notranslate"><span class="pre">PixelatedConvergence.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pixelated_convergence.PixelatedConvergence.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">PixelatedConvergence.reduced_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pixelated_convergence.PixelatedConvergence.to"><code class="docutils literal notranslate"><span class="pre">PixelatedConvergence.to()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.point">caustics.lenses.point module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point"><code class="docutils literal notranslate"><span class="pre">Point</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.name"><code class="docutils literal notranslate"><span class="pre">Point.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.cosmology"><code class="docutils literal notranslate"><span class="pre">Point.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.z_l"><code class="docutils literal notranslate"><span class="pre">Point.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.x0"><code class="docutils literal notranslate"><span class="pre">Point.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.y0"><code class="docutils literal notranslate"><span class="pre">Point.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.th_ein"><code class="docutils literal notranslate"><span class="pre">Point.th_ein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.s"><code class="docutils literal notranslate"><span class="pre">Point.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.convergence"><code class="docutils literal notranslate"><span class="pre">Point.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.potential"><code class="docutils literal notranslate"><span class="pre">Point.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.point.Point.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">Point.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.pseudo_jaffe">caustics.lenses.pseudo_jaffe module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.name"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.cosmology"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.z_l"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.x0"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.y0"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.mass"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.mass</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.core_radius"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.core_radius</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.scale_radius"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.scale_radius</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.s"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.central_convergence"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.central_convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.convergence"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.get_convergence_0"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.get_convergence_0()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.mass_enclosed_2d"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.mass_enclosed_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.potential"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.pseudo_jaffe.PseudoJaffe.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">PseudoJaffe.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.sie">caustics.lenses.sie module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE"><code class="docutils literal notranslate"><span class="pre">SIE</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.name"><code class="docutils literal notranslate"><span class="pre">SIE.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.cosmology"><code class="docutils literal notranslate"><span class="pre">SIE.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.z_l"><code class="docutils literal notranslate"><span class="pre">SIE.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.x0"><code class="docutils literal notranslate"><span class="pre">SIE.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.y0"><code class="docutils literal notranslate"><span class="pre">SIE.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.q"><code class="docutils literal notranslate"><span class="pre">SIE.q</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.phi"><code class="docutils literal notranslate"><span class="pre">SIE.phi</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.b"><code class="docutils literal notranslate"><span class="pre">SIE.b</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.s"><code class="docutils literal notranslate"><span class="pre">SIE.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.convergence"><code class="docutils literal notranslate"><span class="pre">SIE.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.potential"><code class="docutils literal notranslate"><span class="pre">SIE.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sie.SIE.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">SIE.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.singleplane">caustics.lenses.singleplane module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane"><code class="docutils literal notranslate"><span class="pre">SinglePlane</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane.name"><code class="docutils literal notranslate"><span class="pre">SinglePlane.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane.cosmology"><code class="docutils literal notranslate"><span class="pre">SinglePlane.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane.lenses"><code class="docutils literal notranslate"><span class="pre">SinglePlane.lenses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane.convergence"><code class="docutils literal notranslate"><span class="pre">SinglePlane.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane.potential"><code class="docutils literal notranslate"><span class="pre">SinglePlane.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.singleplane.SinglePlane.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">SinglePlane.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.sis">caustics.lenses.sis module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS"><code class="docutils literal notranslate"><span class="pre">SIS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.name"><code class="docutils literal notranslate"><span class="pre">SIS.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.cosmology"><code class="docutils literal notranslate"><span class="pre">SIS.cosmology</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.z_l"><code class="docutils literal notranslate"><span class="pre">SIS.z_l</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.x0"><code class="docutils literal notranslate"><span class="pre">SIS.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.y0"><code class="docutils literal notranslate"><span class="pre">SIS.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.th_ein"><code class="docutils literal notranslate"><span class="pre">SIS.th_ein</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.s"><code class="docutils literal notranslate"><span class="pre">SIS.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.convergence"><code class="docutils literal notranslate"><span class="pre">SIS.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.potential"><code class="docutils literal notranslate"><span class="pre">SIS.potential()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.sis.SIS.reduced_deflection_angle"><code class="docutils literal notranslate"><span class="pre">SIS.reduced_deflection_angle()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.tnfw">caustics.lenses.tnfw module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW"><code class="docutils literal notranslate"><span class="pre">TNFW</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.convergence"><code class="docutils literal notranslate"><span class="pre">TNFW.convergence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.get_M0"><code class="docutils literal notranslate"><span class="pre">TNFW.get_M0()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.get_concentration"><code class="docutils literal notranslate"><span class="pre">TNFW.get_concentration()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.get_scale_density"><code class="docutils literal notranslate"><span class="pre">TNFW.get_scale_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.get_truncation_radius"><code class="docutils literal notranslate"><span class="pre">TNFW.get_truncation_radius()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.mass_enclosed_2d"><code class="docutils literal notranslate"><span class="pre">TNFW.mass_enclosed_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.physical_deflection_angle"><code class="docutils literal notranslate"><span class="pre">TNFW.physical_deflection_angle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.tnfw.TNFW.potential"><code class="docutils literal notranslate"><span class="pre">TNFW.potential()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses.utils">caustics.lenses.utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.utils.get_magnification"><code class="docutils literal notranslate"><span class="pre">get_magnification()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.utils.get_pix_jacobian"><code class="docutils literal notranslate"><span class="pre">get_pix_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.lenses.html#caustics.lenses.utils.get_pix_magnification"><code class="docutils literal notranslate"><span class="pre">get_pix_magnification()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.lenses.html#module-caustics.lenses">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="caustics.light.html">caustics.light package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="caustics.light.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.light.html#module-caustics.light.base">caustics.light.base module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.light.html#caustics.light.base.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.base.Source.brightness"><code class="docutils literal notranslate"><span class="pre">Source.brightness()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.light.html#module-caustics.light.pixelated">caustics.light.pixelated module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated"><code class="docutils literal notranslate"><span class="pre">Pixelated</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated.x0"><code class="docutils literal notranslate"><span class="pre">Pixelated.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated.y0"><code class="docutils literal notranslate"><span class="pre">Pixelated.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated.image"><code class="docutils literal notranslate"><span class="pre">Pixelated.image</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated.pixelscale"><code class="docutils literal notranslate"><span class="pre">Pixelated.pixelscale</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated.shape"><code class="docutils literal notranslate"><span class="pre">Pixelated.shape</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.pixelated.Pixelated.brightness"><code class="docutils literal notranslate"><span class="pre">Pixelated.brightness()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.light.html#module-caustics.light.probes">caustics.light.probes module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.light.html#caustics.light.probes.PROBESDataset"><code class="docutils literal notranslate"><span class="pre">PROBESDataset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.light.html#module-caustics.light.sersic">caustics.light.sersic module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic"><code class="docutils literal notranslate"><span class="pre">Sersic</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.x0"><code class="docutils literal notranslate"><span class="pre">Sersic.x0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.y0"><code class="docutils literal notranslate"><span class="pre">Sersic.y0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.q"><code class="docutils literal notranslate"><span class="pre">Sersic.q</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.phi"><code class="docutils literal notranslate"><span class="pre">Sersic.phi</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.n"><code class="docutils literal notranslate"><span class="pre">Sersic.n</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.Re"><code class="docutils literal notranslate"><span class="pre">Sersic.Re</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.Ie"><code class="docutils literal notranslate"><span class="pre">Sersic.Ie</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.s"><code class="docutils literal notranslate"><span class="pre">Sersic.s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.lenstronomy_k_mode"><code class="docutils literal notranslate"><span class="pre">Sersic.lenstronomy_k_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.light.html#caustics.light.sersic.Sersic.brightness"><code class="docutils literal notranslate"><span class="pre">Sersic.brightness()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.light.html#module-caustics.light">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="caustics.sims.html">caustics.sims package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="caustics.sims.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.sims.html#module-caustics.sims.lens_source">caustics.sims.lens_source module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source"><code class="docutils literal notranslate"><span class="pre">Lens_Source</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.lens"><code class="docutils literal notranslate"><span class="pre">Lens_Source.lens</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.source"><code class="docutils literal notranslate"><span class="pre">Lens_Source.source</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.pixelscale"><code class="docutils literal notranslate"><span class="pre">Lens_Source.pixelscale</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.pixels_x"><code class="docutils literal notranslate"><span class="pre">Lens_Source.pixels_x</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.lens_light"><code class="docutils literal notranslate"><span class="pre">Lens_Source.lens_light</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.psf"><code class="docutils literal notranslate"><span class="pre">Lens_Source.psf</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.pixels_y"><code class="docutils literal notranslate"><span class="pre">Lens_Source.pixels_y</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.upsample_factor"><code class="docutils literal notranslate"><span class="pre">Lens_Source.upsample_factor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.psf_pad"><code class="docutils literal notranslate"><span class="pre">Lens_Source.psf_pad</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.z_s"><code class="docutils literal notranslate"><span class="pre">Lens_Source.z_s</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.name"><code class="docutils literal notranslate"><span class="pre">Lens_Source.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html#caustics.sims.lens_source.Lens_Source.forward"><code class="docutils literal notranslate"><span class="pre">Lens_Source.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.sims.html#module-caustics.sims.simulator">caustics.sims.simulator module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caustics.sims.html#caustics.sims.simulator.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caustics.sims.html#module-caustics.sims">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-caustics.constants">
+<span id="caustics-constants-module"></span><h2>caustics.constants module<a class="headerlink" href="#module-caustics.constants" title="Link to this heading"></a></h2>
+</section>
+<section id="module-caustics.cosmology">
+<span id="caustics-cosmology-module"></span><h2>caustics.cosmology module<a class="headerlink" href="#module-caustics.cosmology" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.cosmology.</span></span><span class="sig-name descname"><span class="pre">Cosmology</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#caustics.parametrized.Parametrized" title="caustics.parametrized.Parametrized"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parametrized</span></code></a></p>
+<p>Abstract base class for cosmological models.</p>
+<p>This class provides an interface for cosmological computations used in lensing
+such as comoving distance and critical surface density.</p>
+<dl class="simple">
+<dt>Units:</dt><dd><ul class="simple">
+<li><p>Distance: Mpc</p></li>
+<li><p>Mass: solar mass</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#caustics.cosmology.Cosmology.name" title="Link to this definition"></a></dt>
+<dd><p>Name of the cosmological model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.angular_diameter_distance">
+<span class="sig-name descname"><span class="pre">angular_diameter_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.angular_diameter_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.angular_diameter_distance" title="Link to this definition"></a></dt>
+<dd><p>Compute the angular diameter distance to redshift z.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – The redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The angular diameter distance to each redshift.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.angular_diameter_distance_z1z2">
+<span class="sig-name descname"><span class="pre">angular_diameter_distance_z1z2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.angular_diameter_distance_z1z2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.angular_diameter_distance_z1z2" title="Link to this definition"></a></dt>
+<dd><p>Compute the angular diameter distance between two redshifts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z1</strong> (<em>Tensor</em>) – The starting redshifts.</p></li>
+<li><p><strong>z2</strong> (<em>Tensor</em>) – The ending redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The angular diameter distance between each pair of redshifts.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.comoving_distance">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">comoving_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.comoving_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.comoving_distance" title="Link to this definition"></a></dt>
+<dd><p>Compute the comoving distance to redshift z.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – The redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The comoving distance to each redshift.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.comoving_distance_z1z2">
+<span class="sig-name descname"><span class="pre">comoving_distance_z1z2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.comoving_distance_z1z2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.comoving_distance_z1z2" title="Link to this definition"></a></dt>
+<dd><p>Compute the comoving distance between two redshifts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z1</strong> (<em>Tensor</em>) – The starting redshifts.</p></li>
+<li><p><strong>z2</strong> (<em>Tensor</em>) – The ending redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The comoving distance between each pair of redshifts.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.critical_density">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">critical_density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.critical_density"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.critical_density" title="Link to this definition"></a></dt>
+<dd><p>Compute the critical density at redshift z.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – The redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The critical density at each redshift.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.critical_surface_density">
+<span class="sig-name descname"><span class="pre">critical_surface_density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z_l</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.critical_surface_density"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.critical_surface_density" title="Link to this definition"></a></dt>
+<dd><p>Compute the critical surface density between lens and source planes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z_l</strong> (<em>Tensor</em>) – The lens redshifts.</p></li>
+<li><p><strong>z_s</strong> (<em>Tensor</em>) – The source redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The critical surface density for each pair of lens and source redshifts.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.time_delay_distance">
+<span class="sig-name descname"><span class="pre">time_delay_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z_l</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.time_delay_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.time_delay_distance" title="Link to this definition"></a></dt>
+<dd><p>Compute the time delay distance between lens and source planes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z_l</strong> (<em>Tensor</em>) – The lens redshifts.</p></li>
+<li><p><strong>z_s</strong> (<em>Tensor</em>) – The source redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The time delay distance for each pair of lens and source redshifts.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.transverse_comoving_distance">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transverse_comoving_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.transverse_comoving_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.transverse_comoving_distance" title="Link to this definition"></a></dt>
+<dd><p>Compute the transverse comoving distance to redshift z (Mpc).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – The redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The transverse comoving distance to each redshift in Mpc.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.Cosmology.transverse_comoving_distance_z1z2">
+<span class="sig-name descname"><span class="pre">transverse_comoving_distance_z1z2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#Cosmology.transverse_comoving_distance_z1z2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.Cosmology.transverse_comoving_distance_z1z2" title="Link to this definition"></a></dt>
+<dd><p>Compute the transverse comoving distance between two redshifts (Mpc).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z1</strong> (<em>Tensor</em>) – The starting redshifts.</p></li>
+<li><p><strong>z2</strong> (<em>Tensor</em>) – The ending redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The transverse comoving distance between each pair of redshifts in Mpc.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.cosmology.FlatLambdaCDM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.cosmology.</span></span><span class="sig-name descname"><span class="pre">FlatLambdaCDM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">tensor(0.6766)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">critical_density_0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">tensor(1.2705e+11)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Om0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">tensor(0.3097)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/cosmology.html#FlatLambdaCDM"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.FlatLambdaCDM" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#caustics.cosmology.Cosmology" title="caustics.cosmology.Cosmology"><code class="xref py py-class docutils literal notranslate"><span class="pre">Cosmology</span></code></a></p>
+<p>Subclass of Cosmology representing a Flat Lambda Cold Dark Matter (LCDM) cosmology with no radiation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.FlatLambdaCDM.comoving_distance">
+<span class="sig-name descname"><span class="pre">comoving_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_critical_density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Om0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#FlatLambdaCDM.comoving_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.FlatLambdaCDM.comoving_distance" title="Link to this definition"></a></dt>
+<dd><p>Calculate the comoving distance to redshift z.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – Redshift.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Comoving distance to redshift z.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.FlatLambdaCDM.critical_density">
+<span class="sig-name descname"><span class="pre">critical_density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_critical_density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Om0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#FlatLambdaCDM.critical_density"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.FlatLambdaCDM.critical_density" title="Link to this definition"></a></dt>
+<dd><p>Calculate the critical density at redshift z.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – Redshift.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Critical density at redshift z.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.FlatLambdaCDM.hubble_distance">
+<span class="sig-name descname"><span class="pre">hubble_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/cosmology.html#FlatLambdaCDM.hubble_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.FlatLambdaCDM.hubble_distance" title="Link to this definition"></a></dt>
+<dd><p>Calculate the Hubble distance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>h0</strong> (<em>Tensor</em>) – Hubble constant.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Hubble distance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.FlatLambdaCDM.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">device</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dtype</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/cosmology.html#FlatLambdaCDM.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.FlatLambdaCDM.to" title="Link to this definition"></a></dt>
+<dd><p>Moves static Params for this component and its childs to the specified device and casts them to the specified data type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.cosmology.FlatLambdaCDM.transverse_comoving_distance">
+<span class="sig-name descname"><span class="pre">transverse_comoving_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_critical_density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Om0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/cosmology.html#FlatLambdaCDM.transverse_comoving_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.cosmology.FlatLambdaCDM.transverse_comoving_distance" title="Link to this definition"></a></dt>
+<dd><p>Compute the transverse comoving distance to redshift z (Mpc).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Tensor</em>) – The redshifts.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container for the computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The transverse comoving distance to each redshift in Mpc.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-caustics.namespace_dict">
+<span id="caustics-namespace-dict-module"></span><h2>caustics.namespace_dict module<a class="headerlink" href="#module-caustics.namespace_dict" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.namespace_dict.NamespaceDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.namespace_dict.</span></span><span class="sig-name descname"><span class="pre">NamespaceDict</span></span><a class="reference internal" href="_modules/caustics/namespace_dict.html#NamespaceDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.namespace_dict.NamespaceDict" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">OrderedDict</span></code></p>
+<p>Add support for attributes on top of an OrderedDict</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.namespace_dict.NestedNamespaceDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.namespace_dict.</span></span><span class="sig-name descname"><span class="pre">NestedNamespaceDict</span></span><a class="reference internal" href="_modules/caustics/namespace_dict.html#NestedNamespaceDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.namespace_dict.NestedNamespaceDict" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_NestedNamespaceDict</span></code></p>
+<p>Example usage
+<a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python</p>
+<blockquote>
+<div><p>nested_namespace = NestedNamespaceDict()
+nested_namespace.foo = ‘Hello’
+nested_namespace.bar = {‘baz’: ‘World’}
+nested_namespace.bar.qux = 42
+# works also in the follwoing way</p>
+<blockquote>
+<div><p>nested_namespace[“bar.qux”] = 42</p>
+</div></blockquote>
+<p>print(nested_namespace)
+# Output:
+# {‘foo’: ‘Hello’, ‘bar’: {‘baz’: ‘World’, ‘qux’: 42 }}</p>
+<p>#==============================
+# Flattened key access
+#==============================
+print(nested_dict[‘foo’])        # Output: Hello
+print(nested_dict[‘bar.baz’])    # Output: World
+print(nested_dict[‘bar.qux’])    # Output: 42</p>
+<p>#==============================
+# Nested namespace access
+#==============================
+print(nested_dict.bar.qux)       # Output: 42</p>
+<p>#==============================
+# Flatten and collapse method
+#==============================
+print(nested_dict.flatten())
+# Output:
+# {‘foo’: ‘Hello’, ‘bar.baz’: ‘World’, ‘bar.qux’: 42}</p>
+<p>print(nested_dict.collapse()
+# Output:
+# {‘foo’: ‘Hello’, ‘baz’: ‘World’, ‘qux’: 42}</p>
+</div></blockquote>
+</dd></dl>
+
+</section>
+<section id="module-caustics.packed">
+<span id="caustics-packed-module"></span><h2>caustics.packed module<a class="headerlink" href="#module-caustics.packed" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.packed.Packed">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.packed.</span></span><span class="sig-name descname"><span class="pre">Packed</span></span><a class="reference internal" href="_modules/caustics/packed.html#Packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.packed.Packed" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">OrderedDict</span></code></p>
+<p>Dummy wrapper for <cite>x</cite> so other functions can check its type.</p>
+</dd></dl>
+
+</section>
+<section id="module-caustics.parameter">
+<span id="caustics-parameter-module"></span><h2>caustics.parameter module<a class="headerlink" href="#module-caustics.parameter" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.parameter.</span></span><span class="sig-name descname"><span class="pre">Parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parameter.html#Parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parameter.Parameter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a static or dynamic parameter used for strong gravitational lensing simulations in the caustics codebase.</p>
+<p>A static parameter has a fixed value, while a dynamic parameter must be passed in each time it’s required.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.value">
+<span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#caustics.parameter.Parameter.value" title="Link to this definition"></a></dt>
+<dd><p>The value of the parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.shape">
+<span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#caustics.parameter.Parameter.shape" title="Link to this definition"></a></dt>
+<dd><p>The shape of the parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#caustics.parameter.Parameter.dtype" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.dynamic">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dynamic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#caustics.parameter.Parameter.dynamic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.set_static">
+<span class="sig-name descname"><span class="pre">set_static</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parameter.html#Parameter.set_static"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parameter.Parameter.set_static" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id0">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.static">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">static</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#caustics.parameter.Parameter.static" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parameter.Parameter.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">device</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dtype</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parameter.html#Parameter.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parameter.Parameter.to" title="Link to this definition"></a></dt>
+<dd><p>Moves and/or casts the values of the parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<em>Optional</em><em>[</em><em>torch.device</em><em>]</em><em>, </em><em>optional</em>) – The device to move the values to. Defaults to None.</p></li>
+<li><p><strong>dtype</strong> (<em>Optional</em><em>[</em><em>torch.dtype</em><em>]</em><em>, </em><em>optional</em>) – The desired data type. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id5">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-caustics.parametrized">
+<span id="caustics-parametrized-module"></span><h2>caustics.parametrized module<a class="headerlink" href="#module-caustics.parametrized" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.parametrized.</span></span><span class="sig-name descname"><span class="pre">Parametrized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator
+that have parameters which need to be tracked during MCMC sampling.</p>
+<p>This class can contain Params, Parametrized, tensor buffers or normal attributes as its attributes.
+It provides functionalities to manage these attributes, ensuring that an attribute of one type isn’t rebound
+to be of a different type.</p>
+<p>TODO
+- Attributes can be Params, Parametrized, tensor buffers or just normal attributes.
+- Need to make sure an attribute of one of those types isn’t rebound to be of a different type.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#caustics.parametrized.Parametrized.name" title="Link to this definition"></a></dt>
+<dd><p>The name of the Parametrized object. Default to class name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.parents">
+<span class="sig-name descname"><span class="pre">parents</span></span><a class="headerlink" href="#caustics.parametrized.Parametrized.parents" title="Link to this definition"></a></dt>
+<dd><p>Nested dictionary of parent Parametrized objects (higher level, more abstract modules).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#caustics.namespace_dict.NestedNamespaceDict" title="caustics.namespace_dict.NestedNamespaceDict">NestedNamespaceDict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.params">
+<span class="sig-name descname"><span class="pre">params</span></span><a class="headerlink" href="#caustics.parametrized.Parametrized.params" title="Link to this definition"></a></dt>
+<dd><p>Dictionary of parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>OrderedDict[str, <a class="reference internal" href="#caustics.parameter.Parameter" title="caustics.parameter.Parameter">Parameter</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">childs</span> <span class="pre">NestedNamespaceDict</span></span></dt>
+<dd><p>Nested dictionary of childs Parametrized objects (lower level, more specialized modules).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.dynamic_size">
+<span class="sig-name descname"><span class="pre">dynamic_size</span></span><a class="headerlink" href="#caustics.parametrized.Parametrized.dynamic_size" title="Link to this definition"></a></dt>
+<dd><p>Size of dynamic parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.n_dynamic">
+<span class="sig-name descname"><span class="pre">n_dynamic</span></span><a class="headerlink" href="#caustics.parametrized.Parametrized.n_dynamic" title="Link to this definition"></a></dt>
+<dd><p>Number of dynamic parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.n_static">
+<span class="sig-name descname"><span class="pre">n_static</span></span><a class="headerlink" href="#caustics.parametrized.Parametrized.n_static" title="Link to this definition"></a></dt>
+<dd><p>Number of static parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.add_param">
+<span class="sig-name descname"><span class="pre">add_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized.add_param"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized.add_param" title="Link to this definition"></a></dt>
+<dd><p>Stores a parameter in the _params dictionary and records its size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the parameter.</p></li>
+<li><p><strong>value</strong> (<em>Optional</em><em>[</em><em>Tensor</em><em>]</em><em>, </em><em>optional</em>) – The value of the parameter. Defaults to None.</p></li>
+<li><p><strong>shape</strong> (<em>Optional</em><em>[</em><em>tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The shape of the parameter. Defaults to an empty tuple.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.add_parametrized">
+<span class="sig-name descname"><span class="pre">add_parametrized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#caustics.parametrized.Parametrized" title="caustics.parametrized.Parametrized"><span class="pre">Parametrized</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized.add_parametrized"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized.add_parametrized" title="Link to this definition"></a></dt>
+<dd><p>Add a child to this module, and create edges for the DAG</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.dynamic_modules">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dynamic_modules</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#caustics.namespace_dict.NamespaceDict" title="caustics.namespace_dict.NamespaceDict"><span class="pre">NamespaceDict</span></a><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#caustics.parametrized.Parametrized" title="caustics.parametrized.Parametrized"><span class="pre">Parametrized</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#caustics.parametrized.Parametrized.dynamic_modules" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id6">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dynamic_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#id6" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.get_graph">
+<span class="sig-name descname"><span class="pre">get_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_dynamic_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_static_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">graphviz.Digraph</span></span></span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized.get_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized.get_graph" title="Link to this definition"></a></dt>
+<dd><p>Returns a graph representation of the object and its parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>show_dynamic_params</strong> (<em>bool</em><em>, </em><em>optional</em>) – If true, the dynamic parameters are shown in the graph. Defaults to False.</p></li>
+<li><p><strong>show_static_params</strong> (<em>bool</em><em>, </em><em>optional</em>) – If true, the static parameters are shown in the graph. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The graph representation of the object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>graphviz.Digraph</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.module_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">module_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#caustics.namespace_dict.NestedNamespaceDict" title="caustics.namespace_dict.NestedNamespaceDict"><span class="pre">NestedNamespaceDict</span></a></em><a class="headerlink" href="#caustics.parametrized.Parametrized.module_params" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id7">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_dynamic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#id7" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id8">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_static</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#id8" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id9">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#id9" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.pack">
+<span class="sig-name descname"><span class="pre">pack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a></span></span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized.pack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized.pack" title="Link to this definition"></a></dt>
+<dd><p>Converts a list or tensor into a dict that can subsequently be unpacked
+into arguments to this component and its childs. Also, add a batch dimension
+to each Tensor without such a dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>Union</em><em>[</em><em>list</em><em>[</em><em>Tensor</em><em>]</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>Union</em><em>[</em><em>list</em><em>[</em><em>Tensor</em><em>]</em><em>, </em><em>Tensor</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>Tensor</em><em>]</em><em>]</em><em>]</em><em>, </em><em>Tensor</em>) – The input to be packed. Can be a list of tensors, a dictionary of tensors, or a single tensor.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The packed input, and whether or not the input was batched.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#caustics.packed.Packed" title="caustics.packed.Packed">Packed</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the input is not a list, dictionary, or tensor.</p></li>
+<li><p><strong>ValueError</strong> – If the input is a dictionary and some keys are missing.</p></li>
+<li><p><strong>ValueError</strong> – If the number of dynamic arguments does not match the expected number.</p></li>
+<li><p><strong>ValueError</strong> – If the input is a tensor and the shape does not match the expected shape.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id10">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#caustics.namespace_dict.NestedNamespaceDict" title="caustics.namespace_dict.NestedNamespaceDict"><span class="pre">NestedNamespaceDict</span></a></em><a class="headerlink" href="#id10" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">device</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dtype</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized.to" title="Link to this definition"></a></dt>
+<dd><p>Moves static Params for this component and its childs to the specified device and casts them to the specified data type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.parametrized.Parametrized.unpack">
+<span class="sig-name descname"><span class="pre">unpack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/caustics/parametrized.html#Parametrized.unpack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.Parametrized.unpack" title="Link to this definition"></a></dt>
+<dd><p>Unpacks a dict of kwargs, list of args or flattened vector of args to retrieve
+this object’s static and dynamic parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>Optional</em><em>[</em><em>dict</em><em>[</em><em>str</em><em>, </em><em>Union</em><em>[</em><em>list</em><em>[</em><em>Tensor</em><em>]</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>Tensor</em><em>]</em><em>, </em><em>Tensor</em><em>]</em><em>]</em><em>]</em>) – The packed object to be unpacked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Unpacked static and dynamic parameters of the object. Note that
+parameters will have an added batch dimension from the pack method.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[Tensor]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the input is not a dict, list, tuple or tensor.</p></li>
+<li><p><strong>ValueError</strong> – If the argument type is invalid. It must be a dict containing key {self.name}
+    and value containing args as list or flattened tensor, or kwargs.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.parametrized.unpack">
+<span class="sig-prename descclassname"><span class="pre">caustics.parametrized.</span></span><span class="sig-name descname"><span class="pre">unpack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_leading_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/parametrized.html#unpack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.parametrized.unpack" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-caustics.utils">
+<span id="caustics-utils-module"></span><h2>caustics.utils module<a class="headerlink" href="#module-caustics.utils" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.batch_lm">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">batch_lm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_dn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_up</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-09</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stopping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#batch_lm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.batch_lm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.derotate">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">derotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#derotate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.derotate" title="Link to this definition"></a></dt>
+<dd><p>Applies inverse rotation to the velocity components (vx, vy) using the rotation angle phi.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vx</strong> (<em>Tensor</em>) – Tensor containing the x-component of velocity.</p></li>
+<li><p><strong>vy</strong> (<em>Tensor</em>) – Tensor containing the y-component of velocity.</p></li>
+<li><p><strong>phi</strong> (<em>Optional</em><em>[</em><em>Tensor</em><em>]</em><em>, </em><em>optional</em>) – Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple containing the derotated x and y components of velocity.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Tensor, Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.flip_axis_ratio">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">flip_axis_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#flip_axis_ratio"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.flip_axis_ratio" title="Link to this definition"></a></dt>
+<dd><p>Makes the value of ‘q’ positive, then swaps x and y axes if ‘q’ is larger than 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>q</strong> (<em>Tensor</em>) – Tensor containing values to be processed.</p></li>
+<li><p><strong>phi</strong> (<em>Tensor</em>) – Tensor containing the phi values for the orientation of the axes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple containing the processed ‘q’ and ‘phi’ Tensors.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Tensor, Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.gaussian">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upsample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.gaussian" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.get_cluster_means">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">get_cluster_means</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#get_cluster_means"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.get_cluster_means" title="Link to this definition"></a></dt>
+<dd><p>Computes cluster means using the k-means++ initialization algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xs</strong> (<em>Tensor</em>) – A tensor of data points.</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – The number of clusters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tensor of cluster means.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.get_meshgrid">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">get_meshgrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.float32</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/caustics/utils.html#get_meshgrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.get_meshgrid" title="Link to this definition"></a></dt>
+<dd><p>Generates a 2D meshgrid based on the provided pixelscale and dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pixelscale</strong> (<em>float</em>) – The scale of the meshgrid in each dimension.</p></li>
+<li><p><strong>nx</strong> (<em>int</em>) – The number of grid points along the x-axis.</p></li>
+<li><p><strong>ny</strong> (<em>int</em>) – The number of grid points along the y-axis.</p></li>
+<li><p><strong>device</strong> (<em>torch.device</em><em>, </em><em>optional</em>) – The device on which to create the tensor. Defaults to None.</p></li>
+<li><p><strong>dtype</strong> (<em>torch.dtype</em><em>, </em><em>optional</em>) – The desired data type of the tensor. Defaults to torch.float32.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The generated meshgrid as a tuple of Tensors.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Tensor, Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.interp1d">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">interp1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'extrapolate'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/utils.html#interp1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.interp1d" title="Link to this definition"></a></dt>
+<dd><p>Compute the 1D cubic spline interpolation for the given data points
+using PyTorch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Tensor</em>) – A 1D tensor representing the x-coordinates of the known data points.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – A 1D tensor representing the y-coordinates of the known data points.</p></li>
+<li><p><strong>xs</strong> (<em>Tensor</em>) – A 1D tensor representing the x-coordinates of the positions where
+the cubic spline function should be evaluated.</p></li>
+<li><p><strong>extend</strong> (<em>str</em><em>, </em><em>optional</em>) – The method for handling extrapolation, either “const”, “extrapolate”, or “linear”.
+Default is “extrapolate”.
+“const”: Use the value of the last known data point for extrapolation.
+“linear”: Use linear extrapolation based on the last two known data points.
+“extrapolate”: Use cubic extrapolation of data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 1D tensor representing the interpolated values at the specified positions (xs).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.interp2d">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">interp2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'zeros'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/utils.html#interp2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.interp2d" title="Link to this definition"></a></dt>
+<dd><p>Interpolates a 2D image at specified coordinates.
+Similar to <cite>torch.nn.functional.grid_sample</cite> with <cite>align_corners=False</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im</strong> (<em>Tensor</em>) – A 2D tensor representing the image.</p></li>
+<li><p><strong>x</strong> (<em>Tensor</em>) – A 0D or 1D tensor of x coordinates at which to interpolate.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – A 0D or 1D tensor of y coordinates at which to interpolate.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – Interpolation method. Either ‘nearest’ or ‘linear’. Defaults to ‘linear’.</p></li>
+<li><p><strong>padding_mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Defines the padding mode when out-of-bound indices are encountered.
+Either ‘zeros’ or ‘extrapolate’. Defaults to ‘zeros’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If <cite>im</cite> is not a 2D tensor.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>x</cite> is not a 0D or 1D tensor.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>y</cite> is not a 0D or 1D tensor.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>padding_mode</cite> is not ‘extrapolate’ or ‘zeros’.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>method</cite> is not ‘nearest’ or ‘linear’.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor with the same shape as <cite>x</cite> and <cite>y</cite> containing the interpolated values.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.safe_divide">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">safe_divide</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">denom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">places</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#safe_divide"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.safe_divide" title="Link to this definition"></a></dt>
+<dd><p>Safely divides two tensors, returning zero where the denominator is zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num</strong> (<em>Tensor</em>) – The numerator tensor.</p></li>
+<li><p><strong>denom</strong> (<em>Tensor</em>) – The denominator tensor.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of the division, with zero where the denominator was zero.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.safe_log">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">safe_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#safe_log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.safe_log" title="Link to this definition"></a></dt>
+<dd><p>Safely applies the logarithm to a tensor, returning zero where the tensor is zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>Tensor</em>) – The input tensor.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of applying the logarithm, with zero where the input was zero.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.to_elliptical">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">to_elliptical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#to_elliptical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.to_elliptical" title="Link to this definition"></a></dt>
+<dd><p>Converts Cartesian coordinates to elliptical coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Tensor</em>) – Tensor containing the x-coordinates.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – Tensor containing the y-coordinates.</p></li>
+<li><p><strong>q</strong> (<em>Tensor</em>) – Tensor containing the elliptical parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple containing the x and y coordinates in elliptical form.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Tensor, Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.translate_rotate">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">translate_rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/utils.html#translate_rotate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.translate_rotate" title="Link to this definition"></a></dt>
+<dd><p>Translates and rotates the points (x, y) by subtracting (x0, y0) and applying rotation angle phi.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Tensor</em>) – Tensor containing the x-coordinates.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – Tensor containing the y-coordinates.</p></li>
+<li><p><strong>x0</strong> (<em>Tensor</em>) – Tensor containing the x-coordinate translation values.</p></li>
+<li><p><strong>y0</strong> (<em>Tensor</em>) – Tensor containing the y-coordinate translation values.</p></li>
+<li><p><strong>phi</strong> (<em>Optional</em><em>[</em><em>Tensor</em><em>]</em><em>, </em><em>optional</em>) – Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple containing the translated and rotated x and y coordinates.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Tensor, Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caustics.utils.vmap_n">
+<span class="sig-prename descclassname"><span class="pre">caustics.utils.</span></span><span class="sig-name descname"><span class="pre">vmap_n</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randomness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'error'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="_modules/caustics/utils.html#vmap_n"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.utils.vmap_n" title="Link to this definition"></a></dt>
+<dd><p>Transforms a function <cite>depth</cite> times using <cite>torch.vmap</cite> with the same arguments passed each time.
+Returns <cite>func</cite> transformed <cite>depth</cite> times by <cite>vmap</cite>, with the same arguments
+passed to <cite>vmap</cite> each time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<em>Callable</em>) – The function to transform.</p></li>
+<li><p><strong>depth</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of times to apply <cite>torch.vmap</cite>. Defaults to 1.</p></li>
+<li><p><strong>in_dims</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>Tuple</em><em>]</em><em>, </em><em>optional</em>) – The dimensions to vectorize over in the input. Defaults to 0.</p></li>
+<li><p><strong>out_dims</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>Tuple</em><em>[</em><em>int</em><em>, </em><em>...</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The dimensions to vectorize over in the output. Defaults to 0.</p></li>
+<li><p><strong>randomness</strong> (<em>str</em><em>, </em><em>optional</em>) – How to handle randomness. Defaults to ‘error’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>depth</cite> is less than 1.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The transformed function.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Callable</p>
+</dd>
+</dl>
+<p>TODO: test.</p>
+</dd></dl>
+
+</section>
+<section id="module-caustics">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-caustics" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="caustics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="caustics.data.html" class="btn btn-neutral float-right" title="caustics.data package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

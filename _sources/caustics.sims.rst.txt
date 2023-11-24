@@ -1,0 +1,29 @@
+caustics.sims package
+=====================
+
+Submodules
+----------
+
+caustics.sims.lens\_source module
+---------------------------------
+
+.. automodule:: caustics.sims.lens_source
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.sims.simulator module
+------------------------------
+
+.. automodule:: caustics.sims.simulator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: caustics.sims
+   :members:
+   :undoc-members:
+   :show-inheritance:

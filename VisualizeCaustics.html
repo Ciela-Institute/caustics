@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualize Caustics &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Multiplane Lensing" href="MultiplaneDemo.html" />
+    <link rel="prev" title="A Menagerie of Lenses" href="LensZoo.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicIntroduction.html">Welcome to Caustic!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LensZoo.html">A Menagerie of Lenses</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Visualize Caustics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Critical-Lines">Critical Lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Caustics">Caustics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="MultiplaneDemo.html">Multiplane Lensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InvertLensEquation.html">Inverting the Lens Equation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">caustics</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Visualize Caustics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/VisualizeCaustics.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Visualize-Caustics">
+<h1>Visualize Caustics<a class="headerlink" href="#Visualize-Caustics" title="Link to this heading"></a></h1>
+<p>Here we will demonstrate how to collect caustic lines using caustic! Since caustic (the code) uses autodiff and can get exact derivatives, it is actually very acurate at computing caustics.</p>
+<p>Conceptually a caustic occurs where the magnification of a lens diverges to infinity. A convenient way to measure the magnification in the image plane is by taking the determinant (<span class="math notranslate nohighlight">\(det\)</span>) of the jacobian of the lens equation (<span class="math notranslate nohighlight">\(A\)</span>), its reciprocal is the magnification. This means that anywhere that <span class="math notranslate nohighlight">\(det(A) = 0\)</span> is a critical line in the image plane (magnification goes to infinity). If we take this line and raytrace it back to the source plane we can see the caustics which define
+boundaries for lensing phenomena.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%load_ext autoreload
+%autoreload 2
+
+import torch
+from torch.nn.functional import avg_pool2d
+import matplotlib.pyplot as plt
+from ipywidgets import interact
+from astropy.io import fits
+import numpy as np
+from time import process_time as time
+
+import caustic
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># initialization stuff for an SIE lens
+
+cosmology = caustic.FlatLambdaCDM(name = &quot;cosmo&quot;)
+cosmology.to(dtype=torch.float32)
+sie = caustic.SIE(cosmology, name = &quot;sie&quot;)
+n_pix = 100
+res = 0.05
+upsample_factor = 2
+fov = res * n_pix
+thx, thy = caustic.get_meshgrid(res/upsample_factor, upsample_factor*n_pix, upsample_factor*n_pix, dtype=torch.float32)
+z_l = torch.tensor(0.5, dtype=torch.float32)
+z_s = torch.tensor(1.5, dtype=torch.float32)
+x = torch.tensor([
+    z_l.item(), # sie z_l
+    0.,     # sie x0
+    0.,    # sie y0
+    0.4,     # sie q
+    np.pi/5, # sie phi
+    1.,      # sie b
+])
+packparams = sie.pack(x)
+</pre></div>
+</div>
+</div>
+<section id="Critical-Lines">
+<h2>Critical Lines<a class="headerlink" href="#Critical-Lines" title="Link to this heading"></a></h2>
+<p>Before we can see the caustics, we need to find the critical lines. The critical lines are the locus of points in the lens plane (the plane of the mass causing the lensing) at which the magnification of the source becomes theoretically infinite for a point source. In simpler terms, it is where the lensing effect becomes so strong that it can create highly magnified and distorted images of the source. The shape and size of the critical curve depend on the distribution of mass in the lensing
+object. These lines can be found using the Jacobian of the lensing deflection, specifically <span class="math notranslate nohighlight">\(A = \mathbb{I} - J\)</span>. When <span class="math notranslate nohighlight">\({\rm det}(A) = 0\)</span>, that point is on the critical line. Interestingly, <span class="math notranslate nohighlight">\(\frac{1}{{\rm det}(A)}\)</span> is the magnification, which is why <span class="math notranslate nohighlight">\({\rm det}(A) = 0\)</span> defines the points of infinite magnification.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Conveniently caustic has a function to compute the jacobian of the lens equation
+A = sie.jacobian_lens_equation(thx, thy, z_s, packparams)
+# Note that if this is too slow you can set `method = &quot;finitediff&quot;` to run a faster version. You will also need to provide `pixelscale` then
+
+# Here we compute A&#39;s determinant at every point
+detA = torch.linalg.det(A)
+
+# Plot the critical line
+im = plt.imshow(detA, extent = (thx[0][0], thx[0][-1], thy[0][0], thy[-1][0]), origin = &quot;lower&quot;)
+plt.colorbar(im)
+CS = plt.contour(thx, thy, detA, levels = [0.], colors = &quot;b&quot;)
+
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/VisualizeCaustics_4_0.png" src="_images/VisualizeCaustics_4_0.png" />
+</div>
+</div>
+</section>
+<section id="Caustics">
+<h2>Caustics<a class="headerlink" href="#Caustics" title="Link to this heading"></a></h2>
+<p>Critical lines show us where the magnification approaches infinity, they are important structures in understanding a lensing system. These lines are also very useful when mapped into the source plane. When the critical lines are raytraced back to the source plane they are called caustics (see what we did there?). In the source plane these lines deliniate when a source will be multiply imaged.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Get the path from the matplotlib contour plot of the critical line
+paths = CS.collections[0].get_paths()
+caustic_paths = []
+for path in paths:
+    # Collect the path into a descrete set of points
+    vertices = path.interpolated(5).vertices
+    x1 = torch.tensor(list(float(vs[0]) for vs in vertices))
+    x2 = torch.tensor(list(float(vs[1]) for vs in vertices))
+    # raytrace the points to the source plane
+    y1,y2 = sie.raytrace(x1, x2, z_s, packparams)
+
+    # Plot the caustic
+    plt.plot(y1,y2)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/VisualizeCaustics_6_0.png" src="_images/VisualizeCaustics_6_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="LensZoo.html" class="btn btn-neutral float-left" title="A Menagerie of Lenses" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="MultiplaneDemo.html" class="btn btn-neutral float-right" title="Multiplane Lensing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

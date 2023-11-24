@@ -1,0 +1,80 @@
+caustics package
+================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   caustics.data
+   caustics.lenses
+   caustics.light
+   caustics.sims
+
+Submodules
+----------
+
+caustics.constants module
+-------------------------
+
+.. automodule:: caustics.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.cosmology module
+-------------------------
+
+.. automodule:: caustics.cosmology
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.namespace\_dict module
+-------------------------------
+
+.. automodule:: caustics.namespace_dict
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.packed module
+----------------------
+
+.. automodule:: caustics.packed
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.parameter module
+-------------------------
+
+.. automodule:: caustics.parameter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.parametrized module
+----------------------------
+
+.. automodule:: caustics.parametrized
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.utils module
+---------------------
+
+.. automodule:: caustics.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: caustics
+   :members:
+   :undoc-members:
+   :show-inheritance:

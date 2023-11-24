@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>caustics.utils &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=e663822d"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">caustics</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">caustics.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for caustics.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">pi</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Tensor</span>
+<span class="kn">from</span> <span class="nn">torch.func</span> <span class="kn">import</span> <span class="n">jacfwd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="flip_axis_ratio">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.flip_axis_ratio">[docs]</a>
+<span class="k">def</span> <span class="nf">flip_axis_ratio</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">phi</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Makes the value of &#39;q&#39; positive, then swaps x and y axes if &#39;q&#39; is larger than 1.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        q (Tensor): Tensor containing values to be processed.</span>
+<span class="sd">        phi (Tensor): Tensor containing the phi values for the orientation of the axes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[Tensor, Tensor]: Tuple containing the processed &#39;q&#39; and &#39;phi&#39; Tensors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">q</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">q</span><span class="p">,</span> <span class="n">q</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">q</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">phi</span> <span class="o">+</span> <span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="translate_rotate">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.translate_rotate">[docs]</a>
+<span class="k">def</span> <span class="nf">translate_rotate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">phi</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Translates and rotates the points (x, y) by subtracting (x0, y0) and applying rotation angle phi.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (Tensor): Tensor containing the x-coordinates.</span>
+<span class="sd">        y (Tensor): Tensor containing the y-coordinates.</span>
+<span class="sd">        x0 (Tensor): Tensor containing the x-coordinate translation values.</span>
+<span class="sd">        y0 (Tensor): Tensor containing the y-coordinate translation values.</span>
+<span class="sd">        phi (Optional[Tensor], optional): Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[Tensor, Tensor]: Tuple containing the translated and rotated x and y coordinates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xt</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x0</span>
+    <span class="n">yt</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">y0</span>
+
+    <span class="k">if</span> <span class="n">phi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Apply R(-phi)</span>
+        <span class="n">c_phi</span> <span class="o">=</span> <span class="n">phi</span><span class="o">.</span><span class="n">cos</span><span class="p">()</span>
+        <span class="n">s_phi</span> <span class="o">=</span> <span class="n">phi</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+        <span class="c1"># Simultaneous assignment</span>
+        <span class="n">xt</span><span class="p">,</span> <span class="n">yt</span> <span class="o">=</span> <span class="n">xt</span> <span class="o">*</span> <span class="n">c_phi</span> <span class="o">+</span> <span class="n">yt</span> <span class="o">*</span> <span class="n">s_phi</span><span class="p">,</span> <span class="o">-</span><span class="n">xt</span> <span class="o">*</span> <span class="n">s_phi</span> <span class="o">+</span> <span class="n">yt</span> <span class="o">*</span> <span class="n">c_phi</span>
+
+    <span class="k">return</span> <span class="n">xt</span><span class="p">,</span> <span class="n">yt</span></div>
+
+
+
+<div class="viewcode-block" id="derotate">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.derotate">[docs]</a>
+<span class="k">def</span> <span class="nf">derotate</span><span class="p">(</span><span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">phi</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Applies inverse rotation to the velocity components (vx, vy) using the rotation angle phi.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        vx (Tensor): Tensor containing the x-component of velocity.</span>
+<span class="sd">        vy (Tensor): Tensor containing the y-component of velocity.</span>
+<span class="sd">        phi (Optional[Tensor], optional): Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[Tensor, Tensor]: Tuple containing the derotated x and y components of velocity.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">phi</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span>
+
+    <span class="n">c_phi</span> <span class="o">=</span> <span class="n">phi</span><span class="o">.</span><span class="n">cos</span><span class="p">()</span>
+    <span class="n">s_phi</span> <span class="o">=</span> <span class="n">phi</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">vx</span> <span class="o">*</span> <span class="n">c_phi</span> <span class="o">-</span> <span class="n">vy</span> <span class="o">*</span> <span class="n">s_phi</span><span class="p">,</span> <span class="n">vx</span> <span class="o">*</span> <span class="n">s_phi</span> <span class="o">+</span> <span class="n">vy</span> <span class="o">*</span> <span class="n">c_phi</span></div>
+
+
+
+<div class="viewcode-block" id="to_elliptical">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.to_elliptical">[docs]</a>
+<span class="k">def</span> <span class="nf">to_elliptical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts Cartesian coordinates to elliptical coordinates.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (Tensor): Tensor containing the x-coordinates.</span>
+<span class="sd">        y (Tensor): Tensor containing the y-coordinates.</span>
+<span class="sd">        q (Tensor): Tensor containing the elliptical parameters.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[Tensor, Tensor]: Tuple containing the x and y coordinates in elliptical form.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">/</span> <span class="n">q</span></div>
+
+
+
+<div class="viewcode-block" id="get_meshgrid">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.get_meshgrid">[docs]</a>
+<span class="k">def</span> <span class="nf">get_meshgrid</span><span class="p">(</span>
+    <span class="n">pixelscale</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a 2D meshgrid based on the provided pixelscale and dimensions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pixelscale (float): The scale of the meshgrid in each dimension.</span>
+<span class="sd">        nx (int): The number of grid points along the x-axis.</span>
+<span class="sd">        ny (int): The number of grid points along the y-axis.</span>
+<span class="sd">        device (torch.device, optional): The device on which to create the tensor. Defaults to None.</span>
+<span class="sd">        dtype (torch.dtype, optional): The desired data type of the tensor. Defaults to torch.float32.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelscale</span> <span class="o">*</span> <span class="p">(</span><span class="n">nx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelscale</span> <span class="o">*</span> <span class="p">(</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">([</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">],</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">&quot;xy&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="safe_divide">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.safe_divide">[docs]</a>
+<span class="k">def</span> <span class="nf">safe_divide</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">denom</span><span class="p">,</span> <span class="n">places</span> <span class="o">=</span> <span class="mi">7</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Safely divides two tensors, returning zero where the denominator is zero.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num (Tensor): The numerator tensor.</span>
+<span class="sd">        denom (Tensor): The denominator tensor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: The result of the division, with zero where the denominator was zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="n">denom</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">out</span><span class="p">[</span><span class="n">where</span><span class="p">]</span> <span class="o">=</span> <span class="n">num</span><span class="p">[</span><span class="n">where</span><span class="p">]</span> <span class="o">/</span> <span class="n">denom</span><span class="p">[</span><span class="n">where</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="safe_log">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.safe_log">[docs]</a>
+<span class="k">def</span> <span class="nf">safe_log</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Safely applies the logarithm to a tensor, returning zero where the tensor is zero.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (Tensor): The input tensor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: The result of applying the logarithm, with zero where the input was zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">out</span><span class="p">[</span><span class="n">where</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">where</span><span class="p">]</span><span class="o">.</span><span class="n">log</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_h_poly</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to compute the &#39;h&#39; polynomial matrix used in the</span>
+<span class="sd">    cubic spline.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        t (Tensor): A 1D tensor representing the normalized x values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: A 2D tensor of size (4, len(t)) representing the &#39;h&#39; polynomial matrix.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">device</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">])</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+        <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">A</span> <span class="o">@</span> <span class="n">tt</span>
+
+
+<div class="viewcode-block" id="interp1d">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.interp1d">[docs]</a>
+<span class="k">def</span> <span class="nf">interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">xs</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">extend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;extrapolate&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the 1D cubic spline interpolation for the given data points</span>
+<span class="sd">    using PyTorch.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (Tensor): A 1D tensor representing the x-coordinates of the known data points.</span>
+<span class="sd">        y (Tensor): A 1D tensor representing the y-coordinates of the known data points.</span>
+<span class="sd">        xs (Tensor): A 1D tensor representing the x-coordinates of the positions where</span>
+<span class="sd">                     the cubic spline function should be evaluated.</span>
+<span class="sd">        extend (str, optional): The method for handling extrapolation, either &quot;const&quot;, &quot;extrapolate&quot;, or &quot;linear&quot;.</span>
+<span class="sd">                                Default is &quot;extrapolate&quot;.</span>
+<span class="sd">                                &quot;const&quot;: Use the value of the last known data point for extrapolation.</span>
+<span class="sd">                                &quot;linear&quot;: Use linear extrapolation based on the last two known data points.</span>
+<span class="sd">                                &quot;extrapolate&quot;: Use cubic extrapolation of data.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: A 1D tensor representing the interpolated values at the specified positions (xs).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">m</span><span class="p">[[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">m</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">m</span><span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]])</span>
+    <span class="n">idxs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">idxs</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+    <span class="n">hh</span> <span class="o">=</span> <span class="n">_h_poly</span><span class="p">((</span><span class="n">xs</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="n">idxs</span><span class="p">])</span> <span class="o">/</span> <span class="n">dx</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">hh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+        <span class="o">+</span> <span class="n">hh</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span> <span class="o">*</span> <span class="n">dx</span>
+        <span class="o">+</span> <span class="n">hh</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="n">idxs</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="o">+</span> <span class="n">hh</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">idxs</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">dx</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">extend</span> <span class="o">==</span> <span class="s2">&quot;const&quot;</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="n">xs</span> <span class="o">&gt;</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">extend</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">xs</span> <span class="o">&gt;</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">ret</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">xs</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="interp2d">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.interp2d">[docs]</a>
+<span class="k">def</span> <span class="nf">interp2d</span><span class="p">(</span>
+    <span class="n">im</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+    <span class="n">padding_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zeros&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpolates a 2D image at specified coordinates.</span>
+<span class="sd">    Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        im (Tensor): A 2D tensor representing the image.</span>
+<span class="sd">        x (Tensor): A 0D or 1D tensor of x coordinates at which to interpolate.</span>
+<span class="sd">        y (Tensor): A 0D or 1D tensor of y coordinates at which to interpolate.</span>
+<span class="sd">        method (str, optional): Interpolation method. Either &#39;nearest&#39; or &#39;linear&#39;. Defaults to &#39;linear&#39;.</span>
+<span class="sd">        padding_mode (str, optional): Defines the padding mode when out-of-bound indices are encountered.</span>
+<span class="sd">                                      Either &#39;zeros&#39; or &#39;extrapolate&#39;. Defaults to &#39;zeros&#39;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If `im` is not a 2D tensor.</span>
+<span class="sd">        ValueError: If `x` is not a 0D or 1D tensor.</span>
+<span class="sd">        ValueError: If `y` is not a 0D or 1D tensor.</span>
+<span class="sd">        ValueError: If `padding_mode` is not &#39;extrapolate&#39; or &#39;zeros&#39;.</span>
+<span class="sd">        ValueError: If `method` is not &#39;nearest&#39; or &#39;linear&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: Tensor with the same shape as `x` and `y` containing the interpolated values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">im</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;im must be 2D (received </span><span class="si">{</span><span class="n">im</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D tensor)&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;x must be 0 or 1D (received </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D tensor)&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;y must be 0 or 1D (received </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D tensor)&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">padding_mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;extrapolate&quot;</span><span class="p">,</span> <span class="s2">&quot;zeros&quot;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">padding_mode</span><span class="si">}</span><span class="s2"> is not a valid padding mode&quot;</span><span class="p">)</span>
+
+    <span class="n">idxs_out_of_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Convert coordinates to pixel indices</span>
+    <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">w</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">((</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;nearest&quot;</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">round</span><span class="p">()</span><span class="o">.</span><span class="n">long</span><span class="p">()</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">h</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">round</span><span class="p">()</span><span class="o">.</span><span class="n">long</span><span class="p">()</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">w</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">floor</span><span class="p">()</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">floor</span><span class="p">()</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">y0</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">w</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">w</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">y0</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">h</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">y1</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">h</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">fa</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">y0</span><span class="p">,</span> <span class="n">x0</span><span class="p">]</span>
+        <span class="n">fb</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">y1</span><span class="p">,</span> <span class="n">x0</span><span class="p">]</span>
+        <span class="n">fc</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">]</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">y1</span><span class="p">,</span> <span class="n">x1</span><span class="p">]</span>
+
+        <span class="n">wa</span> <span class="o">=</span> <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">wb</span> <span class="o">=</span> <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span>
+        <span class="n">wc</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">wd</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">fa</span> <span class="o">*</span> <span class="n">wa</span> <span class="o">+</span> <span class="n">fb</span> <span class="o">*</span> <span class="n">wb</span> <span class="o">+</span> <span class="n">fc</span> <span class="o">*</span> <span class="n">wc</span> <span class="o">+</span> <span class="n">fd</span> <span class="o">*</span> <span class="n">wd</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> is not a valid interpolation method&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">padding_mode</span> <span class="o">==</span> <span class="s2">&quot;zeros&quot;</span><span class="p">:</span>  <span class="c1"># else padding_mode == &quot;extrapolate&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">idxs_out_of_bounds</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">result</span><span class="p">),</span> <span class="n">result</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="vmap_n">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.vmap_n">[docs]</a>
+<span class="k">def</span> <span class="nf">vmap_n</span><span class="p">(</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">in_dims</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">out_dims</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">randomness</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transforms a function `depth` times using `torch.vmap` with the same arguments passed each time.</span>
+<span class="sd">    Returns `func` transformed `depth` times by `vmap`, with the same arguments</span>
+<span class="sd">    passed to `vmap` each time.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        func (Callable): The function to transform.</span>
+<span class="sd">        depth (int, optional): The number of times to apply `torch.vmap`. Defaults to 1.</span>
+<span class="sd">        in_dims (Union[int, Tuple], optional): The dimensions to vectorize over in the input. Defaults to 0.</span>
+<span class="sd">        out_dims (Union[int, Tuple[int, ...]], optional): The dimensions to vectorize over in the output. Defaults to 0.</span>
+<span class="sd">        randomness (str, optional): How to handle randomness. Defaults to &#39;error&#39;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If `depth` is less than 1.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Callable: The transformed function.</span>
+
+<span class="sd">    TODO: test.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">depth</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;vmap_n depth must be &gt;= 1&quot;</span><span class="p">)</span>
+
+    <span class="n">vmapd_func</span> <span class="o">=</span> <span class="n">func</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">depth</span><span class="p">):</span>
+        <span class="n">vmapd_func</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">vmapd_func</span><span class="p">,</span> <span class="n">in_dims</span><span class="p">,</span> <span class="n">out_dims</span><span class="p">,</span> <span class="n">randomness</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">vmapd_func</span></div>
+
+
+
+<div class="viewcode-block" id="get_cluster_means">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.get_cluster_means">[docs]</a>
+<span class="k">def</span> <span class="nf">get_cluster_means</span><span class="p">(</span><span class="n">xs</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes cluster means using the k-means++ initialization algorithm.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xs (Tensor): A tensor of data points.</span>
+<span class="sd">        k (int): The number of clusters.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tensor: A tensor of cluster means.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+    <span class="n">mean_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">high</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(),</span> <span class="n">device</span><span class="o">=</span><span class="n">xs</span><span class="o">.</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">())]</span>
+    <span class="n">means</span> <span class="o">=</span> <span class="p">[</span><span class="n">xs</span><span class="p">[</span><span class="n">mean_idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="n">unselected_xs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mean_idxs</span><span class="p">])</span>
+
+        <span class="c1"># Distances to all means</span>
+        <span class="n">d2s</span> <span class="o">=</span> <span class="p">((</span><span class="n">unselected_xs</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">means</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="o">-</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Distances to closest mean</span>
+        <span class="n">d2s_closest</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">d2s</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">d2s</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))])</span>
+
+        <span class="c1"># Add point furthest from closest mean as next mean</span>
+        <span class="n">new_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d2s_closest</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">unselected_xs</span><span class="p">[</span><span class="n">new_idx</span><span class="p">])</span>
+        <span class="n">mean_idxs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_idx</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">means</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_lm_step</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Cinv</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Lup</span><span class="p">,</span> <span class="n">Ldn</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">):</span>
+
+    <span class="c1"># Forward</span>
+    <span class="n">fY</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">dY</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">fY</span>
+    
+    <span class="c1"># Jacobian</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">jacfwd</span><span class="p">(</span><span class="n">f</span><span class="p">)(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">J</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">chi2</span> <span class="o">=</span> <span class="p">(</span><span class="n">dY</span> <span class="o">@</span> <span class="n">Cinv</span> <span class="o">@</span> <span class="n">dY</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c1"># Gradient</span>
+    <span class="n">grad</span> <span class="o">=</span> <span class="n">J</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Cinv</span> <span class="o">@</span> <span class="n">dY</span>
+    
+    <span class="c1"># Hessian</span>
+    <span class="n">hess</span> <span class="o">=</span> <span class="n">J</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Cinv</span> <span class="o">@</span> <span class="n">J</span>
+    <span class="n">hess_perturb</span> <span class="o">=</span> <span class="n">L</span> <span class="o">*</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">hess</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">hess</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">hess</span> <span class="o">=</span> <span class="n">hess</span> <span class="o">+</span> <span class="n">hess_perturb</span>
+
+    <span class="c1"># Step</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">hess</span><span class="p">,</span> <span class="n">grad</span><span class="p">)</span>
+    
+    <span class="c1"># New chi^2</span>
+    <span class="n">fYnew</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">X</span> <span class="o">+</span> <span class="n">h</span><span class="p">)</span>
+    <span class="n">dYnew</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">fYnew</span>
+    <span class="n">chi2_new</span> <span class="o">=</span> <span class="p">(</span><span class="n">dYnew</span> <span class="o">@</span> <span class="n">Cinv</span> <span class="o">@</span> <span class="n">dYnew</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Test</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="p">(</span><span class="n">chi2</span> <span class="o">-</span> <span class="n">chi2_new</span><span class="p">)</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">h</span> <span class="o">@</span> <span class="p">(</span><span class="n">L</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">hess</span><span class="p">),</span> <span class="n">h</span><span class="p">)</span> <span class="o">+</span> <span class="n">grad</span><span class="p">))</span>
+
+    <span class="c1"># Update</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rho</span> <span class="o">&gt;=</span> <span class="n">epsilon</span><span class="p">,</span> <span class="n">X</span> <span class="o">+</span> <span class="n">h</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+    <span class="n">chi2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rho</span> <span class="o">&gt;</span> <span class="n">epsilon</span><span class="p">,</span> <span class="n">chi2_new</span><span class="p">,</span> <span class="n">chi2</span><span class="p">)</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rho</span> <span class="o">&gt;=</span> <span class="n">epsilon</span><span class="p">,</span> <span class="n">L</span> <span class="o">/</span> <span class="n">Ldn</span><span class="p">,</span> <span class="n">L</span> <span class="o">*</span> <span class="n">Lup</span><span class="p">),</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="mf">1e9</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">chi2</span>
+
+<div class="viewcode-block" id="batch_lm">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.batch_lm">[docs]</a>
+<span class="k">def</span> <span class="nf">batch_lm</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span> <span class="c1"># B, Din</span>
+        <span class="n">Y</span><span class="p">,</span> <span class="c1"># B, Dout</span>
+        <span class="n">f</span><span class="p">,</span> <span class="c1"># Din -&gt; Dout</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># B, Dout, Dout</span>
+        <span class="n">epsilon</span> <span class="o">=</span> <span class="mf">1e-1</span><span class="p">,</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="mf">1e0</span><span class="p">,</span>
+        <span class="n">L_dn</span> <span class="o">=</span> <span class="mf">11.</span><span class="p">,</span>
+        <span class="n">L_up</span> <span class="o">=</span> <span class="mf">9.</span><span class="p">,</span>
+        <span class="n">max_iter</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">L_min</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+        <span class="n">L_max</span> <span class="o">=</span> <span class="mf">1e9</span><span class="p">,</span>
+        <span class="n">stopping</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+        <span class="n">f_args</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">f_kwargs</span> <span class="o">=</span> <span class="p">{},</span>
+<span class="p">):</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">Din</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">Dout</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;x and y must having matching batch dimension&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">C</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">Dout</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">Cinv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+    
+    <span class="n">v_lm_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">_lm_step</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">f_args</span><span class="p">,</span> <span class="o">**</span><span class="n">f_kwargs</span><span class="p">)))</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">L</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+    <span class="n">Lup</span> <span class="o">=</span> <span class="n">L_up</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+    <span class="n">Ldn</span> <span class="o">=</span> <span class="n">L_dn</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">epsilon</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+        <span class="n">Xnew</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">v_lm_step</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Cinv</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Lup</span><span class="p">,</span> <span class="n">Ldn</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">all</span><span class="p">((</span><span class="n">Xnew</span> <span class="o">-</span> <span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">stopping</span><span class="p">)</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">L</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">B</span><span class="o">/</span><span class="mi">3</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">Xnew</span>
+        
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">C</span></div>
+
+
+<div class="viewcode-block" id="gaussian">
+<a class="viewcode-back" href="../../caustics.html#caustics.utils.gaussian">[docs]</a>
+<span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">pixelscale</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">upsample</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">upsample</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelscale</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">upsample</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelscale</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nx</span><span class="o">*</span><span class="n">upsample</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">ny</span><span class="o">*</span><span class="n">upsample</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelscale</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">ny</span><span class="o">*</span><span class="n">upsample</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelscale</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ny</span><span class="o">*</span><span class="n">upsample</span><span class="p">),</span>
+        <span class="n">indexing</span> <span class="o">=</span> <span class="s2">&quot;xy&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">X</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ny</span><span class="p">,</span> <span class="n">upsample</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">upsample</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">Z</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">device</span> <span class="o">=</span> <span class="n">device</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

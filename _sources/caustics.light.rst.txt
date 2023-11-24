@@ -1,0 +1,45 @@
+caustics.light package
+======================
+
+Submodules
+----------
+
+caustics.light.base module
+--------------------------
+
+.. automodule:: caustics.light.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.light.pixelated module
+-------------------------------
+
+.. automodule:: caustics.light.pixelated
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.light.probes module
+----------------------------
+
+.. automodule:: caustics.light.probes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.light.sersic module
+----------------------------
+
+.. automodule:: caustics.light.sersic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: caustics.light
+   :members:
+   :undoc-members:
+   :show-inheritance:

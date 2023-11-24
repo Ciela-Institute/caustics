@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>caustics.light package &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="caustics.sims package" href="caustics.sims.html" />
+    <link rel="prev" title="caustics.lenses package" href="caustics.lenses.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">caustics</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="caustics.html">caustics package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="caustics.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="caustics.data.html">caustics.data package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.lenses.html">caustics.lenses package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">caustics.light package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="caustics.sims.html">caustics.sims package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.constants">caustics.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.cosmology">caustics.cosmology module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.namespace_dict">caustics.namespace_dict module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.packed">caustics.packed module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.parameter">caustics.parameter module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.parametrized">caustics.parametrized module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics.utils">caustics.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caustics.html#module-caustics">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">caustics</a></li>
+          <li class="breadcrumb-item"><a href="caustics.html">caustics package</a></li>
+      <li class="breadcrumb-item active">caustics.light package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/caustics.light.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="caustics-light-package">
+<h1>caustics.light package<a class="headerlink" href="#caustics-light-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-caustics.light.base">
+<span id="caustics-light-base-module"></span><h2>caustics.light.base module<a class="headerlink" href="#module-caustics.light.base" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.light.base.Source">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.light.base.</span></span><span class="sig-name descname"><span class="pre">Source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/light/base.html#Source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.base.Source" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="caustics.html#caustics.parametrized.Parametrized" title="caustics.parametrized.Parametrized"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parametrized</span></code></a></p>
+<p>This is an abstract base class used to represent a source in a strong gravitational lensing system.
+It provides the basic structure and required methods that any derived source class should implement.
+The Source class inherits from the Parametrized class, implying that it contains parameters that can
+be optimized or manipulated.</p>
+<p>The class introduces one abstract method, <cite>brightness</cite>, that must be implemented in any concrete
+subclass. This method calculates the brightness of the source at given coordinates.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.light.base.Source.brightness">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">brightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="caustics.html#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/caustics/light/base.html#Source.brightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.base.Source.brightness" title="Link to this definition"></a></dt>
+<dd><p>Abstract method that calculates the brightness of the source at the given coordinates.
+This method is expected to be implemented in any class that derives from Source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Tensor</em>) – The x-coordinate(s) at which to calculate the source brightness.
+This could be a single value or a tensor of values.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – The y-coordinate(s) at which to calculate the source brightness.
+This could be a single value or a tensor of values.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="caustics.html#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container that might be required to calculate
+the brightness. The exact contents will depend on the specific implementation in derived classes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The brightness of the source at the given coordinate(s). The exact form of the output
+will depend on the specific implementation in the derived class.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method must be overridden in any class that inherits from <cite>Source</cite>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-caustics.light.pixelated">
+<span id="caustics-light-pixelated-module"></span><h2>caustics.light.pixelated module<a class="headerlink" href="#module-caustics.light.pixelated" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.light.pixelated.</span></span><span class="sig-name descname"><span class="pre">Pixelated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/light/pixelated.html#Pixelated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.pixelated.Pixelated" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#caustics.light.base.Source" title="caustics.light.base.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a></p>
+<p><cite>Pixelated</cite> is a subclass of the abstract class <cite>Source</cite>. It representes the brightness profile of
+source with a pixelated grid of intensity values.</p>
+<p>This class provides a concrete implementation of the <cite>brightness</cite> method required by the <cite>Source</cite>
+superclass. In this implementation, brightness is determined by interpolating values from the
+provided source image.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated.x0">
+<span class="sig-name descname"><span class="pre">x0</span></span><a class="headerlink" href="#caustics.light.pixelated.Pixelated.x0" title="Link to this definition"></a></dt>
+<dd><p>The x-coordinate of the source image’s center.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated.y0">
+<span class="sig-name descname"><span class="pre">y0</span></span><a class="headerlink" href="#caustics.light.pixelated.Pixelated.y0" title="Link to this definition"></a></dt>
+<dd><p>The y-coordinate of the source image’s center.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated.image">
+<span class="sig-name descname"><span class="pre">image</span></span><a class="headerlink" href="#caustics.light.pixelated.Pixelated.image" title="Link to this definition"></a></dt>
+<dd><p>The source image from which brightness values will be interpolated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated.pixelscale">
+<span class="sig-name descname"><span class="pre">pixelscale</span></span><a class="headerlink" href="#caustics.light.pixelated.Pixelated.pixelscale" title="Link to this definition"></a></dt>
+<dd><p>The pixelscale of the source image in the lens plane in units of arcsec/pixel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated.shape">
+<span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#caustics.light.pixelated.Pixelated.shape" title="Link to this definition"></a></dt>
+<dd><p>The shape of the source image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[tuple[int, …]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.light.pixelated.Pixelated.brightness">
+<span class="sig-name descname"><span class="pre">brightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="caustics.html#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/light/pixelated.html#Pixelated.brightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.pixelated.Pixelated.brightness" title="Link to this definition"></a></dt>
+<dd><p>Implements the <cite>brightness</cite> method for <cite>Pixelated</cite>. The brightness at a given point is
+determined by interpolating values from the source image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Tensor</em>) – The x-coordinate(s) at which to calculate the source brightness.
+This could be a single value or a tensor of values.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – The y-coordinate(s) at which to calculate the source brightness.
+This could be a single value or a tensor of values.</p></li>
+<li><p><strong>params</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="caustics.html#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>]</em>) – A dictionary containing additional parameters that might be required to
+calculate the brightness.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The brightness of the source at the given coordinate(s). The brightness is
+determined by interpolating values from the source image.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-caustics.light.probes">
+<span id="caustics-light-probes-module"></span><h2>caustics.light.probes module<a class="headerlink" href="#module-caustics.light.probes" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.light.probes.PROBESDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.light.probes.</span></span><span class="sig-name descname"><span class="pre">PROBESDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/light/probes.html#PROBESDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.probes.PROBESDataset" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
+</dd></dl>
+
+</section>
+<section id="module-caustics.light.sersic">
+<span id="caustics-light-sersic-module"></span><h2>caustics.light.sersic module<a class="headerlink" href="#module-caustics.light.sersic" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caustics.light.sersic.</span></span><span class="sig-name descname"><span class="pre">Sersic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Re</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ie</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_lenstronomy_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/light/sersic.html#Sersic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.sersic.Sersic" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#caustics.light.base.Source" title="caustics.light.base.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a></p>
+<p><cite>Sersic</cite> is a subclass of the abstract class <cite>Source</cite>. It represents a source in a strong
+gravitational lensing system that follows a Sersic profile, a mathematical function that describes
+how the intensity I of a galaxy varies with distance r from its center.</p>
+<p>The Sersic profile is often used to describe elliptical galaxies and spiral galaxies’ bulges.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.x0">
+<span class="sig-name descname"><span class="pre">x0</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.x0" title="Link to this definition"></a></dt>
+<dd><p>The x-coordinate of the Sersic source’s center.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.y0">
+<span class="sig-name descname"><span class="pre">y0</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.y0" title="Link to this definition"></a></dt>
+<dd><p>The y-coordinate of the Sersic source’s center.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.q">
+<span class="sig-name descname"><span class="pre">q</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.q" title="Link to this definition"></a></dt>
+<dd><p>The axis ratio of the Sersic source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.phi">
+<span class="sig-name descname"><span class="pre">phi</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.phi" title="Link to this definition"></a></dt>
+<dd><p>The orientation of the Sersic source (position angle).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.n">
+<span class="sig-name descname"><span class="pre">n</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.n" title="Link to this definition"></a></dt>
+<dd><p>The Sersic index, which describes the degree of concentration of the source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.Re">
+<span class="sig-name descname"><span class="pre">Re</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.Re" title="Link to this definition"></a></dt>
+<dd><p>The scale length of the Sersic source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.Ie">
+<span class="sig-name descname"><span class="pre">Ie</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.Ie" title="Link to this definition"></a></dt>
+<dd><p>The intensity at the effective radius.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.s">
+<span class="sig-name descname"><span class="pre">s</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.s" title="Link to this definition"></a></dt>
+<dd><p>A small constant for numerical stability.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.lenstronomy_k_mode">
+<span class="sig-name descname"><span class="pre">lenstronomy_k_mode</span></span><a class="headerlink" href="#caustics.light.sersic.Sersic.lenstronomy_k_mode" title="Link to this definition"></a></dt>
+<dd><p>A flag indicating whether to use lenstronomy to compute the value of k.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caustics.light.sersic.Sersic.brightness">
+<span class="sig-name descname"><span class="pre">brightness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Re</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ie</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="caustics.html#caustics.packed.Packed" title="caustics.packed.Packed"><span class="pre">Packed</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/caustics/light/sersic.html#Sersic.brightness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caustics.light.sersic.Sersic.brightness" title="Link to this definition"></a></dt>
+<dd><p>Implements the <cite>brightness</cite> method for <cite>Sersic</cite>. The brightness at a given point is
+determined by the Sersic profile formula.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Tensor</em>) – The x-coordinate(s) at which to calculate the source brightness.
+This could be a single value or a tensor of values.</p></li>
+<li><p><strong>y</strong> (<em>Tensor</em>) – The y-coordinate(s) at which to calculate the source brightness.
+This could be a single value or a tensor of values.</p></li>
+<li><p><strong>params</strong> (<a class="reference internal" href="caustics.html#caustics.packed.Packed" title="caustics.packed.Packed"><em>Packed</em></a><em>, </em><em>optional</em>) – Dynamic parameter container.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The brightness of the source at the given point(s). The output tensor has the same shape as <cite>x</cite> and <cite>y</cite>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The Sersic profile is defined as: I(r) = Ie * exp(-k * ((r / r_e)^(1/n) - 1)),
+where Ie is the intensity at the effective radius r_e, n is the Sersic index
+that describes the concentration of the source, and k is a parameter that
+depends on n. In this implementation, we use elliptical coordinates ex and ey,
+and the transformation from Cartesian coordinates is handled by <cite>to_elliptical</cite>.
+The value of k can be calculated in two ways, controlled by <cite>lenstronomy_k_mode</cite>.
+If <cite>lenstronomy_k_mode</cite> is True, we use the approximation from Lenstronomy,
+otherwise, we use the approximation from Ciotti &amp; Bertin (1999).</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-caustics.light">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-caustics.light" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="caustics.lenses.html" class="btn btn-neutral float-left" title="caustics.lenses package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="caustics.sims.html" class="btn btn-neutral float-right" title="caustics.sims package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

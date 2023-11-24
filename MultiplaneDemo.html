@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multiplane Lensing &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Inverting the Lens Equation" href="InvertLensEquation.html" />
+    <link rel="prev" title="Visualize Caustics" href="VisualizeCaustics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicIntroduction.html">Welcome to Caustic!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LensZoo.html">A Menagerie of Lenses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="VisualizeCaustics.html">Visualize Caustics</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Multiplane Lensing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Effective-Reduced-Deflection-Angles">Effective Reduced Deflection Angles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Critical-Lines">Critical Lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Effective-Convergence">Effective Convergence</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="InvertLensEquation.html">Inverting the Lens Equation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">caustics</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Multiplane Lensing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/MultiplaneDemo.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Multiplane-Lensing">
+<h1>Multiplane Lensing<a class="headerlink" href="#Multiplane-Lensing" title="Link to this heading"></a></h1>
+<p>The universe is three dimensional and filled with stuff. A light ray traveling to our telescope may encounter more than a single massive object on its way to our telescopes. This is handled by a multiplane lensing framework. Multiplane lensing involves tracing the path of a ray backwards from our telescope through each individual plane (which is treated similarly to typical single plane lensing, though extra factors account for the ray physically moving in 3D space) getting perturbed at each
+step until it finally lands on the source we’d like to image. For more mathmatical details see <a class="reference external" href="https://doi.org/10.1093/mnras/stu1860">Petkova et al. 2014</a> for the formalism we use internally.</p>
+<p>The main concept to keep in mind is that a lot of quantities we are used to working with, such as “reduced deflection angles” don’t really exist in multiplane lensing since these are normalized by the redshift of the source and lens, however there is no single “lens redshift” for multiplane! Instead we define everything with respect to results from full raytracing, once the raytracing is done we can define effective quantities (like effective reduced deflection angle) which behave similarly in
+intuition but are not quite the same in detail.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%load_ext autoreload
+%autoreload 2
+
+import torch
+from torch.nn.functional import avg_pool2d
+import matplotlib.pyplot as plt
+from ipywidgets import interact
+from astropy.io import fits
+import numpy as np
+
+import caustic
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># initialization stuff for lenses
+cosmology = caustic.FlatLambdaCDM(name = &quot;cosmo&quot;)
+cosmology.to(dtype=torch.float32)
+n_pix = 100
+res = 0.05
+upsample_factor = 2
+fov = res * n_pix
+thx, thy = caustic.get_meshgrid(res/upsample_factor, upsample_factor*n_pix, upsample_factor*n_pix, dtype=torch.float32)
+z_s = torch.tensor(1.5, dtype=torch.float32)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>N_planes = 10
+N_lenses = 2 # per plane
+
+z_plane = np.linspace(0.1, 1.0, N_planes)
+planes = []
+
+for p, z_p in enumerate(z_plane):
+    lenses = []
+
+    for _ in range(N_lenses):
+        lenses.append(
+            caustic.PseudoJaffe(
+                cosmology = cosmology,
+                z_l = z_p,
+                x0 = torch.tensor(np.random.uniform(-fov/3., fov/3.)),
+                y0 = torch.tensor(np.random.uniform(-fov/3., fov/3.)),
+                mass = torch.tensor(3e10),
+                core_radius = 0.01,
+                scale_radius = torch.tensor(10**np.random.uniform(-0.5,0.5)),
+                s = torch.tensor(0.001),
+            )
+        )
+
+    planes.append(
+        caustic.lenses.SinglePlane(z_l = z_p, cosmology = cosmology, lenses = lenses, name = f&quot;plane {p}&quot;)
+    )
+
+lens = caustic.lenses.Multiplane(name = &quot;multiplane&quot;, cosmology = cosmology, lenses = planes)
+</pre></div>
+</div>
+</div>
+<section id="Effective-Reduced-Deflection-Angles">
+<h2>Effective Reduced Deflection Angles<a class="headerlink" href="#Effective-Reduced-Deflection-Angles" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Effective reduced deflection angles for the multiplane lens system
+ax, ay = lens.effective_reduced_deflection_angle(thx, thy, z_s)
+
+# Plot
+fig, axarr = plt.subplots(1,2,figsize = (12,5))
+im = axarr[0].imshow(ax, extent = (thx[0][0], thx[0][-1], thy[0][0], thy[-1][0]), origin = &quot;lower&quot;)
+axarr[0].set_title(&quot;Deflection angle X&quot;)
+plt.colorbar(im)
+im = axarr[1].imshow(ay, extent = (thx[0][0], thx[0][-1], thy[0][0], thy[-1][0]), origin = &quot;lower&quot;)
+axarr[1].set_title(&quot;Deflection angle Y&quot;)
+plt.colorbar(im)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/MultiplaneDemo_5_0.png" src="_images/MultiplaneDemo_5_0.png" />
+</div>
+</div>
+</section>
+<section id="Critical-Lines">
+<h2>Critical Lines<a class="headerlink" href="#Critical-Lines" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Compute critical curves using effective difflection angle
+A = lens.jacobian_lens_equation(thx, thy, z_s)
+
+# Here we compute detA at every point
+detA = torch.linalg.det(A)
+
+# Plot the critical line
+im = plt.imshow(detA, extent = (thx[0][0], thx[0][-1], thy[0][0], thy[-1][0]), origin = &quot;lower&quot;)
+plt.colorbar(im)
+CS = plt.contour(thx, thy, detA, levels = [0.], colors = &quot;b&quot;)
+plt.title(&quot;Critical curves&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/MultiplaneDemo_7_0.png" src="_images/MultiplaneDemo_7_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># For completeness, here are the caustics!
+paths = CS.collections[0].get_paths()
+caustic_paths = []
+for path in paths:
+    # Collect the path into a descrete set of points
+    vertices = path.interpolated(5).vertices
+    x1 = torch.tensor(list(float(vs[0]) for vs in vertices))
+    x2 = torch.tensor(list(float(vs[1]) for vs in vertices))
+    # raytrace the points to the source plane
+    y1,y2 = lens.raytrace(x1, x2, z_s)
+
+    # Plot the caustic
+    plt.plot(y1,y2, color = &quot;k&quot;, linewidth = 0.5)
+plt.gca().axis(&quot;off&quot;)
+plt.title(&quot;Caustics&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/MultiplaneDemo_8_0.png" src="_images/MultiplaneDemo_8_0.png" />
+</div>
+</div>
+</section>
+<section id="Effective-Convergence">
+<h2>Effective Convergence<a class="headerlink" href="#Effective-Convergence" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>C = lens.effective_convergence_div(thx, thy, z_s)
+
+plt.imshow(C.detach().cpu().numpy(), origin = &quot;lower&quot;)
+plt.colorbar()
+plt.title(&quot;Effective Convergence&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/MultiplaneDemo_10_0.png" src="_images/MultiplaneDemo_10_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>Curl = lens.effective_convergence_curl(thx, thy, z_s)
+
+plt.imshow(Curl.detach().cpu().numpy(), origin = &quot;lower&quot;)
+plt.colorbar()
+plt.title(&quot;Curl&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/MultiplaneDemo_11_0.png" src="_images/MultiplaneDemo_11_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="VisualizeCaustics.html" class="btn btn-neutral float-left" title="Visualize Caustics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="InvertLensEquation.html" class="btn btn-neutral float-right" title="Inverting the Lens Equation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

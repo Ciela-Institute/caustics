@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>caustics.lenses.multiplane &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../../_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=e663822d"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">caustics</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">caustics.lenses.multiplane</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for caustics.lenses.multiplane</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">itemgetter</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Tensor</span>
+
+<span class="kn">from</span> <span class="nn">..constants</span> <span class="kn">import</span> <span class="n">arcsec_to_rad</span><span class="p">,</span> <span class="n">rad_to_arcsec</span>
+<span class="kn">from</span> <span class="nn">..cosmology</span> <span class="kn">import</span> <span class="n">Cosmology</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">ThickLens</span><span class="p">,</span> <span class="n">ThinLens</span>
+<span class="kn">from</span> <span class="nn">..parametrized</span> <span class="kn">import</span> <span class="n">unpack</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Multiplane&quot;</span><span class="p">,)</span>
+
+
+<div class="viewcode-block" id="Multiplane">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane">[docs]</a>
+<span class="k">class</span> <span class="nc">Multiplane</span><span class="p">(</span><span class="n">ThickLens</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for handling gravitational lensing with multiple lens planes.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        lenses (list[ThinLens]): List of thin lenses.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): Name of the lens.</span>
+<span class="sd">        cosmology (Cosmology): Cosmological parameters used for calculations.</span>
+<span class="sd">        lenses (list[ThinLens]): List of thin lenses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cosmology</span><span class="p">:</span> <span class="n">Cosmology</span><span class="p">,</span> <span class="n">lenses</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ThinLens</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cosmology</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lenses</span> <span class="o">=</span> <span class="n">lenses</span>
+        <span class="k">for</span> <span class="n">lens</span> <span class="ow">in</span> <span class="n">lenses</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_parametrized</span><span class="p">(</span><span class="n">lens</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Multiplane.get_z_ls">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane.get_z_ls">[docs]</a>
+    <span class="nd">@unpack</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_z_ls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Packed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the redshifts of each lens in the multiplane.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            params (Packed, optional): Dynamic parameter container.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Tensor]: Redshifts of the lenses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Relies on z_l being the first element to be unpacked, which should always</span>
+        <span class="c1"># be the case for a ThinLens</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">lens</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">params</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">lens</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lenses</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Multiplane.raytrace">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane.raytrace">[docs]</a>
+    <span class="nd">@unpack</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">raytrace</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">z_s</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Packed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the angular source positions corresponding to the</span>
+<span class="sd">        observer positions x,y. See Margarita et al. 2013 for the</span>
+<span class="sd">        formalism from the GLAMER -II code:</span>
+<span class="sd">        https://ui.adsabs.harvard.edu/abs/2014MNRAS.445.1954P/abstract</span>
+
+<span class="sd">        The primary equation used here is equation 18. With a slight correction it reads:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]</span>
+
+<span class="sd">        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propogation through regular space to the first plane. Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\vec{\theta}^{i}</span>
+<span class="sd">          \vec{\theta}^{i+1} = \vec{\theta}^{i} -  \alpha^i(\vec{x}^{i+1})</span>
+
+<span class="sd">        Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer). The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`, and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied), and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0` and begin at the second step in the recursion formula.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            x (Tensor): angular x-coordinates from the observer perspective.</span>
+<span class="sd">            y (Tensor): angular y-coordinates from the observer perspective.</span>
+<span class="sd">            z_s (Tensor): Redshifts of the sources.</span>
+<span class="sd">            params (Packed, optional): Dynamic parameter container.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple[Tensor, Tensor]: The reduced deflection angle.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">raytrace_z1z2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">z_s</span><span class="p">),</span> <span class="n">z_s</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Multiplane.raytrace_z1z2">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane.raytrace_z1z2">[docs]</a>
+    <span class="nd">@unpack</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">raytrace_z1z2</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">z_start</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">z_end</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Packed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to do multiplane ray tracing from arbitrary start/end redshift. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Collect lens redshifts and ensure proper order</span>
+        <span class="n">z_ls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_z_ls</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">lens_planes</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">z_ls</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))]</span>
+
+        <span class="c1"># Compute physical position on first lens plane</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cosmology</span><span class="o">.</span><span class="n">transverse_comoving_distance_z1z2</span><span class="p">(</span><span class="n">z_start</span><span class="p">,</span> <span class="n">z_ls</span><span class="p">[</span><span class="n">lens_planes</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">arcsec_to_rad</span> <span class="o">*</span> <span class="n">D</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="n">arcsec_to_rad</span> <span class="o">*</span> <span class="n">D</span>
+
+        <span class="c1"># Initial angles are observation angles (negative needed because of negative in propogation term)</span>
+        <span class="n">theta_x</span><span class="p">,</span> <span class="n">theta_y</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">lens_planes</span><span class="p">:</span>
+            <span class="c1"># Compute deflection angle at current ray positions</span>
+            <span class="n">D_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cosmology</span><span class="o">.</span><span class="n">transverse_comoving_distance_z1z2</span><span class="p">(</span><span class="n">z_start</span><span class="p">,</span> <span class="n">z_ls</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">params</span><span class="p">)</span>
+            <span class="n">alpha_x</span><span class="p">,</span> <span class="n">alpha_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lenses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">physical_deflection_angle</span><span class="p">(</span>
+                <span class="n">X</span> <span class="o">*</span> <span class="n">rad_to_arcsec</span> <span class="o">/</span> <span class="n">D_l</span><span class="p">,</span>
+                <span class="n">Y</span> <span class="o">*</span> <span class="n">rad_to_arcsec</span> <span class="o">/</span> <span class="n">D_l</span><span class="p">,</span>
+                <span class="n">z_end</span><span class="p">,</span>
+                <span class="n">params</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Update angle of rays after passing through lens (sum in eq 18)</span>
+            <span class="n">theta_x</span> <span class="o">=</span> <span class="n">theta_x</span> <span class="o">-</span> <span class="n">alpha_x</span>
+            <span class="n">theta_y</span> <span class="o">=</span> <span class="n">theta_y</span> <span class="o">-</span> <span class="n">alpha_y</span>
+
+            <span class="c1"># Propogate rays to next plane (basically eq 18)</span>
+            <span class="n">z_next</span> <span class="o">=</span> <span class="n">z_ls</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">lens_planes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">z_end</span>
+            <span class="n">D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cosmology</span><span class="o">.</span><span class="n">transverse_comoving_distance_z1z2</span><span class="p">(</span><span class="n">z_ls</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">z_next</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="n">D</span> <span class="o">*</span> <span class="n">theta_x</span> <span class="o">*</span> <span class="n">arcsec_to_rad</span>
+            <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">D</span> <span class="o">*</span> <span class="n">theta_y</span> <span class="o">*</span> <span class="n">arcsec_to_rad</span>
+
+        <span class="c1"># Convert from physical position to angular position on the source plane</span>
+        <span class="n">D_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cosmology</span><span class="o">.</span><span class="n">transverse_comoving_distance_z1z2</span><span class="p">(</span><span class="n">z_start</span><span class="p">,</span> <span class="n">z_end</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">X</span> <span class="o">*</span> <span class="n">rad_to_arcsec</span> <span class="o">/</span> <span class="n">D_end</span><span class="p">,</span> <span class="n">Y</span> <span class="o">*</span> <span class="n">rad_to_arcsec</span> <span class="o">/</span> <span class="n">D_end</span></div>
+
+
+<div class="viewcode-block" id="Multiplane.effective_reduced_deflection_angle">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane.effective_reduced_deflection_angle">[docs]</a>
+    <span class="nd">@unpack</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">effective_reduced_deflection_angle</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">z_s</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Packed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>
+        <span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raytrace</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z_s</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">-</span> <span class="n">bx</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">by</span></div>
+
+
+<div class="viewcode-block" id="Multiplane.surface_density">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane.surface_density">[docs]</a>
+    <span class="nd">@unpack</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">surface_density</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">z_s</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Packed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the projected mass density.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (Tensor): x-coordinates in the lens plane.</span>
+<span class="sd">            y (Tensor): y-coordinates in the lens plane.</span>
+<span class="sd">            z_s (Tensor): Redshifts of the sources.</span>
+<span class="sd">            params (Packed, optional): Dynamic parameter container.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tensor: Projected mass density [solMass / Mpc^2].</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: This method is not yet implemented.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: rescale mass densities of each lens and sum</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Multiplane.time_delay">
+<a class="viewcode-back" href="../../../caustics.lenses.html#caustics.lenses.multiplane.Multiplane.time_delay">[docs]</a>
+    <span class="nd">@unpack</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">time_delay</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">z_s</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Packed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the time delay of light caused by the lensing.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (Tensor): x-coordinates in the lens plane.</span>
+<span class="sd">            y (Tensor): y-coordinates in the lens plane.</span>
+<span class="sd">            z_s (Tensor): Redshifts of the sources.</span>
+<span class="sd">            params (Packed, optional): Dynamic parameter container.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tensor: Time delay caused by the lensing.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: This method is not yet implemented.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: figure out how to compute this</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

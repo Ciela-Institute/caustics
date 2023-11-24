@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Caustic! &mdash; caustics v0.5.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/caustics_favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="A Menagerie of Lenses" href="LensZoo.html" />
+    <link rel="prev" title="Tutorials" href="tutorials.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            caustics
+          </a>
+              <div class="version">
+                0.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Welcome to Caustic!</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Simulating-an-SIE-lens">Simulating an SIE lens</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Where-to-go-next?">Where to go next?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="LensZoo.html">A Menagerie of Lenses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="VisualizeCaustics.html">Visualize Caustics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiplaneDemo.html">Multiplane Lensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InvertLensEquation.html">Inverting the Lens Equation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">caustics</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">caustics</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Welcome to Caustic!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/BasicIntroduction.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Welcome-to-Caustic!">
+<h1>Welcome to Caustic!<a class="headerlink" href="#Welcome-to-Caustic!" title="Link to this heading"></a></h1>
+<p>In need of a differentiable strong gravitational lensing simulation package? Look no further! We have all your lensing simulator needs. In this tutorial we will cover the basics of caustic and how to get going making your own lensing configurations. Caustic is easy to use and very powerful, you will get to see some of that power here, but there will be more notebooks which demo specific use cases.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%load_ext autoreload
+%autoreload 2
+
+import torch
+from torch.nn.functional import avg_pool2d
+import matplotlib.pyplot as plt
+from astropy.io import fits
+import numpy as np
+
+import caustic
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Specify the image/cosmology parameters
+n_pix = 100
+res = 0.05
+upsample_factor = 2
+fov = res * n_pix
+thx, thy = caustic.get_meshgrid(res/upsample_factor, upsample_factor*n_pix, upsample_factor*n_pix, dtype=torch.float32)
+z_l = torch.tensor(0.5, dtype=torch.float32)
+z_s = torch.tensor(1.5, dtype=torch.float32)
+cosmology = caustic.FlatLambdaCDM(name = &quot;cosmo&quot;)
+cosmology.to(dtype=torch.float32)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+FlatLambdaCDM(
+    name=&#39;cosmo&#39;,
+    static=[h0, critical_density_0, Om0],
+    dynamic=[],
+    x keys=[]
+)
+</pre></div></div>
+</div>
+<section id="Simulating-an-SIE-lens">
+<h2>Simulating an SIE lens<a class="headerlink" href="#Simulating-an-SIE-lens" title="Link to this heading"></a></h2>
+<p>Here we will demo the very basics of lensing with a classic <code class="docutils literal notranslate"><span class="pre">SIE</span></code> lens model. We will see what it takes to make an <code class="docutils literal notranslate"><span class="pre">SIE</span></code> model, lens a backgorund <code class="docutils literal notranslate"><span class="pre">Sersic</span></code> source, and sample some examples in a simulator. Caustic simulators can generalize to very complex scenarios. In these cases there can be a lot of parameters moving through the simulator, and the order/number of parameters may change depending on what lens or source is being used. To streamline this process, caustic impliments a class
+called <code class="docutils literal notranslate"><span class="pre">Parametrized</span></code> which has some knowledge of the parameters moving through it, this way it can keep track of everything for you. For this to work, you must put the parameters into a <code class="docutils literal notranslate"><span class="pre">Packed</span></code> object which it can recognize, each sub function can then unpack the parameters it needs. Below we will show some examples of what this looks like.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># demo simulator with sersic source, SIE lens. then sample some examples. demo the model graph
+
+class Simple_Sim(caustic.Simulator):
+    def __init__(
+        self,
+        lens,
+        src,
+        z_s=None,
+        name: str = &quot;sim&quot;,
+    ):
+        super().__init__(name) # need this so `Parametrized` can do its magic
+
+        # These are the lens and source objects to keep track of
+        self.lens = lens
+        self.src = src
+
+        # Here we can add a parameter to the simulator, in this case it is `z_s` which we will need later
+        self.add_param(&quot;z_s&quot;, z_s)
+
+    def forward(self, params):# define the forward model
+        # Here the simulator unpacks the parameter it needs
+        z_s = self.unpack(params)
+
+        # Note this is very similar to before, except the packed up `x` is all the raytrace function needs to work
+        bx, by = self.lens.raytrace(thx, thy, z_s, params)
+        mu_fine = self.src.brightness(bx, by, params)
+
+        # We return the sampled brightness at each pixel location
+        return avg_pool2d(mu_fine.squeeze()[None, None], upsample_factor)[0, 0]
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>sie = caustic.lenses.SIE(cosmology, name = &quot;sie&quot;)
+src = caustic.sources.Sersic(name = &quot;src&quot;)
+
+sim = Simple_Sim(sie, src, torch.tensor(0.8))
+
+sim.get_graph(True, True)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="_images/BasicIntroduction_5_0.svg" src="_images/BasicIntroduction_5_0.svg" /></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>print(sim)
+print(sie)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Simple_Sim(
+    name=&#39;sim&#39;,
+    static=[z_s],
+    dynamic=[],
+    x keys=[(&#39;sie&#39;: [&#39;z_l&#39;, &#39;x0&#39;, &#39;y0&#39;, &#39;q&#39;, &#39;phi&#39;, &#39;b&#39;]), (&#39;src&#39;: [&#39;x0&#39;, &#39;y0&#39;, &#39;q&#39;, &#39;phi&#39;, &#39;n&#39;, &#39;Re&#39;, &#39;Ie&#39;])]
+)
+SIE(
+    name=&#39;sie&#39;,
+    static=[],
+    dynamic=[z_l, x0, y0, q, phi, b],
+    x keys=[(&#39;sie&#39;: [&#39;z_l&#39;, &#39;x0&#39;, &#39;y0&#39;, &#39;q&#39;, &#39;phi&#39;, &#39;b&#39;])]
+)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Reading the x_keys above we can input the parameters that we would like the simulator to evaluate
+x = torch.tensor([
+    z_l.item(), # sie z_l
+    0.7,     # sie x0
+    0.13,    # sie y0
+    0.4,     # sie q
+    np.pi/5, # sie phi
+    1.,      # sie b
+    0.2,     # src x0
+    0.5,      # src y0
+    0.5,      # src q
+    -np.pi/4, # src phi
+    1.5,       # src n
+    2.5,      # src Re
+    1.,       # src Ie
+])
+plt.imshow(sim(x), origin=&quot;lower&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/BasicIntroduction_7_0.png" src="_images/BasicIntroduction_7_0.png" />
+</div>
+</div>
+</section>
+<section id="Where-to-go-next?">
+<h2>Where to go next?<a class="headerlink" href="#Where-to-go-next?" title="Link to this heading"></a></h2>
+<p>The caustic tutorials are generally short and to the point, that way you can idenfity what you want and jump right to some useful code that demo’s the particular problem you face. Below is a list of caustic tutorials and a quick description of what you will learn in each one:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>-  ``LensZoo``: here you can see all the built-in lens mass distributions in ``caustic`` and how they distort the same background Seric source.
+-  ``Playground``: here we demo the main visualizations of a lensing system (deflection angles, convergence, potential, time delay, magnification) in an interactive display so you can change the parameters by hand and see how the visuals change!
+-  ``VisualizeCaustics``: here you can see how to find and display caustics, a must when using ``caustic``!
+-  ``Simulators``: here we describe the powerful simulator framework and how it can be used to quickly swap models, parameters, and other features and turn a complex forward model into a simple function.
+-  ``InvertLensEquation``: here we demo forward ray tracing in ``caustic`` the process of mapping from the source plane to the image plane.
+</pre></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tutorials.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LensZoo.html" class="btn btn-neutral float-right" title="A Menagerie of Lenses" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ciela Institute.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

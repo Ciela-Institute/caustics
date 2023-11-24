@@ -1,0 +1,125 @@
+caustics.lenses package
+=======================
+
+Submodules
+----------
+
+caustics.lenses.base module
+---------------------------
+
+.. automodule:: caustics.lenses.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.epl module
+--------------------------
+
+.. automodule:: caustics.lenses.epl
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.external\_shear module
+--------------------------------------
+
+.. automodule:: caustics.lenses.external_shear
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.mass\_sheet module
+----------------------------------
+
+.. automodule:: caustics.lenses.mass_sheet
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.multiplane module
+---------------------------------
+
+.. automodule:: caustics.lenses.multiplane
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.nfw module
+--------------------------
+
+.. automodule:: caustics.lenses.nfw
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.pixelated\_convergence module
+---------------------------------------------
+
+.. automodule:: caustics.lenses.pixelated_convergence
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.point module
+----------------------------
+
+.. automodule:: caustics.lenses.point
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.pseudo\_jaffe module
+------------------------------------
+
+.. automodule:: caustics.lenses.pseudo_jaffe
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.sie module
+--------------------------
+
+.. automodule:: caustics.lenses.sie
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.singleplane module
+----------------------------------
+
+.. automodule:: caustics.lenses.singleplane
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.sis module
+--------------------------
+
+.. automodule:: caustics.lenses.sis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.tnfw module
+---------------------------
+
+.. automodule:: caustics.lenses.tnfw
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+caustics.lenses.utils module
+----------------------------
+
+.. automodule:: caustics.lenses.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: caustics.lenses
+   :members:
+   :undoc-members:
+   :show-inheritance:
