@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: https://github.com/Ciela-Institute/caustics/blob/main/media/AP_logo.png?raw=true
+.. image:: https://github.com/Ciela-Institute/caustics/blob/main/media/caustics_logo.png?raw=true
    :width: 100 %
    :target: https://github.com/Ciela-Institute/caustics
    
