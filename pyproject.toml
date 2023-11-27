@@ -50,9 +50,6 @@ dev = [
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["requirements.txt"]
 
-[tool.hatch.build]
-sources = ["src"]
-
 [tool.hatch.version]
 source = "vcs"
 
