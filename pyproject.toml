@@ -37,9 +37,8 @@ classifiers=[
 
 [project.urls]
 Homepage = "https://mila.quebec/en/"
-Documentation = ""
-Repository = "https://github.com/Ciela-Institute/caustics.git"
-Changelog = ""
+Documentation = "https://caustics.readthedocs.io/en/latest/"
+Repository = "https://github.com/Ciela-Institute/caustics"
 Issues = "https://github.com/Ciela-Institute/caustics/issues"
 
 [project.optional-dependencies]
