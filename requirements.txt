@@ -1,7 +1,7 @@
+astropy>=5.2.1,<6.0.0
 graphviz==0.20.1
 h5py>=3.8.0
 levmarq_torch==0.0.1
 numpy>=1.23.5
 scipy>=1.8.0
 torch>=2.0.0
-astropy>=5.2.1

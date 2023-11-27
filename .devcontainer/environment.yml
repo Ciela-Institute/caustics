@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - astropy
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - pandas
+  - scipy
+  - h5py
+  - sphinx
+  - myst-parser
+  - jupyter-book
+  - pip
