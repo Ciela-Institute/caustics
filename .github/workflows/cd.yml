@@ -75,9 +75,9 @@ jobs:
 
           echo "=== Testing source tar file ==="
           # Install tar gz and check import
-          python -m pip uninstall --yes caustic
-          python -m pip install --extra-index-url https://test.pypi.org/simple --upgrade --pre --no-binary=:all: caustic
-          python -c "import caustic; print(caustics.__version__)"
+          python -m pip uninstall --yes caustics
+          python -m pip install --extra-index-url https://test.pypi.org/simple --upgrade --pre --no-binary=:all: caustics
+          python -c "import caustics; print(caustics.__version__)"
           echo "=== Done testing source tar file ==="
 
   publish:
