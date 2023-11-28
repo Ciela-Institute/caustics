@@ -128,7 +128,7 @@ def test_parametrized_name_setter_bad_names():
     for name in bad_names:
         print(name)
         with pytest.raises(NameError):
-            Sersic(name=name)
+            module = Sersic(name=name)
 
 
 def test_parametrized_name_collision():
