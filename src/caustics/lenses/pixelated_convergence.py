@@ -287,7 +287,7 @@ class PixelatedConvergence(ThinLens):
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
 
-        2 * self.n_pix
+        pad = 2 * self.n_pix
         convergence_map_flipped = convergence_map.flip((-1, -2))[
             None, None
         ]  # F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
