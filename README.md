@@ -33,7 +33,7 @@ more detailed information.
 
 We welcome contributions from collaborators and researchers interested in our
 work. If you have improvements, suggestions, or new findings to share, please
-submit a pull request. Your contributions help advance our research and analysis
+submit an issue or pull request. Your contributions help advance our research and analysis
 efforts.
 
 To get started with your development (or fork), click the "Open with GitHub
