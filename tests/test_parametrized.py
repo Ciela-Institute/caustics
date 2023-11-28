@@ -123,7 +123,7 @@ def test_parametrized_name_setter_bad_names():
     # Make sure bad names are catched by our added method. Bad names are name which cannot be used as class attributes.
     good_names = ["variable", "_variable", "var_iable2"]
     for name in good_names:
-        Sersic(name=name)
+        module = Sersic(name=name)
     bad_names = ["for", "2variable", "variable!", "var-iable", "var iable", "def"]
     for name in bad_names:
         print(name)
