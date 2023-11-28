@@ -70,7 +70,7 @@ jobs:
           echo "=== Testing wheel file ==="
           # Install wheel to get dependencies and check import
           python -m pip install --extra-index-url https://test.pypi.org/simple --upgrade --pre caustics
-          python -c "import caustic; print(caustics.__version__)"
+          python -c "import caustics; print(caustics.__version__)"
           echo "=== Done testing wheel file ==="
 
           echo "=== Testing source tar file ==="
