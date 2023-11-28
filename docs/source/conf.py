@@ -158,7 +158,7 @@ texinfo_documents = [
         "caustics Documentation",
         author,
         "caustics",
-        "One line description of project.",
+        "The gravitational lensing pipeline of the future.",
         "Miscellaneous",
     ),
 ]
