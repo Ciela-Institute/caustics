@@ -26,7 +26,7 @@ pip install caustics
 
 ## Documentation
 
-Please see our [documentation page](Ciela-Institute.github.io/caustics/) for
+Please see our [documentation page](https://caustics.readthedocs.io/en/latest/) for
 more detailed information.
 
 ## Contribution
