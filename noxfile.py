@@ -36,7 +36,7 @@ def tests(session: nox.Session) -> None:
     """
     Run the unit and regular tests. Use --cov to activate coverage.
     """
-    session.install(".[test]")
+    session.install(".[dev]")
     session.run("pytest", *session.posargs)
 
 
