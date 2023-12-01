@@ -2,3 +2,4 @@
 
 # Installs `caustic` as local library without resolving dependencies (--no-deps)
 python3 -m pip install -e /workspaces/caustics --no-deps
+python3 -m pip install -e ".[dev]"

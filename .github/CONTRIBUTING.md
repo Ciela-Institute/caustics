@@ -5,12 +5,9 @@ description of best practices for developing scientific packages.
 
 # Quick development
 
-The fastest way to start with development is to use nox. If you don't have nox,
-you can use `pipx run nox` to run it without installing, or `pipx install nox`.
-If you don't have pipx (pip for applications), then you can install with with
-`pip install pipx` (the only case were installing an application with regular
-pip is reasonable). If you use macOS, then pipx and nox are both in brew, use
-`brew install pipx nox`.
+The fastest way to start with development is to use `nox``. This will set up a
+virtual environment for you and run all the checks and tests. `nox`` is pre-installed
+in the Codespaces environment.
 
 To use, run `nox`. This will lint and test using every installed version of
 Python on your system, skipping ones that are not installed. You can also run
