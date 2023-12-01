@@ -6,7 +6,7 @@ description of best practices for developing scientific packages.
 # Quick development
 
 The fastest way to start with development is to use `nox``. This will set up a
-virtual environment for you and run all the checks and tests. `nox`` is pre-installed
+virtual environment for you to run all the checks and tests. `nox`` is pre-installed
 in the Codespaces environment.
 
 To use, run `nox`. This will lint and test using every installed version of
