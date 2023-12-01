@@ -19,7 +19,6 @@ specific jobs:
 ```console
 $ nox -s lint  # Lint only
 $ nox -s tests  # Python tests
-$ nox -s docs -- serve  # Build and serve the docs
 $ nox -s build  # Make an SDist and wheel
 ```
 
@@ -72,20 +71,6 @@ Use pytest-cov to generate coverage reports:
 
 ```bash
 pytest --cov=caustics
-```
-
-# Building docs
-
-You can build the docs using:
-
-```bash
-nox -s docs
-```
-
-You can see a preview with:
-
-```bash
-nox -s docs -- serve
 ```
 
 # Pre-commit
