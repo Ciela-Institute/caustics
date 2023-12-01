@@ -4,7 +4,7 @@ on:
     branches:
       - main
   workflow_dispatch:
-  
+
 jobs:
   docs:
     runs-on: ubuntu-latest
@@ -12,38 +12,39 @@ jobs:
       - uses: actions/checkout@master
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-          cache: 'pip'
-          
+          python-version: "3.9"
+          cache: "pip"
+
       - run: |
-          pip install torch wheel        
+          pip install torch wheel
           pip install -r requirements.txt
-          
+
       - name: Install dependencies
         run: |
           sudo apt-get install -y pandoc
           pip install sphinx sphinx_rtd_theme nbsphinx
-          
+
       - name: Install Caustics
         run: |
           cd $GITHUB_WORKSPACE
           pip install -e .[dev]
           pip show caustics
         shell: bash
-        
+
       - name: Clone external Jupyter Notebook repository
         run: |
           cd $GITHUB_WORKSPACE/docs/
           python pull_notebooks.py
-          
+
       - name: Sphinx build
         run: |
           sphinx-apidoc -f -o docs/ caustics/
           sphinx-build docs _build
-          
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if:
+          ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "caustics"
+dynamic = [
+        "dependencies",
+        "version"
+]
+authors = [
+  { name="Connor Stone", email="connor.stone@mila.quebec" },
+  { name="Alexandre Adam", email="alexandre.adam@mila.quebec" },
+  { name="UW SSEC", email="ssec@uw.edu" }
+]
+description = "The lensing pipeline of the future: GPU-accelerated, automatically-differentiable, highly modular. Currently under heavy development: expect interface changes and some imprecise/untested calculations."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+keywords = [
+        "caustics",
+        "lensing",
+        "astronomy",
+        "strong lensing",
+        "gravitational lensing",
+        "astrophysics",
+        "differentiable programming",
+        "pytorch"
+]
+classifiers=[
+        "Development Status :: 1 - Planning",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3"
+]
+
+[project.urls]
+Homepage = "https://mila.quebec/en/"
+Documentation = "https://caustics.readthedocs.io/en/latest/"
+Repository = "https://github.com/Ciela-Institute/caustics"
+Issues = "https://github.com/Ciela-Institute/caustics/issues"
+
+[project.optional-dependencies]
+dev = [
+    "lenstronomy==1.11.1"
+]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/caustics/_version.py"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
