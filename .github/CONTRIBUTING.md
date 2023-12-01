@@ -15,18 +15,38 @@ Nox is pre-installed in the Codespaces environment. So, after activating a Codes
 you can just open the terminal and run `nox` to run all the checks and tests.
 
 ## Local
-If you don't have nox, you can use `pipx run nox` to run it without installing, or `pipx install nox`. If you don't have `pipx` (`pip` for applications), then you can install with with `pip install pipx` (the only case were installing an application with regular pip is reasonable). If you use macOS, then `pipx` and `nox` are both in brew, use `brew install pipx nox`.
+
+If you don't have nox, you can do the following to install `nox`:
+
+```bash
+pip install nox
+```
+
+If you use macOS, then `nox` is in brew:
+
+```bash
+brew install nox
+```
 
 ## Nox basics
+
+### What is it?
+
+`nox` is a command-line tool that automates testing in multiple Python environments,
+similar to tox. Unlike tox,
+Nox uses a standard Python file for configuration,
+you can find this configuration in [`noxfile.py`](../noxfile.py).
+
+### How do I use it?
 
 To use, run `nox`. This will lint and test using every installed version of
 Python on your system, skipping ones that are not installed. You can also run
 specific jobs:
 
-```console
-$ nox -s lint  # Lint only
-$ nox -s tests  # Python tests
-$ nox -s build  # Make an SDist and wheel
+```bash
+nox -s lint  # Lint only
+nox -s tests  # Python tests
+nox -s build  # Make an SDist and wheel
 ```
 
 Nox handles everything for you, including setting up a temporary virtual
