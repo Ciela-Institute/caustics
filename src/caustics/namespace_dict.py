@@ -38,8 +38,10 @@ class _NestedNamespaceDict(NamespaceDict):
         """
         Flatten the nested dictionary into a NamespaceDict
 
-        Returns:
-            NamespaceDict: Flattened dictionary as a NamespaceDict
+        Returns
+        -------
+        NamespaceDict
+            Flattened dictionary as a NamespaceDict
         """
         flattened_dict = NamespaceDict()
 
@@ -59,8 +61,10 @@ class _NestedNamespaceDict(NamespaceDict):
         Flatten the nested dictionary and collapse keys into the first level
         of the NamespaceDict
 
-        Returns:
-            NamespaceDict: Flattened dictionary as a NamespaceDict
+        Returns
+        -------
+        NamespaceDict
+            Flattened dictionary as a NamespaceDict
         """
         flattened_dict = NamespaceDict()
 

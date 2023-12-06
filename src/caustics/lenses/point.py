@@ -15,14 +15,22 @@ class Point(ThinLens):
     """
     Class representing a point mass lens in strong gravitational lensing.
 
-    Attributes:
-        name (str): The name of the point lens.
-        cosmology (Cosmology): The cosmology used for calculations.
-        z_l (Optional[Union[Tensor, float]]): Redshift of the lens.
-        x0 (Optional[Union[Tensor, float]]): x-coordinate of the center of the lens.
-        y0 (Optional[Union[Tensor, float]]): y-coordinate of the center of the lens.
-        th_ein (Optional[Union[Tensor, float]]): Einstein radius of the lens.
-        s (float): Softening parameter to prevent numerical instabilities.
+    Attributes
+    ----------
+    name: str
+        The name of the point lens.
+    cosmology: Cosmology
+        The cosmology used for calculations.
+    z_l: Optional[Union[Tensor, float]]
+        Redshift of the lens.
+    x0: Optional[Union[Tensor, float]]
+        x-coordinate of the center of the lens.
+    y0: Optional[Union[Tensor, float]]
+        y-coordinate of the center of the lens.
+    th_ein: Optional[Union[Tensor, float]]
+        Einstein radius of the lens.
+    s: float
+        Softening parameter to prevent numerical instabilities.
     """
 
     def __init__(
@@ -38,14 +46,22 @@ class Point(ThinLens):
         """
         Initialize the Point class.
 
-        Args:
-            name (str): The name of the point lens.
-            cosmology (Cosmology): The cosmology used for calculations.
-            z_l (Optional[Tensor]): Redshift of the lens.
-            x0 (Optional[Tensor]): x-coordinate of the center of the lens.
-            y0 (Optional[Tensor]): y-coordinate of the center of the lens.
-            th_ein (Optional[Tensor]): Einstein radius of the lens.
-            s (float): Softening parameter to prevent numerical instabilities.
+        Parameters
+        ----------
+        name: string
+            The name of the point lens.
+        cosmology: Cosmology
+            The cosmology used for calculations.
+        z_l: Optional[Tensor]
+            Redshift of the lens.
+        x0: Optional[Tensor]
+            x-coordinate of the center of the lens.
+        y0: Optional[Tensor]
+            y-coordinate of the center of the lens.
+        th_ein: Optional[Tensor]
+            Einstein radius of the lens.
+        s: float
+            Softening parameter to prevent numerical instabilities.
         """
         super().__init__(cosmology, z_l, name=name)
 
@@ -71,14 +87,21 @@ class Point(ThinLens):
         """
         Compute the deflection angles.
 
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+        y: Tensor
+            y-coordinates in the lens plane.
+        z_s: Tensor
+            Redshifts of the sources.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            tuple[Tensor, Tensor]: The deflection angles in the x and y directions.
+        Returns
+        -------
+        tuple[Tensor, Tensor]
+            The deflection angles in the x and y directions.
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -103,14 +126,21 @@ class Point(ThinLens):
         """
         Compute the lensing potential.
 
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+        y: Tensor
+            y-coordinates in the lens plane.
+        z_s: Tensor
+            Redshifts of the sources.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The lensing potential.
+        Returns
+        -------
+        Tensor
+            The lensing potential.
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -133,14 +163,21 @@ class Point(ThinLens):
         """
         Compute the convergence (dimensionless surface mass density).
 
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+        y: Tensor
+            y-coordinates in the lens plane.
+        z_s: Tensor
+            Redshifts of the sources.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The convergence (dimensionless surface mass density).
+        Returns
+        --------
+        Tensor
+            The convergence (dimensionless surface mass density).
         """
         x, y = translate_rotate(x, y, x0, y0)
         return torch.where((x == 0) & (y == 0), torch.inf, 0.0)

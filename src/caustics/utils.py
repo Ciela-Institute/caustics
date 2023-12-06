@@ -12,12 +12,17 @@ def flip_axis_ratio(q, phi):
     """
     Makes the value of 'q' positive, then swaps x and y axes if 'q' is larger than 1.
 
-    Args:
-        q (Tensor): Tensor containing values to be processed.
-        phi (Tensor): Tensor containing the phi values for the orientation of the axes.
+    Parameters
+    ----------
+    q: Tensor
+        Tensor containing values to be processed.
+    phi: Tensor
+        Tensor containing the phi values for the orientation of the axes.
 
-    Returns:
-        Tuple[Tensor, Tensor]: Tuple containing the processed 'q' and 'phi' Tensors.
+    Returns
+    -------
+    Tuple[Tensor, Tensor]
+        Tuple containing the processed 'q' and 'phi' Tensors.
     """
     q = q.abs()
     return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
@@ -27,15 +32,23 @@ def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
     """
     Translates and rotates the points (x, y) by subtracting (x0, y0) and applying rotation angle phi.
 
-    Args:
-        x (Tensor): Tensor containing the x-coordinates.
-        y (Tensor): Tensor containing the y-coordinates.
-        x0 (Tensor): Tensor containing the x-coordinate translation values.
-        y0 (Tensor): Tensor containing the y-coordinate translation values.
-        phi (Optional[Tensor], optional): Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
+    Parameters
+    ----------
+    x: Tensor
+        Tensor containing the x-coordinates.
+    y: Tensor
+        Tensor containing the y-coordinates.
+    x0: Tensor
+        Tensor containing the x-coordinate translation values.
+    y0: Tensor
+        Tensor containing the y-coordinate translation values.
+    phi: Optional[Tensor], optional)
+        Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
 
-    Returns:
-        Tuple[Tensor, Tensor]: Tuple containing the translated and rotated x and y coordinates.
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the translated and rotated x and y coordinates.
     """
     xt = x - x0
     yt = y - y0
@@ -54,13 +67,19 @@ def derotate(vx, vy, phi: Optional[Tensor] = None):
     """
     Applies inverse rotation to the velocity components (vx, vy) using the rotation angle phi.
 
-    Args:
-        vx (Tensor): Tensor containing the x-component of velocity.
-        vy (Tensor): Tensor containing the y-component of velocity.
-        phi (Optional[Tensor], optional): Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
+    Parameters
+    ----------
+    vx: Tensor
+        Tensor containing the x-component of velocity.
+    vy: Tensor
+        Tensor containing the y-component of velocity.
+    phi: Optional[Tensor], optional)
+        Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
 
-    Returns:
-        Tuple[Tensor, Tensor]: Tuple containing the derotated x and y components of velocity.
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the derotated x and y components of velocity.
     """
     if phi is None:
         return vx, vy
@@ -74,13 +93,19 @@ def to_elliptical(x, y, q: Tensor):
     """
     Converts Cartesian coordinates to elliptical coordinates.
 
-    Args:
-        x (Tensor): Tensor containing the x-coordinates.
-        y (Tensor): Tensor containing the y-coordinates.
-        q (Tensor): Tensor containing the elliptical parameters.
+    Parameters
+    ----------
+    x: Tensor
+        Tensor containing the x-coordinates.
+    y: Tensor
+        Tensor containing the y-coordinates.
+    q: Tensor
+        Tensor containing the elliptical parameters.
 
-    Returns:
-        Tuple[Tensor, Tensor]: Tuple containing the x and y coordinates in elliptical form.
+    Returns
+    -------
+    Tuple: Tensor, Tensor
+        Tuple containing the x and y coordinates in elliptical form.
     """
     return x, y / q
 
@@ -91,15 +116,23 @@ def get_meshgrid(
     """
     Generates a 2D meshgrid based on the provided pixelscale and dimensions.
 
-    Args:
-        pixelscale (float): The scale of the meshgrid in each dimension.
-        nx (int): The number of grid points along the x-axis.
-        ny (int): The number of grid points along the y-axis.
-        device (torch.device, optional): The device on which to create the tensor. Defaults to None.
-        dtype (torch.dtype, optional): The desired data type of the tensor. Defaults to torch.float32.
+    Parameters
+    ----------
+    pixelscale: float
+        The scale of the meshgrid in each dimension.
+    nx: int
+        The number of grid points along the x-axis.
+    ny: int
+        The number of grid points along the y-axis.
+    device: torch.device, optional
+        The device on which to create the tensor. Defaults to None.
+    dtype: torch.dtype, optional
+        The desired data type of the tensor. Defaults to torch.float32.
 
-    Returns:
-        Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        The generated meshgrid as a tuple of Tensors.
     """
     xs = (
         torch.linspace(-1, 1, nx, device=device, dtype=dtype)
@@ -120,12 +153,17 @@ def safe_divide(num, denom, places=7):
     """
     Safely divides two tensors, returning zero where the denominator is zero.
 
-    Args:
-        num (Tensor): The numerator tensor.
-        denom (Tensor): The denominator tensor.
+    Parameters
+    ----------
+    num: Tensor
+        The numerator tensor.
+    denom: Tensor
+        The denominator tensor.
 
-    Returns:
-        Tensor: The result of the division, with zero where the denominator was zero.
+    Returns
+    -------
+    Tensor
+        The result of the division, with zero where the denominator was zero.
     """
     out = torch.zeros_like(num)
     where = denom != 0
@@ -137,11 +175,15 @@ def safe_log(x):
     """
     Safely applies the logarithm to a tensor, returning zero where the tensor is zero.
 
-    Args:
-        x (Tensor): The input tensor.
+    Parameters
+    ----------
+    x: Tensor
+        The input tensor.
 
-    Returns:
-        Tensor: The result of applying the logarithm, with zero where the input was zero.
+    Returns
+    -------
+    Tensor
+        The result of applying the logarithm, with zero where the input was zero.
     """
     out = torch.zeros_like(x)
     where = x != 0
@@ -153,11 +195,15 @@ def _h_poly(t):
     """Helper function to compute the 'h' polynomial matrix used in the
     cubic spline.
 
-    Args:
-        t (Tensor): A 1D tensor representing the normalized x values.
+    Parameters
+    ----------
+    t: Tensor
+        A 1D tensor representing the normalized x values.
 
-    Returns:
-        Tensor: A 2D tensor of size (4, len(t)) representing the 'h' polynomial matrix.
+    Returns
+    -------
+    Tensor
+        A 2D tensor of size (4, len(t)) representing the 'h' polynomial matrix.
 
     """
 
@@ -174,19 +220,26 @@ def interp1d(x: Tensor, y: Tensor, xs: Tensor, extend: str = "extrapolate") -> T
     """Compute the 1D cubic spline interpolation for the given data points
     using PyTorch.
 
-    Args:
-        x (Tensor): A 1D tensor representing the x-coordinates of the known data points.
-        y (Tensor): A 1D tensor representing the y-coordinates of the known data points.
-        xs (Tensor): A 1D tensor representing the x-coordinates of the positions where
-                     the cubic spline function should be evaluated.
-        extend (str, optional): The method for handling extrapolation, either "const", "extrapolate", or "linear".
-                                Default is "extrapolate".
-                                "const": Use the value of the last known data point for extrapolation.
-                                "linear": Use linear extrapolation based on the last two known data points.
-                                "extrapolate": Use cubic extrapolation of data.
+    Parameters
+    ----------
+    x: Tensor
+        A 1D tensor representing the x-coordinates of the known data points.
+    y: Tensor
+        A 1D tensor representing the y-coordinates of the known data points.
+    xs: Tensor
+        A 1D tensor representing the x-coordinates of the positions where
+        the cubic spline function should be evaluated.
+    extend: (str, optional)
+        The method for handling extrapolation, either "const", "extrapolate", or "linear".
+        Default is "extrapolate".
+        "const": Use the value of the last known data point for extrapolation.
+        "linear": Use linear extrapolation based on the last two known data points.
+        "extrapolate": Use cubic extrapolation of data.
 
-    Returns:
-        Tensor: A 1D tensor representing the interpolated values at the specified positions (xs).
+    Returns
+    -------
+    Tensor
+        A 1D tensor representing the interpolated values at the specified positions (xs).
 
     """
     m = (y[1:] - y[:-1]) / (x[1:] - x[:-1])
@@ -219,23 +272,37 @@ def interp2d(
     Interpolates a 2D image at specified coordinates.
     Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
 
-    Args:
-        im (Tensor): A 2D tensor representing the image.
-        x (Tensor): A 0D or 1D tensor of x coordinates at which to interpolate.
-        y (Tensor): A 0D or 1D tensor of y coordinates at which to interpolate.
-        method (str, optional): Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
-        padding_mode (str, optional): Defines the padding mode when out-of-bound indices are encountered.
-                                      Either 'zeros' or 'extrapolate'. Defaults to 'zeros'.
+    Parameters
+    ----------
+    im: Tensor
+        A 2D tensor representing the image.
+    x: Tensor
+        A 0D or 1D tensor of x coordinates at which to interpolate.
+    y: Tensor
+        A 0D or 1D tensor of y coordinates at which to interpolate.
+    method: (str, optional)
+        Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
+    padding_mode:  (str, optional)
+        Defines the padding mode when out-of-bound indices are encountered.
+        Either 'zeros' or 'extrapolate'. Defaults to 'zeros'.
 
-    Raises:
-        ValueError: If `im` is not a 2D tensor.
-        ValueError: If `x` is not a 0D or 1D tensor.
-        ValueError: If `y` is not a 0D or 1D tensor.
-        ValueError: If `padding_mode` is not 'extrapolate' or 'zeros'.
-        ValueError: If `method` is not 'nearest' or 'linear'.
+    Raises
+    ------
+    ValueError
+        If `im` is not a 2D tensor.
+    ValueError
+        If `x` is not a 0D or 1D tensor.
+    ValueError
+        If `y` is not a 0D or 1D tensor.
+    ValueError
+        If `padding_mode` is not 'extrapolate' or 'zeros'.
+    ValueError
+        If `method` is not 'nearest' or 'linear'.
 
-    Returns:
-        Tensor: Tensor with the same shape as `x` and `y` containing the interpolated values.
+    Returns
+    -------
+    Tensor
+        Tensor with the same shape as `x` and `y` containing the interpolated values.
     """
     if im.ndim != 2:
         raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
@@ -296,18 +363,28 @@ def vmap_n(
     Returns `func` transformed `depth` times by `vmap`, with the same arguments
     passed to `vmap` each time.
 
-    Args:
-        func (Callable): The function to transform.
-        depth (int, optional): The number of times to apply `torch.vmap`. Defaults to 1.
-        in_dims (Union[int, Tuple], optional): The dimensions to vectorize over in the input. Defaults to 0.
-        out_dims (Union[int, Tuple[int, ...]], optional): The dimensions to vectorize over in the output. Defaults to 0.
-        randomness (str, optional): How to handle randomness. Defaults to 'error'.
+    Parameters
+    ----------
+    func: Callable
+        The function to transform.
+    depth: (int, optional)
+        The number of times to apply `torch.vmap`. Defaults to 1.
+    in_dims: (Union[int, Tuple], optional)
+        The dimensions to vectorize over in the input. Defaults to 0.
+    out_dims: (Union[int, Tuple[int, ...]], optional):
+        The dimensions to vectorize over in the output. Defaults to 0.
+    randomness: (str, optional)
+        How to handle randomness. Defaults to 'error'.
 
-    Raises:
-        ValueError: If `depth` is less than 1.
+    Raises
+    ------
+    ValueError
+        If `depth` is less than 1.
 
-    Returns:
-        Callable: The transformed function.
+    Returns
+    -------
+    Callable
+        The transformed function.
 
     TODO: test.
     """
@@ -325,12 +402,17 @@ def get_cluster_means(xs: Tensor, k: int):
     """
     Computes cluster means using the k-means++ initialization algorithm.
 
-    Args:
-        xs (Tensor): A tensor of data points.
-        k (int): The number of clusters.
+    Parameters
+    ----------
+    xs: Tensor
+        A tensor of data points.
+    k: int
+        The number of clusters.
 
-    Returns:
-        Tensor: A tensor of cluster means.
+    Returns
+    -------
+    Tensor
+        A tensor of cluster means.
     """
     b = len(xs)
     mean_idxs = [int(torch.randint(high=b, size=(), device=xs.device).item())]

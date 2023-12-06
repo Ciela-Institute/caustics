@@ -16,14 +16,20 @@ def get_pix_jacobian(
     (:math:`\\partial \beta / \\partial \theta`).  This is done at a
     single point on the lensing plane.
 
-    Args:
-        raytrace: A function that maps the lensing plane coordinates to the source plane coordinates.
-        x (Tensor): The x-coordinate on the lensing plane.
-        y (Tensor): The y-coordinate on the lensing plane.
-        z_s (Tensor): The redshift of the source.
+    Parameters
+    -----------
+    raytrace: function
+        A function that maps the lensing plane coordinates to the source plane coordinates.
+    x: Tensor
+        The x-coordinate on the lensing plane.
+    y: Tensor
+        The y-coordinate on the lensing plane.
+    z_s: Tensor
+        The redshift of the source.
 
-    Returns:
-        The Jacobian matrix of the image position with respect to the source position at the given point.
+    Returns
+    --------
+    The Jacobian matrix of the image position with respect to the source position at the given point.
 
     """
     jac = torch.func.jacfwd(raytrace, (0, 1))(x, y, z_s)  # type: ignore
@@ -35,13 +41,20 @@ def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
     Computes the magnification at a single point on the lensing plane. The magnification is derived from the determinant
     of the Jacobian matrix of the image position with respect to the source position.
 
-    Args:
-        raytrace: A function that maps the lensing plane coordinates to the source plane coordinates.
-        x (Tensor): The x-coordinate on the lensing plane.
-        y (Tensor): The y-coordinate on the lensing plane.
-        z_s (Tensor): The redshift of the source.
+    Parameters
+    ----------
+    raytrace: function
+        A function that maps the lensing plane coordinates to the source plane coordinates.
+    x: Tensor
+        The x-coordinate on the lensing plane.
+    y: Tensor
+        The y-coordinate on the lensing plane.
+    z_s: Tensor
+        The redshift of the source.
 
-    Returns:
+    Returns
+    -------
+    Tensor
         The magnification at the given point on the lensing plane.
     """
     jac = get_pix_jacobian(raytrace, x, y, z_s)
@@ -53,13 +66,20 @@ def get_magnification(raytrace, x, y, z_s) -> Tensor:
     Computes the magnification over a grid on the lensing plane. This is done by calling `get_pix_magnification`
     for each point on the grid.
 
-    Args:
-        raytrace: A function that maps the lensing plane coordinates to the source plane coordinates.
-        x (Tensor): The x-coordinates on the lensing plane.
-        y (Tensor): The y-coordinates on the lensing plane.
-        z_s (Tensor): The redshift of the source.
+    Parameters
+    ----------
+    raytrace: function
+        A function that maps the lensing plane coordinates to the source plane coordinates.
+    x: Tensor
+        The x-coordinates on the lensing plane.
+    y: Tensor
+        The y-coordinates on the lensing plane.
+    z_s: Tensor
+        The redshift of the source.
 
-    Returns:
+    Returns
+    --------
+    Tensor
         A tensor representing the magnification at each point on the grid.
     """
     return vmap_n(get_pix_magnification, 2, (None, 0, 0, None))(raytrace, x, y, z_s)

@@ -15,16 +15,26 @@ class SIE(ThinLens):
     A class representing a Singular Isothermal Ellipsoid (SIE) strong gravitational lens model.
     This model is based on Keeton 2001, which can be found at https://arxiv.org/abs/astro-ph/0102341.
 
-    Attributes:
-        name (str): The name of the lens.
-        cosmology (Cosmology): An instance of the Cosmology class.
-        z_l (Optional[Union[Tensor, float]]): The redshift of the lens.
-        x0 (Optional[Union[Tensor, float]]): The x-coordinate of the lens center.
-        y0 (Optional[Union[Tensor, float]]): The y-coordinate of the lens center.
-        q (Optional[Union[Tensor, float]]): The axis ratio of the lens.
-        phi (Optional[Union[Tensor, float]]): The orientation angle of the lens (position angle).
-        b (Optional[Union[Tensor, float]]): The Einstein radius of the lens.
-        s (float): The core radius of the lens (defaults to 0.0).
+    Attributes
+    ----------
+    name: str
+        The name of the lens.
+    cosmology: Cosmology
+        An instance of the Cosmology class.
+    z_l: Optional[Union[Tensor, float]]
+        The redshift of the lens.
+    x0: Optional[Union[Tensor, float]]
+        The x-coordinate of the lens center.
+    y0: Optional[Union[Tensor, float]]
+        The y-coordinate of the lens center.
+    q: Optional[Union[Tensor, float]]
+        The axis ratio of the lens.
+    phi: Optional[Union[Tensor, float]]
+        The orientation angle of the lens (position angle).
+    b: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens.
+    s: float
+        The core radius of the lens (defaults to 0.0).
     """
 
     def __init__(
@@ -55,13 +65,19 @@ class SIE(ThinLens):
         """
         Compute the radial coordinate in the lens plane.
 
-        Args:
-            x (Tensor): The x-coordinate in the lens plane.
-            y (Tensor): The y-coordinate in the lens plane.
-            q (Tensor): The axis ratio of the lens.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate in the lens plane.
+        y: Tensor
+            The y-coordinate in the lens plane.
+        q: Tensor
+            The axis ratio of the lens.
 
-        Returns:
-            Tensor: The radial coordinate in the lens plane.
+        Returns
+        --------
+        Tensor
+            The radial coordinate in the lens plane.
         """
         return (q**2 * (x**2 + self.s**2) + y**2).sqrt()
 
@@ -84,14 +100,21 @@ class SIE(ThinLens):
         """
         Calculate the physical deflection angle.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
+        Returns
+        --------
+        Tuple[Tensor, Tensor]
+            The deflection angle in the x and y directions.
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
@@ -120,14 +143,21 @@ class SIE(ThinLens):
         """
         Compute the lensing potential.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The lensing potential.
+        Returns
+        -------
+        Tensor
+            The lensing potential.
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
@@ -153,14 +183,21 @@ class SIE(ThinLens):
         """
         Calculate the projected mass density.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The projected mass.
+        Returns
+        -------
+        Tensor
+            The projected mass.
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)

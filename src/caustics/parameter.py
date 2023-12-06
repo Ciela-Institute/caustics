@@ -12,9 +12,12 @@ class Parameter:
 
     A static parameter has a fixed value, while a dynamic parameter must be passed in each time it's required.
 
-    Attributes:
-        value (Optional[Tensor]): The value of the parameter.
-        shape (tuple[int, ...]): The shape of the parameter.
+    Attributes
+    ----------
+    value: (Optional[Tensor])
+        The value of the parameter.
+    shape: (tuple[int, ...])
+        The shape of the parameter.
     """
 
     def __init__(
@@ -75,9 +78,12 @@ class Parameter:
         """
         Moves and/or casts the values of the parameter.
 
-        Args:
-            device (Optional[torch.device], optional): The device to move the values to. Defaults to None.
-            dtype (Optional[torch.dtype], optional): The desired data type. Defaults to None.
+        Parameters
+        ----------
+        device: (Optional[torch.device], optional)
+            The device to move the values to. Defaults to None.
+        dtype: (Optional[torch.dtype], optional)
+            The desired data type. Defaults to None.
         """
         if self.static:
             self.value = self._value.to(device=device, dtype=dtype)

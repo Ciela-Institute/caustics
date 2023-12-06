@@ -15,10 +15,14 @@ class SinglePlane(ThinLens):
     A class for combining multiple thin lenses into a single lensing plane.
     This model inherits from the base `ThinLens` class.
 
-    Attributes:
-        name (str): The name of the single plane lens.
-        cosmology (Cosmology): An instance of the Cosmology class.
-        lenses (List[ThinLens]): A list of ThinLens objects that are being combined into a single lensing plane.
+    Attributes
+    ----------
+    name: str
+        The name of the single plane lens.
+    cosmology: Cosmology
+        An instance of the Cosmology class.
+    lenses: List[ThinLens]
+        A list of ThinLens objects that are being combined into a single lensing plane.
     """
 
     def __init__(
@@ -46,14 +50,21 @@ class SinglePlane(ThinLens):
         """
         Calculate the total deflection angle by summing the deflection angles of all individual lenses.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tuple[Tensor, Tensor]: The total deflection angle in the x and y directions.
+        Returns
+        -------
+        Tuple[Tensor, Tensor]
+            The total deflection angle in the x and y directions.
         """
         ax = torch.zeros_like(x)
         ay = torch.zeros_like(x)
@@ -76,14 +87,21 @@ class SinglePlane(ThinLens):
         """
         Calculate the total projected mass density by summing the mass densities of all individual lenses.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The total projected mass density.
+        Returns
+        -------
+        Tensor
+            The total projected mass density.
         """
         convergence = torch.zeros_like(x)
         for lens in self.lenses:
@@ -104,14 +122,21 @@ class SinglePlane(ThinLens):
         """
         Compute the total lensing potential by summing the lensing potentials of all individual lenses.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        -----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The total lensing potential.
+        Returns
+        -------
+        Tensor
+            The total lensing potential.
         """
         potential = torch.zeros_like(x)
         for lens in self.lenses:

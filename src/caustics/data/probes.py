@@ -24,6 +24,9 @@ class PROBESDataset:
 
     def __getitem__(self, i: Union[int, slice]) -> Tensor:
         """
-        Returns image `i` with channel as first dimension.
+        Returns
+        -------
+        Tensor
+            image `i` with channel as first dimension.
         """
         return self.ds[i][self.key].movedim(-1, 0)

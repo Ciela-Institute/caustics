@@ -17,16 +17,26 @@ class Sersic(Source):
 
     The Sersic profile is often used to describe elliptical galaxies and spiral galaxies' bulges.
 
-    Attributes:
-        x0 (Optional[Tensor]): The x-coordinate of the Sersic source's center.
-        y0 (Optional[Tensor]): The y-coordinate of the Sersic source's center.
-        q (Optional[Tensor]): The axis ratio of the Sersic source.
-        phi (Optional[Tensor]): The orientation of the Sersic source (position angle).
-        n (Optional[Tensor]): The Sersic index, which describes the degree of concentration of the source.
-        Re (Optional[Tensor]): The scale length of the Sersic source.
-        Ie (Optional[Tensor]): The intensity at the effective radius.
-        s (float): A small constant for numerical stability.
-        lenstronomy_k_mode (bool): A flag indicating whether to use lenstronomy to compute the value of k.
+    Attributes
+    -----------
+    x0: Optional[Tensor]
+        The x-coordinate of the Sersic source's center.
+    y0: Optional[Tensor]
+        The y-coordinate of the Sersic source's center.
+    q: Optional[Tensor]
+        The axis ratio of the Sersic source.
+    phi: Optional[Tensor]
+        The orientation of the Sersic source (position angle).
+    n: Optional[Tensor]
+        The Sersic index, which describes the degree of concentration of the source.
+    Re: Optional[Tensor]
+        The scale length of the Sersic source.
+    Ie: Optional[Tensor]
+        The intensity at the effective radius.
+    s: float
+        A small constant for numerical stability.
+    lenstronomy_k_mode: bool
+        A flag indicating whether to use lenstronomy to compute the value of k.
     """
 
     def __init__(
@@ -45,17 +55,28 @@ class Sersic(Source):
         """
         Constructs the `Sersic` object with the given parameters.
 
-        Args:
-            name (str): The name of the source.
-            x0 (Optional[Tensor]): The x-coordinate of the Sersic source's center.
-            y0 (Optional[Tensor]): The y-coordinate of the Sersic source's center.
-            q (Optional[Tensor]): The axis ratio of the Sersic source.
-            phi (Optional[Tensor]): The orientation of the Sersic source.
-            n (Optional[Tensor]): The Sersic index, which describes the degree of concentration of the source.
-            Re (Optional[Tensor]): The scale length of the Sersic source.
-            Ie (Optional[Tensor]): The intensity at the effective radius.
-            s (float): A small constant for numerical stability.
-            use_lenstronomy_k (bool): A flag indicating whether to use lenstronomy to compute the value of k.
+        Parameters
+        ----------
+        name: str
+            The name of the source.
+        x0: Optional[Tensor]
+            The x-coordinate of the Sersic source's center.
+        y0: Optional[Tensor]
+            The y-coordinate of the Sersic source's center.
+        q: Optional[Tensor])
+            The axis ratio of the Sersic source.
+        phi: Optional[Tensor]
+            The orientation of the Sersic source.
+        n: Optional[Tensor]
+            The Sersic index, which describes the degree of concentration of the source.
+        Re: Optional[Tensor]
+            The scale length of the Sersic source.
+        Ie: Optional[Tensor]
+            The intensity at the effective radius.
+        s: float
+            A small constant for numerical stability.
+        use_lenstronomy_k: bool
+            A flag indicating whether to use lenstronomy to compute the value of k.
         """
         super().__init__(name=name)
         self.add_param("x0", x0)
@@ -89,17 +110,24 @@ class Sersic(Source):
         Implements the `brightness` method for `Sersic`. The brightness at a given point is
         determined by the Sersic profile formula.
 
-        Args:
-            x (Tensor): The x-coordinate(s) at which to calculate the source brightness.
-                This could be a single value or a tensor of values.
-            y (Tensor): The y-coordinate(s) at which to calculate the source brightness.
-                This could be a single value or a tensor of values.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate(s) at which to calculate the source brightness.
+            This could be a single value or a tensor of values.
+        y: Tensor
+            The y-coordinate(s) at which to calculate the source brightness.
+            This could be a single value or a tensor of values.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The brightness of the source at the given point(s). The output tensor has the same shape as `x` and `y`.
+                Returns
+                -------
+                Tensor
+                    The brightness of the source at the given point(s). The output tensor has the same shape as `x` and `y`.
 
-        Notes:
+        Notes
+        -----
             The Sersic profile is defined as: I(r) = Ie * exp(-k * ((r / r_e)^(1/n) - 1)),
             where Ie is the intensity at the effective radius r_e, n is the Sersic index
             that describes the concentration of the source, and k is a parameter that

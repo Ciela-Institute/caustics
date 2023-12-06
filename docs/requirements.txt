@@ -1,4 +1,4 @@
-nbsphinx
+jupyter-book
 sphinx
 sphinx_rtd_theme
 wheel

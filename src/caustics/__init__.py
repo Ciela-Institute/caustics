@@ -8,7 +8,6 @@ from .parametrized import *
 from .light import *
 from .utils import *
 from .sims import *
-from .tests import *
 
 # from .demo import *
 

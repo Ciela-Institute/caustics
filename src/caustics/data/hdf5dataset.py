@@ -22,11 +22,17 @@ class HDF5Dataset(Dataset):
         dtypes: Union[Dict[str, torch.dtype], torch.dtype] = torch.float32,
     ):
         """
-        Args:
-            path: location of dataset.
-            keys: dataset keys to read.
-            dtypes: either a numpy datatype to which the items will be converted
-                or a dictionary specifying the datatype corresponding to each key.
+        Parameters
+        ----------
+        path: string
+            location of dataset.
+        keys: List[str]
+            dataset keys to read.
+        device: torch.deviec
+            the device for torch
+        dtypes: torch.dtype
+            either a numpy datatype to which the items will be converted
+            or a dictionary specifying the datatype corresponding to each key.
         """
         super().__init__()
         self.keys = keys

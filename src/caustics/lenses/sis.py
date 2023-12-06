@@ -15,14 +15,21 @@ class SIS(ThinLens):
     A class representing the Singular Isothermal Sphere (SIS) model.
     This model inherits from the base `ThinLens` class.
 
-    Attributes:
-        name (str): The name of the SIS lens.
-        cosmology (Cosmology): An instance of the Cosmology class.
-        z_l (Optional[Union[Tensor, float]]): The lens redshift.
-        x0 (Optional[Union[Tensor, float]]): The x-coordinate of the lens center.
-        y0 (Optional[Union[Tensor, float]]): The y-coordinate of the lens center.
+    Attributes
+    ----------
+    name: str
+        The name of the SIS lens.
+    cosmology: Cosmology
+        An instance of the Cosmology class.
+    z_l: Optional[Union[Tensor, float]]
+        The lens redshift.
+    x0: Optional[Union[Tensor, float]]
+        The x-coordinate of the lens center.
+    y0: Optional[Union[Tensor, float]]
+        The y-coordinate of the lens center.
         th_ein (Optional[Union[Tensor, float]]): The Einstein radius of the lens.
-        s (float): A smoothing factor, default is 0.0.
+    s: float
+        A smoothing factor, default is 0.0.
     """
 
     def __init__(
@@ -62,14 +69,21 @@ class SIS(ThinLens):
         """
         Calculate the deflection angle of the SIS lens.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tuple[Tensor, Tensor]: The deflection angle in the x and y directions.
+        Returns
+        -------
+        Tuple[Tensor, Tensor]
+            The deflection angle in the x and y directions.
         """
         x, y = translate_rotate(x, y, x0, y0)
         R = (x**2 + y**2).sqrt() + self.s
@@ -94,14 +108,21 @@ class SIS(ThinLens):
         """
         Compute the lensing potential of the SIS lens.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The lensing potential.
+        Returns
+        -------
+        Tensor
+            The lensing potential.
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -124,14 +145,21 @@ class SIS(ThinLens):
         """
         Calculate the projected mass density of the SIS lens.
 
-        Args:
-            x (Tensor): The x-coordinate of the lens.
-            y (Tensor): The y-coordinate of the lens.
-            z_s (Tensor): The source redshift.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate of the lens.
+        y: Tensor
+            The y-coordinate of the lens.
+        z_s: Tensor
+            The source redshift.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The projected mass density.
+        Returns
+        -------
+        Tensor
+            The projected mass density.
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s

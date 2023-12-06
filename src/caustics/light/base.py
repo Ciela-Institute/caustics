@@ -28,21 +28,28 @@ class Source(Parametrized):
         Abstract method that calculates the brightness of the source at the given coordinates.
         This method is expected to be implemented in any class that derives from Source.
 
-        Args:
-            x (Tensor): The x-coordinate(s) at which to calculate the source brightness.
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate(s) at which to calculate the source brightness.
                 This could be a single value or a tensor of values.
 
-            y (Tensor): The y-coordinate(s) at which to calculate the source brightness.
+        y: Tensor
+            The y-coordinate(s) at which to calculate the source brightness.
                 This could be a single value or a tensor of values.
 
-            params (Packed, optional): Dynamic parameter container that might be required to calculate
-                the brightness. The exact contents will depend on the specific implementation in derived classes.
+        params: (Packed, optional)
+            Dynamic parameter container that might be required to calculate
+            the brightness. The exact contents will depend on the specific implementation in derived classes.
 
-        Returns:
-            Tensor: The brightness of the source at the given coordinate(s). The exact form of the output
+        Returns
+        -------
+        Tensor
+            The brightness of the source at the given coordinate(s). The exact form of the output
             will depend on the specific implementation in the derived class.
 
-        Note:
+        Note
+        -----
             This method must be overridden in any class that inherits from `Source`.
         """
         ...
