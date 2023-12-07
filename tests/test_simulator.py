@@ -42,7 +42,7 @@ def test_simulator_runs():
         z_s=2.0,
     )
 
-    assert torch.all(torch.isfinite(sim()))
+    assert torch.all(torch.isfinite(sim(quad_level=3)))
     assert torch.all(
         torch.isfinite(
             sim(

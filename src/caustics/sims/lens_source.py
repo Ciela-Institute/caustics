@@ -61,7 +61,6 @@ class Lens_Source(Simulator):
         psf=None,
         pixels_y: Optional[int] = None,
         upsample_factor: int = 1,
-        quad_level: int = 1,
         psf_pad=True,
         psf_mode="fft",
         z_s=None,
@@ -79,7 +78,6 @@ class Lens_Source(Simulator):
             self.psf = torch.as_tensor(psf)
             self.psf /= psf.sum()  # ensure normalized
         self.add_param("z_s", z_s)
-        self.quad_level = quad_level
 
         # Image grid
         if pixels_y is None:
@@ -143,6 +141,7 @@ class Lens_Source(Simulator):
         lens_light=True,
         lens_source=True,
         psf_convolve=True,
+        quad_level=None,
     ):
         """
         params: Packed object
@@ -157,9 +156,9 @@ class Lens_Source(Simulator):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                if self.quad_level > 1:
+                if quad_level is not None and quad_level > 1:
                     finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
-                        *self.grid, self.quad_level
+                        *self.grid, quad_level
                     )
                     bx, by = self.lens.raytrace(
                         finegrid_x, finegrid_y, z_s, params
@@ -173,9 +172,9 @@ class Lens_Source(Simulator):
                     mu = self.source.brightness(bx, by, params)
             else:
                 # Source is imaged without lensing
-                if self.quad_level > 1:
+                if quad_level is not None and quad_level > 1:
                     finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
-                        *self.grid, self.quad_level
+                        *self.grid, quad_level
                     )
                     mu_fine = self.source.brightness(
                         finegrid_x, finegrid_y, params
@@ -191,9 +190,9 @@ class Lens_Source(Simulator):
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            if self.quad_level > 1:
+            if quad_level is not None and quad_level > 1:
                 finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
-                    *self.grid, self.quad_level
+                    *self.grid, quad_level
                 )
                 mu_fine = self.lens_light.brightness(
                     finegrid_x, finegrid_y, params
