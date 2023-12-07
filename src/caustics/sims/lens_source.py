@@ -44,10 +44,17 @@ class Lens_Source(Simulator):
       lens_light (optional): caustics light object which defines the lensing object's light
       psf (optional): An image to convolve with the scene. Note that if ``upsample_factor > 1`` the psf must also be at the higher resolution.
       pixels_y (optional): number of pixels on the y-axis for the sampling grid. If left as ``None`` then this will simply be equal to ``gridx``
-      upsample_factor (default 1): Amount of upsampling to model the image. For example ``upsample_factor = 2`` indicates that the image will be sampled at double the resolution then summed back to the original resolution (given by pixelscale and gridx/y).
+      upsample_factor (default 1): Amount of upsampling to model the image. For example ``upsample_factor = 2`` indicates that the image will be sampled at double the resolution then summed back to the original resolution (given by pixelscale and gridx/y). Note that if you are using a PSF then the PSF must also be at the higher resolution.
       psf_pad (default True): If convolving the PSF it is important to sample the model in a larger FOV equal to half the PSF size in order to account for light that scatters from outside the requested FOV inwards. Internally this padding will be added before sampling, then cropped off before returning the final image to the user.
       z_s (optional): redshift of the source
       name (default "sim"): a name for this simulator in the parameter DAG.
+
+    Notes:
+    -----
+    - The simulator will automatically pad the image to half the PSF size to ensure valid convolution. This is done by default, but can be turned off by setting ``psf_pad = False``. This is only relevant if you are using a PSF.
+    - The upsample factor will increase the resolution of the image by the given factor. For example, ``upsample_factor = 2`` will sample the image at double the resolution, then sum back to the original resolution. This is used when a PSF is provided at high resolution than the original image. Not that the when a PSF is used, the upsample_factor must equal the PSF upsampling level.
+    - For arbitrary pixel integration accuracy using the quad_level parameter. This will use Gaussian quadrature to sample the image at a higher resolution, then integrate the image back to the original resolution. This is useful for high accuracy integration of the image, but is not recommended for large images as it will be slow. The quad_level and upsample_factor can be used together to achieve high accuracy integration of the image convolved with a PSF.
+    - A `Pixelated` light source is defined by bilinear interpolation of the provided image. This means that sub-pixel integration is not required for accurate integration of the pixels. However, if you are using a PSF then you should still use upsample_factor (if your PSF is supersampled) to ensure that everything is sampled at the PSF resolution.
 
     """
 
