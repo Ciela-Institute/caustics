@@ -159,7 +159,7 @@ class Lens_Source(Simulator):
                 # Source is lensed by the lens mass distribution
                 if quad_level is not None and quad_level > 1:
                     finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
-                        self.pixelscale, *self.grid, quad_level
+                        self.pixelscale/self.upsample_factor, *self.grid, quad_level
                     )
                     bx, by = self.lens.raytrace(
                         finegrid_x, finegrid_y, z_s, params
@@ -175,7 +175,7 @@ class Lens_Source(Simulator):
                 # Source is imaged without lensing
                 if quad_level is not None and quad_level > 1:
                     finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
-                        self.pixelscale, *self.grid, quad_level
+                        self.pixelscale/self.upsample_factor, *self.grid, quad_level
                     )
                     mu_fine = self.source.brightness(
                         finegrid_x, finegrid_y, params
@@ -193,7 +193,7 @@ class Lens_Source(Simulator):
         if lens_light and self.lens_light is not None:
             if quad_level is not None and quad_level > 1:
                 finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
-                    self.pixelscale, *self.grid, quad_level
+                    self.pixelscale/self.upsample_factor, *self.grid, quad_level
                 )
                 mu_fine = self.lens_light.brightness(
                     finegrid_x, finegrid_y, params
