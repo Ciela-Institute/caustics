@@ -119,16 +119,23 @@ def get_meshgrid(
 @lru_cache(maxsize=32)
 def _quad_table(n, p, dtype, device):
     """
-    from: https://pomax.github.io/bezierinfo/legendre-gauss.html
+    Generate a meshgrid for quadrature points using Legendre-Gauss quadrature.
 
-    Args:
-        n (int): The number of quadrature points in each dimension.
-        p (Tensor): The pixelscale.
-        dtype (torch.dtype): The desired data type of the tensor.
-        device (torch.device): The device on which to create the tensor.
+    Parameters
+    ----------
+    n : int
+        The number of quadrature points in each dimension.
+    p : torch.Tensor
+        The pixelscale.
+    dtype : torch.dtype
+        The desired data type of the tensor.
+    device : torch.device
+        The device on which to create the tensor.
 
-    Returns:
-        Tuple[Tensor, Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
+    Returns
+    -------
+    Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+        The generated meshgrid as a tuple of Tensors.
     """
     abscissa, weights = roots_legendre(n)
 
@@ -152,23 +159,34 @@ def get_pixel_quad_integrator_grid(
     """
     Generates a 2D meshgrid for Gaussian quadrature based on the provided pixelscale and dimensions.
 
-    This is the first of a few steps in order to perform a pixel-wise integration using Gaussian quadrature. The full process would look like this:: python
+    Parameters
+    ----------
+    pixelscale : float
+        The scale of the meshgrid in each dimension.
+    X : Tensor
+        The x-coordinates of the pixel centers.
+    Y : Tensor
+        The y-coordinates of the pixel centers.
+    quad_level : int, optional
+        The number of quadrature points in each dimension. Default is 3.
+    device : torch.device, optional
+        The device on which to create the tensor. Default is None.
+    dtype : torch.dtype, optional
+        The desired data type of the tensor. Default is torch.float32.
+
+    Returns
+    -------
+    Tuple[Tensor, Tensor]
+        The generated meshgrid as a tuple of Tensors.
+
+    Example
+    -------
+    Usage would look something like:: python
 
         X, Y = get_meshgrid(pixelscale, nx, ny)
         Xs, Ys, weight = get_pixel_quad_integrator_grid(pixelscale, X, Y, quad_level)
         F = your_brightness_function(Xs, Ys, other, parameters)
         res = pixel_quad_integrator(F, weight)
-
-    Args:
-        pixelscale (float): The scale of the meshgrid in each dimension.
-        X (Tensor): The x-coordinates of the pixel centers.
-        Y (Tensor): The y-coordinates of the pixel centers.
-        quad_level (int): The number of quadrature points in each dimension.
-        device (torch.device, optional): The device on which to create the tensor. Defaults to None.
-        dtype (torch.dtype, optional): The desired data type of the tensor. Defaults to torch.float32.
-
-    Returns:
-        Tuple[Tensor, Tensor]: The generated meshgrid as a tuple of Tensors.
     """
 
     # collect gaussian quadrature weights
@@ -182,30 +200,39 @@ def get_pixel_quad_integrator_grid(
     return Xs, Ys, weight
 
 def pixel_quad_integrator(
-    F,
-    weight,
+    F: Tensor,
+    weight: Tensor,
 ):
     """
     Performs a pixel-wise integration using Gaussian quadrature.
+    It takes the brightness function evaluated at the quadrature points `F` and the quadrature weights `weight` as input. 
+    The result is the integrated brightness function at each pixel.
 
-    This is the last of a few steps in order to perform a pixel-wise integration using Gaussian quadrature. The full process would look like this:: python
+
+    Parameters
+    ----------
+    F : Tensor
+        The brightness function evaluated at the quadrature points.
+    weight : Tensor
+        The quadrature weights as provided by the get_pixel_quad_integrator_grid function.
+
+    Returns
+    -------
+    Tensor
+        The integrated brightness function at each pixel.
+
+
+    Example
+    -------
+    Usage would look something like:: python
 
         X, Y = get_meshgrid(pixelscale, nx, ny)
         Xs, Ys, weight = get_pixel_quad_integrator_grid(pixelscale, X, Y, quad_level)
         F = your_brightness_function(Xs, Ys, other, parameters)
         res = pixel_quad_integrator(F, weight)
-
-    Args:
-        F (Tensor): The brightness function evaluated at the quadrature points.
-        weight (Tensor): The quadrature weights as provided by the get_pixel_quad_integrator_grid function.
-
-    Returns:
-        Tensor: The integrated brightness function at each pixel.
     """
-
-    # Apply the weights and reduce to original pixel space
-    res = (F * weight).sum(axis=-1)
-    return res
+    
+    return (F * weight).sum(axis=-1)
 
 
 def safe_divide(num, denom, places=7):
