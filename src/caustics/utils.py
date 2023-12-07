@@ -148,7 +148,7 @@ def _quad_table(n, p, dtype, device):
     X, Y = X.reshape(-1), Y.reshape(-1) # flatten
     return X, Y, W.reshape(-1)
 
-def get_pixel_quad_integrator_grid(
+def gaussian_quadrature_grid(
     pixelscale, 
     X, 
     Y, 
@@ -184,9 +184,9 @@ def get_pixel_quad_integrator_grid(
     Usage would look something like:: python
 
         X, Y = get_meshgrid(pixelscale, nx, ny)
-        Xs, Ys, weight = get_pixel_quad_integrator_grid(pixelscale, X, Y, quad_level)
+        Xs, Ys, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
         F = your_brightness_function(Xs, Ys, other, parameters)
-        res = pixel_quad_integrator(F, weight)
+        res = gaussian_quadrature_integrator(F, weight)
     """
 
     # collect gaussian quadrature weights
@@ -199,7 +199,7 @@ def get_pixel_quad_integrator_grid(
     Ys = torch.repeat_interleave(Y[..., None], quad_level ** 2, -1) + abscissaY
     return Xs, Ys, weight
 
-def pixel_quad_integrator(
+def gaussian_quadrature_integrator(
     F: Tensor,
     weight: Tensor,
 ):
@@ -227,9 +227,9 @@ def pixel_quad_integrator(
     Usage would look something like:: python
 
         X, Y = get_meshgrid(pixelscale, nx, ny)
-        Xs, Ys, weight = get_pixel_quad_integrator_grid(pixelscale, X, Y, quad_level)
+        Xs, Ys, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
         F = your_brightness_function(Xs, Ys, other, parameters)
-        res = pixel_quad_integrator(F, weight)
+        res = gaussian_quadrature_integrator(F, weight)
     """
     
     return (F * weight).sum(axis=-1)

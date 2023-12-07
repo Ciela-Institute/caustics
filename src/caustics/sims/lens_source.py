@@ -6,7 +6,7 @@ from typing import Optional
 import torch
 
 from .simulator import Simulator
-from ..utils import get_meshgrid, get_pixel_quad_integrator_grid, pixel_quad_integrator
+from ..utils import get_meshgrid, gaussian_quadrature_grid, gaussian_quadrature_integrator
 
 
 __all__ = ("Lens_Source",)
@@ -158,14 +158,14 @@ class Lens_Source(Simulator):
             if lens_source:
                 # Source is lensed by the lens mass distribution
                 if quad_level is not None and quad_level > 1:
-                    finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
+                    finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
                         self.pixelscale/self.upsample_factor, *self.grid, quad_level
                     )
                     bx, by = self.lens.raytrace(
                         finegrid_x, finegrid_y, z_s, params
                     )
                     mu_fine = self.source.brightness(bx, by, params)
-                    mu = pixel_quad_integrator(
+                    mu = gaussian_quadrature_integrator(
                         mu_fine, weights
                     )
                 else:
@@ -174,13 +174,13 @@ class Lens_Source(Simulator):
             else:
                 # Source is imaged without lensing
                 if quad_level is not None and quad_level > 1:
-                    finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
+                    finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
                         self.pixelscale/self.upsample_factor, *self.grid, quad_level
                     )
                     mu_fine = self.source.brightness(
                         finegrid_x, finegrid_y, params
                     )
-                    mu = pixel_quad_integrator(
+                    mu = gaussian_quadrature_integrator(
                         mu_fine, weights
                     )
                 else:
@@ -192,13 +192,13 @@ class Lens_Source(Simulator):
         # Sample the lens light
         if lens_light and self.lens_light is not None:
             if quad_level is not None and quad_level > 1:
-                finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
+                finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
                     self.pixelscale/self.upsample_factor, *self.grid, quad_level
                 )
                 mu_fine = self.lens_light.brightness(
                     finegrid_x, finegrid_y, params
                 )
-                mu += pixel_quad_integrator(
+                mu += gaussian_quadrature_integrator(
                     mu_fine, weights
                 )
             else:
