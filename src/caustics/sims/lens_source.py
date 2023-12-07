@@ -6,6 +6,8 @@ from typing import Optional
 import torch
 
 from .simulator import Simulator
+from ..utils import get_meshgrid, get_pixel_quad_integrator_grid, pixel_quad_integrator
+
 
 __all__ = ("Lens_Source",)
 
@@ -59,6 +61,7 @@ class Lens_Source(Simulator):
         psf=None,
         pixels_y: Optional[int] = None,
         upsample_factor: int = 1,
+        quad_level: int = 1,
         psf_pad=True,
         psf_mode="fft",
         z_s=None,
@@ -76,6 +79,7 @@ class Lens_Source(Simulator):
             self.psf = torch.as_tensor(psf)
             self.psf /= psf.sum()  # ensure normalized
         self.add_param("z_s", z_s)
+        self.quad_level = quad_level
 
         # Image grid
         if pixels_y is None:
@@ -95,17 +99,9 @@ class Lens_Source(Simulator):
             self.gridding[0] + self.psf_pad[0] * 2,
             self.gridding[1] + self.psf_pad[1] * 2,
         )
-        tx = torch.linspace(
-            -0.5 * (pixelscale * self.n_pix[0]),
-            0.5 * (pixelscale * self.n_pix[0]),
-            self.n_pix[0] * upsample_factor,
+        self.grid = get_meshgrid(
+            pixelscale, self.n_pix[0]*self.upsample_factor, self.n_pix[1]*self.upsample_factor
         )
-        ty = torch.linspace(
-            -0.5 * (pixelscale * self.n_pix[1]),
-            0.5 * (pixelscale * self.n_pix[1]),
-            self.n_pix[1] * upsample_factor,
-        )
-        self.grid = torch.meshgrid(tx, ty, indexing="xy")
 
         if self.psf is not None:
             self.psf_fft = self._fft2_padded(self.psf)
@@ -161,18 +157,52 @@ class Lens_Source(Simulator):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = self.lens.raytrace(*self.grid, z_s, params)
-                mu = self.source.brightness(bx, by, params)
+                if self.quad_level > 1:
+                    finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
+                        *self.grid, self.quad_level
+                    )
+                    bx, by = self.lens.raytrace(
+                        finegrid_x, finegrid_y, z_s, params
+                    )
+                    mu_fine = self.source.brightness(bx, by, params)
+                    mu = pixel_quad_integrator(
+                        mu_fine, weights
+                    )
+                else:
+                    bx, by = self.lens.raytrace(*self.grid, z_s, params)
+                    mu = self.source.brightness(bx, by, params)
             else:
                 # Source is imaged without lensing
-                mu = self.source.brightness(*self.grid, params)
+                if self.quad_level > 1:
+                    finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
+                        *self.grid, self.quad_level
+                    )
+                    mu_fine = self.source.brightness(
+                        finegrid_x, finegrid_y, params
+                    )
+                    mu = pixel_quad_integrator(
+                        mu_fine, weights
+                    )
+                else:
+                    mu = self.source.brightness(*self.grid, params)
         else:
             # Source is not added to the scene
             mu = torch.zeros_like(self.grid[0])
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            mu += self.lens_light.brightness(*self.grid, params)
+            if self.quad_level > 1:
+                finegrid_x, finegrid_y, weights = get_pixel_quad_integrator_grid(
+                    *self.grid, self.quad_level
+                )
+                mu_fine = self.lens_light.brightness(
+                    finegrid_x, finegrid_y, params
+                )
+                mu += pixel_quad_integrator(
+                    mu_fine, weights
+                )
+            else:
+                mu += self.lens_light.brightness(*self.grid, params)
 
         # Convolve the PSF
         if psf_convolve and self.psf is not None:
