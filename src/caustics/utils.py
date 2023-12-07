@@ -133,13 +133,12 @@ def _quad_table(n, p, dtype, device):
     abscissa, weights = roots_legendre(n)
 
     w = torch.tensor(weights, dtype=dtype, device=device)
-    a = torch.tensor(abscissa, dtype=dtype, device=device)
+    a = p * torch.tensor(abscissa, dtype=dtype, device=device) / 2.0
     X, Y = torch.meshgrid(a, a, indexing="xy")
 
     W = torch.outer(w, w) / 4.0
 
-    X, Y = p @ (torch.stack((X, Y)).view(2, -1) / 2.0)
-
+    X, Y = X.reshape(-1), Y.reshape(-1) # flatten
     return X, Y, W.reshape(-1)
 
 def get_pixel_quad_integrator_grid(
