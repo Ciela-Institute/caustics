@@ -39,15 +39,15 @@ class Lens_Source(Simulator):
     Attributes
     ----------
     lens
-        caustic lens mass model object
+        caustics lens mass model object
     source
-        caustic light object which defines the background source
+        caustics light object which defines the background source
     pixelscale: float
         pixelscale of the sampling grid.
     pixels_x: int
         number of pixels on the x-axis for the sampling grid
     lens_light: (optional)
-        caustic light object which defines the lensing object's light
+        caustics light object which defines the lensing object's light
     psf: (optional)
         An image to convolve with the scene. Note that if ``upsample_factor > 1`` the psf must also be at the higher resolution.
     pixels_y: Optional[int]
