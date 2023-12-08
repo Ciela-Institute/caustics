@@ -234,6 +234,38 @@ def gaussian_quadrature_integrator(
     
     return (F * weight).sum(axis=-1)
 
+def quad(
+    F: Callable, 
+    pixelscale: float, 
+    X: Tensor, 
+    Y: Tensor,
+    args: Optional[Tuple] = None,
+    quad_level: int = 3, 
+    device=None, 
+    dtype=torch.float32,
+    ):
+    """
+    Performs a pixel-wise integration using Gaussian quadrature.
+
+    Parameters:
+        F (Callable): The brightness function to be evaluated at the quadrature points. The function should take as input: F(X, Y, *args).
+        pixelscale (float): The scale of each pixel.
+        X (Tensor): The x-coordinates of the pixels.
+        Y (Tensor): The y-coordinates of the pixels.
+        quad_level (int, optional): The level of quadrature to use. Defaults to 3.
+        device (torch.device, optional): The device to perform the computation on. Defaults to None.
+        dtype (torch.dtype, optional): The data type of the computation. Defaults to torch.float32.
+
+    Returns:
+        Tensor: The integrated brightness function at each pixel.
+    """
+
+    X, Y, weight = gaussian_quadrature_grid(
+        pixelscale, X, Y, quad_level, device, dtype
+    )
+    F = F(X, Y, *args)
+    return gaussian_quadrature_integrator(F, weight)
+
 
 def safe_divide(num, denom, places=7):
     """

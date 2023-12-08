@@ -166,16 +166,18 @@ class Lens_Source(Simulator):
         if self.lens_light is None:
             lens_light = False
         if self.psf is None:
-            psf_convolve = False      
+            psf_convolve = False 
+
+        if quad_level is not None and quad_level > 1:   
+            finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
+                self.pixelscale/self.upsample_factor, *self.grid, quad_level
+            )              
 
         # Sample the source light
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
                 if quad_level is not None and quad_level > 1:
-                    finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                        self.pixelscale/self.upsample_factor, *self.grid, quad_level
-                    )
                     bx, by = self.lens.raytrace(
                         finegrid_x, finegrid_y, z_s, params
                     )
@@ -189,9 +191,6 @@ class Lens_Source(Simulator):
             else:
                 # Source is imaged without lensing
                 if quad_level is not None and quad_level > 1:
-                    finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                        self.pixelscale/self.upsample_factor, *self.grid, quad_level
-                    )
                     mu_fine = self.source.brightness(
                         finegrid_x, finegrid_y, params
                     )
@@ -207,9 +206,6 @@ class Lens_Source(Simulator):
         # Sample the lens light
         if lens_light and self.lens_light is not None:
             if quad_level is not None and quad_level > 1:
-                finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                    self.pixelscale/self.upsample_factor, *self.grid, quad_level
-                )
                 mu_fine = self.lens_light.brightness(
                     finegrid_x, finegrid_y, params
                 )
