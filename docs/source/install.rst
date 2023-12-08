@@ -19,7 +19,7 @@ First clone the repo with::
 
     git clone git@github.com:Ciela-Institute/caustics.git
 
-this will create a directory `caustics` wherever you ran the command. Next go into the directory and install in developer mode::
+this will create a directory ``caustics`` wherever you ran the command. Next go into the directory and install in developer mode::
 
    pip install -e ".[dev]"
 

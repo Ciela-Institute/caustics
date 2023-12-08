@@ -17,4 +17,4 @@ We have created a repository of tutorial Jupyter notebooks that can help initiat
 Read The Docs
 -------------
 
-Docs for all the main functions in caustics are avaialble at :doc:`caustics` at varying degrees of completeness. Further development of the docs is always ongoing.
+Docs for all the main functions in caustics are available at :doc:`caustics` at varying degrees of completeness. Further development of the docs is always ongoing.
