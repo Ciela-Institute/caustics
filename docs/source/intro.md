@@ -22,8 +22,6 @@ are ready to go! You can check out the tutorials afterwards to see some of
 caustics' capabilities. If you want to help out with building the caustics code
 base check out the developer installation instructions instead.
 
-## Read The Docs
-
 ### Contents
 
 ```{tableofcontents}

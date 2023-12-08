@@ -3,7 +3,7 @@
 
 title: Caustics
 author: Ciela Institute
-logo: logo.png
+logo: ../../media/caustics_logo.png
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -29,6 +29,7 @@ repository:
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
+  favicon : ../../media/caustics_favicon.ico
   use_issues_button: true
   use_repository_button: true
 
