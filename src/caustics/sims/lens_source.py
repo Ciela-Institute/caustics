@@ -160,6 +160,14 @@ class Lens_Source(Simulator):
         """
         (z_s,) = self.unpack(params)
 
+        # Automatically turn off light for missing objects
+        if self.source is None:
+            source_light = False
+        if self.lens_light is None:
+            lens_light = False
+        if self.psf is None:
+            psf_convolve = False      
+
         # Sample the source light
         if source_light:
             if lens_source:
