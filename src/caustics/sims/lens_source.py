@@ -106,7 +106,7 @@ class Lens_Source(Simulator):
             self.gridding[1] + self.psf_pad[1] * 2,
         )
         self.grid = get_meshgrid(
-            pixelscale, self.n_pix[0]*self.upsample_factor, self.n_pix[1]*self.upsample_factor
+            pixelscale/self.upsample_factor, self.n_pix[0]*self.upsample_factor, self.n_pix[1]*self.upsample_factor
         )
 
         if self.psf is not None:
