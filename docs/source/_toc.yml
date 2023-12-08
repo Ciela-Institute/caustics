@@ -7,14 +7,14 @@ chapters:
   - file: getting_started
   - file: install
   - file: tutorials/index
-    sections: 
-    - file: tutorials/BasicIntroduction
-    - file: tutorials/LensZoo
-    - file: tutorials/VisualizeCaustics
-    - file: tutorials/MultiplaneDemo
-    - file: tutorials/InvertLensEquation
-    - file: tutorials/Simulators
-    - file: tutorials/Playground
+    sections:
+      - file: tutorials/BasicIntroduction
+      - file: tutorials/LensZoo
+      - file: tutorials/VisualizeCaustics
+      - file: tutorials/MultiplaneDemo
+      - file: tutorials/InvertLensEquation
+      - file: tutorials/Simulators
+      - file: tutorials/Playground
   - file: contributing
   - file: citation
   - file: license

@@ -11,8 +11,9 @@ install `nox`:
 
 ## Codespaces
 
-Nox is pre-installed in the Codespaces environment. So, after activating a Codespace,
-you can just open the terminal and run `nox` to run all the checks and tests.
+Nox is pre-installed in the Codespaces environment. So, after activating a
+Codespace, you can just open the terminal and run `nox` to run all the checks
+and tests.
 
 ## Local
 
@@ -32,10 +33,9 @@ brew install nox
 
 ### What is it?
 
-`nox` is a command-line tool that automates testing in multiple Python environments,
-similar to tox. Unlike tox,
-Nox uses a standard Python file for configuration,
-you can find this configuration in [`noxfile.py`](../noxfile.py).
+`nox` is a command-line tool that automates testing in multiple Python
+environments, similar to tox. Unlike tox, Nox uses a standard Python file for
+configuration, you can find this configuration in [`noxfile.py`](../noxfile.py).
 
 ### How do I use it?
 

@@ -149,6 +149,7 @@ def get_meshgrid(
     )
     return torch.meshgrid([xs, ys], indexing="xy")
 
+
 @lru_cache(maxsize=32)
 def _quad_table(n, p, dtype, device):
     """
@@ -178,15 +179,16 @@ def _quad_table(n, p, dtype, device):
 
     W = torch.outer(w, w) / 4.0
 
-    X, Y = X.reshape(-1), Y.reshape(-1) # flatten
+    X, Y = X.reshape(-1), Y.reshape(-1)  # flatten
     return X, Y, W.reshape(-1)
 
+
 def gaussian_quadrature_grid(
-    pixelscale, 
-    X, 
-    Y, 
-    quad_level = 3, 
-    device=None, 
+    pixelscale,
+    X,
+    Y,
+    quad_level=3,
+    device=None,
     dtype=torch.float32,
 ):
     """
@@ -223,14 +225,13 @@ def gaussian_quadrature_grid(
     """
 
     # collect gaussian quadrature weights
-    abscissaX, abscissaY, weight = _quad_table(
-        quad_level, pixelscale, dtype, device
-    )
+    abscissaX, abscissaY, weight = _quad_table(quad_level, pixelscale, dtype, device)
 
     # Gaussian quadrature evaluation points
-    Xs = torch.repeat_interleave(X[..., None], quad_level ** 2, -1) + abscissaX
-    Ys = torch.repeat_interleave(Y[..., None], quad_level ** 2, -1) + abscissaY
+    Xs = torch.repeat_interleave(X[..., None], quad_level**2, -1) + abscissaX
+    Ys = torch.repeat_interleave(Y[..., None], quad_level**2, -1) + abscissaY
     return Xs, Ys, weight
+
 
 def gaussian_quadrature_integrator(
     F: Tensor,
@@ -238,7 +239,7 @@ def gaussian_quadrature_integrator(
 ):
     """
     Performs a pixel-wise integration using Gaussian quadrature.
-    It takes the brightness function evaluated at the quadrature points `F` and the quadrature weights `weight` as input. 
+    It takes the brightness function evaluated at the quadrature points `F` and the quadrature weights `weight` as input.
     The result is the integrated brightness function at each pixel.
 
 
@@ -264,19 +265,20 @@ def gaussian_quadrature_integrator(
         F = your_brightness_function(Xs, Ys, other, parameters)
         res = gaussian_quadrature_integrator(F, weight)
     """
-    
+
     return (F * weight).sum(axis=-1)
 
+
 def quad(
-    F: Callable, 
-    pixelscale: float, 
-    X: Tensor, 
+    F: Callable,
+    pixelscale: float,
+    X: Tensor,
     Y: Tensor,
     args: Optional[Tuple] = None,
-    quad_level: int = 3, 
-    device=None, 
+    quad_level: int = 3,
+    device=None,
     dtype=torch.float32,
-    ):
+):
     """
     Performs a pixel-wise integration on a function using Gaussian quadrature.
 
@@ -304,9 +306,7 @@ def quad(
     Tensor
         The integrated brightness function at each pixel.
     """
-    X, Y, weight = gaussian_quadrature_grid(
-        pixelscale, X, Y, quad_level, device, dtype
-    )
+    X, Y, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level, device, dtype)
     F = F(X, Y, *args)
     return gaussian_quadrature_integrator(F, weight)
 

@@ -6,7 +6,11 @@ from typing import Optional
 import torch
 
 from .simulator import Simulator
-from ..utils import get_meshgrid, gaussian_quadrature_grid, gaussian_quadrature_integrator
+from ..utils import (
+    get_meshgrid,
+    gaussian_quadrature_grid,
+    gaussian_quadrature_integrator,
+)
 
 
 __all__ = ("Lens_Source",)
@@ -118,7 +122,9 @@ class Lens_Source(Simulator):
             self.gridding[1] + self.psf_pad[1] * 2,
         )
         self.grid = get_meshgrid(
-            pixelscale/self.upsample_factor, self.n_pix[0]*self.upsample_factor, self.n_pix[1]*self.upsample_factor
+            pixelscale / self.upsample_factor,
+            self.n_pix[0] * self.upsample_factor,
+            self.n_pix[1] * self.upsample_factor,
         )
 
         if self.psf is not None:
@@ -191,37 +197,29 @@ class Lens_Source(Simulator):
         if self.lens_light is None:
             lens_light = False
         if self.psf is None:
-            psf_convolve = False 
+            psf_convolve = False
 
-        if quad_level is not None and quad_level > 1:   
+        if quad_level is not None and quad_level > 1:
             finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                self.pixelscale/self.upsample_factor, *self.grid, quad_level
-            )              
+                self.pixelscale / self.upsample_factor, *self.grid, quad_level
+            )
 
         # Sample the source light
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
                 if quad_level is not None and quad_level > 1:
-                    bx, by = self.lens.raytrace(
-                        finegrid_x, finegrid_y, z_s, params
-                    )
+                    bx, by = self.lens.raytrace(finegrid_x, finegrid_y, z_s, params)
                     mu_fine = self.source.brightness(bx, by, params)
-                    mu = gaussian_quadrature_integrator(
-                        mu_fine, weights
-                    )
+                    mu = gaussian_quadrature_integrator(mu_fine, weights)
                 else:
                     bx, by = self.lens.raytrace(*self.grid, z_s, params)
                     mu = self.source.brightness(bx, by, params)
             else:
                 # Source is imaged without lensing
                 if quad_level is not None and quad_level > 1:
-                    mu_fine = self.source.brightness(
-                        finegrid_x, finegrid_y, params
-                    )
-                    mu = gaussian_quadrature_integrator(
-                        mu_fine, weights
-                    )
+                    mu_fine = self.source.brightness(finegrid_x, finegrid_y, params)
+                    mu = gaussian_quadrature_integrator(mu_fine, weights)
                 else:
                     mu = self.source.brightness(*self.grid, params)
         else:
@@ -231,12 +229,8 @@ class Lens_Source(Simulator):
         # Sample the lens light
         if lens_light and self.lens_light is not None:
             if quad_level is not None and quad_level > 1:
-                mu_fine = self.lens_light.brightness(
-                    finegrid_x, finegrid_y, params
-                )
-                mu += gaussian_quadrature_integrator(
-                    mu_fine, weights
-                )
+                mu_fine = self.lens_light.brightness(finegrid_x, finegrid_y, params)
+                mu += gaussian_quadrature_integrator(mu_fine, weights)
             else:
                 mu += self.lens_light.brightness(*self.grid, params)
 
