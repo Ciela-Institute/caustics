@@ -249,19 +249,28 @@ def quad(
 
     Parameters
     ----------
-        F (Callable): The brightness function to be evaluated at the quadrature points. The function should take as input: F(X, Y, *args).
-        pixelscale (float): The scale of each pixel.
-        X (Tensor): The x-coordinates of the pixels.
-        Y (Tensor): The y-coordinates of the pixels.
-        quad_level (int, optional): The level of quadrature to use. Defaults to 3.
-        device (torch.device, optional): The device to perform the computation on. Defaults to None.
-        dtype (torch.dtype, optional): The data type of the computation. Defaults to torch.float32.
+    F : Callable
+        The brightness function to be evaluated at the quadrature points. The function should take as input: F(X, Y, *args).
+    pixelscale : float
+        The scale of each pixel.
+    X : Tensor
+        The x-coordinates of the pixels.
+    Y : Tensor
+        The y-coordinates of the pixels.
+    args : Optional[Tuple], optional
+        Additional arguments to be passed to the brightness function, by default None.
+    quad_level : int, optional
+        The level of quadrature to use, by default 3.
+    device : torch.device, optional
+        The device to perform the computation on, by default None.
+    dtype : torch.dtype, optional
+        The data type of the computation, by default torch.float32.
 
     Returns
     -------
-        Tensor: The integrated brightness function at each pixel.
+    Tensor
+        The integrated brightness function at each pixel.
     """
-
     X, Y, weight = gaussian_quadrature_grid(
         pixelscale, X, Y, quad_level, device, dtype
     )
