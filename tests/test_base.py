@@ -3,6 +3,7 @@ import numpy as np
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
+from caustics import test as mini_test
 
 
 def test():
@@ -34,3 +35,6 @@ def test():
 
     assert torch.all((sp_x - bx).abs() < 1e-3)
     assert torch.all((sp_y - by).abs() < 1e-3)
+
+def test_quicktest():
+    mini_test()
