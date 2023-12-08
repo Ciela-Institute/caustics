@@ -10,6 +10,8 @@ logo: ../../media/caustics_logo.png
 execute:
   execute_notebooks: force
   allow_errors: false
+  # Per-cell notebook execution limit (seconds)
+  timeout: 10
 
 # Define the name of the latex output file for PDF builds
 latex:
