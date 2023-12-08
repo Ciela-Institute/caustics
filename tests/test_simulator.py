@@ -89,7 +89,5 @@ def test_simulator_runs():
     )
 
     # Check quadrature integration is accurate
-    assert torch.allclose(sim(), sim(quad_level=3), rtol = 1e-1)
-    assert torch.allclose(sim(quad_level=3), sim(quad_level=5), rtol = 1e-2)
-
-
+    assert torch.allclose(sim(), sim(quad_level=3), rtol=1e-1)
+    assert torch.allclose(sim(quad_level=3), sim(quad_level=5), rtol=1e-2)

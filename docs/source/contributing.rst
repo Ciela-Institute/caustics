@@ -9,7 +9,7 @@ Thanks for helping make caustics better! Here you will learn the full process ne
 Create An Issue
 ---------------
 
-Before actually writing any code, its best to create an issue on the GitHub. Describe the issue in detail and let us know the desired solution. Here it will be possible to address concerns (maybe its aready solved and just not yet documented) and plan out the best solution. We may also assign someone to work on it if that seems better. Note that submitting an issue is a contribution to caustics, we appreciate your ideas! Still, if after discussion it seems that the problem does need some work and you're the person to do it, then we can move on to the next steps.
+Before actually writing any code, its best to create an issue on the GitHub. Describe the issue in detail and let us know the desired solution. Here it will be possible to address concerns (maybe its already solved and just not yet documented) and plan out the best solution. We may also assign someone to work on it if that seems better. Note that submitting an issue is a contribution to caustics, we appreciate your ideas! Still, if after discussion it seems that the problem does need some work and you're the person to do it, then we can move on to the next steps.
 
 1. Navigate to the **Issues** tab of the GitHub repository.
 2. Click on **New Issue**.

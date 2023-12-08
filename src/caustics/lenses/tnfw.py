@@ -29,7 +29,8 @@ class TNFW(ThinLens):
 
     https://ui.adsabs.harvard.edu/abs/2009JCAP...01..015B/abstract
 
-    Note:
+    Notes
+    ------
         The mass `m` in the TNFW profile corresponds to the total mass
         of the lens. This is different from the NFW profile where the
         mass `m` parameter corresponds to the mass within R200. If you
@@ -39,25 +40,37 @@ class TNFW(ThinLens):
         NFW profile, not a TNFW profile. This is in line with how
         lenstronomy inteprets the mass parameter.
 
-    Args:
-        name (str): Name of the lens instance.
-        cosmology (Cosmology): An instance of the Cosmology class which contains
-            information about the cosmological model and parameters.
-        z_l (Optional[Tensor]): Redshift of the lens.
-        x0 (Optional[Tensor]): Center of lens position on x-axis (arcsec).
-        y0 (Optional[Tensor]): Center of lens position on y-axis (arcsec).
-        mass (Optional[Tensor]): Mass of the lens (Msol).
-        scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-        tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-        s (float): Softening parameter to avoid singularities at the center of the lens.
-            Default is 0.0.
-        interpret_m_total_mass (bool): Indicates how to interpret the mass variable "m". If true
-            the mass is intepreted as the total mass of the halo (good because it makes sense). If
-            false it is intepreted as what the mass would have been within R200 of a an NFW that
-            isn't truncated (good because it is easily compared with an NFW).
-        use_case (str): Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
-            specifically cant be both batchable and differentiable. You may select which version
-            you wish to use by setting this parameter to one of: batchable, differentiable.
+    Parameters
+    -----
+    name: string
+        Name of the lens instance.
+    cosmology: Cosmology
+        An instance of the Cosmology class which contains
+        information about the cosmological model and parameters.
+    z_l: Optional[Tensor]
+        Redshift of the lens.
+    x0: Optional[Tensor]
+        Center of lens position on x-axis (arcsec).
+    y0: Optional[Tensor]
+        Center of lens position on y-axis (arcsec).
+    mass: Optional[Tensor]
+        Mass of the lens (Msol).
+    scale_radius: Optional[Tensor]
+        Scale radius of the TNFW lens (arcsec).
+    tau: Optional[Tensor]
+        Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+    s: float
+        Softening parameter to avoid singularities at the center of the lens.
+        Default is 0.0.
+    interpret_m_total_mass: boolean
+        Indicates how to interpret the mass variable "m". If true
+        the mass is intepreted as the total mass of the halo (good because it makes sense). If
+        false it is intepreted as what the mass would have been within R200 of a an NFW that
+        isn't truncated (good because it is easily compared with an NFW).
+    use_case: str
+        Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
+        specifically cant be both batchable and differentiable. You may select which version
+        you wish to use by setting this parameter to one of: batchable, differentiable.
 
     """
 
@@ -143,17 +156,27 @@ class TNFW(ThinLens):
         """
         Calculate the scale radius of the lens. This is the same formula used for the classic NFW profile.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        ----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dict
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The scale radius of the lens in Mpc.
+        Returns
+        -------
+        Tensor
+            The scale radius of the lens in Mpc.
         """
         critical_density = self.cosmology.critical_density(z_l, params)
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
@@ -176,17 +199,27 @@ class TNFW(ThinLens):
         """
         Calculate the truncation radius of the TNFW lens.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        ----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dictionary
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The truncation radius of the lens in arcsec.
+        Returns
+        -------
+        Tensor
+            The truncation radius of the lens in arcsec.
         """
         return tau * scale_radius
 
@@ -206,17 +239,27 @@ class TNFW(ThinLens):
         """
         Calculate the reference mass. This is an abstract reference mass used internally in the equations from Baltz et al. 2009.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        ----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dictionary
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The reference mass of the lens in Msol.
+        Returns
+        -------
+        Tensor
+            The reference mass of the lens in Msol.
         """
         if self.interpret_m_total_mass:
             return (
@@ -252,17 +295,27 @@ class TNFW(ThinLens):
         """
         Calculate the scale density of the lens.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        ----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dict
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The scale density of the lens in solar masses per Mpc cubed.
+        Returns
+        --------
+        Tensor
+            The scale density of the lens in solar masses per Mpc cubed.
         """
         c = self.get_concentration(params)
         return (
@@ -292,17 +345,27 @@ class TNFW(ThinLens):
         """
         TNFW convergence as given in Baltz et al. 2009. This is unitless since it is Sigma(x) / Sigma_crit.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        ----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dict
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: unitless convergence at requested position
+        Returns
+        ---------
+        Tensor
+            unitless convergence at requested position
 
         """
         x, y = translate_rotate(x, y, x0, y0)
@@ -343,17 +406,27 @@ class TNFW(ThinLens):
         """
         Total projected mass (Msol) within a radius r (arcsec).
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        -----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dict
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: Integrated mass projected in infinite cylinder within radius r.
+        Returns
+        -------
+        Tensor
+            Integrated mass projected in infinite cylinder within radius r.
         """
         g = r / scale_radius
         t2 = tau**2
@@ -388,17 +461,27 @@ class TNFW(ThinLens):
         naturally represented as a physical deflection angle, this is
         easily internally converted to a reduced deflection angle.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        ----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dict
+            Dynamic parameter container.
 
-        Returns:
-            tuple[Tensor, Tensor]: The physical deflection angles in the x and y directions (arcsec).
+        Returns
+        --------
+        tuple[Tensor, Tensor]
+            The physical deflection angles in the x and y directions (arcsec).
 
         """
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
@@ -434,17 +517,27 @@ class TNFW(ThinLens):
 
         TODO: convert to dimensionless potential.
 
-        Args:
-            z_l (Tensor): Redshift of the lens.
-            x0 (Tensor): Center of lens position on x-axis (arcsec).
-            y0 (Tensor): Center of lens position on y-axis (arcsec).
-            mass (Optional[Tensor]): Mass of the lens (Msol).
-            scale_radius (Optional[Tensor]): Scale radius of the TNFW lens (arcsec).
-            tau (Optional[Tensor]): Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
-            params (dict): Dynamic parameter container.
+        Parameters
+        -----------
+        z_l: Tensor
+            Redshift of the lens.
+        x0: Tensor
+            Center of lens position on x-axis (arcsec).
+        y0: Tensor
+            Center of lens position on y-axis (arcsec).
+        mass: Optional[Tensor]
+            Mass of the lens (Msol).
+        scale_radius: Optional[Tensor]
+            Scale radius of the TNFW lens (arcsec).
+        tau: Optional[Tensor]
+            Truncation scale. Ratio of truncation radius to scale radius (rt/rs).
+        params: dict
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: The lensing potential.
+        Returns
+        -------
+        Tensor
+            The lensing potential.
         """
         x, y = translate_rotate(x, y, x0, y0)
         r = (x**2 + y**2).sqrt() + self.s

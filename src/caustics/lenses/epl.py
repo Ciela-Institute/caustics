@@ -18,17 +18,27 @@ class EPL(ThinLens):
     This class represents a thin gravitational lens model with an elliptical power law profile. The lensing equations are solved
     iteratively using an approach based on Tessore et al. 2015.
 
-    Attributes:
-        n_iter (int): Number of iterations for the iterative solver.
-        s (float): Softening length for the elliptical power-law profile.
+    Attributes
+    ----------
+    n_iter: int
+        Number of iterations for the iterative solver.
+    s: float
+        Softening length for the elliptical power-law profile.
 
-    Parameters:
-        z_l (Optional[Union[Tensor, float]]): This is the redshift of the lens. In the context of gravitational lensing, the lens is the galaxy or other mass distribution that is bending the light from a more distant source.
-        x0 and y0 (Optional[Union[Tensor, float]]): These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
-        q (Optional[Union[Tensor, float]]): This is the axis ratio of the lens, i.e., the ratio of the minor axis to the major axis of the elliptical lens.
-        phi (Optional[Union[Tensor, float]]): This is the orientation of the lens on the sky, typically given as an angle measured counter-clockwise from some reference direction.
-        b (Optional[Union[Tensor, float]]): This is the scale length of the lens, which sets the overall scale of the lensing effect. In some contexts, this is referred to as the Einstein radius.
-        t (Optional[Union[Tensor, float]]): This is the power-law slope parameter of the lens model. In the context of the EPL model, t is equivalent to the gamma parameter minus one, where gamma is the power-law index of the radial mass distribution of the lens.
+    Parameters
+    ----------
+    z_l: Optional[Union[Tensor, float]]
+        This is the redshift of the lens. In the context of gravitational lensing, the lens is the galaxy or other mass distribution that is bending the light from a more distant source.
+    x0 and y0: Optional[Union[Tensor, float]]
+        These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
+    q: Optional[Union[Tensor, float]]
+        This is the axis ratio of the lens, i.e., the ratio of the minor axis to the major axis of the elliptical lens.
+    phi: Optional[Union[Tensor, float]]
+        This is the orientation of the lens on the sky, typically given as an angle measured counter-clockwise from some reference direction.
+    b: Optional[Union[Tensor, float]]
+        This is the scale length of the lens, which sets the overall scale of the lensing effect. In some contexts, this is referred to as the Einstein radius.
+    t: Optional[Union[Tensor, float]]
+        This is the power-law slope parameter of the lens model. In the context of the EPL model, t is equivalent to the gamma parameter minus one, where gamma is the power-law index of the radial mass distribution of the lens.
 
     """
 
@@ -49,18 +59,30 @@ class EPL(ThinLens):
         """
         Initialize an EPL lens model.
 
-        Args:
-            name (str): Name of the lens model.
-            cosmology (Cosmology): Cosmology object that provides cosmological distance calculations.
-            z_l (Optional[Tensor]): Redshift of the lens. If not provided, it is considered as a free parameter.
-            x0 (Optional[Tensor]): X coordinate of the lens center. If not provided, it is considered as a free parameter.
-            y0 (Optional[Tensor]): Y coordinate of the lens center. If not provided, it is considered as a free parameter.
-            q (Optional[Tensor]): Axis ratio of the lens. If not provided, it is considered as a free parameter.
-            phi (Optional[Tensor]): Position angle of the lens. If not provided, it is considered as a free parameter.
-            b (Optional[Tensor]): Scale length of the lens. If not provided, it is considered as a free parameter.
-            t (Optional[Tensor]): Power law slope (`gamma-1`) of the lens. If not provided, it is considered as a free parameter.
-            s (float): Softening length for the elliptical power-law profile.
-            n_iter (int): Number of iterations for the iterative solver.
+        Parameters
+        -----------
+        name: string
+            Name of the lens model.
+        cosmology: Cosmology
+            Cosmology object that provides cosmological distance calculations.
+        z_l: Optional[Tensor]
+            Redshift of the lens. If not provided, it is considered as a free parameter.
+        x0: Optional[Tensor]
+            X coordinate of the lens center. If not provided, it is considered as a free parameter.
+        y0: Optional[Tensor]
+            Y coordinate of the lens center. If not provided, it is considered as a free parameter.
+        q: Optional[Tensor]
+            Axis ratio of the lens. If not provided, it is considered as a free parameter.
+        phi: Optional[Tensor]
+            Position angle of the lens. If not provided, it is considered as a free parameter.
+        b: Optional[Tensor]
+            Scale length of the lens. If not provided, it is considered as a free parameter.
+        t: Optional[Tensor]
+            Power law slope (`gamma-1`) of the lens. If not provided, it is considered as a free parameter.
+        s: float
+            Softening length for the elliptical power-law profile.
+        n_iter: int
+            Number of iterations for the iterative solver.
         """
         super().__init__(cosmology, z_l, name=name)
 
@@ -94,14 +116,21 @@ class EPL(ThinLens):
         """
         Compute the reduced deflection angles of the lens.
 
-        Args:
-            x (Tensor): X coordinates in the lens plane.
-            y (Tensor): Y coordinates in the lens plane.
-            z_s (Tensor): Source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model.
+        Parameters
+        ----------
+        x: Tensor
+            X coordinates in the lens plane.
+        y: Tensor
+            Y coordinates in the lens plane.
+        z_s: Tensor
+            Source redshifts.
+        params: (Packed, optional)
+            Dynamic parameter container for the lens model.
 
-        Returns:
-            tuple[Tensor, Tensor]: Reduced deflection angles in the x and y directions.
+        Returns
+        --------
+        tuple[Tensor, Tensor]
+            Reduced deflection angles in the x and y directions.
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
 
@@ -121,13 +150,19 @@ class EPL(ThinLens):
         """
         Iteratively computes `R * omega(phi)` (eq. 23 in Tessore et al 2015).
 
-        Args:
-            z (Tensor): `R * e^(i * phi)`, position vector in the lens plane.
-            t (Tensor): Power law slow (`gamma-1`).
-            q (Tensor): Axis ratio.
+        Parameters
+        ----------
+        z: Tensor
+            `R * e^(i * phi)`, position vector in the lens plane.
+        t: Tensor
+            Power law slow (`gamma-1`).
+        q: Tensor
+            Axis ratio.
 
-        Returns:
-            Tensor: The value of `R * omega(phi)`.
+        Returns
+        --------
+        Tensor
+            The value of `R * omega(phi)`.
         """
         # constants
         f = (1.0 - q) / (1.0 + q)
@@ -164,14 +199,21 @@ class EPL(ThinLens):
         """
         Compute the lensing potential of the lens.
 
-        Args:
-            x (Tensor): X coordinates in the lens plane.
-            y (Tensor): Y coordinates in the lens plane.
-            z_s (Tensor): Source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model.
+        Parameters
+        ----------
+        x: Tensor
+            X coordinates in the lens plane.
+        y: Tensor
+            Y coordinates in the lens plane.
+        z_s: Tensor
+            Source redshifts.
+        params: (Packed, optional)
+            Dynamic parameter container for the lens model.
 
-        Returns:
-            Tensor: The lensing potential.
+        Returns
+        -------
+        Tensor
+            The lensing potential.
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
@@ -198,14 +240,21 @@ class EPL(ThinLens):
         """
         Compute the convergence of the lens, which describes the local density of the lens.
 
-        Args:
-            x (Tensor): X coordinates in the lens plane.
-            y (Tensor): Y coordinates in the lens plane.
-            z_s (Tensor): Source redshifts.
-            params (Packed, optional): Dynamic parameter container for the lens model.
+        Parameters
+        ----------
+        x: Tensor
+            X coordinates in the lens plane.
+        y: Tensor
+            Y coordinates in the lens plane.
+        z_s: Tensor
+            Source redshifts.
+        params: (Packed, optional)
+            Dynamic parameter container for the lens model.
 
-        Returns:
-            Tensor: The convergence of the lens.
+        Returns
+        -------
+        Tensor
+            The convergence of the lens.
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()

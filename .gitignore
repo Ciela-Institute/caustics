@@ -137,3 +137,7 @@ package.json
 
 # version
 _version.py
+
+# Jupyter book
+conf.py
+caustics*.rst

@@ -26,15 +26,15 @@ pip install caustics
 
 ## Documentation
 
-Please see our [documentation page](https://caustics.readthedocs.io/en/latest/) for
-more detailed information.
+Please see our [documentation page](https://caustics.readthedocs.io/en/latest/)
+for more detailed information.
 
 ## Contribution
 
 We welcome contributions from collaborators and researchers interested in our
 work. If you have improvements, suggestions, or new findings to share, please
-submit an issue or pull request. Your contributions help advance our research and analysis
-efforts.
+submit an issue or pull request. Your contributions help advance our research
+and analysis efforts.
 
 To get started with your development (or fork), click the "Open with GitHub
 Codespaces" button below to launch a fully configured development environment

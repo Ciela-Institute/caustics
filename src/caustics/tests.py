@@ -10,6 +10,7 @@ from caustics.utils import gaussian, get_meshgrid
 
 __all__ = ["test"]
 
+
 def _test_simulator_runs():
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -88,6 +89,7 @@ def _test_simulator_runs():
             )
         )
     )
+
 
 def _test_jacobian_autograd_vs_finitediff():
     # Models
@@ -205,17 +207,18 @@ def _test_multiplane_effective_convergence():
     curl = lens.effective_convergence_curl(thx, thy, z_s, lens.pack(x))
     assert curl.shape == (10, 10)
 
+
 def test():
     """
     Run tests for caustics basic functionallity. Run this function to ensure that caustics is working properly. Simply call::
-    
+
         >>> import caustics
         >>> caustics.test()
         all tests passed!
 
     To run the checks.
     """
-    
+
     _test_simulator_runs()
     _test_jacobian_autograd_vs_finitediff()
     _test_multiplane_jacobian()

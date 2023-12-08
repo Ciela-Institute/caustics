@@ -16,13 +16,19 @@ class Multiplane(ThickLens):
     """
     Class for handling gravitational lensing with multiple lens planes.
 
-    Attributes:
-        lenses (list[ThinLens]): List of thin lenses.
+    Attributes
+    ----------
+    lenses (list[ThinLens])
+        List of thin lenses.
 
-    Args:
-        name (str): Name of the lens.
-        cosmology (Cosmology): Cosmological parameters used for calculations.
-        lenses (list[ThinLens]): List of thin lenses.
+    Parameters
+    ----------
+    name: string
+        Name of the lens.
+    cosmology: Cosmology
+        Cosmological parameters used for calculations.
+    lenses: list[ThinLens]
+        List of thin lenses.
     """
 
     def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None):
@@ -38,11 +44,15 @@ class Multiplane(ThickLens):
         """
         Get the redshifts of each lens in the multiplane.
 
-        Args:
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            List[Tensor]: Redshifts of the lenses.
+        Returns
+        --------
+        List[Tensor]
+            Redshifts of the lenses.
         """
         # Relies on z_l being the first element to be unpacked, which should always
         # be the case for a ThinLens
@@ -78,14 +88,21 @@ class Multiplane(ThickLens):
 
         Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer). The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`, and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied), and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0` and begin at the second step in the recursion formula.
 
-        Args:
-            x (Tensor): angular x-coordinates from the observer perspective.
-            y (Tensor): angular y-coordinates from the observer perspective.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            angular x-coordinates from the observer perspective.
+        y: Tensor
+            angular y-coordinates from the observer perspective.
+        z_s: Tensor
+            Redshifts of the sources.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            tuple[Tensor, Tensor]: The reduced deflection angle.
+        Returns
+        -------
+        tuple[Tensor, Tensor]
+            The reduced deflection angle.
 
         """
         return self.raytrace_z1z2(x, y, torch.zeros_like(z_s), z_s, params)
@@ -172,17 +189,26 @@ class Multiplane(ThickLens):
         """
         Calculate the projected mass density.
 
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+        y: Tensor
+            y-coordinates in the lens plane.
+        z_s: Tensor
+            Redshifts of the sources.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: Projected mass density [solMass / Mpc^2].
+        Returns
+        -------
+        Tensor
+            Projected mass density [solMass / Mpc^2].
 
-        Raises:
-            NotImplementedError: This method is not yet implemented.
+        Raises
+        -------
+        NotImplementedError
+            This method is not yet implemented.
         """
         # TODO: rescale mass densities of each lens and sum
         raise NotImplementedError()
@@ -200,17 +226,26 @@ class Multiplane(ThickLens):
         """
         Compute the time delay of light caused by the lensing.
 
-        Args:
-            x (Tensor): x-coordinates in the lens plane.
-            y (Tensor): y-coordinates in the lens plane.
-            z_s (Tensor): Redshifts of the sources.
-            params (Packed, optional): Dynamic parameter container.
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+        y: Tensor
+            y-coordinates in the lens plane.
+        z_s: Tensor
+            Redshifts of the sources.
+        params: (Packed, optional)
+            Dynamic parameter container.
 
-        Returns:
-            Tensor: Time delay caused by the lensing.
+        Returns
+        -------
+        Tensor
+            Time delay caused by the lensing.
 
-        Raises:
-            NotImplementedError: This method is not yet implemented.
+        Raises
+        ------
+        NotImplementedError
+            This method is not yet implemented.
         """
         # TODO: figure out how to compute this
         raise NotImplementedError()

@@ -157,7 +157,7 @@ def get_default_cosmologies():
 
 
 def setup_grids(res=0.05, n_pix=100):
-    # Caustic setup
+    # Caustics setup
     thx, thy = get_meshgrid(res, n_pix, n_pix)
 
     # Lenstronomy setup
