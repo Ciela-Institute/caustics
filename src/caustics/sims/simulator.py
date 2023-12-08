@@ -4,7 +4,7 @@ __all__ = ("Simulator",)
 
 
 class Simulator(Parametrized):
-    """A caustic simulator using Parametrized framework.
+    """A caustics simulator using Parametrized framework.
 
     Defines a simulator class which is a callable function that
     operates on the Parametrized framework. Users define the `forward`

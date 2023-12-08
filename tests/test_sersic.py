@@ -9,7 +9,7 @@ from caustics.utils import get_meshgrid
 
 
 def test():
-    # Caustic setup
+    # Caustics setup
     res = 0.05
     nx = 200
     ny = 200
