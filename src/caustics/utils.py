@@ -245,9 +245,10 @@ def quad(
     dtype=torch.float32,
     ):
     """
-    Performs a pixel-wise integration using Gaussian quadrature.
+    Performs a pixel-wise integration on a function using Gaussian quadrature.
 
-    Parameters:
+    Parameters
+    ----------
         F (Callable): The brightness function to be evaluated at the quadrature points. The function should take as input: F(X, Y, *args).
         pixelscale (float): The scale of each pixel.
         X (Tensor): The x-coordinates of the pixels.
@@ -256,7 +257,8 @@ def quad(
         device (torch.device, optional): The device to perform the computation on. Defaults to None.
         dtype (torch.dtype, optional): The data type of the computation. Defaults to torch.float32.
 
-    Returns:
+    Returns
+    -------
         Tensor: The integrated brightness function at each pixel.
     """
 
