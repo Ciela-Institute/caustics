@@ -572,7 +572,7 @@ class ThickLens(Lens):
     ) -> Tensor:
         """
         Use the curl of the effective reduced deflection angle vector field
-        to compute an effective convergence which derrives specifically
+        to compute an effective convergence which derives specifically
         from the curl of the deflection field.
         This field is purely a result of multiplane lensing
         and cannot occur in single plane lensing.

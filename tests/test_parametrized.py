@@ -120,7 +120,7 @@ def test_parametrized_name_setter():
 
 
 def test_parametrized_name_setter_bad_names():
-    # Make sure bad names are catched by our added method.
+    # Make sure bad names are caught by our added method.
     # Bad names are name which cannot be used as class attributes.
     good_names = ["variable", "_variable", "var_iable2"]
     for name in good_names:

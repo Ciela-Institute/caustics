@@ -80,7 +80,7 @@ class Multiplane(ThickLens):
 
           \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]
 
-        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propogation through regular space to the first plane.
+        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propagation through regular space to the first plane.
         Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
 
         .. math::
@@ -139,7 +139,7 @@ class Multiplane(ThickLens):
         X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D
 
         # Initial angles are observation angles
-        # (negative needed because of negative in propogation term)
+        # (negative needed because of negative in propagation term)
         theta_x, theta_y = x, y
 
         for i in lens_planes:

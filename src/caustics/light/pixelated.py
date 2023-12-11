@@ -13,7 +13,7 @@ __all__ = ("Pixelated",)
 class Pixelated(Source):
     """
     ``Pixelated`` is a subclass of the abstract class ``Source``.
-    It representes the brightness profile of source
+    It represents the brightness profile of source
     with a pixelated grid of intensity values.
 
     This class provides a concrete implementation

@@ -210,7 +210,7 @@ def _test_multiplane_effective_convergence():
 
 def test():
     """
-    Run tests for caustics basic functionallity.
+    Run tests for caustics basic functionality.
     Run this function to ensure that caustics is working properly.
 
     Simply call::
