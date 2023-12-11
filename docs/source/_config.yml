@@ -46,7 +46,7 @@ sphinx:
     - "sphinx.ext.ifconfig"
     - "sphinx.ext.viewcode"
   config:
-    html_theme_options: 
+    html_theme_options:
       logo:
         image_light: ../../media/caustics_logo_white.png
         image_dark: ../../media/caustics_logo.png
