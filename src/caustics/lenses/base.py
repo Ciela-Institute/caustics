@@ -135,9 +135,9 @@ class Lens(Parametrized):
             Ray-traced coordinates in the x and y directions.
         """
 
-        bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Dout:2)
+        bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Doubt:2)
 
-        # TODO make FOV more general so that it doesnt have to be centered on zero,zero
+        # TODO make FOV more general so that it doesn't have to be centered on zero,zero
         if fov is None:
             raise ValueError("fov must be given to generate initial guesses")
 

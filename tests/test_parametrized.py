@@ -21,7 +21,7 @@ def test_params():
 
     sim = Sim()
     assert len(sim.module_params) == 2  # dynamic and static
-    assert len(sim.module_params.dynamic) == 0  # simulator has no dynmaic params
+    assert len(sim.module_params.dynamic) == 0  # simulator has no dynamic params
     assert len(sim.module_params.static) == 1  # and 1 static param (z_s)
     assert len(sim.params) == 2  # dynamic and static
     assert len(sim.params.dynamic) == 3  # cosmo, epl and sersic
@@ -120,7 +120,7 @@ def test_parametrized_name_setter():
 
 
 def test_parametrized_name_setter_bad_names():
-    # Make sure bad names are catched by our added method. Bad names are name which cannot be used as class attributes.
+    # Make sure bad names are caught by our added method. Bad names are name which cannot be used as class attributes.
     good_names = ["variable", "_variable", "var_iable2"]
     for name in good_names:
         Sersic(name=name)
@@ -142,7 +142,7 @@ def test_parametrized_name_collision():
             self.lens2 = EPL(self.cosmo)
 
     sim = Sim()
-    # Current way names are updated. Could be chnaged so that all params in collision
+    # Current way names are updated. Could be changed so that all params in collision
     # Get a number
     assert sim.lens1.name == "EPL"
     assert sim.lens2.name == "EPL_1"

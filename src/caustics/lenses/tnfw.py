@@ -38,7 +38,7 @@ class TNFW(ThinLens):
         `interpret_m_total_mass = False` on initialization of the
         object. However, the mass within R200 will be computed for an
         NFW profile, not a TNFW profile. This is in line with how
-        lenstronomy inteprets the mass parameter.
+        lenstronomy interprets the mass parameter.
 
     Parameters
     -----
@@ -64,12 +64,12 @@ class TNFW(ThinLens):
         Default is 0.0.
     interpret_m_total_mass: boolean
         Indicates how to interpret the mass variable "m". If true
-        the mass is intepreted as the total mass of the halo (good because it makes sense). If
-        false it is intepreted as what the mass would have been within R200 of a an NFW that
+        the mass is interpreted as the total mass of the halo (good because it makes sense). If
+        false it is interpreted as what the mass would have been within R200 of a an NFW that
         isn't truncated (good because it is easily compared with an NFW).
     use_case: str
         Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
-        specifically cant be both batchable and differentiable. You may select which version
+        specifically can't be both batchable and differentiable. You may select which version
         you wish to use by setting this parameter to one of: batchable, differentiable.
 
     """

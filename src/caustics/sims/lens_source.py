@@ -19,11 +19,11 @@ __all__ = ("Lens_Source",)
 class Lens_Source(Simulator):
     """Lens image of a source.
 
-    Striaghtforward simulator to sample a lensed image of a source
+    Straightforward simulator to sample a lensed image of a source
     object. Constructs a sampling grid internally based on the
     pixelscale and gridding parameters. It can automatically upscale
     and fine sample an image. This is the most straightforward
-    simulator to view the image if you aready have a lens and source
+    simulator to view the image if you already have a lens and source
     chosen.
 
     Example usage::

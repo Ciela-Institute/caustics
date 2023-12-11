@@ -79,7 +79,7 @@ class Multiplane(ThickLens):
 
           \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]
 
-        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propogation through regular space to the first plane. Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
+        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propagation through regular space to the first plane. Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
 
         .. math::
 
@@ -132,7 +132,7 @@ class Multiplane(ThickLens):
         )
         X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D
 
-        # Initial angles are observation angles (negative needed because of negative in propogation term)
+        # Initial angles are observation angles (negative needed because of negative in propagation term)
         theta_x, theta_y = x, y
 
         for i in lens_planes:
@@ -151,7 +151,7 @@ class Multiplane(ThickLens):
             theta_x = theta_x - alpha_x
             theta_y = theta_y - alpha_y
 
-            # Propogate rays to next plane (basically eq 18)
+            # Propagate rays to next plane (basically eq 18)
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_end
             D = self.cosmology.transverse_comoving_distance_z1z2(
                 z_ls[i], z_next, params

@@ -637,9 +637,9 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
 
 def batch_lm(
     X,  # B, Din
-    Y,  # B, Dout
-    f,  # Din -> Dout
-    C=None,  # B, Dout, Dout
+    Y,  # B, Doubt
+    f,  # Din -> Doubt
+    C=None,  # B, Doubt, Doubt
     epsilon=1e-1,
     L=1e0,
     L_dn=11.0,
@@ -652,13 +652,13 @@ def batch_lm(
     f_kwargs={},
 ):
     B, Din = X.shape
-    B, Dout = Y.shape
+    B, Doubt = Y.shape
 
     if len(X) != len(Y):
         raise ValueError("x and y must having matching batch dimension")
 
     if C is None:
-        C = torch.eye(Dout).repeat(B, 1, 1)
+        C = torch.eye(Doubt).repeat(B, 1, 1)
     Cinv = torch.linalg.inv(C)
 
     v_lm_step = torch.vmap(partial(_lm_step, lambda x: f(x, *f_args, **f_kwargs)))
