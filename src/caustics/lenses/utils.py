@@ -29,7 +29,8 @@ def get_pix_jacobian(
 
     Returns
     --------
-    The Jacobian matrix of the image position with respect to the source position at the given point.
+    The Jacobian matrix of the image position with respect
+    to the source position at the given point.
 
     """
     jac = torch.func.jacfwd(raytrace, (0, 1))(x, y, z_s)  # type: ignore
@@ -38,7 +39,8 @@ def get_pix_jacobian(
 
 def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
     """
-    Computes the magnification at a single point on the lensing plane. The magnification is derived from the determinant
+    Computes the magnification at a single point on the lensing plane.
+    The magnification is derived from the determinant
     of the Jacobian matrix of the image position with respect to the source position.
 
     Parameters
@@ -63,7 +65,8 @@ def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
 
 def get_magnification(raytrace, x, y, z_s) -> Tensor:
     """
-    Computes the magnification over a grid on the lensing plane. This is done by calling `get_pix_magnification`
+    Computes the magnification over a grid on the lensing plane.
+    This is done by calling `get_pix_magnification`
     for each point on the grid.
 
     Parameters

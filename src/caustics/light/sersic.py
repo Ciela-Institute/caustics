@@ -11,11 +11,13 @@ __all__ = ("Sersic",)
 
 class Sersic(Source):
     """
-    `Sersic` is a subclass of the abstract class `Source`. It represents a source in a strong
-    gravitational lensing system that follows a Sersic profile, a mathematical function that describes
+    `Sersic` is a subclass of the abstract class `Source`.
+    It represents a source in a strong gravitational lensing system
+    that follows a Sersic profile, a mathematical function that describes
     how the intensity I of a galaxy varies with distance r from its center.
 
-    The Sersic profile is often used to describe elliptical galaxies and spiral galaxies' bulges.
+    The Sersic profile is often used to describe
+    elliptical galaxies and spiral galaxies' bulges.
 
     Attributes
     -----------
@@ -118,24 +120,25 @@ class Sersic(Source):
         y: Tensor
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
-        params: (Packed, optional)
+        params: Packed, optional
             Dynamic parameter container.
 
-                Returns
-                -------
-                Tensor
-                    The brightness of the source at the given point(s). The output tensor has the same shape as `x` and `y`.
+        Returns
+        -------
+        Tensor
+            The brightness of the source at the given point(s).
+            The output tensor has the same shape as `x` and `y`.
 
         Notes
         -----
-            The Sersic profile is defined as: I(r) = Ie * exp(-k * ((r / r_e)^(1/n) - 1)),
-            where Ie is the intensity at the effective radius r_e, n is the Sersic index
-            that describes the concentration of the source, and k is a parameter that
-            depends on n. In this implementation, we use elliptical coordinates ex and ey,
-            and the transformation from Cartesian coordinates is handled by `to_elliptical`.
-            The value of k can be calculated in two ways, controlled by `lenstronomy_k_mode`.
-            If `lenstronomy_k_mode` is True, we use the approximation from Lenstronomy,
-            otherwise, we use the approximation from Ciotti & Bertin (1999).
+        The Sersic profile is defined as: I(r) = Ie * exp(-k * ((r / r_e)^(1/n) - 1)),
+        where Ie is the intensity at the effective radius r_e, n is the Sersic index
+        that describes the concentration of the source, and k is a parameter that
+        depends on n. In this implementation, we use elliptical coordinates ex and ey,
+        and the transformation from Cartesian coordinates is handled by `to_elliptical`.
+        The value of k can be calculated in two ways, controlled by `lenstronomy_k_mode`.
+        If `lenstronomy_k_mode` is True, we use the approximation from Lenstronomy,
+        otherwise, we use the approximation from Ciotti & Bertin (1999).
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
         ex, ey = to_elliptical(x, y, q)

@@ -26,11 +26,14 @@ def check_valid_name(name):
 
 class Parametrized:
     """
-    Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator
+    Represents a class with Param and Parametrized attributes,
+    typically used to construct parts of a simulator
     that have parameters which need to be tracked during MCMC sampling.
 
-    This class can contain Params, Parametrized, tensor buffers or normal attributes as its attributes.
-    It provides functionalities to manage these attributes, ensuring that an attribute of one type isn't rebound
+    This class can contain Params, Parametrized,
+    tensor buffers or normal attributes as its attributes.
+    It provides functionalities to manage these attributes,
+    ensuring that an attribute of one type isn't rebound
     to be of a different type.
 
     TODO
@@ -92,10 +95,13 @@ class Parametrized:
                 # Create new parameter and attach it as an attribute
                 self.add_param(key, value.value, value.shape)
             elif isinstance(value, Parametrized):
-                # Update map from attribute key to module name for __getattribute__ method
+                # Update map from attribute key to module name
+                # for __getattribute__ method
                 self._module_key_map[value.name] = key
                 self.add_parametrized(value, set_attr=False)
-                # set attr only to user defined key, not module name (self.{module.name} is still accessible, see __getattribute__ method)
+                # set attr only to user defined key,
+                # not module name (self.{module.name} is still accessible,
+                # see __getattribute__ method)
                 super().__setattr__(key, value)
             else:
                 super().__setattr__(key, value)
@@ -122,7 +128,8 @@ class Parametrized:
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
         """
-        Moves static Params for this component and its childs to the specified device and casts them to the specified data type.
+        Moves static Params for this component and its childs
+        to the specified device and casts them to the specified data type.
         """
         for name, p in self._params.items():
             self._params[name] = p.to(device, dtype)
@@ -198,13 +205,14 @@ class Parametrized:
     ) -> Packed:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
-        into arguments to this component and its childs. Also, add a batch dimension
-        to each Tensor without such a dimension.
+        into arguments to this component and its childs.
+        Also, add a batch dimension to each Tensor
+        without such a dimension.
 
         Parameters
         ----------
-        x: (Union[list[Tensor], dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]], Tensor)
-            The input to be packed. Can be a list of tensors, a dictionary of tensors, or a single tensor.
+        x : list of tensor, dict of tensor, or tensor
+            The input to be packed.
 
         Returns
         -------
@@ -307,7 +315,9 @@ class Parametrized:
             if isinstance(x, dict):
                 if self.name in x.keys() and x.get(self.name, {}):
                     print(
-                        f"Module {self.name} is static, the parameters {' '.join(x[self.name].keys())} passed dynamically will be ignored ignored"
+                        f"Module {self.name} is static, "
+                        f"the parameters {' '.join(x[self.name].keys())} "
+                        "passed dynamically will be ignored."
                     )
         unpacked_x = []
         offset = 0
@@ -327,7 +337,8 @@ class Parametrized:
                 else:
                     raise ValueError(
                         f"Invalid data type found when unpacking parameters for {self.name}."
-                        f"Expected argument of unpack to be a list/tuple/dict of Tensor, or simply a flattened tensor"
+                        "Expected argument of unpack to be a list/tuple/dict of Tensor, "
+                        "or simply a flattened tensor"
                         f"but found {type(dynamic_x)}."
                     )
             else:  # param is static
@@ -498,7 +509,8 @@ def unpack(n_leading_args=0):
                 # Case 1: Params is already Packed (or no params were passed)
                 x = args.pop(0)
             elif "params" in kwargs:
-                # Case 2: params was passed explicitly as a kwargs, i.e. user used signature "method(*leading_args, params=params)"
+                # Case 2: params was passed explicitly as a kwargs,
+                # i.e. user used signature "method(*leading_args, params=params)"
                 x = kwargs["params"]
             else:
                 # Case 3 (most common): params were passed as the trailing arguments of the method

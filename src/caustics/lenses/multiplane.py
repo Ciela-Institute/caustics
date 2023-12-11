@@ -79,14 +79,19 @@ class Multiplane(ThickLens):
 
           \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]
 
-        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propagation through regular space to the first plane. Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
+        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propogation through regular space to the first plane.
+        Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
 
         .. math::
 
           \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\vec{\theta}^{i}
           \vec{\theta}^{i+1} = \vec{\theta}^{i} -  \alpha^i(\vec{x}^{i+1})
 
-        Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer). The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`, and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied), and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0` and begin at the second step in the recursion formula.
+        Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer).
+        The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`,
+        and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied),
+        and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0`
+        and begin at the second step in the recursion formula.
 
         Parameters
         ----------
@@ -101,10 +106,10 @@ class Multiplane(ThickLens):
 
         Returns
         -------
-        tuple[Tensor, Tensor]
+        (Tensor, Tensor)
             The reduced deflection angle.
 
-        """
+        """  # noqa: E501
         return self.raytrace_z1z2(x, y, torch.zeros_like(z_s), z_s, params)
 
     @unpack(4)
@@ -132,7 +137,8 @@ class Multiplane(ThickLens):
         )
         X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D
 
-        # Initial angles are observation angles (negative needed because of negative in propagation term)
+        # Initial angles are observation angles
+        # (negative needed because of negative in propogation term)
         theta_x, theta_y = x, y
 
         for i in lens_planes:

@@ -154,7 +154,8 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Calculate the scale radius of the lens. This is the same formula used for the classic NFW profile.
+        Calculate the scale radius of the lens.
+        This is the same formula used for the classic NFW profile.
 
         Parameters
         ----------
@@ -237,7 +238,9 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Calculate the reference mass. This is an abstract reference mass used internally in the equations from Baltz et al. 2009.
+        Calculate the reference mass.
+        This is an abstract reference mass used internally
+        in the equations from Baltz et al. 2009.
 
         Parameters
         ----------
@@ -343,7 +346,8 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        TNFW convergence as given in Baltz et al. 2009. This is unitless since it is Sigma(x) / Sigma_crit.
+        TNFW convergence as given in Baltz et al. 2009.
+        This is unitless since it is Sigma(x) / Sigma_crit.
 
         Parameters
         ----------
@@ -513,7 +517,9 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the lensing potential. Note that this is not a unitless potential! This is the potential as given in Baltz et al. 2009.
+        Compute the lensing potential.
+        Note that this is not a unitless potential!
+        This is the potential as given in Baltz et al. 2009.
 
         TODO: convert to dimensionless potential.
 

@@ -276,7 +276,8 @@ class Cosmology(Parametrized):
 
 class FlatLambdaCDM(Cosmology):
     """
-    Subclass of Cosmology representing a Flat Lambda Cold Dark Matter (LCDM) cosmology with no radiation.
+    Subclass of Cosmology representing a Flat Lambda Cold Dark Matter (LCDM)
+    cosmology with no radiation.
     """
 
     def __init__(

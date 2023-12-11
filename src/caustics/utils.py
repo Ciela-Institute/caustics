@@ -31,7 +31,8 @@ def flip_axis_ratio(q, phi):
 
 def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
     """
-    Translates and rotates the points (x, y) by subtracting (x0, y0) and applying rotation angle phi.
+    Translates and rotates the points (x, y) by subtracting (x0, y0)
+    and applying rotation angle phi.
 
     Parameters
     ----------
@@ -239,7 +240,8 @@ def gaussian_quadrature_integrator(
 ):
     """
     Performs a pixel-wise integration using Gaussian quadrature.
-    It takes the brightness function evaluated at the quadrature points `F` and the quadrature weights `weight` as input.
+    It takes the brightness function evaluated at the quadrature points `F`
+    and the quadrature weights `weight` as input.
     The result is the integrated brightness function at each pixel.
 
 
@@ -285,7 +287,8 @@ def quad(
     Parameters
     ----------
     F : Callable
-        The brightness function to be evaluated at the quadrature points. The function should take as input: F(X, Y, *args).
+        The brightness function to be evaluated at the quadrature points.
+        The function should take as input: F(X, Y, *args).
     pixelscale : float
         The scale of each pixel.
     X : Tensor

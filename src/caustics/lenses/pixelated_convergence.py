@@ -27,7 +27,7 @@ class PixelatedConvergence(ThinLens):
         shape: Optional[tuple[int, ...]] = None,
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
-        padding="zero",
+        padding: str = "zero",
         name: str = None,
     ):
         """Strong lensing with user provided kappa map
@@ -61,16 +61,23 @@ class PixelatedConvergence(ThinLens):
             The shape of the convergence map.
         convolution_mode: (str, optional)
             The convolution mode for calculating deflection angles and lensing potential.
-            It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution). Default is "fft".
+            It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution).
+            Default is "fft".
         use_next_fast_len: (bool, optional)
             If True, adds additional padding to speed up the FFT by calling
-            `scipy.fft.next_fast_len`. The speed boost can be substantial when `n_pix` is a multiple of a
+            `scipy.fft.next_fast_len`.
+            The speed boost can be substantial when `n_pix` is a multiple of a
             small prime number. Default is True.
-        padding: string
-            Specifies the type of padding to use. "zero" will do zero padding, "circular" will do
-            cyclic boundaries. "reflect" will do reflection padding. "tile" will tile the image at 2x2 which
-            basically identical to circular padding, but is easier. Generally you should use either "zero"
-            or "tile".
+        padding: { "zero", "circular", "reflect", "tile" }
+
+            Specifies the type of padding to use:
+            "zero" will do zero padding,
+            "circular" will do cyclic boundaries.
+            "reflect" will do reflection padding.
+            "tile" will tile the image at 2x2 which
+            basically identical to circular padding, but is easier.
+
+            Generally you should use either "zero" or "tile".
 
         """
 
@@ -200,7 +207,7 @@ class PixelatedConvergence(ThinLens):
         Tensor
             The input tensor without padding.
         """
-        return x  # torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
+        return x  # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
 
     @property
     def convolution_mode(self):
@@ -336,7 +343,7 @@ class PixelatedConvergence(ThinLens):
         2 * self.n_pix
         convergence_map_flipped = convergence_map.flip((-1, -2))[
             None, None
-        ]  # F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
+        ]  # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
         deflection_angle_x = F.conv2d(
             self.ax_kernel[None, None], convergence_map_flipped, padding="same"
         ).squeeze() * (self.pixelscale**2 / pi)
