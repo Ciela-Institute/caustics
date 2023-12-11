@@ -1,7 +1,5 @@
 # Welcome to Caustics’ documentation!
 
-!["caustics_logo"](https://github.com/Ciela-Institute/caustics/blob/main/media/caustics_logo.png?raw=true)
-
 The lensing pipeline of the future: GPU-accelerated,
 automatically-differentiable, highly modular and extensible.
 
