@@ -144,7 +144,7 @@ class Sersic(Source):
         if self.lenstronomy_k_mode:
             k = 1.9992 * n - 0.3271
         else:
-            k = 2 * n - 1 / 3 + 4 / 405 / n + 46 / 25515 / n**2
+            k = 2 * n - 1 / 3 + 4 / 405 / n + 46 / 25515 / n**2  # fmt: skip
 
         exponent = -k * ((e / Re) ** (1 / n) - 1)
         return Ie * exponent.exp()
