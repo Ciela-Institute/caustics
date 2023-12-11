@@ -5,3 +5,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Raise pull requests for version updates
+    # to pip against the `dev` branch
+    target-branch: "dev"
