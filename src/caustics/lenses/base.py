@@ -774,6 +774,81 @@ class ThinLens(Lens):
         return x - ax, y - ay
 
     @unpack(3)
+    def time_delay_gravitational(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        z_l,
+        *args,
+        params: Optional["Packed"] = None,
+        **kwargs,
+    ):
+        """
+        Compute the gravitational time delay for light passing through the lens at given coordinates. This time delay is induced by the photons travelling through a gravitational potential well.
+
+        Parameters
+        ----------
+        x: Tensor
+            Tensor of x coordinates in the lens plane.
+        y: Tensor
+            Tensor of y coordinates in the lens plane.
+        z_s: Tensor
+            Tensor of source redshifts.
+        params: (Packed, optional)
+            Dynamic parameter container for the lens model. Defaults to None.
+
+        Returns
+        -------
+        Tensor
+            Time delay at the given coordinates.
+        """
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+        potential = self.potential(x, y, z_s, params)
+        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
+        return - factor * potential * arcsec_to_rad**2
+    
+    @unpack(3)
+    def time_delay_geometric(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        z_l,
+        *args,
+        params: Optional["Packed"] = None,
+        **kwargs,
+    ):
+        """
+        Compute the geometric time delay for light passing through the lens at given coordinates. This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer.
+
+        Parameters
+        ----------
+        x: Tensor
+            Tensor of x coordinates in the lens plane.
+        y: Tensor
+            Tensor of y coordinates in the lens plane.
+        z_s: Tensor
+            Tensor of source redshifts.
+        params: (Packed, optional)
+            Dynamic parameter container for the lens model. Defaults to None.
+
+        Returns
+        -------
+        Tensor
+            Time delay at the given coordinates.
+        """
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+        ax, ay = self.physical_deflection_angle(x, y, z_s, params)
+        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
+        fp = 0.5 * (ax**2 + ay**2)
+        return factor * fp * arcsec_to_rad**2
+    
+    @unpack(3)
     def time_delay(
         self,
         x: Tensor,
@@ -803,14 +878,7 @@ class ThinLens(Lens):
         Tensor
             Time delay at the given coordinates.
         """
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        d_s = self.cosmology.angular_diameter_distance(z_s, params)
-        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        potential = self.potential(x, y, z_s, params)
-        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
-        return factor * fp * arcsec_to_rad**2
+        return self.time_delay_gravitational(x, y, z_s, z_l, params = params) + self.time_delay_geometric(x, y, z_s, z_l, params = params)
 
     @unpack(4)
     def _jacobian_deflection_angle_finitediff(
