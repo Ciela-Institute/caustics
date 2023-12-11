@@ -224,7 +224,7 @@ class Multiplane(ThickLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the time delay of light caused by the lensing.
+        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract
 
         Parameters
         ----------
