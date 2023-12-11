@@ -168,7 +168,7 @@ class NFW(ThinLens):
         Tensor
             The scale density of the lens in solar masses per Mpc cubed.
         """
-        sigma_crit = self.cosmology.critical_surface_density(z_l, params)
+        sigma_crit = self.cosmology.critical_density(z_l, params)
         return DELTA / 3 * sigma_crit * c**3 / ((1 + c).log() - c / (1 + c)) # fmt: skip
 
     @unpack(1)
