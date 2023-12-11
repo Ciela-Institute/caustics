@@ -102,14 +102,7 @@ class PseudoJaffe(ThinLens):
     ):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params)
-        return mass / (
-            2
-            * torch.pi
-            * sigma_crit
-            * core_radius
-            * scale_radius
-            * (d_l * arcsec_to_rad) ** 2
-        )
+        return mass / (2 * torch.pi * sigma_crit * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2) # fmt: skip
 
     @unpack(2)
     def mass_enclosed_2d(
@@ -148,21 +141,7 @@ class PseudoJaffe(ThinLens):
         surface_density_0 = self.get_convergence_0(
             z_s, params
         ) * self.cosmology.critical_surface_density(z_l, z_s, params)
-        return (
-            2
-            * pi
-            * surface_density_0
-            * core_radius
-            * scale_radius
-            * (d_l * arcsec_to_rad) ** 2
-            / (scale_radius - core_radius)
-            * (
-                (core_radius**2 + theta**2).sqrt()
-                - core_radius
-                - (scale_radius**2 + theta**2).sqrt()
-                + scale_radius
-            )
-        )
+        return (2 * pi * surface_density_0 * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2 * ((core_radius**2 + theta**2).sqrt() - core_radius - (scale_radius**2 + theta**2).sqrt() + scale_radius) / (scale_radius - core_radius)) # fmt: skip
 
     @staticmethod
     def central_convergence(
@@ -196,14 +175,7 @@ class PseudoJaffe(ThinLens):
         Tensor
             The central convergence.
         """
-        return (
-            pi
-            * rho_0
-            * core_radius
-            * scale_radius
-            / (core_radius + scale_radius)
-            / critical_surface_density
-        )
+        return pi * rho_0 * core_radius * scale_radius / ((core_radius + scale_radius) * critical_surface_density)  # fmt: skip
 
     @unpack(3)
     def reduced_deflection_angle(
@@ -241,17 +213,8 @@ class PseudoJaffe(ThinLens):
         """
         x, y = translate_rotate(x, y, x0, y0)
         R = (x**2 + y**2).sqrt() + self.s
-        f = R / core_radius / (
-            1 + (1 + (R / core_radius) ** 2).sqrt()
-        ) - R / scale_radius / (1 + (1 + (R / scale_radius) ** 2).sqrt())
-        alpha = (
-            2
-            * self.get_convergence_0(z_s, params)
-            * core_radius
-            * scale_radius
-            / (scale_radius - core_radius)
-            * f
-        )
+        f = R / core_radius / (1 + (1 + (R / core_radius) ** 2).sqrt()) - R / (scale_radius * (1 + (1 + (R / scale_radius) ** 2).sqrt()))  # fmt: skip
+        alpha = 2 * self.get_convergence_0(z_s, params) * core_radius * scale_radius / (scale_radius - core_radius) * f # fmt: skip
         ax = alpha * x / R
         ay = alpha * y / R
         return ax, ay
@@ -293,20 +256,8 @@ class PseudoJaffe(ThinLens):
         """
         x, y = translate_rotate(x, y, x0, y0)
         R_squared = x**2 + y**2 + self.s
-        coeff = (
-            -2
-            * self.get_convergence_0(z_s, params)
-            * core_radius
-            * scale_radius
-            / (scale_radius - core_radius)
-        )
-        return coeff * (
-            (scale_radius**2 + R_squared).sqrt()
-            - (core_radius**2 + R_squared).sqrt()
-            + core_radius * (core_radius + (core_radius**2 + R_squared).sqrt()).log()
-            - scale_radius
-            * (scale_radius + (scale_radius**2 + R_squared).sqrt()).log()
-        )
+        coeff = -2 * self.get_convergence_0(z_s, params) * core_radius * scale_radius / (scale_radius - core_radius) # fmt: skip
+        return coeff * ((scale_radius**2 + R_squared).sqrt() - (core_radius**2 + R_squared).sqrt() + core_radius * (core_radius + (core_radius**2 + R_squared).sqrt()).log() - scale_radius * (scale_radius + (scale_radius**2 + R_squared).sqrt()).log()) # fmt: skip
 
     @unpack(3)
     def convergence(
@@ -345,13 +296,5 @@ class PseudoJaffe(ThinLens):
         """
         x, y = translate_rotate(x, y, x0, y0)
         R_squared = x**2 + y**2 + self.s
-        coeff = (
-            self.get_convergence_0(z_s, params)
-            * core_radius
-            * scale_radius
-            / (scale_radius - core_radius)
-        )
-        return coeff * (
-            1 / (core_radius**2 + R_squared).sqrt()
-            - 1 / (scale_radius**2 + R_squared).sqrt()
-        )
+        coeff = self.get_convergence_0(z_s, params) * core_radius * scale_radius / (scale_radius - core_radius) # fmt: skip
+        return coeff * (1 / (core_radius**2 + R_squared).sqrt() - 1 / (scale_radius**2 + R_squared).sqrt()) # fmt: skip

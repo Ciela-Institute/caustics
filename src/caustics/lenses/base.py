@@ -603,7 +603,10 @@ class ThinLens(Lens):
         deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(
             x, y, z_s, params
         )
-        return (d_ls / d_s) * deflection_angle_x, (d_ls / d_s) * deflection_angle_y
+        return (
+            (d_ls / d_s) * deflection_angle_x, 
+            (d_ls / d_s) * deflection_angle_y,
+        )
 
     @unpack(3)
     def physical_deflection_angle(
@@ -640,7 +643,10 @@ class ThinLens(Lens):
         deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(
             x, y, z_s, params
         )
-        return (d_s / d_ls) * deflection_angle_x, (d_s / d_ls) * deflection_angle_y
+        return (
+            (d_s / d_ls) * deflection_angle_x, 
+            (d_s / d_ls) * deflection_angle_y,
+        )
 
     @abstractmethod
     @unpack(3)
@@ -739,7 +745,7 @@ class ThinLens(Lens):
         critical_surface_density = self.cosmology.critical_surface_density(
             z_l, z_s, params
         )
-        return self.convergence(x, y, z_s, params) * critical_surface_density
+        return self.convergence(x, y, z_s, params) * critical_surface_density # fmt: skip
 
     @unpack(3)
     def raytrace(
@@ -808,9 +814,9 @@ class ThinLens(Lens):
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         potential = self.potential(x, y, z_s, params)
-        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential
-        return factor * fp * arcsec_to_rad**2
+        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls # fmt: skip
+        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential # fmt: skip
+        return factor * fp * arcsec_to_rad**2 # fmt: skip
 
     @unpack(4)
     def _jacobian_deflection_angle_finitediff(

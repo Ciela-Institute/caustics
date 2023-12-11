@@ -182,9 +182,7 @@ class PixelatedConvergence(ThinLens):
         Tensor
             The input tensor without padding.
         """
-        return torch.roll(x, (-self._s[0] // 2, -self._s[1] // 2), dims=(-2, -1))[
-            ..., : self.n_pix, : self.n_pix
-        ]
+        return torch.roll(x, (-self._s[0] // 2, -self._s[1] // 2), dims=(-2, -1))[..., : self.n_pix, : self.n_pix] # fmt: skip
 
     def _unpad_conv2d(self, x: Tensor) -> Tensor:
         """
@@ -334,9 +332,8 @@ class PixelatedConvergence(ThinLens):
         # we actually want the cross-correlation.
 
         2 * self.n_pix
-        convergence_map_flipped = convergence_map.flip((-1, -2))[
-            None, None
-        ]  # F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
+        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]  
+        # F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
         deflection_angle_x = F.conv2d(
             self.ax_kernel[None, None], convergence_map_flipped, padding="same"
         ).squeeze() * (self.pixelscale**2 / pi)

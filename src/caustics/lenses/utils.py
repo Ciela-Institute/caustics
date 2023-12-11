@@ -58,7 +58,7 @@ def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
         The magnification at the given point on the lensing plane.
     """
     jac = get_pix_jacobian(raytrace, x, y, z_s)
-    return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()
+    return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()  # fmt: skip
 
 
 def get_magnification(raytrace, x, y, z_s) -> Tensor:

@@ -130,7 +130,7 @@ class Multiplane(ThickLens):
         D = self.cosmology.transverse_comoving_distance_z1z2(
             z_start, z_ls[lens_planes[0]], params
         )
-        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D
+        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D # fmt: skip
 
         # Initial angles are observation angles (negative needed because of negative in propogation term)
         theta_x, theta_y = x, y
@@ -161,7 +161,10 @@ class Multiplane(ThickLens):
 
         # Convert from physical position to angular position on the source plane
         D_end = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_end, params)
-        return X * rad_to_arcsec / D_end, Y * rad_to_arcsec / D_end
+        return (
+            X * rad_to_arcsec / D_end, 
+            Y * rad_to_arcsec / D_end,
+        )
 
     @unpack(3)
     def effective_reduced_deflection_angle(

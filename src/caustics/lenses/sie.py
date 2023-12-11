@@ -79,7 +79,7 @@ class SIE(ThinLens):
         Tensor
             The radial coordinate in the lens plane.
         """
-        return (q**2 * (x**2 + self.s**2) + y**2).sqrt()
+        return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
 
     @unpack(3)
     def reduced_deflection_angle(
@@ -119,8 +119,8 @@ class SIE(ThinLens):
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
         f = (1 - q**2).sqrt()
-        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan()
-        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh()
+        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan() # fmt: skip
+        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh() # fmt: skip
 
         return derotate(ax, ay, phi)
 
