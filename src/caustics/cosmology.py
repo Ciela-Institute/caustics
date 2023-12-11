@@ -10,6 +10,7 @@ from torch import Tensor
 from .utils import interp1d
 from .constants import G_over_c2, c_Mpc_s, km_to_Mpc
 from .parametrized import Parametrized, unpack
+from .packed import Packed
 
 __all__ = (
     "h0_default",

@@ -8,6 +8,7 @@ from ..constants import arcsec_to_rad, rad_to_arcsec
 from ..cosmology import Cosmology
 from .base import ThickLens, ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("Multiplane",)
 

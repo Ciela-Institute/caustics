@@ -8,6 +8,7 @@ import torch
 import re
 import keyword
 from torch import Tensor
+import graphviz
 
 from .packed import Packed
 from .namespace_dict import NamespaceDict, NestedNamespaceDict

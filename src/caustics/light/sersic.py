@@ -5,6 +5,7 @@ from torch import Tensor
 from ..utils import to_elliptical, translate_rotate
 from .base import Source
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("Sersic",)
 

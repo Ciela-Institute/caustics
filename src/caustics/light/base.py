@@ -4,6 +4,7 @@ from typing import Optional
 from torch import Tensor
 
 from ..parametrized import Parametrized, unpack
+from ..packed import Packed
 
 __all__ = ("Source",)
 

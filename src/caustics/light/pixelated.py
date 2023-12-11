@@ -5,6 +5,7 @@ from torch import Tensor
 from ..utils import interp2d
 from .base import Source
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("Pixelated",)
 

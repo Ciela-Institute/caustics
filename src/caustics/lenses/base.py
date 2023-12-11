@@ -11,6 +11,7 @@ from ..cosmology import Cosmology
 from ..parametrized import Parametrized, unpack
 from .utils import get_magnification
 from ..utils import batch_lm
+from ..packed import Packed
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -151,7 +152,7 @@ class Lens(Parametrized):
         )  # Has shape (n_init, Din:2)
 
         # Optimize guesses in image plane
-        x, l, c = batch_lm(
+        x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
             guesses,
             bxy,
             lambda *a, **k: torch.stack(
