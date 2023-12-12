@@ -121,7 +121,7 @@ class PseudoJaffe(ThinLens):
         **kwargs,
     ):
         """
-        Calculate the mass enclosed within a two-dimensional radius. Using equation A10 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_. 
+        Calculate the mass enclosed within a two-dimensional radius. Using equation A10 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_.
 
         Parameters
         ----------
