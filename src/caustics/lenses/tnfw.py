@@ -471,9 +471,7 @@ class TNFW(ThinLens):
         theta = torch.arctan2(y, x)
 
         # The below actually equally comes from eq 2.13 in Meneghetti notes
-        dr = self.mass_enclosed_2d(r, z_s, params) / (
-            r * d_l * arcsec_to_rad
-        )  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
+        dr = self.mass_enclosed_2d(r, z_s, params) / (r * d_l * arcsec_to_rad)  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
         S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
@@ -531,14 +529,15 @@ class TNFW(ThinLens):
         L = self._L(g, tau)
 
         # d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        # fmt: off
         S = 2 * self.get_M0(params) * G_over_c2  # * rad_to_arcsec * d_l**2
         a1 = 1 / (t2 + 1) ** 2
-        a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log())  # fmt: skip
+        a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log())
         a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L
         a4 = t2 * (t2 - 1) * L**2
         a5 = 4 * t2 * (u - 1) * F
-        a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2  # fmt: skip
+        a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2
         a7 = t2 * ((t2 - 1) * tau.log() - t2 - 1) * u.log()
-        a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())  # fmt: skip
-
+        a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())
+        # fmt: on
         return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)  # fmt: skip
