@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 
 from ..cosmology import Cosmology
-from ..constants import arcsec_to_rad
+from ..constants import arcsec_to_rad, G_over_c2
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
@@ -121,7 +121,7 @@ class PseudoJaffe(ThinLens):
         **kwargs,
     ):
         """
-        Calculate the mass enclosed within a two-dimensional radius.
+        Calculate the mass enclosed within a two-dimensional radius. Using equation A10 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_. 
 
         Parameters
         ----------
@@ -137,12 +137,17 @@ class PseudoJaffe(ThinLens):
         Tensor
             The mass enclosed within the given radius.
         """
+        # fmt: off
         theta = theta + self.s
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        surface_density_0 = self.get_convergence_0(
-            z_s, params
-        ) * self.cosmology.critical_surface_density(z_l, z_s, params)
-        return (2 * pi * surface_density_0 * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2 * ((core_radius**2 + theta**2).sqrt() - core_radius - (scale_radius**2 + theta**2).sqrt() + scale_radius) / (scale_radius - core_radius))  # fmt: skip
+        d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
+        sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params) # Msun / Mpc^2
+        surface_density_0 = self.get_convergence_0(z_s, params) * sigma_crit # Msun / Mpc^2
+        total_mass = 2 * pi * surface_density_0 * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2 # Msun
+        frac_enclosed_num = ((core_radius**2 + theta**2).sqrt() - core_radius - (scale_radius**2 + theta**2).sqrt() + scale_radius) # arcsec
+        frac_enclosed_denom = (scale_radius - core_radius) # arcsec
+        return total_mass * frac_enclosed_num / frac_enclosed_denom
+
+    # fmt: on
 
     @staticmethod
     def central_convergence(
@@ -237,7 +242,7 @@ class PseudoJaffe(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the lensing potential. This calculation is based on equation A18.
+        Compute the lensing potential. This calculation is based on equation A18 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_.
 
         Parameters
         --------
@@ -255,10 +260,23 @@ class PseudoJaffe(ThinLens):
         Tensor
             The lensing potential.
         """
+
+        # TODO: why do the units come out to Mpc and not unitless? Not that the units in A18 also come out to Mpc
+
+        # fmt: off
         x, y = translate_rotate(x, y, x0, y0)
-        R_squared = x**2 + y**2 + self.s
-        coeff = -2 * self.get_convergence_0(z_s, params) * core_radius * scale_radius / (scale_radius - core_radius)  # fmt: skip
-        return coeff * ((scale_radius**2 + R_squared).sqrt() - (core_radius**2 + R_squared).sqrt() + core_radius * (core_radius + (core_radius**2 + R_squared).sqrt()).log() - scale_radius * (scale_radius + (scale_radius**2 + R_squared).sqrt()).log())  # fmt: skip
+        d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
+        R_squared = x**2 + y**2 + self.s # arcsec^2
+        surface_density_0 = self.get_convergence_0(z_s, params) * sigma_crit # Msun / Mpc^2
+        coeff = 4 * pi * G_over_c2 * surface_density_0 * (d_l * arcsec_to_rad) *core_radius * scale_radius / (scale_radius - core_radius) # unitless
+        scale_a = (scale_radius**2 + R_squared).sqrt() # arcsec
+        scale_b = (core_radius**2 + R_squared).sqrt() # arcsec
+        scale_c = core_radius * (core_radius + (core_radius**2 + R_squared).sqrt()).log() # arcsec
+        scale_d = scale_radius * (scale_radius + (scale_radius**2 + R_squared).sqrt()).log() # arcsec
+        scale_factor = (scale_a - scale_b + scale_c - scale_d) * (d_l * arcsec_to_rad) # Mpc
+        return coeff * scale_factor
+
+    # fmt: on
 
     @unpack(3)
     def convergence(

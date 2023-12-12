@@ -420,7 +420,10 @@ class FlatLambdaCDM(Cosmology):
         """
         Ode0 = 1 - Om0
         ratio = (Om0 / Ode0) ** (1 / 3)
-        return self.hubble_distance(h0) * (self._comoving_distance_helper((1 + z) * ratio, params) - self._comoving_distance_helper(ratio, params)) / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))  # fmt: skip
+        DH = self.hubble_distance(h0)
+        DC1z = self._comoving_distance_helper((1 + z) * ratio, params)
+        DC = self._comoving_distance_helper(ratio, params)
+        return DH * (DC1z - DC) / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))  # fmt: skip
 
     @unpack(1)
     def transverse_comoving_distance(
