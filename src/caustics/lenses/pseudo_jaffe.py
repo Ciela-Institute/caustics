@@ -267,6 +267,7 @@ class PseudoJaffe(ThinLens):
         x, y = translate_rotate(x, y, x0, y0)
         d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
         R_squared = x**2 + y**2 + self.s # arcsec^2
+        sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params) # Msun / Mpc^2
         surface_density_0 = self.get_convergence_0(z_s, params) * sigma_crit # Msun / Mpc^2
         coeff = 4 * pi * G_over_c2 * surface_density_0 * (d_l * arcsec_to_rad) *core_radius * scale_radius / (scale_radius - core_radius) # unitless
         scale_a = (scale_radius**2 + R_squared).sqrt() # arcsec
