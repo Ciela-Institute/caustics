@@ -120,8 +120,8 @@ class SIE(ThinLens):
         x, y = translate_rotate(x, y, x0, y0, phi)
         psi = self._get_potential(x, y, q)
         f = (1 - q**2).sqrt()
-        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan() # fmt: skip
-        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh() # fmt: skip
+        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan()  # fmt: skip
+        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh()  # fmt: skip
 
         return derotate(ax, ay, phi)
 

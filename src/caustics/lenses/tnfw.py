@@ -126,8 +126,8 @@ class TNFW(ThinLens):
     @staticmethod
     def _F_differentiable(x):
         f = torch.ones_like(x)
-        f[x < 1] = torch.arctanh((1.0 - x[x < 1] ** 2).sqrt()) / (1.0 - x[x < 1] ** 2).sqrt() # fmt: skip
-        f[x > 1] = torch.arctan( (x[x > 1] ** 2 - 1.0).sqrt()) / (x[x > 1] ** 2 - 1.0).sqrt() # fmt: skip
+        f[x < 1] = torch.arctanh((1.0 - x[x < 1] ** 2).sqrt()) / (1.0 - x[x < 1] ** 2).sqrt()  # fmt: skip
+        f[x > 1] = torch.arctan( (x[x > 1] ** 2 - 1.0).sqrt()) / (x[x > 1] ** 2 - 1.0).sqrt()  # fmt: skip
         return f
 
     @staticmethod
@@ -135,7 +135,7 @@ class TNFW(ThinLens):
         """
         Helper method from Baltz et al. 2009 equation A.6
         """
-        return (x / (tau + (tau**2 + x**2).sqrt())).log() # fmt: skip
+        return (x / (tau + (tau**2 + x**2).sqrt())).log()  # fmt: skip
 
     @unpack(0)
     def get_concentration(
@@ -178,8 +178,8 @@ class TNFW(ThinLens):
         """
         critical_density = self.cosmology.critical_density(z_l, params)
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        r_delta = (3 * mass / (4 * pi * DELTA * critical_density)) ** (1 / 3) # fmt: skip
-        return r_delta / (scale_radius * d_l * arcsec_to_rad) # fmt: skip
+        r_delta = (3 * mass / (4 * pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
+        return r_delta / (scale_radius * d_l * arcsec_to_rad)  # fmt: skip
 
     @unpack(0)
     def get_truncation_radius(
@@ -262,10 +262,10 @@ class TNFW(ThinLens):
             The reference mass of the lens in Msol.
         """
         if self.interpret_m_total_mass:
-            return mass * (tau**2 + 1) ** 2 / (tau**2 * ((tau**2 - 1) * tau.log() + torch.pi * tau - (tau**2 + 1))) # fmt: skip
+            return mass * (tau**2 + 1) ** 2 / (tau**2 * ((tau**2 - 1) * tau.log() + torch.pi * tau - (tau**2 + 1)))  # fmt: skip
         else:
             d_l = self.cosmology.angular_diameter_distance(z_l, params)
-            return 4 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 3 * self.get_scale_density(params) # fmt: skip
+            return 4 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 3 * self.get_scale_density(params)  # fmt: skip
 
     @unpack(0)
     def get_scale_density(
@@ -306,7 +306,7 @@ class TNFW(ThinLens):
             The scale density of the lens in solar masses per Mpc cubed.
         """
         c = self.get_concentration(params)
-        return DELTA / 3 * self.cosmology.critical_density(z_l, params) * c**3 / ((1 + c).log() - c / (1 + c)) # fmt: skip
+        return DELTA / 3 * self.cosmology.critical_density(z_l, params) * c**3 / ((1 + c).log() - c / (1 + c))  # fmt: skip
 
     @unpack(3)
     def convergence(
@@ -359,15 +359,15 @@ class TNFW(ThinLens):
         L = self._L(g, tau)
         critical_density = self.cosmology.critical_surface_density(z_l, z_s, params)
 
-        S = self.get_M0(params) / (2 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 2) # fmt: skip
+        S = self.get_M0(params) / (2 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 2)  # fmt: skip
 
         t2 = tau**2
         a1 = t2 / (t2 + 1) ** 2
-        a2 = torch.where(g == 1, (t2 + 1) / 3.0, (t2 + 1) * (1 - F) / (g**2 - 1)) # fmt: skip
+        a2 = torch.where(g == 1, (t2 + 1) / 3.0, (t2 + 1) * (1 - F) / (g**2 - 1))  # fmt: skip
         a3 = 2 * F
         a4 = -torch.pi / (t2 + g**2).sqrt()
         a5 = (t2 - 1) * L / (tau * (t2 + g**2).sqrt())
-        return a1 * (a2 + a3 + a4 + a5) * S / critical_density # fmt: skip
+        return a1 * (a2 + a3 + a4 + a5) * S / critical_density  # fmt: skip
 
     @unpack(2)
     def mass_enclosed_2d(
@@ -417,7 +417,7 @@ class TNFW(ThinLens):
         a2 = (t2 + 1 + 2 * (g**2 - 1)) * F
         a3 = tau * torch.pi
         a4 = (t2 - 1) * tau.log()
-        a5 = (t2 + g**2).sqrt() * (-torch.pi + (t2 - 1) * L / tau) # fmt: skip
+        a5 = (t2 + g**2).sqrt() * (-torch.pi + (t2 - 1) * L / tau)  # fmt: skip
         S = self.get_M0(params)
         return S * a1 * (a2 + a3 + a4 + a5)
 
@@ -471,7 +471,9 @@ class TNFW(ThinLens):
         theta = torch.arctan2(y, x)
 
         # The below actually equally comes from eq 2.13 in Meneghetti notes
-        dr = self.mass_enclosed_2d(r, z_s, params) / (r * d_l * arcsec_to_rad)  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
+        dr = self.mass_enclosed_2d(r, z_s, params) / (
+            r * d_l * arcsec_to_rad
+        )  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
         S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
@@ -531,12 +533,12 @@ class TNFW(ThinLens):
         # d_l = self.cosmology.angular_diameter_distance(z_l, params)
         S = 2 * self.get_M0(params) * G_over_c2  # * rad_to_arcsec * d_l**2
         a1 = 1 / (t2 + 1) ** 2
-        a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log()) # fmt: skip
+        a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log())  # fmt: skip
         a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L
         a4 = t2 * (t2 - 1) * L**2
         a5 = 4 * t2 * (u - 1) * F
-        a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2 # fmt: skip
+        a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2  # fmt: skip
         a7 = t2 * ((t2 - 1) * tau.log() - t2 - 1) * u.log()
-        a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log()) # fmt: skip
+        a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())  # fmt: skip
 
-        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8) # fmt: skip
+        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)  # fmt: skip

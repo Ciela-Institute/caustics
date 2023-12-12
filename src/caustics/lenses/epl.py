@@ -164,7 +164,7 @@ class EPL(ThinLens):
 
         # Tessore et al 2015 (eq. 23)
         r_omega = self._r_omega(z, t, q)
-        alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega # fmt: skip
+        alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega  # fmt: skip
 
         alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
         alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
@@ -197,9 +197,9 @@ class EPL(ThinLens):
         part_sum = omega_i
 
         for i in range(1, self.n_iter):
-            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t)) # fmt: skip
-            omega_i = -f * factor * phi * omega_i # fmt: skip
-            part_sum = part_sum + omega_i # fmt: skip
+            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
+            omega_i = -f * factor * phi * omega_i  # fmt: skip
+            part_sum = part_sum + omega_i  # fmt: skip
 
         return part_sum
 
@@ -281,5 +281,5 @@ class EPL(ThinLens):
             The convergence of the lens.
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt() # fmt: skip
-        return (2 - t) / 2 * (b / psi) ** t # fmt: skip
+        psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
+        return (2 - t) / 2 * (b / psi) ** t  # fmt: skip
