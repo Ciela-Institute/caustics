@@ -36,6 +36,7 @@ def test():
     assert torch.all((sp_x - bx).abs() < 1e-3)
     assert torch.all((sp_y - by).abs() < 1e-3)
 
+
 def test_quicktest():
     """
     Quick test to check that the built-in `test` module is working

@@ -6,6 +6,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("SinglePlane",)
 
@@ -48,7 +49,8 @@ class SinglePlane(ThinLens):
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
-        Calculate the total deflection angle by summing the deflection angles of all individual lenses.
+        Calculate the total deflection angle by summing
+        the deflection angles of all individual lenses.
 
         Parameters
         ----------
@@ -85,7 +87,8 @@ class SinglePlane(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Calculate the total projected mass density by summing the mass densities of all individual lenses.
+        Calculate the total projected mass density by
+        summing the mass densities of all individual lenses.
 
         Parameters
         ----------
@@ -120,7 +123,8 @@ class SinglePlane(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the total lensing potential by summing the lensing potentials of all individual lenses.
+        Compute the total lensing potential by summing
+        the lensing potentials of all individual lenses.
 
         Parameters
         -----------
