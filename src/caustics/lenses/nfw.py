@@ -239,15 +239,17 @@ class NFW(ThinLens):
             Result of the deflection angle computation.
         """
         # TODO: generalize beyond torch, or patch Tensor
+        # fmt: off
         return torch.where(
             x > 1,
-            1 - 2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),  # fmt: skip
+            1 - 2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
             torch.where(
                 x < 1,
-                1 - 2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),  # fmt: skip
+                1 - 2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
                 torch.zeros_like(x),  # where: x == 1
             ),
         )
+    #fmt: on
 
     @staticmethod
     def _g_differentiable(x: Tensor) -> Tensor:
