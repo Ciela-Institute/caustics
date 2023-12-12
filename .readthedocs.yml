@@ -30,6 +30,9 @@ build:
     pre_build:
       # Generate the Sphinx configuration for this Jupyter Book so it builds.
       - "jupyter-book config sphinx docs/source/"
+      # Create font cache ahead of jupyter book
+      - "python -c 'import matplotlib.pyplot as plt'"
+      # Get the API documentation dynamically
       - "sphinx-apidoc -f -o docs/source/ src/caustics/"
 
 python:
