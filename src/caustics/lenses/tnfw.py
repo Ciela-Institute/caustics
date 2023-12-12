@@ -471,7 +471,9 @@ class TNFW(ThinLens):
         theta = torch.arctan2(y, x)
 
         # The below actually equally comes from eq 2.13 in Meneghetti notes
-        dr = self.mass_enclosed_2d(r, z_s, params) / (r * d_l * arcsec_to_rad)  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
+        dr = self.mass_enclosed_2d(r, z_s, params) / (
+            r * d_l * arcsec_to_rad
+        )  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
         S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
