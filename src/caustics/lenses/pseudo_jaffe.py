@@ -9,6 +9,7 @@ from ..constants import arcsec_to_rad
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("PseudoJaffe",)
 

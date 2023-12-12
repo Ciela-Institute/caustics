@@ -6,6 +6,7 @@ from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("SIE",)
 

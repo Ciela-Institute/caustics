@@ -9,6 +9,7 @@ from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 DELTA = 200.0
 
@@ -38,7 +39,7 @@ class TNFW(ThinLens):
         `interpret_m_total_mass = False` on initialization of the
         object. However, the mass within R200 will be computed for an
         NFW profile, not a TNFW profile. This is in line with how
-        lenstronomy inteprets the mass parameter.
+        lenstronomy interprets the mass parameter.
 
     Parameters
     -----
@@ -64,12 +65,12 @@ class TNFW(ThinLens):
         Default is 0.0.
     interpret_m_total_mass: boolean
         Indicates how to interpret the mass variable "m". If true
-        the mass is intepreted as the total mass of the halo (good because it makes sense). If
-        false it is intepreted as what the mass would have been within R200 of a an NFW that
+        the mass is interpreted as the total mass of the halo (good because it makes sense). If
+        false it is interpreted as what the mass would have been within R200 of a an NFW that
         isn't truncated (good because it is easily compared with an NFW).
     use_case: str
         Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
-        specifically cant be both batchable and differentiable. You may select which version
+        specifically can't be both batchable and differentiable. You may select which version
         you wish to use by setting this parameter to one of: batchable, differentiable.
 
     """
@@ -154,7 +155,8 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Calculate the scale radius of the lens. This is the same formula used for the classic NFW profile.
+        Calculate the scale radius of the lens.
+        This is the same formula used for the classic NFW profile.
 
         Parameters
         ----------
@@ -237,7 +239,9 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Calculate the reference mass. This is an abstract reference mass used internally in the equations from Baltz et al. 2009.
+        Calculate the reference mass.
+        This is an abstract reference mass used internally
+        in the equations from Baltz et al. 2009.
 
         Parameters
         ----------
@@ -343,7 +347,8 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        TNFW convergence as given in Baltz et al. 2009. This is unitless since it is Sigma(x) / Sigma_crit.
+        TNFW convergence as given in Baltz et al. 2009.
+        This is unitless since it is Sigma(x) / Sigma_crit.
 
         Parameters
         ----------
@@ -513,7 +518,9 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the lensing potential. Note that this is not a unitless potential! This is the potential as given in Baltz et al. 2009.
+        Compute the lensing potential.
+        Note that this is not a unitless potential!
+        This is the potential as given in Baltz et al. 2009.
 
         TODO: convert to dimensionless potential.
 

@@ -9,6 +9,7 @@ from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 DELTA = 200.0
 
@@ -37,7 +38,7 @@ class NFW(ThinLens):
         Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
     use_case: str
         Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
-        specifically cant be both batchable and differentiable. You may select which version
+        specifically can't be both batchable and differentiable. You may select which version
         you wish to use by setting this parameter to one of: batchable, differentiable.
 
     Methods
