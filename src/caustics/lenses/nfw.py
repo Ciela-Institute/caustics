@@ -249,7 +249,8 @@ class NFW(ThinLens):
                 torch.zeros_like(x),  # where: x == 1
             ),
         )
-    #fmt: on
+
+    # fmt: on
 
     @staticmethod
     def _g_differentiable(x: Tensor) -> Tensor:
