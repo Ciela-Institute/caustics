@@ -1,6 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 {
-  "image": "quay.io/pangeo/pytorch-notebook:latest",
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": "."
+  },
 
   "customizations": {
     "vscode": {
@@ -14,8 +17,5 @@
     }
   },
   "postCreateCommand": "sh .devcontainer/postBuild.sh",
-  "features": {
-    "ghcr.io/devcontainers-contrib/features/black:2": {},
-    "ghcr.io/devcontainers-contrib/features/pylint:2": {}
-  }
+  "postStartCommand": "pre-commit install --install-hooks"
 }
