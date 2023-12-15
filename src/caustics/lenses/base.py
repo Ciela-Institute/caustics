@@ -824,7 +824,7 @@ class ThinLens(Lens):
         **kwargs,
     ):
         """
-        Compute the gravitational time delay for light passing through the lens at given coordinates. This time delay is induced by the photons travelling through a gravitational potential well.
+        Compute the gravitational time delay for light passing through the lens at given coordinates. This time delay is induced by the photons travelling through a gravitational potential well. It is also called the Shapiro time delay.
 
         Parameters
         ----------
@@ -849,11 +849,13 @@ class ThinLens(Lens):
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
         return -factor * potential * arcsec_to_rad**2
 
-    @unpack(3)
+    @unpack(5)
     def time_delay_geometric(
         self,
         x: Tensor,
         y: Tensor,
+        x_s: Tensor,
+        y_s: Tensor,
         z_s: Tensor,
         z_l,
         *args,
@@ -869,6 +871,10 @@ class ThinLens(Lens):
             Tensor of x coordinates in the lens plane.
         y: Tensor
             Tensor of y coordinates in the lens plane.
+        x_s: Tensor
+            0D Tensor of x coordinate in the source plane. Time delays are computed relative to this position.
+        y_s: Tensor
+            0D Tensor of y coordinate in the source plane. Time delays are computed relative to this position.
         z_s: Tensor
             Tensor of source redshifts.
         params: (Packed, optional)
@@ -882,16 +888,17 @@ class ThinLens(Lens):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        ax, ay = self.physical_deflection_angle(x, y, z_s, params)
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        fp = 0.5 * (ax**2 + ay**2)
+        fp = 0.5 * ((x - x_s) ** 2 + (y - y_s) ** 2)
         return factor * fp * arcsec_to_rad**2
 
-    @unpack(3)
+    @unpack(5)
     def time_delay(
         self,
         x: Tensor,
         y: Tensor,
+        x_s: Tensor,
+        y_s: Tensor,
         z_s: Tensor,
         z_l,
         *args,
@@ -908,6 +915,10 @@ class ThinLens(Lens):
             Tensor of x coordinates in the lens plane.
         y: Tensor
             Tensor of y coordinates in the lens plane.
+        x_s: Tensor
+            0D Tensor of x coordinate in the source plane. Time delays are computed relative to this position.
+        y_s: Tensor
+            0D Tensor of y coordinate in the source plane. Time delays are computed relative to this position.
         z_s: Tensor
             Tensor of source redshifts.
         params: (Packed, optional)
@@ -920,7 +931,7 @@ class ThinLens(Lens):
         """
 
         td_grav = self.time_delay_gravitational(x, y, z_s, z_l, params=params)
-        td_geo = self.time_delay_geometric(x, y, z_s, z_l, params=params)
+        td_geo = self.time_delay_geometric(x, y, x_s, y_s, z_s, z_l, params=params)
         return td_grav + td_geo
 
     @unpack(4)
