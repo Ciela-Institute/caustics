@@ -10,6 +10,7 @@ from torch import Tensor
 from .utils import interp1d
 from .constants import G_over_c2, c_Mpc_s, km_to_Mpc
 from .parametrized import Parametrized, unpack
+from .packed import Packed
 
 __all__ = (
     "h0_default",
@@ -271,12 +272,13 @@ class Cosmology(Parametrized):
         d_l = self.angular_diameter_distance(z_l, params)
         d_s = self.angular_diameter_distance(z_s, params)
         d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
-        return d_s / (4 * pi * G_over_c2 * d_l * d_ls)
+        return d_s / (4 * pi * G_over_c2 * d_l * d_ls)  # fmt: skip
 
 
 class FlatLambdaCDM(Cosmology):
     """
-    Subclass of Cosmology representing a Flat Lambda Cold Dark Matter (LCDM) cosmology with no radiation.
+    Subclass of Cosmology representing a Flat Lambda Cold Dark Matter (LCDM)
+    cosmology with no radiation.
     """
 
     def __init__(
@@ -366,7 +368,7 @@ class FlatLambdaCDM(Cosmology):
             Critical density at redshift z.
         """
         Ode0 = 1 - Om0
-        return central_critical_density * (Om0 * (1 + z) ** 3 + Ode0)
+        return central_critical_density * (Om0 * (1 + z) ** 3 + Ode0)  # fmt: skip
 
     @unpack(1)
     def _comoving_distance_helper(
@@ -418,14 +420,10 @@ class FlatLambdaCDM(Cosmology):
         """
         Ode0 = 1 - Om0
         ratio = (Om0 / Ode0) ** (1 / 3)
-        return (
-            self.hubble_distance(h0)
-            * (
-                self._comoving_distance_helper((1 + z) * ratio, params)
-                - self._comoving_distance_helper(ratio, params)
-            )
-            / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))
-        )
+        DH = self.hubble_distance(h0)
+        DC1z = self._comoving_distance_helper((1 + z) * ratio, params)
+        DC = self._comoving_distance_helper(ratio, params)
+        return DH * (DC1z - DC) / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))  # fmt: skip
 
     @unpack(1)
     def transverse_comoving_distance(

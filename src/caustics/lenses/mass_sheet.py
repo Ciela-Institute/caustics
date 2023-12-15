@@ -7,6 +7,7 @@ from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("MassSheet",)
 
@@ -103,7 +104,7 @@ class MassSheet(ThinLens):
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         # Meneghetti eq 3.81
-        return surface_density * 0.5 * (x**2 + y**2)
+        return surface_density * 0.5 * (x**2 + y**2)  # fmt: skip
 
     @unpack(3)
     def convergence(

@@ -124,7 +124,7 @@ class NestedNamespaceDict(_NestedNamespaceDict):
         nested_namespace.foo = 'Hello'
         nested_namespace.bar = {'baz': 'World'}
         nested_namespace.bar.qux = 42
-        # works also in the follwoing way
+        # works also in the following way
          nested_namespace["bar.qux"] = 42
 
         print(nested_namespace)

@@ -7,6 +7,7 @@ from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("EPL",)
 
@@ -15,8 +16,10 @@ class EPL(ThinLens):
     """
     Elliptical power law (EPL, aka singular power-law ellipsoid) profile.
 
-    This class represents a thin gravitational lens model with an elliptical power law profile. The lensing equations are solved
-    iteratively using an approach based on Tessore et al. 2015.
+    This class represents a thin gravitational lens model
+    with an elliptical power law profile.
+    The lensing equations are solved iteratively
+    using an approach based on Tessore et al. 2015.
 
     Attributes
     ----------
@@ -28,17 +31,31 @@ class EPL(ThinLens):
     Parameters
     ----------
     z_l: Optional[Union[Tensor, float]]
-        This is the redshift of the lens. In the context of gravitational lensing, the lens is the galaxy or other mass distribution that is bending the light from a more distant source.
+        This is the redshift of the lens.
+        In the context of gravitational lensing,
+        the lens is the galaxy or other mass distribution
+        that is bending the light from a more distant source.
     x0 and y0: Optional[Union[Tensor, float]]
-        These are the coordinates of the lens center in the lens plane. The lens plane is the plane perpendicular to the line of sight in which the deflection of light by the lens is considered.
+        These are the coordinates of the lens center in the lens plane.
+        The lens plane is the plane perpendicular to the line of sight
+        in which the deflection of light by the lens is considered.
     q: Optional[Union[Tensor, float]]
-        This is the axis ratio of the lens, i.e., the ratio of the minor axis to the major axis of the elliptical lens.
+        This is the axis ratio of the lens, i.e., the ratio
+        of the minor axis to the major axis of the elliptical lens.
     phi: Optional[Union[Tensor, float]]
-        This is the orientation of the lens on the sky, typically given as an angle measured counter-clockwise from some reference direction.
+        This is the orientation of the lens on the sky,
+        typically given as an angle measured counter-clockwise
+        from some reference direction.
     b: Optional[Union[Tensor, float]]
-        This is the scale length of the lens, which sets the overall scale of the lensing effect. In some contexts, this is referred to as the Einstein radius.
+        This is the scale length of the lens,
+        which sets the overall scale of the lensing effect.
+        In some contexts, this is referred to as the Einstein radius.
     t: Optional[Union[Tensor, float]]
-        This is the power-law slope parameter of the lens model. In the context of the EPL model, t is equivalent to the gamma parameter minus one, where gamma is the power-law index of the radial mass distribution of the lens.
+        This is the power-law slope parameter of the lens model.
+        In the context of the EPL model,
+        t is equivalent to the gamma parameter minus one,
+        where gamma is the power-law index
+        of the radial mass distribution of the lens.
 
     """
 
@@ -66,19 +83,26 @@ class EPL(ThinLens):
         cosmology: Cosmology
             Cosmology object that provides cosmological distance calculations.
         z_l: Optional[Tensor]
-            Redshift of the lens. If not provided, it is considered as a free parameter.
+            Redshift of the lens.
+            If not provided, it is considered as a free parameter.
         x0: Optional[Tensor]
-            X coordinate of the lens center. If not provided, it is considered as a free parameter.
+            X coordinate of the lens center.
+            If not provided, it is considered as a free parameter.
         y0: Optional[Tensor]
-            Y coordinate of the lens center. If not provided, it is considered as a free parameter.
+            Y coordinate of the lens center.
+            If not provided, it is considered as a free parameter.
         q: Optional[Tensor]
-            Axis ratio of the lens. If not provided, it is considered as a free parameter.
+            Axis ratio of the lens.
+            If not provided, it is considered as a free parameter.
         phi: Optional[Tensor]
-            Position angle of the lens. If not provided, it is considered as a free parameter.
+            Position angle of the lens.
+            If not provided, it is considered as a free parameter.
         b: Optional[Tensor]
-            Scale length of the lens. If not provided, it is considered as a free parameter.
+            Scale length of the lens.
+            If not provided, it is considered as a free parameter.
         t: Optional[Tensor]
-            Power law slope (`gamma-1`) of the lens. If not provided, it is considered as a free parameter.
+            Power law slope (`gamma-1`) of the lens.
+            If not provided, it is considered as a free parameter.
         s: float
             Softening length for the elliptical power-law profile.
         n_iter: int
@@ -140,7 +164,7 @@ class EPL(ThinLens):
 
         # Tessore et al 2015 (eq. 23)
         r_omega = self._r_omega(z, t, q)
-        alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega
+        alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega  # fmt: skip
 
         alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
         alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
@@ -173,9 +197,9 @@ class EPL(ThinLens):
         part_sum = omega_i
 
         for i in range(1, self.n_iter):
-            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))
-            omega_i = -f * factor * phi * omega_i
-            part_sum = part_sum + omega_i
+            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
+            omega_i = -f * factor * phi * omega_i  # fmt: skip
+            part_sum = part_sum + omega_i  # fmt: skip
 
         return part_sum
 
@@ -257,5 +281,5 @@ class EPL(ThinLens):
             The convergence of the lens.
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()
-        return (2 - t) / 2 * (b / psi) ** t
+        psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
+        return (2 - t) / 2 * (b / psi) ** t  # fmt: skip

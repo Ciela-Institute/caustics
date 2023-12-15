@@ -1,16 +1,23 @@
 from ._version import version as VERSION  # noqa
 
-from .constants import *
-from .lenses import *
-from .cosmology import *
-from .packed import *
-from .parametrized import *
-from .light import *
-from .utils import *
-from .sims import *
-from .tests import *
+from . import constants, lenses, cosmology, packed, parametrized, light, utils, sims
+from .tests import test
 
 # from .demo import *
 
 __version__ = VERSION
 __author__ = "Ciela"
+
+__all__ = [
+    # Modules
+    "constants",
+    "lenses",
+    "cosmology",
+    "packed",
+    "parametrized",
+    "light",
+    "utils",
+    "sims",
+    # Functions
+    "test",
+]

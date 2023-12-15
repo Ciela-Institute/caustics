@@ -8,9 +8,13 @@ __all__ = ("Parameter",)
 
 class Parameter:
     """
-    Represents a static or dynamic parameter used for strong gravitational lensing simulations in the caustics codebase.
+    Represents a static or dynamic parameter used
+    for strong gravitational lensing simulations
+    in the caustics codebase.
 
-    A static parameter has a fixed value, while a dynamic parameter must be passed in each time it's required.
+    A static parameter has a fixed value,
+    while a dynamic parameter must be passed
+    in each time it's required.
 
     Attributes
     ----------
@@ -56,7 +60,8 @@ class Parameter:
             value = torch.as_tensor(value)
             if value.shape != self.shape:
                 raise ValueError(
-                    f"Cannot set Parameter value with a different shape. Received {value.shape}, expected {self.shape}"
+                    "Cannot set Parameter value with a different shape. "
+                    f"Received {value.shape}, expected {self.shape}"
                 )
         self._value = value
         self._dtype = None if value is None else value.dtype

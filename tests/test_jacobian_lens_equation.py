@@ -125,4 +125,7 @@ def test_multiplane_effective_convergence():
 
 
 if __name__ == "__main__":
-    test()
+    test_jacobian_autograd_vs_finitediff()
+    test_multiplane_jacobian()
+    test_multiplane_jacobian_autograd_vs_finitediff()
+    test_multiplane_effective_convergence()

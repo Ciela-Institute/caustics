@@ -22,7 +22,8 @@ def test_shape_error_messages():
     n_pix = 20
     cosmo = FlatLambdaCDM()
     with pytest.raises(TypeError):
-        # User cannot enter a list, only a tuple (because of type checking and consistency with torch)
+        # User cannot enter a list, only a tuple
+        # (because of type checking and consistency with torch)
         PixelatedConvergence(fov, n_pix, cosmo, shape=[8, 8])
 
     with pytest.raises(ValueError):
