@@ -345,7 +345,6 @@ class Multiplane(ThickLens):
         # Collect lens redshifts and ensure proper order
         z_ls = self.get_z_ls(params)
         lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_s = self.cosmology.transverse_comoving_distance(z_s, params)
 
         # Compute physical position on first lens plane
         D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]], params)
@@ -363,9 +362,6 @@ class Multiplane(ThickLens):
             D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
             D = self.cosmology.transverse_comoving_distance_z1z2(
                 z_ls[i], z_next, params
-            )
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_s, params
             )
             D_next = self.cosmology.transverse_comoving_distance(z_next, params)
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
