@@ -847,10 +847,11 @@ class ThinLens(Lens):
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         potential = self.potential(x, y, z_s, params)
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        return -factor * potential * arcsec_to_rad**2
+        print(self.potential(0., 0., z_s, params))
+        return -factor * (potential - self.potential(0., 0., z_s, params)) * arcsec_to_rad**2
 
     @unpack(5)
-    def time_delay_geometric(
+    def time_delay_geometric_source(
         self,
         x: Tensor,
         y: Tensor,
@@ -863,7 +864,15 @@ class ThinLens(Lens):
         **kwargs,
     ):
         """
-        Compute the geometric time delay for light passing through the lens at given coordinates. This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer.
+        Compute the geometric time delay for light passing through the lens at given coordinates relative to a position in the source plane.
+        This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer (at the coordinates ``x_s, y_s``).
+        Ultimately, this time delay is just :math:`T = \sqrt{(x-x_s)^2 + (y-y_s)^2}` but it ensures the units are treated correctly.
+        To determine the full time delay, this function should be used with ``time_delay_gravitational`` like:: python
+
+            td_grav = lens.time_delay_gravitational(x, y, z_s, params)
+            td_geo = lens.time_delay_geometric_source(x, y, x_s, y_s, z_s, params)
+            td = td_grav + td_geo
+
 
         Parameters
         ----------
@@ -884,6 +893,11 @@ class ThinLens(Lens):
         -------
         Tensor
             Time delay at the given coordinates.
+
+        See Also
+        --------
+        ``time_delay_geometric_deflection``
+
         """
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
@@ -892,13 +906,11 @@ class ThinLens(Lens):
         fp = 0.5 * ((x - x_s) ** 2 + (y - y_s) ** 2)
         return factor * fp * arcsec_to_rad**2
 
-    @unpack(5)
-    def time_delay(
+    @unpack(3)
+    def time_delay_geometric(
         self,
         x: Tensor,
         y: Tensor,
-        x_s: Tensor,
-        y_s: Tensor,
         z_s: Tensor,
         z_l,
         *args,
@@ -906,8 +918,13 @@ class ThinLens(Lens):
         **kwargs,
     ):
         """
-        Compute the gravitational time delay for light passing
-        through the lens at given coordinates.
+        Compute the geometric time delay for light passing through the lens at given coordinates relative to the corresponding undelfected ray.
+        This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer.
+        To determine the full time delay, this function should be used with ``time_delay_gravitational`` like:: python
+
+            td_grav = lens.time_delay_gravitational(x, y, z_s, params)
+            td_geo = lens.time_delay_geometric(x, y, z_s, params)
+            td = td_grav + td_geo
 
         Parameters
         ----------
@@ -928,11 +945,63 @@ class ThinLens(Lens):
         -------
         Tensor
             Time delay at the given coordinates.
-        """
 
-        td_grav = self.time_delay_gravitational(x, y, z_s, z_l, params=params)
-        td_geo = self.time_delay_geometric(x, y, x_s, y_s, z_s, z_l, params=params)
-        return td_grav + td_geo
+        See Also
+        --------
+        ``time_delay_geometric_source``
+
+        """
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+        ax, ay = self.physical_deflection_angle(x, y, z_s, params)
+        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
+        fp = 0.5 * (ax**2 + ay**2)
+        return factor * fp * arcsec_to_rad**2
+    
+
+    @unpack(3)
+    def time_delay(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        z_l,
+        *args,
+        params: Optional["Packed"] = None,
+        **kwargs,
+    ) -> Tensor:
+        """
+        Computes the gravitational time delay for light passing through the lens at given coordinates.
+
+        This time delay is induced by the photons travelling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse.
+        This function is equivalent to calling the individual time delay functions and adding their effects like this:: python
+
+            td_grav = lens.time_delay_gravitational(x, y, z_s, params)
+            td_geo = lens.time_delay_geometric(x, y, z_s, params)
+            time_delay = td_grav + td_geo
+
+        Parameters
+        ----------
+        x: Tensor
+            Tensor of x coordinates in the lens plane.
+        y: Tensor
+            Tensor of y coordinates in the lens plane.
+        z_s: Tensor
+            Tensor of source redshifts.
+        z_l: Tensor
+            Redshift of the lens.
+        params: (Packed, optional)
+            Dynamic parameter container for the lens model. Defaults to None.
+
+        Returns
+        -------
+        Tensor
+            Time delay at the given coordinates.
+        """
+        TD_grav = self.time_delay_gravitational(x, y, z_s, params)
+        TD_geo = self.time_delay_geometric(x, y, z_s, params)
+        return TD_grav + TD_geo
 
     @unpack(4)
     def _jacobian_deflection_angle_finitediff(
