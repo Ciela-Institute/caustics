@@ -64,7 +64,9 @@ class Lens(Parametrized):
                     "and known pixelscale. "
                     "Please include the pixelscale argument"
                 )
-            return self._jacobian_lens_equation_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+            return self._jacobian_lens_equation_finitediff(
+                x, y, z_s, pixelscale, params, **kwargs
+            )
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
@@ -145,7 +147,9 @@ class Lens(Parametrized):
             raise ValueError("fov must be given to generate initial guesses")
 
         # Random starting points in image plane
-        guesses = torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5)  # Has shape (n_init, Din:2)
+        guesses = torch.as_tensor(fov) * (
+            torch.rand(n_init, 2) - 0.5
+        )  # Has shape (n_init, Din:2)
 
         # Optimize guesses in image plane
         x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
@@ -528,7 +532,9 @@ class ThickLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
-        J = self._jacobian_effective_deflection_angle_autograd(x, y, z_s, params, **kwargs)
+        J = self._jacobian_effective_deflection_angle_autograd(
+            x, y, z_s, params, **kwargs
+        )
         return torch.eye(2) - J.detach()
 
     @unpack(3)
@@ -638,7 +644,9 @@ class ThinLens(Lens):
         """
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y, z_s, params)
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(
+            x, y, z_s, params
+        )
         return (
             (d_ls / d_s) * deflection_angle_x,
             (d_ls / d_s) * deflection_angle_y,
@@ -676,7 +684,9 @@ class ThinLens(Lens):
         """
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(x, y, z_s, params)
+        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(
+            x, y, z_s, params
+        )
         return (
             (d_s / d_ls) * deflection_angle_x,
             (d_s / d_ls) * deflection_angle_y,
@@ -776,7 +786,9 @@ class ThinLens(Lens):
         Tensor
             Surface mass density at the given coordinates in solar masses per Mpc^2.
         """
-        critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s, params)
+        critical_surface_density = self.cosmology.critical_surface_density(
+            z_l, z_s, params
+        )
         return self.convergence(x, y, z_s, params) * critical_surface_density  # fmt: skip
 
     @unpack(3)
@@ -847,8 +859,12 @@ class ThinLens(Lens):
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         potential = self.potential(x, y, z_s, params)
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
-        print(self.potential(0., 0., z_s, params))
-        return -factor * (potential - self.potential(0., 0., z_s, params)) * arcsec_to_rad**2
+        print(self.potential(0.0, 0.0, z_s, params))
+        return (
+            -factor
+            * (potential - self.potential(0.0, 0.0, z_s, params))
+            * arcsec_to_rad**2
+        )
 
     @unpack(5)
     def time_delay_geometric_source(
@@ -958,7 +974,6 @@ class ThinLens(Lens):
         factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls
         fp = 0.5 * (ax**2 + ay**2)
         return factor * fp * arcsec_to_rad**2
-    
 
     @unpack(3)
     def time_delay(
@@ -1091,7 +1106,9 @@ class ThinLens(Lens):
                     "Finite differences lensing jacobian requires regular grid "
                     "and known pixelscale. Please include the pixelscale argument"
                 )
-            return self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale, params)
+            return self._jacobian_deflection_angle_finitediff(
+                x, y, z_s, pixelscale, params
+            )
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
@@ -1111,7 +1128,9 @@ class ThinLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
-        J = self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale, params, **kwargs)
+        J = self._jacobian_deflection_angle_finitediff(
+            x, y, z_s, pixelscale, params, **kwargs
+        )
         return torch.eye(2) - J
 
     @unpack(3)

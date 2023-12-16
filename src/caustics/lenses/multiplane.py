@@ -39,7 +39,9 @@ class Multiplane(ThickLens):
             self.add_parametrized(lens)
 
     @unpack(0)
-    def get_z_ls(self, *args, params: Optional["Packed"] = None, **kwargs) -> list[Tensor]:
+    def get_z_ls(
+        self, *args, params: Optional["Packed"] = None, **kwargs
+    ) -> list[Tensor]:
         """
         Get the redshifts of each lens in the multiplane.
 
@@ -131,7 +133,9 @@ class Multiplane(ThickLens):
         lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
 
         # Compute physical position on first lens plane
-        D = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_ls[lens_planes[0]], params)
+        D = self.cosmology.transverse_comoving_distance_z1z2(
+            z_start, z_ls[lens_planes[0]], params
+        )
         X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
 
         # Initial angles are observation angles
@@ -140,7 +144,9 @@ class Multiplane(ThickLens):
 
         for i in lens_planes:
             # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_ls[i], params)
+            D_l = self.cosmology.transverse_comoving_distance_z1z2(
+                z_start, z_ls[i], params
+            )
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
                 Y * rad_to_arcsec / D_l,
@@ -154,7 +160,9 @@ class Multiplane(ThickLens):
 
             # Propagate rays to next plane (basically eq 18)
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_end
-            D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next, params)
+            D = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_next, params
+            )
             X = X + D * theta_x * arcsec_to_rad
             Y = Y + D * theta_y * arcsec_to_rad
 
@@ -214,7 +222,7 @@ class Multiplane(ThickLens):
         """
         # TODO: rescale mass densities of each lens and sum
         raise NotImplementedError()
-    
+
     @unpack(3)
     def time_delay_gravitational(
         self,
@@ -268,8 +276,12 @@ class Multiplane(ThickLens):
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
             # Compute deflection angle at current ray positions
             D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next, params)
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_s, params)
+            D = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_next, params
+            )
+            D_is = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_s, params
+            )
             D_next = self.cosmology.transverse_comoving_distance(z_next, params)
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
@@ -295,7 +307,7 @@ class Multiplane(ThickLens):
             Y = Y + D * theta_y * arcsec_to_rad
 
         return TD
-    
+
     @unpack(3)
     def time_delay_geometric(
         self,
@@ -349,8 +361,12 @@ class Multiplane(ThickLens):
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
             # Compute deflection angle at current ray positions
             D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next, params)
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_s, params)
+            D = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_next, params
+            )
+            D_is = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_s, params
+            )
             D_next = self.cosmology.transverse_comoving_distance(z_next, params)
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
@@ -427,8 +443,12 @@ class Multiplane(ThickLens):
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
             # Compute deflection angle at current ray positions
             D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next, params)
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_s, params)
+            D = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_next, params
+            )
+            D_is = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_s, params
+            )
             D_next = self.cosmology.transverse_comoving_distance(z_next, params)
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
