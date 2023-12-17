@@ -36,6 +36,7 @@ def test():
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
 
+
 def test_sie_time_delay():
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -43,7 +44,7 @@ def test_sie_time_delay():
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])  
+    x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
 
     n_pix = 10
     res = 0.05
@@ -56,9 +57,17 @@ def test_sie_time_delay():
     )
 
     assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, lens.pack(x))))
-    assert torch.all(torch.isfinite(lens.time_delay_geometric(thx, thy, z_s, lens.pack(x))))    
-    assert torch.all(torch.isfinite(lens.time_delay_geometric_source(thx, thy, 0., 0., z_s, lens.pack(x))))    
-    assert torch.all(torch.isfinite(lens.time_delay_gravitational(thx, thy, z_s, lens.pack(x))))
+    assert torch.all(
+        torch.isfinite(lens.time_delay_geometric(thx, thy, z_s, lens.pack(x)))
+    )
+    assert torch.all(
+        torch.isfinite(
+            lens.time_delay_geometric_source(thx, thy, 0.0, 0.0, z_s, lens.pack(x))
+        )
+    )
+    assert torch.all(
+        torch.isfinite(lens.time_delay_gravitational(thx, thy, z_s, lens.pack(x)))
+    )
 
 
 if __name__ == "__main__":

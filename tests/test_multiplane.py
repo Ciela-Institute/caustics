@@ -63,8 +63,8 @@ def test():
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
     )
 
-def test_multiplane_time_delay():
 
+def test_multiplane_time_delay():
     # Setup
     z_s = torch.tensor(1.5, dtype=torch.float32)
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -95,8 +95,13 @@ def test_multiplane_time_delay():
     )
 
     assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, lens.pack(x))))
-    assert torch.all(torch.isfinite(lens.time_delay_geometric(thx, thy, z_s, lens.pack(x))))    
-    assert torch.all(torch.isfinite(lens.time_delay_gravitational(thx, thy, z_s, lens.pack(x))))
+    assert torch.all(
+        torch.isfinite(lens.time_delay_geometric(thx, thy, z_s, lens.pack(x)))
+    )
+    assert torch.all(
+        torch.isfinite(lens.time_delay_gravitational(thx, thy, z_s, lens.pack(x)))
+    )
+
 
 def test_params():
     z_s = 1
