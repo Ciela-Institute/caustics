@@ -996,6 +996,17 @@ class ThinLens(Lens):
             td_geo = lens.time_delay_geometric(x, y, z_s, params)
             time_delay = td_grav + td_geo
 
+        The main equation involved here is the following::
+
+            \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \left[ \frac{1}{2}|\vec{\alpha}(\vec{\theta})|^2 - \psi(\vec{\theta}) \right]
+
+        where :math:`\vec{\alpha}(\vec{\theta})` is the deflection angle, 
+        :math:`\psi(\vec{\theta})` is the lensing potential, 
+        :math:`D_l` is the comoving distance to the lens, 
+        :math:`D_s` is the comoving distance to the source, 
+        and :math:`D_{ls}` is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
+        
+
         Parameters
         ----------
         x: Tensor

@@ -234,7 +234,7 @@ class Multiplane(ThickLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract
+        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract . For more information see the :func:`time_delay` method.
 
         Parameters
         ----------
@@ -319,7 +319,7 @@ class Multiplane(ThickLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract
+        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract . For more information see the :func:`time_delay` method.
 
         Parameters
         ----------
@@ -397,7 +397,22 @@ class Multiplane(ThickLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract
+        Compute the time delay of light caused by the lensing. 
+        This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract . 
+        For the time delay of a light path from the observer to the source, the following equation is used::
+
+            \Delta t = \sum_{i=1}^{N-1} \tau_{i,i+1} \left[ \frac{1}{2} \left( \vec{\alpha}^i \right)^2 - \beta_{i,i+1} \psi^i \right] \\
+            \tau_{i,j} = (1 + z_i) \frac{D_i D_{j}}{D_{i,j} c} \\
+            \beta_{i,j} = \frac{D_{i,j} D_s}{D_{j} D_{i,s}} \\
+
+        where :math:`\vec{\alpha}^i` is the deflection angle at the i-th lens plane, 
+        :math:`\psi^i` is the lensing potential at the i-th lens plane, 
+        :math:`D_i` is the comoving distance to the i-th lens plane, 
+        :math:`D_{i,j}` is the comoving distance between the i-th and j-th lens plane, 
+        :math:`D_s` is the comoving distance to the source, 
+        and :math:`D_{i,s}` is the comoving distance between the i-th lens plane and the source.
+
+        This performs the same ray tracing as the :func:`raytrace` method, but also computes the time delay along the way.
 
         Parameters
         ----------
