@@ -823,7 +823,7 @@ class ThinLens(Lens):
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         return x - ax, y - ay
-    
+
     @staticmethod
     def _arcsec2_to_time(z_l, z_s, cosmology, params):
         """
@@ -876,7 +876,7 @@ class ThinLens(Lens):
         --------
         :func:`caustics.lenses.ThinLens.geometric_time_delay` and :func:`caustics.lenses.ThinLens.time_delay`
         """
-        
+
         potential = self.potential(x, y, z_s, params)
         factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
         return -factor * potential
@@ -895,9 +895,9 @@ class ThinLens(Lens):
         **kwargs,
     ):
         """
-        This computes the time delays for light passing through the lens at given coordinates relative to the corresponding undelfected ray. 
-        This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer. 
-        This function does not consider the raytracing through the lens plane and merely computes what the time delay would be for a ray deflected from the image coordinates back to the provided source plane coordinates. 
+        This computes the time delays for light passing through the lens at given coordinates relative to the corresponding undelfected ray.
+        This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer.
+        This function does not consider the raytracing through the lens plane and merely computes what the time delay would be for a ray deflected from the image coordinates back to the provided source plane coordinates.
         It is equivalent to:: python
 
             \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \frac{1}{2}|\vec{\theta} - \vec{\beta}|^2
@@ -980,7 +980,7 @@ class ThinLens(Lens):
         :func:`caustics.lenses.ThinLens.shapiro_time_delay` and :func:`caustics.lenses.ThinLens.time_delay`
 
         """
-        
+
         ax, ay = self.physical_deflection_angle(x, y, z_s, params)
         factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
         fp = 0.5 * (ax**2 + ay**2)
