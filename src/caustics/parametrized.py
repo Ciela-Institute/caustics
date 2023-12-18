@@ -79,9 +79,7 @@ class Parametrized:
             return super().__getattribute__(key)
         except AttributeError as e:
             # Check if key refers to a parametrized module name (different from its attribute key)
-            _map = super().__getattribute__(
-                "_module_key_map"
-            )  # use super to avoid recursion error
+            _map = super().__getattribute__("_module_key_map")  # use super to avoid recursion error
             if key in _map.keys():
                 return super().__getattribute__(_map[key])
             else:
@@ -125,9 +123,7 @@ class Parametrized:
             child._parents[new_name] = self
         self._name = new_name
 
-    def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
-    ):
+    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
         """
         Moves static Params for this component and its childs
         to the specified device and casts them to the specified data type.
@@ -232,9 +228,7 @@ class Parametrized:
             If the input is a tensor and the shape does not match the expected shape.
         """
         if isinstance(x, (dict, Packed)):
-            missing_names = [
-                name for name in self.params.dynamic.keys() if name not in x
-            ]
+            missing_names = [name for name in self.params.dynamic.keys() if name not in x]
             if len(missing_names) > 0:
                 raise ValueError(f"missing x keys for {missing_names}")
 
@@ -262,9 +256,7 @@ class Parametrized:
 
         elif isinstance(x, Tensor):
             n_passed = x.shape[-1]
-            n_expected = sum(
-                [module.dynamic_size for module in self.dynamic_modules.values()]
-            )
+            n_expected = sum([module.dynamic_size for module in self.dynamic_modules.values()])
             if n_passed != n_expected:
                 # TODO: give component and arg names
                 raise ValueError(
@@ -331,9 +323,7 @@ class Parametrized:
                     offset += 1
                 elif isinstance(dynamic_x, Tensor):
                     size = prod(param.shape)
-                    param_value = dynamic_x[..., offset : offset + size].reshape(
-                        param.shape
-                    )
+                    param_value = dynamic_x[..., offset : offset + size].reshape(param.shape)
                     offset += size
                 else:
                     raise ValueError(
@@ -370,10 +360,11 @@ class Parametrized:
         dynamic = NestedNamespaceDict()
 
         def _get_params(module):
-            if module.module_params.static:
-                static[module.name] = module.module_params.static
-            if module.module_params.dynamic:
-                dynamic[module.name] = module.module_params.dynamic
+            MP = module.module_params
+            if MP.static:
+                static[module.name] = MP.static
+            if MP.dynamic:
+                dynamic[module.name] = MP.dynamic
             for child in module._childs.values():
                 _get_params(child)
 
@@ -384,9 +375,7 @@ class Parametrized:
     @property
     def dynamic_modules(self) -> NamespaceDict[str, "Parametrized"]:
         # Only catch modules with dynamic parameters
-        modules = (
-            NamespaceDict()
-        )  # todo make this an ordinary dict and reorder at the end.
+        modules = NamespaceDict()  # todo make this an ordinary dict and reorder at the end.
 
         def _get_childs(module):
             # Start from root, and move down the DAG
@@ -415,9 +404,7 @@ class Parametrized:
 
         for n, d in self._childs.items():
             if d.n_dynamic > 0:
-                desc_dynamic_strs.append(
-                    f"('{n}': {list(d.module_params.dynamic.keys())})"
-                )
+                desc_dynamic_strs.append(f"('{n}': {list(d.module_params.dynamic.keys())})")
 
         desc_dynamic_str = ", ".join(desc_dynamic_strs)
 
@@ -448,7 +435,6 @@ class Parametrized:
         graphviz.Digraph
             The graph representation of the object.
         """
-        import graphviz
 
         def add_component(p: Parametrized, dot):
             dot.attr("node", style="solid", color="black", shape="ellipse")
@@ -487,56 +473,34 @@ class Parametrized:
         return dot
 
 
-def unpack(n_leading_args=0):
-    def decorator(method):
-        sig = inspect.signature(method)
-        method_params = list(sig.parameters.keys())[1:]  # exclude 'self'
-        n_params = len(method_params)
+def unpack(method):
+    @functools.wraps(method)
+    def wrapped(self, *args, **kwargs):
+        # Extract "params" regardless of how it is/they are passed
+        # ---------------------------------------------------------
+        if args and isinstance(args[-1], Packed):
+            # Params is given as last argument
+            x = args[-1]
+            args = args[:-1]
+        elif "params" in kwargs:
+            # Params is given as a keyword argument
+            x = kwargs.pop("params")
+        else:
+            # Params are given individually and are collected into a packed object
+            keys = self.params.dynamic[self.name].keys()
+            print(keys)
+            try:
+                x = self.pack([kwargs.pop(name) for name in keys])
+            except KeyError as e:
+                raise KeyError(
+                    f"Missing parameter {e} in method '{method.__name__}' of module '{self.name}'"
+                )
 
-        @functools.wraps(method)
-        def wrapped(self, *args, **kwargs):
-            args = list(args)
-            leading_args = []
-            # Collect leading args and separate them from module parameters (trailing args)
-            for i in range(n_leading_args):
-                param = method_params[i]
-                if param in kwargs:
-                    leading_args.append(kwargs.pop(param))
-                elif args:
-                    leading_args.append(args.pop(0))
+        # Fill kwargs with module params
+        # ---------------------------------------------------------
+        for name, value in zip(self._params.keys(), self.unpack(x)):
+            kwargs[name] = value
 
-            # Collect module parameters passed in argument (dynamic or otherwise)
-            if args and isinstance(args[0], Packed):
-                # Case 1: Params is already Packed (or no params were passed)
-                x = args.pop(0)
-            elif "params" in kwargs:
-                # Case 2: params was passed explicitly as a kwargs,
-                # i.e. user used signature "method(*leading_args, params=params)"
-                x = kwargs["params"]
-            else:
-                # Case 3 (most common): params were passed as the trailing arguments of the method
-                trailing_args = []
-                for i in range(n_leading_args, n_params):
-                    param = method_params[i]
-                    if param in kwargs:
-                        trailing_args.append(kwargs.pop(param))
-                    elif args:
-                        trailing_args.append(args.pop(0))
-                if not trailing_args or (
-                    len(trailing_args) == 1 and trailing_args[0] is None
-                ):
-                    # No params were passed, module is static and was expecting no params
-                    x = Packed()
-                elif isinstance(trailing_args[0], (list, dict)):
-                    # params were part of a collection already (don't double wrap them)
-                    x = self.pack(trailing_args[0])
-                else:
-                    # all parameters were passed individually in args or kwargs
-                    x = self.pack(trailing_args)
-            unpacked_args = self.unpack(x)
-            kwargs["params"] = x
-            return method(self, *leading_args, *unpacked_args, **kwargs)
+        return method(self, *args, params=x, **kwargs)
 
-        return wrapped
-
-    return decorator
+    return wrapped

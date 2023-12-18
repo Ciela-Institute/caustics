@@ -93,20 +93,20 @@ class Sersic(Source):
 
         self.lenstronomy_k_mode = use_lenstronomy_k
 
-    @unpack(2)
+    @unpack
     def brightness(
         self,
         x,
         y,
-        x0,
-        y0,
-        q,
-        phi,
-        n,
-        Re,
-        Ie,
         *args,
         params: Optional["Packed"] = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        n: Tensor = None,
+        Re: Tensor = None,
+        Ie: Tensor = None,
         **kwargs,
     ):
         """

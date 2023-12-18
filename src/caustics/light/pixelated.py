@@ -67,26 +67,24 @@ class Pixelated(Source):
                 f"image must be 2D or 3D (channels first). Received a {image.ndim}D tensor)"
             )
         elif shape is not None and len(shape) not in [2, 3]:
-            raise ValueError(
-                f"shape must be specify 2D or 3D tensors. Received shape={shape}"
-            )
+            raise ValueError(f"shape must be specify 2D or 3D tensors. Received shape={shape}")
         super().__init__(name=name)
         self.add_param("x0", x0)
         self.add_param("y0", y0)
         self.add_param("image", image, shape)
         self.add_param("pixelscale", pixelscale)
 
-    @unpack(2)
+    @unpack
     def brightness(
         self,
         x,
         y,
-        x0,
-        y0,
-        image,
-        pixelscale,
         *args,
         params: Optional["Packed"] = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        image: Tensor = None,
+        pixelscale: Tensor = None,
         **kwargs,
     ):
         """
