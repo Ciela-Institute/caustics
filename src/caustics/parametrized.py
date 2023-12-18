@@ -2,7 +2,6 @@ from collections import OrderedDict
 from math import prod
 from typing import Optional, Union
 import functools
-import inspect
 
 import torch
 import re
@@ -79,7 +78,9 @@ class Parametrized:
             return super().__getattribute__(key)
         except AttributeError as e:
             # Check if key refers to a parametrized module name (different from its attribute key)
-            _map = super().__getattribute__("_module_key_map")  # use super to avoid recursion error
+            _map = super().__getattribute__(
+                "_module_key_map"
+            )  # use super to avoid recursion error
             if key in _map.keys():
                 return super().__getattribute__(_map[key])
             else:
@@ -123,7 +124,9 @@ class Parametrized:
             child._parents[new_name] = self
         self._name = new_name
 
-    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
+    def to(
+        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+    ):
         """
         Moves static Params for this component and its childs
         to the specified device and casts them to the specified data type.
@@ -228,7 +231,9 @@ class Parametrized:
             If the input is a tensor and the shape does not match the expected shape.
         """
         if isinstance(x, (dict, Packed)):
-            missing_names = [name for name in self.params.dynamic.keys() if name not in x]
+            missing_names = [
+                name for name in self.params.dynamic.keys() if name not in x
+            ]
             if len(missing_names) > 0:
                 raise ValueError(f"missing x keys for {missing_names}")
 
@@ -256,7 +261,9 @@ class Parametrized:
 
         elif isinstance(x, Tensor):
             n_passed = x.shape[-1]
-            n_expected = sum([module.dynamic_size for module in self.dynamic_modules.values()])
+            n_expected = sum(
+                [module.dynamic_size for module in self.dynamic_modules.values()]
+            )
             if n_passed != n_expected:
                 # TODO: give component and arg names
                 raise ValueError(
@@ -323,7 +330,9 @@ class Parametrized:
                     offset += 1
                 elif isinstance(dynamic_x, Tensor):
                     size = prod(param.shape)
-                    param_value = dynamic_x[..., offset : offset + size].reshape(param.shape)
+                    param_value = dynamic_x[..., offset : offset + size].reshape(
+                        param.shape
+                    )
                     offset += size
                 else:
                     raise ValueError(
@@ -375,7 +384,9 @@ class Parametrized:
     @property
     def dynamic_modules(self) -> NamespaceDict[str, "Parametrized"]:
         # Only catch modules with dynamic parameters
-        modules = NamespaceDict()  # todo make this an ordinary dict and reorder at the end.
+        modules = (
+            NamespaceDict()
+        )  # todo make this an ordinary dict and reorder at the end.
 
         def _get_childs(module):
             # Start from root, and move down the DAG
@@ -404,7 +415,9 @@ class Parametrized:
 
         for n, d in self._childs.items():
             if d.n_dynamic > 0:
-                desc_dynamic_strs.append(f"('{n}': {list(d.module_params.dynamic.keys())})")
+                desc_dynamic_strs.append(
+                    f"('{n}': {list(d.module_params.dynamic.keys())})"
+                )
 
         desc_dynamic_str = ", ".join(desc_dynamic_strs)
 

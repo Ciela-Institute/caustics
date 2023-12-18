@@ -3,7 +3,6 @@ from .base import ThinLens, ThickLens
 # from .epl import EPL
 # from .external_shear import ExternalShear
 # from .pixelated_convergence import PixelatedConvergence
-from .multiplane import Multiplane
 
 # from .nfw import NFW
 # from .point import Point

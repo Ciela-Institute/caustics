@@ -174,9 +174,9 @@ class Cosmology(Parametrized):
         Tensor
             The transverse comoving distance between each pair of redshifts in Mpc.
         """
-        return self.transverse_comoving_distance(z2, params) - self.transverse_comoving_distance(
-            z1, params
-        )
+        return self.transverse_comoving_distance(
+            z2, params
+        ) - self.transverse_comoving_distance(z1, params)
 
     @unpack
     def angular_diameter_distance(
@@ -224,7 +224,12 @@ class Cosmology(Parametrized):
 
     @unpack
     def time_delay_distance(
-        self, z_l: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+        self,
+        z_l: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        **kwargs,
     ) -> Tensor:
         """
         Compute the time delay distance between lens and source planes.
@@ -250,7 +255,12 @@ class Cosmology(Parametrized):
 
     @unpack
     def critical_surface_density(
-        self, z_l: Tensor, z_s: Tensor, *args, params: Optional["Packed"] = None, **kwargs
+        self,
+        z_l: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        **kwargs,
     ) -> Tensor:
         """
         Compute the critical surface density between lens and source planes.
@@ -315,13 +325,15 @@ class FlatLambdaCDM(Cosmology):
             dtype=torch.float32
         )
 
-    def to(self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
+    def to(
+        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+    ):
         super().to(device, dtype)
-        self._comoving_distance_helper_y_grid = self._comoving_distance_helper_y_grid.to(
-            device, dtype
+        self._comoving_distance_helper_y_grid = (
+            self._comoving_distance_helper_y_grid.to(device, dtype)
         )
-        self._comoving_distance_helper_x_grid = self._comoving_distance_helper_x_grid.to(
-            device, dtype
+        self._comoving_distance_helper_x_grid = (
+            self._comoving_distance_helper_x_grid.to(device, dtype)
         )
 
     def hubble_distance(self, h0):
