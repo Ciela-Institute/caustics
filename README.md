@@ -30,16 +30,12 @@ pip install caustics
 import matplotlib.pyplot as plt
 import caustics
 
-cosmology = caustics.cosmology.FlatLambdaCDM()
+C = caustics.cosmology.FlatLambdaCDM()
 
-sie = caustics.lenses.SIE(
-    cosmology=cosmology, z_l=0.5, x0=0.0, y0=0.0, q=0.4, phi=1.5708, b=1.0
-)
+sie = caustics.lenses.SIE(cosmology=C, z_l=0.5, x0=0., y0=0., q=0.4, phi=1.5708, b=1.)
 src = caustics.light.Sersic(x0=-0.2, y0=0.0, q=0.6, phi=-0.785, n=1.5, Re=3.0, Ie=1.0)
 
-sim = caustics.sims.Lens_Source(
-    lens=sie, source=src, pixelscale=0.05, pixels_x=100, z_s=1.5
-)
+sim = caustics.sims.Lens_Source(lens=sie, source=src, pixelscale=0.05, pixels_x=100, z_s=1.5)
 
 plt.imshow(sim(quad_level=3).detach().cpu().numpy(), origin="lower")
 plt.axis("off")
