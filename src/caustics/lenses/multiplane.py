@@ -224,7 +224,7 @@ class Multiplane(ThickLens):
         raise NotImplementedError()
 
     @unpack(3)
-    def time_delay_gravitational(
+    def shapiro_time_delay(
         self,
         x: Tensor,
         y: Tensor,
@@ -234,7 +234,7 @@ class Multiplane(ThickLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract . For more information see the :func:`time_delay` method.
+        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract .
 
         Parameters
         ----------
@@ -252,10 +252,9 @@ class Multiplane(ThickLens):
         Tensor
             Time delay caused by the lensing.
 
-        Raises
-        ------
-        NotImplementedError
-            This method is not yet implemented.
+        See Also
+        --------
+        :func:`caustics.lenses.Multiplane.geometric_time_delay` and :func:`caustics.lenses.Multiplane.time_delay`
         """
         # Collect lens redshifts and ensure proper order
         z_ls = self.get_z_ls(params)
@@ -309,7 +308,7 @@ class Multiplane(ThickLens):
         return TD
 
     @unpack(3)
-    def time_delay_geometric(
+    def geometric_time_delay(
         self,
         x: Tensor,
         y: Tensor,
@@ -337,10 +336,9 @@ class Multiplane(ThickLens):
         Tensor
             Time delay caused by the lensing.
 
-        Raises
-        ------
-        NotImplementedError
-            This method is not yet implemented.
+        See Also
+        --------
+        :func:`caustics.lenses.Multiplane.shapiro_time_delay` and :func:`caustics.lenses.Multiplane.time_delay`
         """
         # Collect lens redshifts and ensure proper order
         z_ls = self.get_z_ls(params)
@@ -430,10 +428,9 @@ class Multiplane(ThickLens):
         Tensor
             Time delay caused by the lensing.
 
-        Raises
-        ------
-        NotImplementedError
-            This method is not yet implemented.
+        See Also
+        --------
+        :func:`caustics.lenses.Multiplane.shapiro_time_delay` and :func:`caustics.lenses.Multiplane.geometric_time_delay`
         """
         # Collect lens redshifts and ensure proper order
         z_ls = self.get_z_ls(params)
