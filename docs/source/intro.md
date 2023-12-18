@@ -42,7 +42,7 @@ plt.axis("off")
 plt.show()
 ```
 
-![Caustics lensed image](./media/minimal_example.png)
+![Caustics lensed image](../../media/minimal_example.png)
 
 ### Contents
 
