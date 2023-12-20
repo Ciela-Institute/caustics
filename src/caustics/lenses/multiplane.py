@@ -60,6 +60,85 @@ class Multiplane(ThickLens):
         return [lens.unpack(params)[0] for lens in self.lenses]
 
     @unpack(3)
+    def _raytrace_helper(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        shapiro_time_delay: bool = True,
+        geometric_time_delay: bool = True,
+        ray_coords: bool = True,
+        **kwargs,
+    ):
+        # Collect lens redshifts and ensure proper order
+        z_ls = self.get_z_ls(params)
+        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
+        D_s = self.cosmology.transverse_comoving_distance(z_s, params)
+
+        # Compute physical position on first lens plane
+        D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]], params)
+        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
+
+        # Initial angles are observation angles
+        theta_x, theta_y = x, y
+
+        # Store the time delays
+        TD = torch.zeros_like(x)
+
+        for i in lens_planes:
+            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
+            # Compute deflection angle at current ray positions
+            D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
+            D = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_next, params
+            )
+            D_is = self.cosmology.transverse_comoving_distance_z1z2(
+                z_ls[i], z_s, params
+            )
+            D_next = self.cosmology.transverse_comoving_distance(z_next, params)
+            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
+                X * rad_to_arcsec / D_l,
+                Y * rad_to_arcsec / D_l,
+                z_s,
+                params,
+            )
+
+            # Update angle of rays after passing through lens (sum in eq 18)
+            theta_x = theta_x - alpha_x
+            theta_y = theta_y - alpha_y
+
+            # Compute time delay
+            tau_ij = (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s)
+            if shapiro_time_delay:
+                beta_ij = D * D_s / (D_next * D_is)
+                potential = self.lenses[i].potential(
+                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l, z_s, params
+                )
+                TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
+            if geometric_time_delay:
+                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (
+                    alpha_x**2 + alpha_y**2
+                )
+
+            # Propagate rays to next plane (basically eq 18)
+            X = X + D * theta_x * arcsec_to_rad
+            Y = Y + D * theta_y * arcsec_to_rad
+
+        # Convert from physical position to angular position on the source plane
+        D_end = self.cosmology.transverse_comoving_distance(z_s, params)
+        if ray_coords and not (shapiro_time_delay or geometric_time_delay):
+            return X * rad_to_arcsec / D_end, Y * rad_to_arcsec / D_end
+        elif ray_coords and (shapiro_time_delay or geometric_time_delay):
+            return X * rad_to_arcsec / D_end, Y * rad_to_arcsec / D_end, TD
+        elif shapiro_time_delay or geometric_time_delay:
+            return TD
+        raise ValueError(
+            "No return value specified. Must choose one or more of: ray_coords, shapiro_time_delay, or geometric_time_delay to be True."
+        )
+
+    @unpack(3)
     def raytrace(
         self,
         x: Tensor,
@@ -97,9 +176,9 @@ class Multiplane(ThickLens):
         Parameters
         ----------
         x: Tensor
-            angular x-coordinates from the observer perspective.
+            angular x-coordinates in the image plane.
         y: Tensor
-            angular y-coordinates from the observer perspective.
+            angular y-coordinates in the image plane.
         z_s: Tensor
             Redshifts of the sources.
         params: (Packed, optional)
@@ -110,67 +189,19 @@ class Multiplane(ThickLens):
         (Tensor, Tensor)
             The reduced deflection angle.
 
+        References
+        ----------
+        1. Margarita Petkova, R. Benton Metcalf, and Carlo Giocoli. 2014. GLAMER II: multiple-plane lensing. MNRAS 445, 1954-1966. DOI:https://doi.org/10.1093/mnras/stu1860
+
         """  # noqa: E501
-        return self.raytrace_z1z2(x, y, torch.zeros_like(z_s), z_s, params)
-
-    @unpack(4)
-    def raytrace_z1z2(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_start: Tensor,
-        z_end: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
-    ) -> tuple[Tensor, Tensor]:
-        """
-        Method to do multiplane ray tracing from arbitrary start/end redshift.
-        """
-
-        # Collect lens redshifts and ensure proper order
-        z_ls = self.get_z_ls(params)
-        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-
-        # Compute physical position on first lens plane
-        D = self.cosmology.transverse_comoving_distance_z1z2(
-            z_start, z_ls[lens_planes[0]], params
-        )
-        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
-
-        # Initial angles are observation angles
-        # (negative needed because of negative in propagation term)
-        theta_x, theta_y = x, y
-
-        for i in lens_planes:
-            # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance_z1z2(
-                z_start, z_ls[i], params
-            )
-            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
-                X * rad_to_arcsec / D_l,
-                Y * rad_to_arcsec / D_l,
-                z_end,
-                params,
-            )
-
-            # Update angle of rays after passing through lens (sum in eq 18)
-            theta_x = theta_x - alpha_x
-            theta_y = theta_y - alpha_y
-
-            # Propagate rays to next plane (basically eq 18)
-            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_end
-            D = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_next, params
-            )
-            X = X + D * theta_x * arcsec_to_rad
-            Y = Y + D * theta_y * arcsec_to_rad
-
-        # Convert from physical position to angular position on the source plane
-        D_end = self.cosmology.transverse_comoving_distance_z1z2(z_start, z_end, params)
-        return (
-            X * rad_to_arcsec / D_end,
-            Y * rad_to_arcsec / D_end,
+        return self._raytrace_helper(
+            x,
+            y,
+            z_s,
+            params,
+            shapiro_time_delay=False,
+            geometric_time_delay=False,
+            ray_coords=True,
         )
 
     @unpack(3)
@@ -224,167 +255,6 @@ class Multiplane(ThickLens):
         raise NotImplementedError()
 
     @unpack(3)
-    def shapiro_time_delay(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
-    ) -> Tensor:
-        """
-        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract .
-
-        Parameters
-        ----------
-        x: Tensor
-            x-coordinates in the lens plane.
-        y: Tensor
-            y-coordinates in the lens plane.
-        z_s: Tensor
-            Redshifts of the sources.
-        params: (Packed, optional)
-            Dynamic parameter container.
-
-        Returns
-        -------
-        Tensor
-            Time delay caused by the lensing.
-
-        See Also
-        --------
-        :func:`caustics.lenses.Multiplane.geometric_time_delay` and :func:`caustics.lenses.Multiplane.time_delay`
-        """
-        # Collect lens redshifts and ensure proper order
-        z_ls = self.get_z_ls(params)
-        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_s = self.cosmology.transverse_comoving_distance(z_s, params)
-
-        # Compute physical position on first lens plane
-        D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]], params)
-        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
-
-        # Initial angles are observation angles
-        theta_x, theta_y = x, y
-
-        # Store the time delays
-        TD = torch.zeros_like(x)
-
-        for i in lens_planes:
-            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
-            # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_next, params
-            )
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_s, params
-            )
-            D_next = self.cosmology.transverse_comoving_distance(z_next, params)
-            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
-                X * rad_to_arcsec / D_l,
-                Y * rad_to_arcsec / D_l,
-                z_s,
-                params,
-            )
-
-            # Update angle of rays after passing through lens (sum in eq 18)
-            theta_x = theta_x - alpha_x
-            theta_y = theta_y - alpha_y
-
-            # Compute time delay
-            tau_ij = 1 + z_ls[i] * D_l * D_next / (D * c_Mpc_s)
-            beta_ij = D * D_s / (D_next * D_is)
-            potential = self.lenses[i].potential(
-                X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l, z_s, params
-            )
-            TD += -tau_ij * beta_ij * potential * arcsec_to_rad**2
-
-            # Propagate rays to next plane (basically eq 18)
-            X = X + D * theta_x * arcsec_to_rad
-            Y = Y + D * theta_y * arcsec_to_rad
-
-        return TD
-
-    @unpack(3)
-    def geometric_time_delay(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
-    ) -> Tensor:
-        """
-        Compute the time delay of light caused by the lensing. This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract . For more information see the :func:`time_delay` method.
-
-        Parameters
-        ----------
-        x: Tensor
-            x-coordinates in the lens plane.
-        y: Tensor
-            y-coordinates in the lens plane.
-        z_s: Tensor
-            Redshifts of the sources.
-        params: (Packed, optional)
-            Dynamic parameter container.
-
-        Returns
-        -------
-        Tensor
-            Time delay caused by the lensing.
-
-        See Also
-        --------
-        :func:`caustics.lenses.Multiplane.shapiro_time_delay` and :func:`caustics.lenses.Multiplane.time_delay`
-        """
-        # Collect lens redshifts and ensure proper order
-        z_ls = self.get_z_ls(params)
-        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-
-        # Compute physical position on first lens plane
-        D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]], params)
-        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
-
-        # Initial angles are observation angles
-        theta_x, theta_y = x, y
-
-        # Store the time delays
-        TD = torch.zeros_like(x)
-
-        for i in lens_planes:
-            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
-            # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_next, params
-            )
-            D_next = self.cosmology.transverse_comoving_distance(z_next, params)
-            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
-                X * rad_to_arcsec / D_l,
-                Y * rad_to_arcsec / D_l,
-                z_s,
-                params,
-            )
-
-            # Update angle of rays after passing through lens (sum in eq 18)
-            theta_x = theta_x - alpha_x
-            theta_y = theta_y - alpha_y
-
-            # Compute time delay
-            tau_ij = 1 + z_ls[i] * D_l * D_next / (D * c_Mpc_s)
-            T_geo = 0.5 * (alpha_x**2 + alpha_y**2)
-            TD += tau_ij * T_geo * arcsec_to_rad**2
-
-            # Propagate rays to next plane (basically eq 18)
-            X = X + D * theta_x * arcsec_to_rad
-            Y = Y + D * theta_y * arcsec_to_rad
-
-        return TD
-
-    @unpack(3)
     def time_delay(
         self,
         x: Tensor,
@@ -392,11 +262,13 @@ class Multiplane(ThickLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
+        shapiro_time_delay: bool = True,
+        geometric_time_delay: bool = True,
         **kwargs,
     ) -> Tensor:
         """
         Compute the time delay of light caused by the lensing.
-        This is based on the work in: McCully et al. 2014 https://ui.adsabs.harvard.edu/abs/2014MNRAS.443.3631M/abstract .
+        This is based on equation 6.22 in Petters et al. 2001.
         For the time delay of a light path from the observer to the source, the following equation is used::
 
             \Delta t = \sum_{i=1}^{N-1} \tau_{i,i+1} \left[ \frac{1}{2} \left( \vec{\alpha}^i \right)^2 - \beta_{i,i+1} \psi^i \right] \\
@@ -410,77 +282,40 @@ class Multiplane(ThickLens):
         :math:`D_s` is the comoving distance to the source,
         and :math:`D_{i,s}` is the comoving distance between the i-th lens plane and the source.
 
-        This performs the same ray tracing as the :func:`raytrace` method, but also computes the time delay along the way.
+        This performs the same ray tracing as the :func:`raytrace` method, but computes the time delay along the way.
 
         Parameters
         ----------
         x: Tensor
-            x-coordinates in the lens plane.
+            x-coordinates in the image plane.
         y: Tensor
-            y-coordinates in the lens plane.
+            y-coordinates in the image plane.
         z_s: Tensor
-            Redshifts of the sources.
+            Redshifts of the source.
         params: (Packed, optional)
             Dynamic parameter container.
+        shapiro_time_delay: bool
+            Whether to include the Shapiro time delay component.
+        geometric_time_delay: bool
+            Whether to include the geometric time delay component.
 
         Returns
         -------
         Tensor
             Time delay caused by the lensing.
 
-        See Also
-        --------
-        :func:`caustics.lenses.Multiplane.shapiro_time_delay` and :func:`caustics.lenses.Multiplane.geometric_time_delay`
+        References
+        ----------
+        1. Petters A. O., Levine H., Wambsganss J., 2001, Singularity Theory and Gravitational Lensing. Birkhauser, Boston
+        2. McCully et al. 2014, A new hybrid framework to efficiently model lines of sight to gravitational lenses
+
         """
-        # Collect lens redshifts and ensure proper order
-        z_ls = self.get_z_ls(params)
-        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_s = self.cosmology.transverse_comoving_distance(z_s, params)
-
-        # Compute physical position on first lens plane
-        D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]], params)
-        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
-
-        # Initial angles are observation angles
-        theta_x, theta_y = x, y
-
-        # Store the time delays
-        TD = torch.zeros_like(x)
-
-        for i in lens_planes:
-            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
-            # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_next, params
-            )
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_s, params
-            )
-            D_next = self.cosmology.transverse_comoving_distance(z_next, params)
-            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
-                X * rad_to_arcsec / D_l,
-                Y * rad_to_arcsec / D_l,
-                z_s,
-                params,
-            )
-
-            # Update angle of rays after passing through lens (sum in eq 18)
-            theta_x = theta_x - alpha_x
-            theta_y = theta_y - alpha_y
-
-            # Compute time delay
-            tau_ij = 1 + z_ls[i] * D_l * D_next / (D * c_Mpc_s)
-            beta_ij = D * D_s / (D_next * D_is)
-            T_geo = 0.5 * (alpha_x**2 + alpha_y**2)
-            potential = self.lenses[i].potential(
-                X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l, z_s, params
-            )
-            T_grav = -beta_ij * potential
-            TD += tau_ij * (T_geo + T_grav) * arcsec_to_rad**2
-
-            # Propagate rays to next plane (basically eq 18)
-            X = X + D * theta_x * arcsec_to_rad
-            Y = Y + D * theta_y * arcsec_to_rad
-
-        return TD
+        return self._raytrace_helper(
+            x,
+            y,
+            z_s,
+            params,
+            shapiro_time_delay=shapiro_time_delay,
+            geometric_time_delay=geometric_time_delay,
+            ray_coords=False,
+        )

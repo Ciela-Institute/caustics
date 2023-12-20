@@ -827,164 +827,12 @@ class ThinLens(Lens):
     @staticmethod
     def _arcsec2_to_time(z_l, z_s, cosmology, params):
         """
-        This method is used by :func:`caustics.lenses.ThinLens.shapiro_time_delay` and :func:`caustics.lenses.ThinLens.geometric_time_delay` and :func:`caustics.lenses.ThinLens.geometric_time_delay_source` to convert arcsec^2 to seconds in the context of gravitational time delays.
+        This method is used by :func:`caustics.lenses.ThinLens.time_delay` to convert arcsec^2 to seconds in the context of gravitational time delays.
         """
         d_l = cosmology.angular_diameter_distance(z_l, params)
         d_s = cosmology.angular_diameter_distance(z_s, params)
         d_ls = cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2
-
-    @unpack(3)
-    def shapiro_time_delay(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Tensor,
-        z_l,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
-    ):
-        """
-        Compute the geometric time delay for light passing through the lens at given coordinates relative to the corresponding undelfected ray.
-        This is only the time delay induced by the gravitational time dilation in the potential well of the lens (does not include the geometric term).
-        To determine the full time delay, this function should be used with :func:`caustics.lenses.ThinLens.geometric_time_delay` like:: python
-
-            td_grav = lens.shapiro_time_delay(x, y, z_s, params)
-            td_geo = lens.geometric_time_delay(x, y, z_s, params)
-            td = td_grav + td_geo
-
-        Or more simply, use the :func:`caustics.lenses.ThinLens.time_delay` function.
-
-        Parameters
-        ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
-        z_s: Tensor
-            Tensor of source redshifts.
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns
-        -------
-        Tensor
-            Time delay at the given coordinates.
-
-        See Also
-        --------
-        :func:`caustics.lenses.ThinLens.geometric_time_delay` and :func:`caustics.lenses.ThinLens.time_delay`
-        """
-
-        potential = self.potential(x, y, z_s, params)
-        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
-        return -factor * potential
-
-    @unpack(5)
-    def geometric_time_delay_source(
-        self,
-        x: Tensor,
-        y: Tensor,
-        x_s: Tensor,
-        y_s: Tensor,
-        z_s: Tensor,
-        z_l,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
-    ):
-        """
-        This computes the time delays for light passing through the lens at given coordinates relative to the corresponding undelfected ray.
-        This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer.
-        This function does not consider the raytracing through the lens plane and merely computes what the time delay would be for a ray deflected from the image coordinates back to the provided source plane coordinates.
-        It is equivalent to:: python
-
-            \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \frac{1}{2}|\vec{\theta} - \vec{\beta}|^2
-
-        where :math:`\vec{\theta}` is the image position and :math:`\vec{\beta}` is the source position.
-
-        Parameters
-        ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
-        x_s: Tensor
-            0D Tensor of x coordinate in the source plane. Time delays are computed relative to this position.
-        y_s: Tensor
-            0D Tensor of y coordinate in the source plane. Time delays are computed relative to this position.
-        z_s: Tensor
-            Tensor of source redshifts.
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns
-        -------
-        Tensor
-            Time delay at the given coordinates.
-
-        See Also
-        --------
-        :func:`caustics.lenses.ThinLens.geometric_time_delay` and :func:`caustics.lenses.ThinLens.time_delay`
-
-        """
-        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
-        fp = 0.5 * ((x - x_s) ** 2 + (y - y_s) ** 2)
-        return factor * fp
-
-    @unpack(3)
-    def geometric_time_delay(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Tensor,
-        z_l,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
-    ):
-        """
-        Compute the geometric time delay for light passing through the lens at given coordinates relative to the corresponding undelfected ray.
-        This time delay is induced by the difference in path length between the light ray and a straight line between the source and observer.
-        To determine the full time delay, this function should be used with :func:`caustics.lenses.ThinLens.shapiro_time_delay` like:: python
-
-            td_grav = lens.shapiro_time_delay(x, y, z_s, params)
-            td_geo = lens.geometric_time_delay(x, y, z_s, params)
-            td = td_grav + td_geo
-
-        Or more simply, use the :func:`caustics.lenses.ThinLens.time_delay` function.
-
-        Parameters
-        ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
-        x_s: Tensor
-            0D Tensor of x coordinate in the source plane. Time delays are computed relative to this position.
-        y_s: Tensor
-            0D Tensor of y coordinate in the source plane. Time delays are computed relative to this position.
-        z_s: Tensor
-            Tensor of source redshifts.
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
-        Returns
-        -------
-        Tensor
-            Time delay at the given coordinates.
-
-        See Also
-        --------
-        :func:`caustics.lenses.ThinLens.shapiro_time_delay` and :func:`caustics.lenses.ThinLens.time_delay`
-
-        """
-
-        ax, ay = self.physical_deflection_angle(x, y, z_s, params)
-        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
-        fp = 0.5 * (ax**2 + ay**2)
-        return factor * fp
 
     @unpack(3)
     def time_delay(
@@ -995,18 +843,14 @@ class ThinLens(Lens):
         z_l,
         *args,
         params: Optional["Packed"] = None,
+        shapiro_time_delay: bool = True,
+        geometric_time_delay: bool = True,
         **kwargs,
     ) -> Tensor:
         """
         Computes the gravitational time delay for light passing through the lens at given coordinates.
 
         This time delay is induced by the photons travelling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
-        This function is equivalent to calling the individual time delay functions and adding their effects like this:: python
-
-            td_grav = lens.shapiro_time_delay(x, y, z_s, params)
-            td_geo = lens.geometric_time_delay(x, y, z_s, params)
-            time_delay = td_grav + td_geo
-
         The main equation involved here is the following::
 
             \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \left[ \frac{1}{2}|\vec{\alpha}(\vec{\theta})|^2 - \psi(\vec{\theta}) \right]
@@ -1016,7 +860,6 @@ class ThinLens(Lens):
         :math:`D_l` is the comoving distance to the lens,
         :math:`D_s` is the comoving distance to the source,
         and :math:`D_{ls}` is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
-
 
         Parameters
         ----------
@@ -1030,15 +873,36 @@ class ThinLens(Lens):
             Redshift of the lens.
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
+        shapiro_time_delay: bool
+            Whether to include the Shapiro time delay component.
+        geometric_time_delay: bool
+            Whether to include the geometric time delay component.
 
         Returns
         -------
         Tensor
             Time delay at the given coordinates.
+
+        References
+        ----------
+        1. Irwin I. Shapiro (1964). "Fourth Test of General Relativity". Physical Review Letters. 13 (26): 789-791
+        2. Refsdal, S. (1964). "On the possibility of determining Hubble's parameter and the masses of galaxies from the gravitational lens effect". Monthly Notices of the Royal Astronomical Society. 128 (4): 307-310.
         """
-        TD_grav = self.shapiro_time_delay(x, y, z_s, params)
-        TD_geo = self.geometric_time_delay(x, y, z_s, params)
-        return TD_grav + TD_geo
+        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
+
+        ax, ay = self.physical_deflection_angle(x, y, z_s, params)
+        fp = 0.5 * (ax**2 + ay**2)
+
+        potential = self.potential(x, y, z_s, params)
+
+        TD = torch.zeros_like(x)
+
+        if shapiro_time_delay:
+            TD -= factor * potential
+        if geometric_time_delay:
+            TD += factor * fp
+
+        return TD
 
     @unpack(4)
     def _jacobian_deflection_angle_finitediff(
