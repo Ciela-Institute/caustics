@@ -50,18 +50,18 @@ class MassSheet(ThinLens):
         self.add_param("y0", y0)
         self.add_param("surface_density", surface_density)
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        surface_density,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        surface_density: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -89,36 +89,36 @@ class MassSheet(ThinLens):
         ay = y * surface_density
         return ax, ay
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        surface_density,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        surface_density: Tensor = None,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> Tensor:
         # Meneghetti eq 3.81
         return surface_density * 0.5 * (x**2 + y**2)  # fmt: skip
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        surface_density,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        surface_density: Tensor = None,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> Tensor:
         # Essentially by definition
         return surface_density * torch.ones_like(x)
