@@ -498,16 +498,18 @@ def unpack(method):
         elif "params" in kwargs:
             # Params is given as a keyword argument
             x = kwargs.pop("params")
-        else:
+        elif self.params.dynamic:
             # Params are given individually and are collected into a packed object
             keys = self.params.dynamic[self.name].keys()
-            print(keys)
             try:
                 x = self.pack([kwargs.pop(name) for name in keys])
             except KeyError as e:
                 raise KeyError(
                     f"Missing parameter {e} in method '{method.__name__}' of module '{self.name}'"
                 )
+        else:
+            # No dynamic parameters, so no packing is needed
+            x = Packed()
 
         # Fill kwargs with module params
         # ---------------------------------------------------------

@@ -10,6 +10,7 @@ from .sis import SIS
 from .singleplane import SinglePlane
 from .mass_sheet import MassSheet
 from .tnfw import TNFW
+from .multiplane import Multiplane
 
 
 __all__ = [

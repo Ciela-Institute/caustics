@@ -89,7 +89,7 @@ def test_params():
     multiplane_lens = Multiplane(cosmology=cosmology, lenses=planes)
     z_s = torch.tensor(z_s)
     x, y = get_meshgrid(pixel_size, 32, 32)
-    params = [torch.randn(pixels, pixels) for i in range(10)]
+    params = multiplane_lens.pack([torch.randn(pixels, pixels) for i in range(10)])
 
     # Test out the computation of a few quantities to make sure params are passed correctly
 
@@ -108,7 +108,9 @@ def test_params():
     )
 
     # Test that we can pass a dictionary
-    params = {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
+    params = multiplane_lens.pack(
+        {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
+    )
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
     assert kappa_eff.shape == torch.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(

@@ -359,7 +359,7 @@ class FlatLambdaCDM(Cosmology):
         *args,
         params: Optional["Packed"] = None,
         h0: Tensor = None,
-        central_critical_density: Tensor = None,
+        critical_density_0: Tensor = None,
         Om0: Tensor = None,
         **kwargs,
     ) -> torch.Tensor:
@@ -379,7 +379,7 @@ class FlatLambdaCDM(Cosmology):
             Critical density at redshift z.
         """
         Ode0 = 1 - Om0
-        return central_critical_density * (Om0 * (1 + z) ** 3 + Ode0)  # fmt: skip
+        return critical_density_0 * (Om0 * (1 + z) ** 3 + Ode0)  # fmt: skip
 
     @unpack
     def _comoving_distance_helper(
@@ -411,7 +411,7 @@ class FlatLambdaCDM(Cosmology):
         *args,
         params: Optional["Packed"] = None,
         h0: Tensor = None,
-        central_critical_density: Tensor = None,
+        critical_density_0: Tensor = None,
         Om0: Tensor = None,
         **kwargs,
     ) -> Tensor:
@@ -444,7 +444,7 @@ class FlatLambdaCDM(Cosmology):
         *args,
         params: Optional["Packed"] = None,
         h0: Tensor = None,
-        central_critical_density: Tensor = None,
+        critical_density_0: Tensor = None,
         Om0: Tensor = None,
         **kwargs,
     ) -> Tensor:
