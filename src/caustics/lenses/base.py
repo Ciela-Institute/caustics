@@ -888,21 +888,19 @@ class ThinLens(Lens):
         1. Irwin I. Shapiro (1964). "Fourth Test of General Relativity". Physical Review Letters. 13 (26): 789-791
         2. Refsdal, S. (1964). "On the possibility of determining Hubble's parameter and the masses of galaxies from the gravitational lens effect". Monthly Notices of the Royal Astronomical Society. 128 (4): 307-310.
         """
-        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
-
-        ax, ay = self.physical_deflection_angle(x, y, z_s, params)
-        fp = 0.5 * (ax**2 + ay**2)
-
-        potential = self.potential(x, y, z_s, params)
-
         TD = torch.zeros_like(x)
 
         if shapiro_time_delay:
-            TD -= factor * potential
+            potential = self.potential(x, y, z_s, params)
+            TD -= potential
         if geometric_time_delay:
-            TD += factor * fp
+            ax, ay = self.physical_deflection_angle(x, y, z_s, params)
+            fp = 0.5 * (ax**2 + ay**2)
+            TD += fp
 
-        return TD
+        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
+
+        return factor * TD
 
     @unpack(4)
     def _jacobian_deflection_angle_finitediff(
