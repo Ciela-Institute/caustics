@@ -96,10 +96,28 @@ def test_multiplane_time_delay():
 
     assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, lens.pack(x))))
     assert torch.all(
-        torch.isfinite(lens.geometric_time_delay(thx, thy, z_s, lens.pack(x)))
+        torch.isfinite(
+            lens.time_delay(
+                thx,
+                thy,
+                z_s,
+                lens.pack(x),
+                geometric_time_delay=True,
+                shapiro_time_delay=False,
+            )
+        )
     )
     assert torch.all(
-        torch.isfinite(lens.shapiro_time_delay(thx, thy, z_s, lens.pack(x)))
+        torch.isfinite(
+            lens.time_delay(
+                thx,
+                thy,
+                z_s,
+                lens.pack(x),
+                geometric_time_delay=False,
+                shapiro_time_delay=True,
+            )
+        )
     )
 
 
