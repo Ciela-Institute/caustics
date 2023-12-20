@@ -500,7 +500,10 @@ def unpack(method):
             x = kwargs.pop("params")
         elif self.params.dynamic:
             # Params are given individually and are collected into a packed object
-            keys = self.params.dynamic[self.name].keys()
+            all_keys = self.params.dynamic
+            keys = list(all_keys.pop(self.name).keys())
+            if all_keys:
+                keys += list(k.replace(".", "_") for k in all_keys.flatten().keys())
             try:
                 x = self.pack([kwargs.pop(name) for name in keys])
             except KeyError as e:
