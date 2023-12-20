@@ -824,6 +824,16 @@ class ThinLens(Lens):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         return x - ax, y - ay
 
+    @staticmethod
+    def _arcsec2_to_time(z_l, z_s, cosmology, params):
+        """
+        This method is used by :func:`caustics.lenses.ThinLens.time_delay` to convert arcsec^2 to seconds in the context of gravitational time delays.
+        """
+        d_l = cosmology.angular_diameter_distance(z_l, params)
+        d_s = cosmology.angular_diameter_distance(z_s, params)
+        d_ls = cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+        return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2
+
     @unpack(3)
     def time_delay(
         self,
@@ -833,11 +843,23 @@ class ThinLens(Lens):
         z_l,
         *args,
         params: Optional["Packed"] = None,
+        shapiro_time_delay: bool = True,
+        geometric_time_delay: bool = True,
         **kwargs,
-    ):
+    ) -> Tensor:
         """
-        Compute the gravitational time delay for light passing
-        through the lens at given coordinates.
+        Computes the gravitational time delay for light passing through the lens at given coordinates.
+
+        This time delay is induced by the photons travelling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
+        The main equation involved here is the following::
+
+            \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \left[ \frac{1}{2}|\vec{\alpha}(\vec{\theta})|^2 - \psi(\vec{\theta}) \right]
+
+        where :math:`\vec{\alpha}(\vec{\theta})` is the deflection angle,
+        :math:`\psi(\vec{\theta})` is the lensing potential,
+        :math:`D_l` is the comoving distance to the lens,
+        :math:`D_s` is the comoving distance to the source,
+        and :math:`D_{ls}` is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
 
         Parameters
         ----------
@@ -847,22 +869,38 @@ class ThinLens(Lens):
             Tensor of y coordinates in the lens plane.
         z_s: Tensor
             Tensor of source redshifts.
+        z_l: Tensor
+            Redshift of the lens.
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
+        shapiro_time_delay: bool
+            Whether to include the Shapiro time delay component.
+        geometric_time_delay: bool
+            Whether to include the geometric time delay component.
 
         Returns
         -------
         Tensor
             Time delay at the given coordinates.
+
+        References
+        ----------
+        1. Irwin I. Shapiro (1964). "Fourth Test of General Relativity". Physical Review Letters. 13 (26): 789-791
+        2. Refsdal, S. (1964). "On the possibility of determining Hubble's parameter and the masses of galaxies from the gravitational lens effect". Monthly Notices of the Royal Astronomical Society. 128 (4): 307-310.
         """
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        d_s = self.cosmology.angular_diameter_distance(z_s, params)
-        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        potential = self.potential(x, y, z_s, params)
-        factor = (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls  # fmt: skip
-        fp = 0.5 * d_ls**2 / d_s**2 * (ax**2 + ay**2) - potential  # fmt: skip
-        return factor * fp * arcsec_to_rad**2  # fmt: skip
+        TD = torch.zeros_like(x)
+
+        if shapiro_time_delay:
+            potential = self.potential(x, y, z_s, params)
+            TD -= potential
+        if geometric_time_delay:
+            ax, ay = self.physical_deflection_angle(x, y, z_s, params)
+            fp = 0.5 * (ax**2 + ay**2)
+            TD += fp
+
+        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
+
+        return factor * TD
 
     @unpack(4)
     def _jacobian_deflection_angle_finitediff(
