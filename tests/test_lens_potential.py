@@ -49,13 +49,13 @@ def test_lens_potential_vs_deflection():
         #     **caustics.lenses.PixelatedConvergence._null_params,
         #     pixelscale=0.1,
         #     n_pix=10,
-        # ),
+        # ), # TODO: Fix PixelatedConvergence potential
         caustics.lenses.Point(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
         ),
         # caustics.lenses.PseudoJaffe(
         #     cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
-        # ),
+        # ), # TODO: Fix PseudoJaffe potential
         caustics.lenses.SIE(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
         ),
@@ -64,7 +64,7 @@ def test_lens_potential_vs_deflection():
         ),
         # caustics.lenses.TNFW(
         #     cosmology=cosmo, z_l=z_l, **caustics.lenses.TNFW._null_params, use_case="differentiable"
-        # ),
+        # ), # TODO: Fix TNFW potential
     ]
 
     # Define a list of lens model names.
@@ -94,3 +94,85 @@ def test_lens_potential_vs_deflection():
         else:
             assert torch.allclose(phi_x, ax)
             assert torch.allclose(phi_y, ay)
+
+
+def test_lens_potential_vs_convergence():
+    """
+    Check for internal consistency of the lensing potential for all ThinLens objects against the convergence. The laplacian of the potential should equal the convergence.
+    """
+    # Define a grid of points to test.
+    x = torch.linspace(-1, 1, 10)
+    y = torch.linspace(-1, 1, 10)
+    x, y = torch.meshgrid(x, y)
+    x = x.flatten()
+    y = y.flatten()
+
+    # Define a source redshift.
+    z_s = 1.0
+    # Define a lens redshift.
+    z_l = 0.5
+
+    # Define a cosmology.
+    cosmo = caustics.cosmology.FlatLambdaCDM(name="cosmo")
+
+    # Define a list of lens models.
+    lenses = [
+        caustics.lenses.EPL(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.EPL._null_params
+        ),
+        caustics.lenses.ExternalShear(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.ExternalShear._null_params
+        ),
+        caustics.lenses.MassSheet(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.MassSheet._null_params
+        ),
+        # caustics.lenses.NFW(
+        #     cosmology=cosmo,
+        #     z_l=z_l,
+        #     **caustics.lenses.NFW._null_params,
+        #     use_case="differentiable",
+        # ), # Cannot vmap NFW when in differentiable mode
+        # caustics.lenses.PixelatedConvergence(
+        #     cosmology=cosmo,
+        #     z_l=z_l,
+        #     **caustics.lenses.PixelatedConvergence._null_params,
+        #     pixelscale=0.1,
+        #     n_pix=10,
+        # ), # TODO: Fix PixelatedConvergence potential
+        # caustics.lenses.Point(cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params), # Point mass convergence is delta function
+        # caustics.lenses.PseudoJaffe(
+        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
+        # ), # TODO: Fix PseudoJaffe potential
+        caustics.lenses.SIE(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
+        ),
+        caustics.lenses.SIS(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIS._null_params
+        ),
+        # caustics.lenses.TNFW(
+        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.TNFW._null_params, use_case="differentiable"
+        # ), # Cannot vmap TNFW when in differentiable mode
+    ]
+
+    # Define a list of lens model names.
+    names = list(L.name for L in lenses)
+    # Loop over the lenses.
+    for lens, name in zip(lenses, names):
+        print(f"Testing lens: {name}")
+        # Compute the convergence.
+        try:
+            kappa = lens.convergence(x, y, z_s)
+        except NotImplementedError:
+            continue
+
+        # Compute the laplacian of the lensing potential.
+        phi_H = torch.vmap(
+            torch.func.hessian(lens.potential, (0, 1)), in_dims=(0, 0, None)
+        )(x, y, z_s)
+        phi_kappa = 0.5 * (phi_H[0][0] + phi_H[1][1])
+
+        # Check that the laplacian of the lensing potential equals the convergence.
+        if name in ["NFW", "TNFW"]:
+            assert torch.allclose(phi_kappa, kappa, atol=1e-4)
+        else:
+            assert torch.allclose(phi_kappa, kappa)
