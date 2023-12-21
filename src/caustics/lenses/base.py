@@ -99,7 +99,9 @@ class Lens(Parametrized):
         Tensor
             Gravitational magnification at the given coordinates.
         """
-        return get_magnification(partial(self.raytrace, params=params), x, y, z_s)
+        return get_magnification(
+            partial(self.raytrace, params=params), x, y, z_s, **kwargs
+        )
 
     @unpack
     def forward_raytrace(
@@ -227,7 +229,7 @@ class ThickLens(Lens):
             "Now using effective_reduced_deflection_angle, "
             "please switch functions to remove this warning"
         )
-        return self.effective_reduced_deflection_angle(x, y, z_s, params)
+        return self.effective_reduced_deflection_angle(x, y, z_s, params, **kwargs)
 
     @unpack
     def effective_reduced_deflection_angle(
@@ -259,7 +261,7 @@ class ThickLens(Lens):
             Dynamic parameter container for the lens model. Defaults to None.
 
         """
-        bx, by = self.raytrace(x, y, z_s, params)
+        bx, by = self.raytrace(x, y, z_s, params, **kwargs)
         return x - bx, y - by
 
     @unpack
@@ -821,7 +823,7 @@ class ThinLens(Lens):
         tuple[Tensor, Tensor]
             Ray-traced coordinates in the x and y directions.
         """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params, **kwargs)
         return x - ax, y - ay
 
     @staticmethod

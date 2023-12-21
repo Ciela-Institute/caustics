@@ -197,7 +197,7 @@ class Cosmology(Parametrized):
         Tensor
             The angular diameter distance to each redshift.
         """
-        return self.comoving_distance(z, params) / (1 + z)
+        return self.comoving_distance(z, params, **kwargs) / (1 + z)
 
     @unpack
     def angular_diameter_distance_z1z2(
@@ -220,7 +220,7 @@ class Cosmology(Parametrized):
         Tensor
             The angular diameter distance between each pair of redshifts.
         """
-        return self.comoving_distance_z1z2(z1, z2, params) / (1 + z2)
+        return self.comoving_distance_z1z2(z1, z2, params, **kwargs) / (1 + z2)
 
     @unpack
     def time_delay_distance(
@@ -448,4 +448,4 @@ class FlatLambdaCDM(Cosmology):
         Om0: Tensor = None,
         **kwargs,
     ) -> Tensor:
-        return self.comoving_distance(z, params)
+        return self.comoving_distance(z, params, **kwargs)

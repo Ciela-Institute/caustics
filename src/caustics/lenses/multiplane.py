@@ -202,6 +202,7 @@ class Multiplane(ThickLens):
             shapiro_time_delay=False,
             geometric_time_delay=False,
             ray_coords=True,
+            **kwargs,
         )
 
     @unpack
@@ -318,4 +319,5 @@ class Multiplane(ThickLens):
             shapiro_time_delay=shapiro_time_delay,
             geometric_time_delay=geometric_time_delay,
             ray_coords=False,
+            **kwargs,
         )
