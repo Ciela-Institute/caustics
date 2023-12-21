@@ -1,0 +1,96 @@
+"""
+Check for internal consistency of the lensing potential for all ThinLens objects.
+"""
+
+import torch
+
+import caustics
+
+
+def test_lens_potential_vs_deflection():
+    """
+    Check for internal consistency of the lensing potential for all ThinLens objects against the deflection angles. The gradient of the potential should equal the deflection angle.
+    """
+    # Define a grid of points to test.
+    x = torch.linspace(-1, 1, 10)
+    y = torch.linspace(-1, 1, 10)
+    x, y = torch.meshgrid(x, y)
+    x = x.flatten()
+    y = y.flatten()
+
+    # Define a source redshift.
+    z_s = 1.0
+    # Define a lens redshift.
+    z_l = 0.5
+
+    # Define a cosmology.
+    cosmo = caustics.cosmology.FlatLambdaCDM(name="cosmo")
+
+    # Define a list of lens models.
+    lenses = [
+        caustics.lenses.EPL(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.EPL._null_params
+        ),
+        caustics.lenses.ExternalShear(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.ExternalShear._null_params
+        ),
+        caustics.lenses.MassSheet(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.MassSheet._null_params
+        ),
+        caustics.lenses.NFW(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.NFW._null_params,
+            use_case="differentiable",
+        ),
+        # caustics.lenses.PixelatedConvergence(
+        #     cosmology=cosmo,
+        #     z_l=z_l,
+        #     **caustics.lenses.PixelatedConvergence._null_params,
+        #     pixelscale=0.1,
+        #     n_pix=10,
+        # ),
+        caustics.lenses.Point(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
+        ),
+        # caustics.lenses.PseudoJaffe(
+        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
+        # ),
+        caustics.lenses.SIE(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
+        ),
+        caustics.lenses.SIS(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIS._null_params
+        ),
+        # caustics.lenses.TNFW(
+        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.TNFW._null_params, use_case="differentiable"
+        # ),
+    ]
+
+    # Define a list of lens model names.
+    names = list(L.name for L in lenses)
+    # Loop over the lenses.
+    for lens, name in zip(lenses, names):
+        print(f"Testing lens: {name}")
+        # Compute the deflection angle.
+        ax, ay = lens.reduced_deflection_angle(x, y, z_s)
+
+        # Ensure the x,y coordinates track gradients
+        x = x.detach().requires_grad_()
+        y = y.detach().requires_grad_()
+
+        # Compute the lensing potential.
+        phi = lens.potential(x, y, z_s)
+
+        # Compute the gradient of the lensing potential.
+        phi_x, phi_y = torch.autograd.grad(
+            phi, (x, y), grad_outputs=torch.ones_like(phi)
+        )
+
+        # Check that the gradient of the lensing potential equals the deflection angle.
+        if name in ["NFW", "TNFW"]:
+            assert torch.allclose(phi_x, ax, atol=1e-4)
+            assert torch.allclose(phi_y, ay, atol=1e-4)
+        else:
+            assert torch.allclose(phi_x, ax)
+            assert torch.allclose(phi_y, ay)
