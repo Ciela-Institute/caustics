@@ -112,7 +112,7 @@ class Lens(Parametrized):
         *args,
         params: Optional["Packed"] = None,
         epsilon=1e-2,
-        n_init=50,
+        n_init=100,
         fov=5.0,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:

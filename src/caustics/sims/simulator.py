@@ -1,4 +1,7 @@
-from ..parametrized import Parametrized
+from typing import Optional
+
+from ..packed import Packed
+from ..parametrized import Parametrized, unpack
 
 __all__ = ("Simulator",)
 
@@ -16,12 +19,6 @@ class Simulator(Parametrized):
 
     """
 
-    def __call__(self, *args, **kwargs):
-        if len(args) > 0:
-            packed_args = self.pack(args[0])
-            rest_args = args[1:]
-        else:
-            packed_args = self.pack()
-            rest_args = tuple()
-
-        return self.forward(packed_args, *rest_args, **kwargs)
+    @unpack
+    def __call__(self, *args, params: Optional[Packed] = None, **kwargs):
+        return self.forward(*args, params=params, **kwargs)
