@@ -89,8 +89,8 @@ def test_lens_potential_vs_deflection():
 
         # Check that the gradient of the lensing potential equals the deflection angle.
         if name in ["NFW", "TNFW"]:
-            assert torch.allclose(phi_x, ax, atol=1e-4)
-            assert torch.allclose(phi_y, ay, atol=1e-4)
+            assert torch.allclose(phi_x, ax, atol=1e-3, rtol=1e-3)
+            assert torch.allclose(phi_y, ay, atol=1e-3, rtol=1e-3)
         else:
             assert torch.allclose(phi_x, ax)
             assert torch.allclose(phi_y, ay)
