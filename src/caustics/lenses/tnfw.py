@@ -75,6 +75,14 @@ class TNFW(ThinLens):
 
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "mass": 1e13,
+        "scale_radius": 1.0,
+        "tau": 3.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
@@ -530,9 +538,9 @@ class TNFW(ThinLens):
         F = self._F(g)
         L = self._L(g, tau)
 
-        # d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
         # fmt: off
-        S = 2 * self.get_M0(params) * G_over_c2  # * rad_to_arcsec * d_l**2
+        S = 2 * self.get_M0(params) * G_over_c2 / d_l
         a1 = 1 / (t2 + 1) ** 2
         a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log())
         a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L

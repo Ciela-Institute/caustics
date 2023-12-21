@@ -65,6 +65,13 @@ class NFW(ThinLens):
         Computes the lensing potential.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "m": 1e13,
+        "c": 5.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

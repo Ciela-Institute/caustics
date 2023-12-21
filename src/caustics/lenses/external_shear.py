@@ -34,6 +34,13 @@ class ExternalShear(ThinLens):
     distortion that can be caused by nearby structures outside of the main lens galaxy.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "gamma_1": 0.1,
+        "gamma_2": 0.1,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

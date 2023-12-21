@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from scipy.fft import next_fast_len
 from torch import Tensor
+import numpy as np
 
 from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
@@ -16,6 +17,12 @@ __all__ = ("PixelatedConvergence",)
 
 
 class PixelatedConvergence(ThinLens):
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "convergence_map": np.linspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
+    }
+
     def __init__(
         self,
         pixelscale: float,

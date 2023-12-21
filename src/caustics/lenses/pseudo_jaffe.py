@@ -42,6 +42,14 @@ class PseudoJaffe(ThinLens):
         Softening parameter to prevent numerical instabilities.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "mass": 1e12,
+        "core_radius": 0.1,
+        "scale_radius": 1.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
