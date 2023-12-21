@@ -487,6 +487,46 @@ class Parametrized:
 
 
 def unpack(method):
+    """
+    Decorator that unpacks the "params" argument of a method.
+    There are a number of ways to interact with this method.
+    Let's consider a hypothetical lens with a function ``func`` that takes a position ``x`` and ``y`` and two parameters ``a`` and ``b`` and a key word argument ``c``.
+    The following are all valid ways to call ``func``:: python
+
+        lens.func(x, y, a=a, b=b, c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack([a, b]), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack([a, b]), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack((a, b)), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack({"a": a, "b": b}), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack(torch.tensor([a, b])), c=c) # a and b are floats
+
+        # If the ``a`` parameter has been set at a static value like this:
+        lens.a = a # a is a Tensor
+        # then the following is also valid:
+        lens.func(x, y, b=b, c=c) # b is a Tensor
+        lens.func(x, y, lens.pack([b]), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack((b,)), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack({"b": b}), c=c) # a and b are Tensors
+        lens.func(x, y, lens.pack(torch.tensor([b])), c=c) # a and b are floats
+
+        # If lens.func calls another method from a different parametrized object (say cosmo) and that method takes a dynamic parameter ``d``, then the following is also valid:
+        lens.func(x, y, a=a, b=b, cosmo_d=d, c=c) # a, b and d are Tensors
+        lens.func(x, y, lens.pack([a, b, d]), c=c) # a, b and d are Tensors
+        lens.func(x, y, lens.pack((a, b, d)), c=c) # a, b and d are Tensors
+        lens.func(x, y, lens.pack({"a": a, "b": b, "cosmo": {"d": d}}), c=c) # a, b and d are Tensors
+        lens.func(x, y, lens.pack(torch.tensor([a, b, d])), c=c) # a, b and d are floats
+
+    In all cases it is also valid to pass the ``Packed`` object by keyword like ``lens.func(x, y, params=lens.pack([a, b]), c=c)``.
+    This gives a great deal of flexibility in how the parameters are passed to the method.
+    However, the following is not a valid way to pass the parameters:: python
+
+        lens.func(x, y, a, b, c=c)
+
+    This is because the ``a`` and ``b`` parameters are not named and so cannot be recognized by the unpack method.
+
+
+    """
+
     @functools.wraps(method)
     def wrapped(self, *args, **kwargs):
         # Extract "params" regardless of how it is/they are passed
