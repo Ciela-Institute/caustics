@@ -7,6 +7,7 @@ from utils import lens_test_helper
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
+from caustics.utils import get_meshgrid
 
 
 def test():
@@ -34,6 +35,52 @@ def test():
     ]
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+
+
+def test_sie_time_delay():
+    # Models
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = SIE(name="sie", cosmology=cosmology)
+
+    # Parameters
+    z_s = torch.tensor(1.2)
+    x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
+
+    n_pix = 10
+    res = 0.05
+    upsample_factor = 2
+    thx, thy = get_meshgrid(
+        res / upsample_factor,
+        upsample_factor * n_pix,
+        upsample_factor * n_pix,
+        dtype=torch.float32,
+    )
+
+    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, lens.pack(x))))
+    assert torch.all(
+        torch.isfinite(
+            lens.time_delay(
+                thx,
+                thy,
+                z_s,
+                lens.pack(x),
+                geometric_time_delay=True,
+                shapiro_time_delay=False,
+            )
+        )
+    )
+    assert torch.all(
+        torch.isfinite(
+            lens.time_delay(
+                thx,
+                thy,
+                z_s,
+                lens.pack(x),
+                geometric_time_delay=False,
+                shapiro_time_delay=True,
+            )
+        )
+    )
 
 
 if __name__ == "__main__":
