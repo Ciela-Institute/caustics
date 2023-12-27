@@ -495,28 +495,21 @@ def unpack(method):
 
         lens.func(x, y, a=a, b=b, c=c) # a and b are Tensors
         lens.func(x, y, lens.pack([a, b]), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack([a, b]), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack((a, b)), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack({"a": a, "b": b}), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack(torch.tensor([a, b])), c=c) # a and b are floats
+        lens.func(x, y, params=lens.pack([a, b]), c=c) # a and b are Tensors
 
         # If the ``a`` parameter has been set at a static value like this:
         lens.a = a # a is a Tensor
         # then the following is also valid:
         lens.func(x, y, b=b, c=c) # b is a Tensor
         lens.func(x, y, lens.pack([b]), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack((b,)), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack({"b": b}), c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack(torch.tensor([b])), c=c) # a and b are floats
+        lens.func(x, y, params=lens.pack([b]), c=c) # a and b are Tensors
 
         # If lens.func calls another method from a different parametrized object (say cosmo) and that method takes a dynamic parameter ``d``, then the following is also valid:
         lens.func(x, y, a=a, b=b, cosmo_d=d, c=c) # a, b and d are Tensors
         lens.func(x, y, lens.pack([a, b, d]), c=c) # a, b and d are Tensors
-        lens.func(x, y, lens.pack((a, b, d)), c=c) # a, b and d are Tensors
-        lens.func(x, y, lens.pack({"a": a, "b": b, "cosmo": {"d": d}}), c=c) # a, b and d are Tensors
-        lens.func(x, y, lens.pack(torch.tensor([a, b, d])), c=c) # a, b and d are floats
+        lens.func(x, y, params=lens.pack([a, b, d]), c=c) # a, b and d are Tensors
 
-    In all cases it is also valid to pass the ``Packed`` object by keyword like ``lens.func(x, y, params=lens.pack([a, b]), c=c)``.
+    In all cases any valid way to construct the ``Packed`` object also works (i.e. by tensor, dict, or tuple).
     This gives a great deal of flexibility in how the parameters are passed to the method.
     However, the following is not a valid way to pass the parameters:: python
 
@@ -537,7 +530,7 @@ def unpack(method):
             args = args[:-1]
         elif "params" in kwargs:
             # Params is given as a keyword argument
-            x = kwargs.pop("params")
+            x = self.pack(kwargs.pop("params"))
         elif self.params.dynamic:
             # Params are given individually and are collected into a packed object
             all_keys = self.params.dynamic

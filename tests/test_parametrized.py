@@ -1,6 +1,7 @@
 import torch
 import pytest
 import numpy as np
+
 from caustics.sims import Simulator
 from caustics.parameter import Parameter
 from caustics.lenses import EPL, Point
@@ -129,6 +130,18 @@ def test_pass_params_as_kwargs():
     )
 
     assert torch.all(torch.isfinite(P))
+
+
+def test_pass_params_batched():
+    C = FlatLambdaCDM(name="cosmo")
+    lens = Point(cosmology=C)
+    thx, thy = torch.tensor(0.5), torch.tensor(0.5)
+    params = torch.tensor([0.5, 0.0, 0.0, 1.0])
+    params = params.repeat(5, 1)
+
+    P_batch = torch.vmap(lambda x: lens.potential(thx, thy, 1.0, lens.pack(x)))(params)
+
+    assert torch.all(torch.isfinite(P_batch))
 
 
 def test_default_names():
