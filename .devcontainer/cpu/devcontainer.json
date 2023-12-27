@@ -1,0 +1,38 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/anaconda
+{
+  "name": "Caustics - CPU",
+  "build": {
+    "context": "../..",
+    "dockerfile": "../Dockerfile",
+    "args": {
+      "USERNAME": "vscode",
+      "BUILDKIT_INLINE_CACHE": "0",
+      "CLANG_VERSION": ""
+    }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "bash .devcontainer/scripts/postBuild.sh",
+  "postStartCommand": "pre-commit install --install-hooks",
+
+  // Configure tool-specific properties.
+  // "customizations": {},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python",
+        "ms-vsliveshare.vsliveshare",
+        "DavidAnson.vscode-markdownlint",
+        "GitHub.copilot"
+      ]
+    }
+  }
+
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
+}
