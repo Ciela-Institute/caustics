@@ -53,9 +53,9 @@ def test_lens_potential_vs_deflection():
         caustics.lenses.Point(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
         ),
-        # caustics.lenses.PseudoJaffe(
-        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
-        # ), # TODO: Fix PseudoJaffe potential
+        caustics.lenses.PseudoJaffe(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
+        ),
         caustics.lenses.SIE(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
         ),
@@ -92,7 +92,6 @@ def test_lens_potential_vs_deflection():
 
         # Check that the gradient of the lensing potential equals the deflection angle.
         if name in ["NFW", "TNFW"]:
-            print(ax / phi_ax)
             assert torch.allclose(phi_ax, ax, atol=1e-3, rtol=1e-3)
             assert torch.allclose(phi_ay, ay, atol=1e-3, rtol=1e-3)
         else:
@@ -144,9 +143,9 @@ def test_lens_potential_vs_convergence():
         #     n_pix=10,
         # ), # TODO: Fix PixelatedConvergence potential
         # caustics.lenses.Point(cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params), # Point mass convergence is delta function
-        # caustics.lenses.PseudoJaffe(
-        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
-        # ), # TODO: Fix PseudoJaffe potential
+        caustics.lenses.PseudoJaffe(
+            cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
+        ),
         caustics.lenses.SIE(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
         ),
