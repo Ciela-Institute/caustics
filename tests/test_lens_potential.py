@@ -14,9 +14,7 @@ def test_lens_potential_vs_deflection():
     # Define a grid of points to test.
     x = torch.linspace(-1, 1, 10)
     y = torch.linspace(-1, 1, 10)
-    x, y = torch.meshgrid(x, y)
-    x = x.flatten()
-    y = y.flatten()
+    x, y = torch.meshgrid(x, y, indexing="ij")
 
     # Define a source redshift.
     z_s = 1.0
@@ -43,13 +41,13 @@ def test_lens_potential_vs_deflection():
             **caustics.lenses.NFW._null_params,
             use_case="differentiable",
         ),
-        # caustics.lenses.PixelatedConvergence(
-        #     cosmology=cosmo,
-        #     z_l=z_l,
-        #     **caustics.lenses.PixelatedConvergence._null_params,
-        #     pixelscale=0.1,
-        #     n_pix=10,
-        # ), # TODO: Fix PixelatedConvergence potential
+        caustics.lenses.PixelatedConvergence(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.PixelatedConvergence._null_params,
+            pixelscale=0.1,
+            n_pix=10,
+        ),
         caustics.lenses.Point(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
         ),
@@ -92,8 +90,13 @@ def test_lens_potential_vs_deflection():
 
         # Check that the gradient of the lensing potential equals the deflection angle.
         if name in ["NFW", "TNFW"]:
+            # Special functions in NFW and TNFW are not highly accurate, so we relax the tolerance
             assert torch.allclose(phi_ax, ax, atol=1e-3, rtol=1e-3)
             assert torch.allclose(phi_ay, ay, atol=1e-3, rtol=1e-3)
+        elif name in ["PixelatedConvergence"]:
+            # PixelatedConvergence potential is defined by bilinear interpolation so it is very imprecise
+            assert torch.allclose(phi_ax, ax, rtol=1e0)
+            assert torch.allclose(phi_ay, ay, rtol=1e0)
         else:
             assert torch.allclose(phi_ax, ax)
             assert torch.allclose(phi_ay, ay)
@@ -106,9 +109,8 @@ def test_lens_potential_vs_convergence():
     # Define a grid of points to test.
     x = torch.linspace(-1, 1, 10)
     y = torch.linspace(-1, 1, 10)
-    x, y = torch.meshgrid(x, y)
-    x = x.flatten()
-    y = y.flatten()
+    x, y = torch.meshgrid(x, y, indexing="ij")
+    x, y = x.clone().detach(), y.clone().detach()
 
     # Define a source redshift.
     z_s = 1.0
@@ -139,9 +141,9 @@ def test_lens_potential_vs_convergence():
         #     cosmology=cosmo,
         #     z_l=z_l,
         #     **caustics.lenses.PixelatedConvergence._null_params,
-        #     pixelscale=0.1,
+        #     pixelscale=0.2,
         #     n_pix=10,
-        # ), # TODO: Fix PixelatedConvergence potential
+        # ),  # cannot compute Hessian of PixelatedConvergence potential, always returns zeros due to bilinear interpolation
         # caustics.lenses.Point(cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params), # Point mass convergence is delta function
         caustics.lenses.PseudoJaffe(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
@@ -170,7 +172,10 @@ def test_lens_potential_vs_convergence():
 
         # Compute the laplacian of the lensing potential.
         phi_H = torch.vmap(
-            torch.func.hessian(lens.potential, (0, 1)), in_dims=(0, 0, None)
+            torch.vmap(
+                torch.func.hessian(lens.potential, (0, 1)), in_dims=(0, 0, None)
+            ),
+            in_dims=(0, 0, None),
         )(x, y, z_s)
         phi_kappa = 0.5 * (phi_H[0][0] + phi_H[1][1])
 
