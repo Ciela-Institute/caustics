@@ -62,9 +62,12 @@ def test_lens_potential_vs_deflection():
         caustics.lenses.SIS(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.SIS._null_params
         ),
-        # caustics.lenses.TNFW(
-        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.TNFW._null_params, use_case="differentiable"
-        # ), # TODO: Fix TNFW potential
+        caustics.lenses.TNFW(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.TNFW._null_params,
+            use_case="differentiable",
+        ),
     ]
 
     # Define a list of lens model names.
@@ -83,17 +86,18 @@ def test_lens_potential_vs_deflection():
         phi = lens.potential(x, y, z_s)
 
         # Compute the gradient of the lensing potential.
-        phi_x, phi_y = torch.autograd.grad(
+        phi_ax, phi_ay = torch.autograd.grad(
             phi, (x, y), grad_outputs=torch.ones_like(phi)
         )
 
         # Check that the gradient of the lensing potential equals the deflection angle.
         if name in ["NFW", "TNFW"]:
-            assert torch.allclose(phi_x, ax, atol=1e-3, rtol=1e-3)
-            assert torch.allclose(phi_y, ay, atol=1e-3, rtol=1e-3)
+            print(ax / phi_ax)
+            assert torch.allclose(phi_ax, ax, atol=1e-3, rtol=1e-3)
+            assert torch.allclose(phi_ay, ay, atol=1e-3, rtol=1e-3)
         else:
-            assert torch.allclose(phi_x, ax)
-            assert torch.allclose(phi_y, ay)
+            assert torch.allclose(phi_ax, ax)
+            assert torch.allclose(phi_ay, ay)
 
 
 def test_lens_potential_vs_convergence():

@@ -537,10 +537,12 @@ class TNFW(ThinLens):
         u = g**2
         F = self._F(g)
         L = self._L(g, tau)
-
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+
         # fmt: off
-        S = 2 * self.get_M0(params) * G_over_c2 / d_l
+        S = 2 * self.get_M0(params) * G_over_c2 * (d_ls / d_s) / (d_l * arcsec_to_rad**2)
         a1 = 1 / (t2 + 1) ** 2
         a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log())
         a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L
@@ -549,5 +551,7 @@ class TNFW(ThinLens):
         a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2
         a7 = t2 * ((t2 - 1) * tau.log() - t2 - 1) * u.log()
         a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())
-        # fmt: on
-        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)  # fmt: skip
+
+        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)
+
+    # fmt: on
