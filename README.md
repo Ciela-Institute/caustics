@@ -76,9 +76,9 @@ plt.show()
 J = torch.func.jacfwd(minisim)(x)
 
 # Plot the new images
-fig, axarr = plt.subplots(4, 5, figsize=(20, 16))
+fig, axarr = plt.subplots(3, 7, figsize=(20, 9))
 for i, ax in enumerate(axarr.flatten()):
-    ax.imshow(J[..., i + 1], origin="lower")
+    ax.imshow(J[..., i], origin="lower")
 plt.show()
 ```
 
