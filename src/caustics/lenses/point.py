@@ -34,6 +34,12 @@ class Point(ThinLens):
         Softening parameter to prevent numerical instabilities.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "th_ein": 1.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

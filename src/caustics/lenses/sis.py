@@ -33,6 +33,12 @@ class SIS(ThinLens):
         A smoothing factor, default is 0.0.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "th_ein": 1.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

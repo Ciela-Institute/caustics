@@ -38,6 +38,14 @@ class SIE(ThinLens):
         The core radius of the lens (defaults to 0.0).
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "q": 0.5,
+        "phi": 0.0,
+        "b": 1.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
