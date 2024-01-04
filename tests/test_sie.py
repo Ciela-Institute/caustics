@@ -56,14 +56,14 @@ def test_sie_time_delay():
         dtype=torch.float32,
     )
 
-    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, lens.pack(x))))
+    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, x)))
     assert torch.all(
         torch.isfinite(
             lens.time_delay(
                 thx,
                 thy,
                 z_s,
-                lens.pack(x),
+                x,
                 geometric_time_delay=True,
                 shapiro_time_delay=False,
             )
@@ -75,7 +75,7 @@ def test_sie_time_delay():
                 thx,
                 thy,
                 z_s,
-                lens.pack(x),
+                x,
                 geometric_time_delay=False,
                 shapiro_time_delay=True,
             )

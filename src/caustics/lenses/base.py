@@ -36,7 +36,7 @@ class Lens(Parametrized):
         super().__init__(name)
         self.cosmology = cosmology
 
-    @unpack(3)
+    @unpack
     def jacobian_lens_equation(
         self,
         x: Tensor,
@@ -70,7 +70,7 @@ class Lens(Parametrized):
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
-    @unpack(3)
+    @unpack
     def magnification(
         self,
         x: Tensor,
@@ -99,9 +99,11 @@ class Lens(Parametrized):
         Tensor
             Gravitational magnification at the given coordinates.
         """
-        return get_magnification(partial(self.raytrace, params=params), x, y, z_s)
+        return get_magnification(
+            partial(self.raytrace, params=params), x, y, z_s, **kwargs
+        )
 
-    @unpack(3)
+    @unpack
     def forward_raytrace(
         self,
         bx: Tensor,
@@ -110,7 +112,7 @@ class Lens(Parametrized):
         *args,
         params: Optional["Packed"] = None,
         epsilon=1e-2,
-        n_init=50,
+        n_init=100,
         fov=5.0,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
@@ -189,7 +191,7 @@ class ThickLens(Lens):
         the cosmological parameters of the model.
     """
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
@@ -227,9 +229,9 @@ class ThickLens(Lens):
             "Now using effective_reduced_deflection_angle, "
             "please switch functions to remove this warning"
         )
-        return self.effective_reduced_deflection_angle(x, y, z_s, params)
+        return self.effective_reduced_deflection_angle(x, y, z_s, params, **kwargs)
 
-    @unpack(3)
+    @unpack
     def effective_reduced_deflection_angle(
         self,
         x: Tensor,
@@ -259,10 +261,10 @@ class ThickLens(Lens):
             Dynamic parameter container for the lens model. Defaults to None.
 
         """
-        bx, by = self.raytrace(x, y, z_s, params)
+        bx, by = self.raytrace(x, y, z_s, params, **kwargs)
         return x - bx, y - by
 
-    @unpack(3)
+    @unpack
     def physical_deflection_angle(
         self,
         x: Tensor,
@@ -301,7 +303,7 @@ class ThickLens(Lens):
         )
 
     @abstractmethod
-    @unpack(3)
+    @unpack
     def raytrace(
         self,
         x: Tensor,
@@ -337,7 +339,7 @@ class ThickLens(Lens):
         ...
 
     @abstractmethod
-    @unpack(3)
+    @unpack
     def surface_density(
         self,
         x: Tensor,
@@ -370,7 +372,7 @@ class ThickLens(Lens):
         ...
 
     @abstractmethod
-    @unpack(3)
+    @unpack
     def time_delay(
         self,
         x: Tensor,
@@ -401,7 +403,7 @@ class ThickLens(Lens):
         """
         ...
 
-    @unpack(4)
+    @unpack
     def _jacobian_effective_deflection_angle_finitediff(
         self,
         x: Tensor,
@@ -425,7 +427,7 @@ class ThickLens(Lens):
         J[..., 1, 1], J[..., 1, 0] = torch.gradient(ay, spacing=pixelscale)
         return J
 
-    @unpack(3)
+    @unpack
     def _jacobian_effective_deflection_angle_autograd(
         self,
         x: Tensor,
@@ -462,7 +464,7 @@ class ThickLens(Lens):
         )
         return J.detach()
 
-    @unpack(3)
+    @unpack
     def jacobian_effective_deflection_angle(
         self,
         x: Tensor,
@@ -496,7 +498,7 @@ class ThickLens(Lens):
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
-    @unpack(4)
+    @unpack
     def _jacobian_lens_equation_finitediff(
         self,
         x: Tensor,
@@ -517,7 +519,7 @@ class ThickLens(Lens):
         )
         return torch.eye(2) - J
 
-    @unpack(3)
+    @unpack
     def _jacobian_lens_equation_autograd(
         self,
         x: Tensor,
@@ -537,7 +539,7 @@ class ThickLens(Lens):
         )
         return torch.eye(2) - J.detach()
 
-    @unpack(3)
+    @unpack
     def effective_convergence_div(
         self,
         x: Tensor,
@@ -560,7 +562,7 @@ class ThickLens(Lens):
         J = self.jacobian_effective_deflection_angle(x, y, z_s, params, **kwargs)
         return 0.5 * (J[..., 0, 0] + J[..., 1, 1])
 
-    @unpack(3)
+    @unpack
     def effective_convergence_curl(
         self,
         x: Tensor,
@@ -612,15 +614,15 @@ class ThinLens(Lens):
         super().__init__(cosmology=cosmology, name=name)
         self.add_param("z_l", z_l)
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -652,15 +654,15 @@ class ThinLens(Lens):
             (d_ls / d_s) * deflection_angle_y,
         )
 
-    @unpack(3)
+    @unpack
     def physical_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -693,7 +695,7 @@ class ThinLens(Lens):
         )
 
     @abstractmethod
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
@@ -725,7 +727,7 @@ class ThinLens(Lens):
         ...
 
     @abstractmethod
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
@@ -756,15 +758,15 @@ class ThinLens(Lens):
         """
         ...
 
-    @unpack(3)
+    @unpack
     def surface_density(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -791,7 +793,7 @@ class ThinLens(Lens):
         )
         return self.convergence(x, y, z_s, params) * critical_surface_density  # fmt: skip
 
-    @unpack(3)
+    @unpack
     def raytrace(
         self,
         x: Tensor,
@@ -821,7 +823,7 @@ class ThinLens(Lens):
         tuple[Tensor, Tensor]
             Ray-traced coordinates in the x and y directions.
         """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
+        ax, ay = self.reduced_deflection_angle(x, y, z_s, params, **kwargs)
         return x - ax, y - ay
 
     @staticmethod
@@ -834,15 +836,15 @@ class ThinLens(Lens):
         d_ls = cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
         return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2
 
-    @unpack(3)
+    @unpack
     def time_delay(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
         **kwargs,
@@ -902,7 +904,7 @@ class ThinLens(Lens):
 
         return factor * TD
 
-    @unpack(4)
+    @unpack
     def _jacobian_deflection_angle_finitediff(
         self,
         x: Tensor,
@@ -910,7 +912,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         pixelscale: Tensor,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
         **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -926,7 +928,7 @@ class ThinLens(Lens):
         J[..., 1, 1], J[..., 1, 0] = torch.gradient(ay, spacing=pixelscale)
         return J
 
-    @unpack(3)
+    @unpack
     def _jacobian_deflection_angle_autograd(
         self,
         x: Tensor,
@@ -963,7 +965,7 @@ class ThinLens(Lens):
         )
         return J.detach()
 
-    @unpack(3)
+    @unpack
     def jacobian_deflection_angle(
         self,
         x: Tensor,
@@ -996,7 +998,7 @@ class ThinLens(Lens):
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
-    @unpack(4)
+    @unpack
     def _jacobian_lens_equation_finitediff(
         self,
         x: Tensor,
@@ -1017,7 +1019,7 @@ class ThinLens(Lens):
         )
         return torch.eye(2) - J
 
-    @unpack(3)
+    @unpack
     def _jacobian_lens_equation_autograd(
         self,
         x: Tensor,

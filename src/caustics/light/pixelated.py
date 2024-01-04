@@ -76,17 +76,17 @@ class Pixelated(Source):
         self.add_param("image", image, shape)
         self.add_param("pixelscale", pixelscale)
 
-    @unpack(2)
+    @unpack
     def brightness(
         self,
         x,
         y,
-        x0,
-        y0,
-        image,
-        pixelscale,
         *args,
         params: Optional["Packed"] = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        image: Tensor = None,
+        pixelscale: Tensor = None,
         **kwargs,
     ):
         """

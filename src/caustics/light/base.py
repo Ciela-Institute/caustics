@@ -26,7 +26,7 @@ class Source(Parametrized):
     """
 
     @abstractmethod
-    @unpack(2)
+    @unpack
     def brightness(
         self, x: Tensor, y: Tensor, *args, params: Optional["Packed"] = None, **kwargs
     ) -> Tensor:

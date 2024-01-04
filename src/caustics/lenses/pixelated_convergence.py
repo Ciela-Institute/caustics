@@ -252,18 +252,18 @@ class PixelatedConvergence(ThinLens):
 
         self._convolution_mode = convolution_mode
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -359,18 +359,18 @@ class PixelatedConvergence(ThinLens):
             deflection_angle_y
         )
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -445,18 +445,18 @@ class PixelatedConvergence(ThinLens):
         ).squeeze() * (self.pixelscale**2 / pi)
         return self._unpad_conv2d(potential)
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

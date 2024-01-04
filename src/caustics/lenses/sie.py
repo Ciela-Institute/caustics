@@ -90,20 +90,20 @@ class SIE(ThinLens):
         """
         return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        q,
-        phi,
-        b,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        b: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -133,20 +133,20 @@ class SIE(ThinLens):
 
         return derotate(ax, ay, phi)
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        q,
-        phi,
-        b,
         *args,
         params: Optional["Packed"] = None,
+        x0: Tensor = None,
+        z_l: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        b: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -173,20 +173,20 @@ class SIE(ThinLens):
         x, y = translate_rotate(x, y, x0, y0, phi)
         return x * ax + y * ay
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        q,
-        phi,
-        b,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        b: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

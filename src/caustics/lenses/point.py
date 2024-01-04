@@ -77,18 +77,18 @@ class Point(ThinLens):
         self.add_param("th_ein", th_ein)
         self.s = s
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        th_ein,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        th_ein: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -116,18 +116,18 @@ class Point(ThinLens):
         ay = y / th**2 * th_ein**2
         return ax, ay
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        th_ein,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        th_ein: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -153,18 +153,18 @@ class Point(ThinLens):
         th = (x**2 + y**2).sqrt() + self.s
         return th_ein**2 * th.log()
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        th_ein,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        th_ein: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

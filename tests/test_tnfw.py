@@ -89,10 +89,10 @@ def test_runs():
 
     thx, thy, thx_ls, thy_ls = setup_grids()
 
-    Psi = lens.potential(thx, thy, z_s, lens.pack(x))
+    Psi = lens.potential(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(Psi))
 
-    Rt = lens.get_truncation_radius(lens.pack(x))
+    Rt = lens.get_truncation_radius(x)
 
     assert Rt == (rs * t)
 

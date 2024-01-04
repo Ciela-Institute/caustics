@@ -94,14 +94,14 @@ def test_multiplane_time_delay():
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
     )
 
-    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, lens.pack(x))))
+    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, x)))
     assert torch.all(
         torch.isfinite(
             lens.time_delay(
                 thx,
                 thy,
                 z_s,
-                lens.pack(x),
+                x,
                 geometric_time_delay=True,
                 shapiro_time_delay=False,
             )
@@ -113,7 +113,7 @@ def test_multiplane_time_delay():
                 thx,
                 thy,
                 z_s,
-                lens.pack(x),
+                x,
                 geometric_time_delay=False,
                 shapiro_time_delay=True,
             )
@@ -165,6 +165,7 @@ def test_params():
 
     # Test that we can pass a dictionary
     params = {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
+
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
     assert kappa_eff.shape == torch.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(

@@ -129,21 +129,21 @@ class EPL(ThinLens):
 
         self.n_iter = n_iter
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        q,
-        phi,
-        b,
-        t,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        b: Tensor = None,
+        t: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -212,21 +212,21 @@ class EPL(ThinLens):
 
         return part_sum
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        q,
-        phi,
-        b,
-        t,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        b: Tensor = None,
+        t: Tensor = None,
         **kwargs,
     ):
         """
@@ -253,21 +253,21 @@ class EPL(ThinLens):
         x, y = translate_rotate(x, y, x0, y0, phi)
         return (x * ax + y * ay) / (2 - t)
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        q,
-        phi,
-        b,
-        t,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        q: Tensor = None,
+        phi: Tensor = None,
+        b: Tensor = None,
+        t: Tensor = None,
         **kwargs,
     ):
         """
