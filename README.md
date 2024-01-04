@@ -45,7 +45,7 @@ x = torch.tensor([
 ])  # fmt: skip
 
 minisim = caustics.sims.Lens_Source(
-    lens=sie, source=src, lens_light=lnslt, pixelscale=0.005, pixels_x=1000
+    lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
 )
 plt.imshow(minisim(x, quad_level=3), origin="lower")
 plt.axis("off")
