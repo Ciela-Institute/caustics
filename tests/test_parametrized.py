@@ -1,9 +1,10 @@
 import torch
 import pytest
 import numpy as np
+
 from caustics.sims import Simulator
 from caustics.parameter import Parameter
-from caustics.lenses import EPL
+from caustics.lenses import EPL, Point
 from caustics.light import Sersic
 from caustics.cosmology import FlatLambdaCDM
 from utils import setup_simulator
@@ -21,7 +22,7 @@ def test_params():
 
     sim = Sim()
     assert len(sim.module_params) == 2  # dynamic and static
-    assert len(sim.module_params.dynamic) == 0  # simulator has no dynmaic params
+    assert len(sim.module_params.dynamic) == 0  # simulator has no dynamic params
     assert len(sim.module_params.static) == 1  # and 1 static param (z_s)
     assert len(sim.params) == 2  # dynamic and static
     assert len(sim.params.dynamic) == 3  # cosmo, epl and sersic
@@ -90,6 +91,61 @@ def test_unpack_some_modules_static():
     assert sim(x_semantic).shape == torch.Size([n_pix, n_pix])
 
 
+def test_pass_params_as_kwargs():
+    C = FlatLambdaCDM(name="cosmo")
+    lens = Point(cosmology=C)
+    thx, thy = torch.tensor(0.5), torch.tensor(0.5)
+    P = lens.potential(
+        thx,
+        thy,
+        z_s=torch.tensor(1.0),
+        z_l=torch.tensor(0.5),
+        x0=torch.tensor(0.0),
+        y0=torch.tensor(0.0),
+        th_ein=torch.tensor(1.0),
+    )
+    assert torch.all(torch.isfinite(P))
+
+    C.h0 = None
+    with pytest.raises(KeyError):
+        P = lens.potential(
+            thx,
+            thy,
+            z_s=torch.tensor(1.0),
+            z_l=torch.tensor(0.5),
+            x0=torch.tensor(0.0),
+            y0=torch.tensor(0.0),
+            th_ein=torch.tensor(1.0),
+        )
+
+    P = lens.potential(
+        thx,
+        thy,
+        z_s=torch.tensor(1.0),
+        z_l=torch.tensor(0.5),
+        x0=torch.tensor(0.0),
+        y0=torch.tensor(0.0),
+        th_ein=torch.tensor(1.0),
+        cosmo_h0=torch.tensor(0.7),
+    )
+
+    assert torch.all(torch.isfinite(P))
+
+
+def test_pass_params_batched():
+    C = FlatLambdaCDM(name="cosmo")
+    lens = Point(cosmology=C)
+    thx, thy = torch.tensor(0.5), torch.tensor(0.5)
+    params = torch.tensor([0.5, 0.0, 0.0, 1.0])
+    params = params.repeat(5, 1)
+
+    P_batch = torch.vmap(lens.potential, in_dims=(None, None, None, 0))(
+        thx, thy, 1.0, params
+    )
+
+    assert torch.all(torch.isfinite(P_batch))
+
+
 def test_default_names():
     cosmo = FlatLambdaCDM()
     assert cosmo.name == "FlatLambdaCDM"
@@ -120,7 +176,8 @@ def test_parametrized_name_setter():
 
 
 def test_parametrized_name_setter_bad_names():
-    # Make sure bad names are catched by our added method. Bad names are name which cannot be used as class attributes.
+    # Make sure bad names are caught by our added method.
+    # Bad names are name which cannot be used as class attributes.
     good_names = ["variable", "_variable", "var_iable2"]
     for name in good_names:
         Sersic(name=name)
@@ -142,7 +199,7 @@ def test_parametrized_name_collision():
             self.lens2 = EPL(self.cosmo)
 
     sim = Sim()
-    # Current way names are updated. Could be chnaged so that all params in collision
+    # Current way names are updated. Could be changed so that all params in collision
     # Get a number
     assert sim.lens1.name == "EPL"
     assert sim.lens2.name == "EPL_1"

@@ -34,7 +34,6 @@ def test():
         cosmology=cosmology,
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
     )
-    # lens.effective_reduced_deflection_angle = lens.raytrace
 
     # lenstronomy
     kwargs_ls = []
@@ -62,6 +61,63 @@ def test():
 
     lens_test_helper(
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_Psi=False, test_kappa=False
+    )
+
+
+def test_multiplane_time_delay():
+    # Setup
+    z_s = torch.tensor(1.5, dtype=torch.float32)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    cosmology.to(dtype=torch.float32)
+
+    n_pix = 10
+    res = 0.05
+    upsample_factor = 2
+    thx, thy = get_meshgrid(
+        res / upsample_factor,
+        upsample_factor * n_pix,
+        upsample_factor * n_pix,
+        dtype=torch.float32,
+    )
+
+    # Parameters
+    xs = [
+        [0.5, 0.9, -0.4, 0.9999, 3 * pi / 4, 0.8],
+        [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
+        [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
+    ]
+    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32)
+
+    lens = Multiplane(
+        name="multiplane",
+        cosmology=cosmology,
+        lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
+    )
+
+    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, x)))
+    assert torch.all(
+        torch.isfinite(
+            lens.time_delay(
+                thx,
+                thy,
+                z_s,
+                x,
+                geometric_time_delay=True,
+                shapiro_time_delay=False,
+            )
+        )
+    )
+    assert torch.all(
+        torch.isfinite(
+            lens.time_delay(
+                thx,
+                thy,
+                z_s,
+                x,
+                geometric_time_delay=False,
+                shapiro_time_delay=True,
+            )
+        )
     )
 
 
@@ -109,6 +165,7 @@ def test_params():
 
     # Test that we can pass a dictionary
     params = {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
+
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
     assert kappa_eff.shape == torch.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(

@@ -6,6 +6,7 @@ from ..cosmology import Cosmology
 from ..utils import translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("SIS",)
 
@@ -32,6 +33,12 @@ class SIS(ThinLens):
         A smoothing factor, default is 0.0.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "th_ein": 1.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
@@ -52,18 +59,18 @@ class SIS(ThinLens):
         self.add_param("th_ein", th_ein)
         self.s = s
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        th_ein,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        th_ein: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -91,18 +98,18 @@ class SIS(ThinLens):
         ay = th_ein * y / R
         return ax, ay
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        th_ein,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        th_ein: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -128,18 +135,18 @@ class SIS(ThinLens):
         th = (x**2 + y**2).sqrt() + self.s
         return th_ein * th
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        th_ein,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        th_ein: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

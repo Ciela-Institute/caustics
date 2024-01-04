@@ -5,16 +5,24 @@ import torch
 import torch.nn.functional as F
 from scipy.fft import next_fast_len
 from torch import Tensor
+import numpy as np
 
 from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("PixelatedConvergence",)
 
 
 class PixelatedConvergence(ThinLens):
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "convergence_map": np.logspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
+    }
+
     def __init__(
         self,
         pixelscale: float,
@@ -27,7 +35,7 @@ class PixelatedConvergence(ThinLens):
         shape: Optional[tuple[int, ...]] = None,
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
-        padding="zero",
+        padding: str = "zero",
         name: str = None,
     ):
         """Strong lensing with user provided kappa map
@@ -61,16 +69,23 @@ class PixelatedConvergence(ThinLens):
             The shape of the convergence map.
         convolution_mode: (str, optional)
             The convolution mode for calculating deflection angles and lensing potential.
-            It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution). Default is "fft".
+            It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution).
+            Default is "fft".
         use_next_fast_len: (bool, optional)
             If True, adds additional padding to speed up the FFT by calling
-            `scipy.fft.next_fast_len`. The speed boost can be substantial when `n_pix` is a multiple of a
+            `scipy.fft.next_fast_len`.
+            The speed boost can be substantial when `n_pix` is a multiple of a
             small prime number. Default is True.
-        padding: string
-            Specifies the type of padding to use. "zero" will do zero padding, "circular" will do
-            cyclic boundaries. "reflect" will do reflection padding. "tile" will tile the image at 2x2 which
-            basically identical to circular padding, but is easier. Generally you should use either "zero"
-            or "tile".
+        padding: { "zero", "circular", "reflect", "tile" }
+
+            Specifies the type of padding to use:
+            "zero" will do zero padding,
+            "circular" will do cyclic boundaries.
+            "reflect" will do reflection padding.
+            "tile" will tile the image at 2x2 which
+            basically identical to circular padding, but is easier.
+
+            Generally you should use either "zero" or "tile".
 
         """
 
@@ -182,9 +197,7 @@ class PixelatedConvergence(ThinLens):
         Tensor
             The input tensor without padding.
         """
-        return torch.roll(x, (-self._s[0] // 2, -self._s[1] // 2), dims=(-2, -1))[
-            ..., : self.n_pix, : self.n_pix
-        ]
+        return torch.roll(x, (-self._s[0] // 2, -self._s[1] // 2), dims=(-2, -1))[..., : self.n_pix, : self.n_pix]  # fmt: skip
 
     def _unpad_conv2d(self, x: Tensor) -> Tensor:
         """
@@ -200,7 +213,7 @@ class PixelatedConvergence(ThinLens):
         Tensor
             The input tensor without padding.
         """
-        return x  # torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
+        return x  # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
 
     @property
     def convolution_mode(self):
@@ -239,18 +252,18 @@ class PixelatedConvergence(ThinLens):
 
         self._convolution_mode = convolution_mode
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -334,9 +347,8 @@ class PixelatedConvergence(ThinLens):
         # we actually want the cross-correlation.
 
         2 * self.n_pix
-        convergence_map_flipped = convergence_map.flip((-1, -2))[
-            None, None
-        ]  # F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
+        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
+        # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
         deflection_angle_x = F.conv2d(
             self.ax_kernel[None, None], convergence_map_flipped, padding="same"
         ).squeeze() * (self.pixelscale**2 / pi)
@@ -347,18 +359,18 @@ class PixelatedConvergence(ThinLens):
             deflection_angle_y
         )
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -433,18 +445,18 @@ class PixelatedConvergence(ThinLens):
         ).squeeze() * (self.pixelscale**2 / pi)
         return self._unpad_conv2d(potential)
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

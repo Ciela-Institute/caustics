@@ -69,12 +69,12 @@ def test_runs():
 
     thx, thy, thx_ls, thy_ls = setup_grids()
 
-    Psi = lens.potential(thx, thy, z_s, lens.pack(x))
+    Psi = lens.potential(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(Psi))
-    alpha = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    alpha = lens.reduced_deflection_angle(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(alpha[0]))
     assert torch.all(torch.isfinite(alpha[1]))
-    kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
+    kappa = lens.convergence(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(kappa))
 
 

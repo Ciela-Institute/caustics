@@ -8,6 +8,7 @@ import torch
 import re
 import keyword
 from torch import Tensor
+import graphviz
 
 from .packed import Packed
 from .namespace_dict import NamespaceDict, NestedNamespaceDict
@@ -26,11 +27,14 @@ def check_valid_name(name):
 
 class Parametrized:
     """
-    Represents a class with Param and Parametrized attributes, typically used to construct parts of a simulator
+    Represents a class with Param and Parametrized attributes,
+    typically used to construct parts of a simulator
     that have parameters which need to be tracked during MCMC sampling.
 
-    This class can contain Params, Parametrized, tensor buffers or normal attributes as its attributes.
-    It provides functionalities to manage these attributes, ensuring that an attribute of one type isn't rebound
+    This class can contain Params, Parametrized,
+    tensor buffers or normal attributes as its attributes.
+    It provides functionalities to manage these attributes,
+    ensuring that an attribute of one type isn't rebound
     to be of a different type.
 
     TODO
@@ -92,10 +96,13 @@ class Parametrized:
                 # Create new parameter and attach it as an attribute
                 self.add_param(key, value.value, value.shape)
             elif isinstance(value, Parametrized):
-                # Update map from attribute key to module name for __getattribute__ method
+                # Update map from attribute key to module name
+                # for __getattribute__ method
                 self._module_key_map[value.name] = key
                 self.add_parametrized(value, set_attr=False)
-                # set attr only to user defined key, not module name (self.{module.name} is still accessible, see __getattribute__ method)
+                # set attr only to user defined key,
+                # not module name (self.{module.name} is still accessible,
+                # see __getattribute__ method)
                 super().__setattr__(key, value)
             else:
                 super().__setattr__(key, value)
@@ -122,7 +129,8 @@ class Parametrized:
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
         """
-        Moves static Params for this component and its childs to the specified device and casts them to the specified data type.
+        Moves static Params for this component and its childs
+        to the specified device and casts them to the specified data type.
         """
         for name, p in self._params.items():
             self._params[name] = p.to(device, dtype)
@@ -198,13 +206,14 @@ class Parametrized:
     ) -> Packed:
         """
         Converts a list or tensor into a dict that can subsequently be unpacked
-        into arguments to this component and its childs. Also, add a batch dimension
-        to each Tensor without such a dimension.
+        into arguments to this component and its childs.
+        Also, add a batch dimension to each Tensor
+        without such a dimension.
 
         Parameters
         ----------
-        x: (Union[list[Tensor], dict[str, Union[list[Tensor], Tensor, dict[str, Tensor]]], Tensor)
-            The input to be packed. Can be a list of tensors, a dictionary of tensors, or a single tensor.
+        x : list of tensor, dict of tensor, or tensor
+            The input to be packed.
 
         Returns
         -------
@@ -307,7 +316,9 @@ class Parametrized:
             if isinstance(x, dict):
                 if self.name in x.keys() and x.get(self.name, {}):
                     print(
-                        f"Module {self.name} is static, the parameters {' '.join(x[self.name].keys())} passed dynamically will be ignored ignored"
+                        f"Module {self.name} is static, "
+                        f"the parameters {' '.join(x[self.name].keys())} "
+                        "passed dynamically will be ignored."
                     )
         unpacked_x = []
         offset = 0
@@ -327,7 +338,8 @@ class Parametrized:
                 else:
                     raise ValueError(
                         f"Invalid data type found when unpacking parameters for {self.name}."
-                        f"Expected argument of unpack to be a list/tuple/dict of Tensor, or simply a flattened tensor"
+                        "Expected argument of unpack to be a list/tuple/dict of Tensor, "
+                        "or simply a flattened tensor"
                         f"but found {type(dynamic_x)}."
                     )
             else:  # param is static
@@ -358,10 +370,11 @@ class Parametrized:
         dynamic = NestedNamespaceDict()
 
         def _get_params(module):
-            if module.module_params.static:
-                static[module.name] = module.module_params.static
-            if module.module_params.dynamic:
-                dynamic[module.name] = module.module_params.dynamic
+            mp = module.module_params
+            if mp.static:
+                static[module.name] = mp.static
+            if mp.dynamic:
+                dynamic[module.name] = mp.dynamic
             for child in module._childs.values():
                 _get_params(child)
 
@@ -436,7 +449,6 @@ class Parametrized:
         graphviz.Digraph
             The graph representation of the object.
         """
-        import graphviz
 
         def add_component(p: Parametrized, dot):
             dot.attr("node", style="solid", color="black", shape="ellipse")
@@ -475,55 +487,91 @@ class Parametrized:
         return dot
 
 
-def unpack(n_leading_args=0):
-    def decorator(method):
-        sig = inspect.signature(method)
-        method_params = list(sig.parameters.keys())[1:]  # exclude 'self'
-        n_params = len(method_params)
+def count_args_before_varargs(function):
+    """
+    Counts the number of arguments before the *args argument in a function.
+    """
+    signature = inspect.signature(function)
+    count = 0
 
-        @functools.wraps(method)
-        def wrapped(self, *args, **kwargs):
-            args = list(args)
-            leading_args = []
-            # Collect leading args and separate them from module parameters (trailing args)
-            for i in range(n_leading_args):
-                param = method_params[i]
-                if param in kwargs:
-                    leading_args.append(kwargs.pop(param))
-                elif args:
-                    leading_args.append(args.pop(0))
+    for param in signature.parameters.values():
+        if param.kind == inspect.Parameter.VAR_POSITIONAL:
+            break
+        if param.name == "self":
+            continue
+        count += 1
 
-            # Collect module parameters passed in argument (dynamic or otherwise)
-            if args and isinstance(args[0], Packed):
-                # Case 1: Params is already Packed (or no params were passed)
-                x = args.pop(0)
-            elif "params" in kwargs:
-                # Case 2: params was passed explicitly as a kwargs, i.e. user used signature "method(*leading_args, params=params)"
-                x = kwargs["params"]
-            else:
-                # Case 3 (most common): params were passed as the trailing arguments of the method
-                trailing_args = []
-                for i in range(n_leading_args, n_params):
-                    param = method_params[i]
-                    if param in kwargs:
-                        trailing_args.append(kwargs.pop(param))
-                    elif args:
-                        trailing_args.append(args.pop(0))
-                if not trailing_args or (
-                    len(trailing_args) == 1 and trailing_args[0] is None
-                ):
-                    # No params were passed, module is static and was expecting no params
-                    x = Packed()
-                elif isinstance(trailing_args[0], (list, dict)):
-                    # params were part of a collection already (don't double wrap them)
-                    x = self.pack(trailing_args[0])
-                else:
-                    # all parameters were passed individually in args or kwargs
-                    x = self.pack(trailing_args)
-            unpacked_args = self.unpack(x)
-            kwargs["params"] = x
-            return method(self, *leading_args, *unpacked_args, **kwargs)
+    return count
 
-        return wrapped
 
-    return decorator
+def unpack(method):
+    """
+    Decorator that unpacks the "params" argument of a method.
+    There are a number of ways to interact with this method.
+    Let's consider a hypothetical lens with a function ``func`` that takes a position ``x`` and ``y`` and two parameters ``a`` and ``b`` and a key word argument ``c``.
+    The following are all valid ways to call ``func``:: python
+
+        lens.func(x, y, a=a, b=b, c=c) # a and b are Tensors
+        lens.func(x, y, [a, b], c=c) # a and b are Tensors, or even [a, b] is a tensor
+        lens.func(x, y, params=[a, b], c=c) # a and b are Tensors, or even [a, b] is a tensor
+
+        # If the ``a`` parameter has been set at a static value like this:
+        lens.a = a # a is a Tensor
+        # then the following is also valid:
+        lens.func(x, y, b=b, c=c) # b is a Tensor
+        lens.func(x, y, [b], c=c) # a and b are Tensors
+        lens.func(x, y, params=[b], c=c) # a and b are Tensors
+
+        # If lens.func calls another method from a different parametrized object (say cosmo) and that method takes a dynamic parameter ``d``, then the following is also valid:
+        lens.func(x, y, a=a, b=b, cosmo_d=d, c=c) # a, b and d are Tensors
+        lens.func(x, y, [a, b, d], c=c) # a, b and d are Tensors
+        lens.func(x, y, params=[a, b, d], c=c) # a, b and d are Tensors
+
+    In all cases any valid way to construct the ``Packed`` object also works (i.e. by tensor, dict, or tuple).
+    This gives a great deal of flexibility in how the parameters are passed to the method.
+    However, the following is not a valid way to pass the parameters:: python
+
+        lens.func(x, y, a, b, c=c)
+
+    This is because the ``a`` and ``b`` parameters are not named and so cannot be recognized by the unpack method.
+
+
+    """
+
+    nargs = count_args_before_varargs(method)
+
+    @functools.wraps(method)
+    def wrapped(self, *args, **kwargs):
+        # Extract "params" regardless of how it is/they are passed
+        # ---------------------------------------------------------
+        if len(args) > nargs:
+            # Params is given as last argument
+            x = self.pack(args[-1])
+            args = args[:-1]
+        elif "params" in kwargs:
+            # Params is given as a keyword argument
+            x = self.pack(kwargs.pop("params"))
+        elif self.params.dynamic:
+            # Params are given individually and are collected into a packed object
+            all_keys = self.params.dynamic
+            keys = list(all_keys.pop(self.name).keys())
+            if all_keys:
+                keys += list(k.replace(".", "_") for k in all_keys.flatten().keys())
+            try:
+                x = self.pack([kwargs.pop(name) for name in keys])
+            except KeyError as e:
+                raise KeyError(
+                    f"Missing parameter {e} in method '{method.__name__}' of module '{self.name}'"
+                )
+        else:
+            # No dynamic parameters, so no packing is needed
+            x = Packed()
+
+        # Fill kwargs with module params
+        # ---------------------------------------------------------
+        for name, value in zip(self._params.keys(), self.unpack(x)):
+            kwargs[name] = value
+
+        return method(self, *args, params=x, **kwargs)
+
+    return wrapped

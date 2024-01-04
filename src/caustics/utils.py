@@ -31,7 +31,8 @@ def flip_axis_ratio(q, phi):
 
 def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
     """
-    Translates and rotates the points (x, y) by subtracting (x0, y0) and applying rotation angle phi.
+    Translates and rotates the points (x, y) by subtracting (x0, y0)
+    and applying rotation angle phi.
 
     Parameters
     ----------
@@ -59,7 +60,7 @@ def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
         c_phi = phi.cos()
         s_phi = phi.sin()
         # Simultaneous assignment
-        xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi
+        xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi  # fmt: skip
 
     return xt, yt
 
@@ -87,7 +88,7 @@ def derotate(vx, vy, phi: Optional[Tensor] = None):
 
     c_phi = phi.cos()
     s_phi = phi.sin()
-    return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi
+    return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi  # fmt: skip
 
 
 def to_elliptical(x, y, q: Tensor):
@@ -135,18 +136,8 @@ def get_meshgrid(
     Tuple: [Tensor, Tensor]
         The generated meshgrid as a tuple of Tensors.
     """
-    xs = (
-        torch.linspace(-1, 1, nx, device=device, dtype=dtype)
-        * pixelscale
-        * (nx - 1)
-        / 2
-    )
-    ys = (
-        torch.linspace(-1, 1, ny, device=device, dtype=dtype)
-        * pixelscale
-        * (ny - 1)
-        / 2
-    )
+    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2  # fmt: skip
+    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2  # fmt: skip
     return torch.meshgrid([xs, ys], indexing="xy")
 
 
@@ -239,7 +230,8 @@ def gaussian_quadrature_integrator(
 ):
     """
     Performs a pixel-wise integration using Gaussian quadrature.
-    It takes the brightness function evaluated at the quadrature points `F` and the quadrature weights `weight` as input.
+    It takes the brightness function evaluated at the quadrature points `F`
+    and the quadrature weights `weight` as input.
     The result is the integrated brightness function at each pixel.
 
 
@@ -285,7 +277,8 @@ def quad(
     Parameters
     ----------
     F : Callable
-        The brightness function to be evaluated at the quadrature points. The function should take as input: F(X, Y, *args).
+        The brightness function to be evaluated at the quadrature points.
+        The function should take as input: F(X, Y, *args).
     pixelscale : float
         The scale of each pixel.
     X : Tensor
@@ -409,12 +402,7 @@ def interp1d(x: Tensor, y: Tensor, xs: Tensor, extend: str = "extrapolate") -> T
     idxs = torch.searchsorted(x[:-1], xs) - 1
     dx = x[idxs + 1] - x[idxs]
     hh = _h_poly((xs - x[idxs]) / dx)
-    ret = (
-        hh[0] * y[idxs]
-        + hh[1] * m[idxs] * dx
-        + hh[2] * y[idxs + 1]
-        + hh[3] * m[idxs + 1] * dx
-    )
+    ret = hh[0] * y[idxs] + hh[1] * m[idxs] * dx + hh[2] * y[idxs + 1] + hh[3] * m[idxs + 1] * dx  # fmt: skip
     if extend == "const":
         ret[xs > x[-1]] = y[-1]
     elif extend == "linear":
@@ -625,7 +613,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
     chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
     # Test
-    rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))
+    rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))  # fmt: skip
 
     # Update
     X = torch.where(rho >= epsilon, X + h, X)

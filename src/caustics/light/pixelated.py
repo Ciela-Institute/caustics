@@ -5,25 +5,34 @@ from torch import Tensor
 from ..utils import interp2d
 from .base import Source
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("Pixelated",)
 
 
 class Pixelated(Source):
     """
-    `Pixelated` is a subclass of the abstract class `Source`. It representes the brightness profile of
-    source with a pixelated grid of intensity values.
+    ``Pixelated`` is a subclass of the abstract class ``Source``.
+    It represents the brightness profile of source
+    with a pixelated grid of intensity values.
 
-    This class provides a concrete implementation of the `brightness` method required by the `Source`
-    superclass. In this implementation, brightness is determined by interpolating values from the
-    provided source image.
+    This class provides a concrete implementation
+    of the ``brightness`` method required by the ``Source`` superclass.
+    In this implementation, brightness is determined
+    by interpolating values from the provided source image.
 
-    Attributes:
-        x0 (Optional[Tensor]): The x-coordinate of the source image's center.
-        y0 (Optional[Tensor]): The y-coordinate of the source image's center.
-        image (Optional[Tensor]): The source image from which brightness values will be interpolated.
-        pixelscale (Optional[Tensor]): The pixelscale of the source image in the lens plane in units of arcsec/pixel.
-        shape (Optional[tuple[int, ...]]): The shape of the source image.
+    Attributes
+    ----------
+    x0 : Tensor, optional
+        The x-coordinate of the source image's center.
+    y0 : Tensor, optional
+        The y-coordinate of the source image's center.
+    image : Tensor, optional
+        The source image from which brightness values will be interpolated.
+    pixelscale : Tensor, optional
+        The pixelscale of the source image in the lens plane in units of arcsec/pixel.
+    shape : tuple of ints, optional
+        The shape of the source image.
     """
 
     def __init__(
@@ -38,13 +47,20 @@ class Pixelated(Source):
         """
         Constructs the `Pixelated` object with the given parameters.
 
-        Args:
-            name (str): The name of the source.
-            x0 (Optional[Tensor]): The x-coordinate of the source image's center.
-            y0 (Optional[Tensor]): The y-coordinate of the source image's center.
-            image (Optional[Tensor]): The source image from which brightness values will be interpolated.
-            pixelscale (Optional[Tensor]): The pixelscale of the source image in the lens plane in units of arcsec/pixel.
-            shape (Optional[tuple[int, ...]]): The shape of the source image.
+        Parameters
+        ----------
+        name : str
+            The name of the source.
+        x0 : Tensor, optional
+            The x-coordinate of the source image's center.
+        y0 : Tensor, optional
+            The y-coordinate of the source image's center.
+        image : Tensor, optional
+            The source image from which brightness values will be interpolated.
+        pixelscale : Tensor, optional
+            The pixelscale of the source image in the lens plane in units of arcsec/pixel.
+        shape : tuple of ints, optional
+            The shape of the source image.
         """
         if image is not None and image.ndim not in [2, 3]:
             raise ValueError(
@@ -60,34 +76,42 @@ class Pixelated(Source):
         self.add_param("image", image, shape)
         self.add_param("pixelscale", pixelscale)
 
-    @unpack(2)
+    @unpack
     def brightness(
         self,
         x,
         y,
-        x0,
-        y0,
-        image,
-        pixelscale,
         *args,
         params: Optional["Packed"] = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        image: Tensor = None,
+        pixelscale: Tensor = None,
         **kwargs,
     ):
         """
-        Implements the `brightness` method for `Pixelated`. The brightness at a given point is
-        determined by interpolating values from the source image.
+        Implements the `brightness` method for `Pixelated`.
+        The brightness at a given point is determined
+        by interpolating values from the source image.
 
-        Args:
-            x (Tensor): The x-coordinate(s) at which to calculate the source brightness.
-                This could be a single value or a tensor of values.
-            y (Tensor): The y-coordinate(s) at which to calculate the source brightness.
-                This could be a single value or a tensor of values.
-            params (Optional[Packed]): A dictionary containing additional parameters that might be required to
-                calculate the brightness.
+        Parameters
+        ----------
+        x : Tensor
+            The x-coordinate(s) at which to calculate the source brightness.
+            This could be a single value or a tensor of values.
+        y : Tensor
+            The y-coordinate(s) at which to calculate the source brightness.
+            This could be a single value or a tensor of values.
+        params : Packed, optional
+            A dictionary containing additional parameters that might be required to
+            calculate the brightness.
 
-        Returns:
-            Tensor: The brightness of the source at the given coordinate(s). The brightness is
-            determined by interpolating values from the source image.
+        Returns
+        -------
+        Tensor
+            The brightness of the source at the given coordinate(s).
+            The brightness is determined by interpolating values
+            from the source image.
         """
         fov_x = pixelscale * image.shape[0]
         fov_y = pixelscale * image.shape[1]

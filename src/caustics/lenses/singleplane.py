@@ -6,6 +6,7 @@ from torch import Tensor
 from ..cosmology import Cosmology
 from .base import ThinLens
 from ..parametrized import unpack
+from ..packed import Packed
 
 __all__ = ("SinglePlane",)
 
@@ -37,7 +38,7 @@ class SinglePlane(ThinLens):
             self.add_parametrized(lens)
         # TODO: assert all z_l are the same?
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
@@ -48,7 +49,8 @@ class SinglePlane(ThinLens):
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
-        Calculate the total deflection angle by summing the deflection angles of all individual lenses.
+        Calculate the total deflection angle by summing
+        the deflection angles of all individual lenses.
 
         Parameters
         ----------
@@ -74,7 +76,7 @@ class SinglePlane(ThinLens):
             ay = ay + ay_cur
         return ax, ay
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
@@ -85,7 +87,8 @@ class SinglePlane(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Calculate the total projected mass density by summing the mass densities of all individual lenses.
+        Calculate the total projected mass density by
+        summing the mass densities of all individual lenses.
 
         Parameters
         ----------
@@ -109,7 +112,7 @@ class SinglePlane(ThinLens):
             convergence = convergence + convergence_cur
         return convergence
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
@@ -120,7 +123,8 @@ class SinglePlane(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Compute the total lensing potential by summing the lensing potentials of all individual lenses.
+        Compute the total lensing potential by summing
+        the lensing potentials of all individual lenses.
 
         Parameters
         -----------

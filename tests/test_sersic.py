@@ -66,7 +66,7 @@ def test():
         }
     ]
 
-    brightness = sersic.brightness(thx * np.sqrt(q_src), thy, sersic.pack(x))
+    brightness = sersic.brightness(thx * np.sqrt(q_src), thy, x)
     x_ls, y_ls = pixel_grid.coordinate_grid(nx, ny)
     brightness_ls = sersic_ls.surface_brightness(x_ls, y_ls, kwargs_light_source)
 

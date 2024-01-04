@@ -4,8 +4,9 @@
   <img alt="caustics logo" src="media/caustics_logo.png" width="70%">
 </picture>
 
-[![ssec](https://img.shields.io/badge/SSEC-Project-purple?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAOCAQAAABedl5ZAAAACXBIWXMAAAHKAAABygHMtnUxAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAMNJREFUGBltwcEqwwEcAOAfc1F2sNsOTqSlNUopSv5jW1YzHHYY/6YtLa1Jy4mbl3Bz8QIeyKM4fMaUxr4vZnEpjWnmLMSYCysxTcddhF25+EvJia5hhCudULAePyRalvUteXIfBgYxJufRuaKuprKsbDjVUrUj40FNQ11PTzEmrCmrevPhRcVQai8m1PRVvOPZgX2JttWYsGhD3atbHWcyUqX4oqDtJkJiJHUYv+R1JbaNHJmP/+Q1HLu2GbNoSm3Ft0+Y1YMdPSTSwQAAAABJRU5ErkJggg==&style=plastic)](#)
+[![ssec](https://img.shields.io/badge/SSEC-Project-purple?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAOCAQAAABedl5ZAAAACXBIWXMAAAHKAAABygHMtnUxAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAMNJREFUGBltwcEqwwEcAOAfc1F2sNsOTqSlNUopSv5jW1YzHHYY/6YtLa1Jy4mbl3Bz8QIeyKM4fMaUxr4vZnEpjWnmLMSYCysxTcddhF25+EvJia5hhCudULAePyRalvUteXIfBgYxJufRuaKuprKsbDjVUrUj40FNQ11PTzEmrCmrevPhRcVQai8m1PRVvOPZgX2JttWYsGhD3atbHWcyUqX4oqDtJkJiJHUYv+R1JbaNHJmP/+Q1HLu2GbNoSm3Ft0+Y1YMdPSTSwQAAAABJRU5ErkJggg==&style=plastic)](https://escience.washington.edu/software-engineering/ssec/)
 [![CI](https://github.com/Ciela-Institute/caustics/actions/workflows/ci.yml/badge.svg)](https://github.com/Ciela-Institute/caustics/actions/workflows/ci.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Ciela-Institute/caustics/main.svg)](https://results.pre-commit.ci/latest/github/Ciela-Institute/caustics/main)
 [![Documentation Status](https://readthedocs.org/projects/caustics/badge/?version=latest)](https://caustics.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/caustics.svg)](https://pypi.org/project/caustics/)
 [![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustics)](https://app.codecov.io/gh/Ciela-Institute/caustics)
@@ -23,6 +24,65 @@ Simply install caustics from PyPI:
 ```bash
 pip install caustics
 ```
+
+## Minimal Example
+
+```python
+import matplotlib.pyplot as plt
+import caustics
+import torch
+
+cosmology = caustics.cosmology.FlatLambdaCDM()
+sie = caustics.lenses.SIE(cosmology=cosmology, name="lens")
+src = caustics.light.Sersic(name="source")
+lnslt = caustics.light.Sersic(name="lenslight")
+
+x = torch.tensor([
+#   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re
+    1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
+#   Ie    x0   y0   q    phi  n   Re   Ie
+    5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
+])  # fmt: skip
+
+minisim = caustics.sims.Lens_Source(
+    lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
+)
+plt.imshow(minisim(x, quad_level=3), origin="lower")
+plt.axis("off")
+plt.show()
+```
+
+![Caustics lensed image](./media/minimal_example.png)
+
+### Batched simulator
+
+```python
+newx = x.repeat(20, 1)
+newx += torch.normal(mean=0, std=0.1 * torch.ones_like(newx))
+
+images = torch.vmap(minisim)(newx)
+
+fig, axarr = plt.subplots(4, 5, figsize=(20, 16))
+for ax, im in zip(axarr.flatten(), images):
+    ax.imshow(im, origin="lower")
+plt.show()
+```
+
+![Batched Caustics lensed images](../../media/minisim_vmap.png)
+
+### Automatic Differentiation
+
+```python
+J = torch.func.jacfwd(minisim)(x)
+
+# Plot the new images
+fig, axarr = plt.subplots(3, 7, figsize=(20, 9))
+for i, ax in enumerate(axarr.flatten()):
+    ax.imshow(J[..., i], origin="lower")
+plt.show()
+```
+
+![Jacobian Caustics lensed image](../../media/minisim_jacobian.png)
 
 ## Documentation
 

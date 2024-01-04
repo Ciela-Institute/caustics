@@ -19,11 +19,11 @@ __all__ = ("Lens_Source",)
 class Lens_Source(Simulator):
     """Lens image of a source.
 
-    Striaghtforward simulator to sample a lensed image of a source
+    Straightforward simulator to sample a lensed image of a source
     object. Constructs a sampling grid internally based on the
     pixelscale and gridding parameters. It can automatically upscale
     and fine sample an image. This is the most straightforward
-    simulator to view the image if you aready have a lens and source
+    simulator to view the image if you already have a lens and source
     chosen.
 
     Example usage::
@@ -72,7 +72,7 @@ class Lens_Source(Simulator):
     - For arbitrary pixel integration accuracy using the quad_level parameter. This will use Gaussian quadrature to sample the image at a higher resolution, then integrate the image back to the original resolution. This is useful for high accuracy integration of the image, but is not recommended for large images as it will be slow. The quad_level and upsample_factor can be used together to achieve high accuracy integration of the image convolved with a PSF.
     - A `Pixelated` light source is defined by bilinear interpolation of the provided image. This means that sub-pixel integration is not required for accurate integration of the pixels. However, if you are using a PSF then you should still use upsample_factor (if your PSF is supersampled) to ensure that everything is sampled at the PSF resolution.
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -172,6 +172,7 @@ class Lens_Source(Simulator):
         lens_source=True,
         psf_convolve=True,
         quad_level=None,
+        **kwargs,
     ):
         """
         forward function
