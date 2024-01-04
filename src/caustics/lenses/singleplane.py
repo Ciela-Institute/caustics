@@ -38,7 +38,7 @@ class SinglePlane(ThinLens):
             self.add_parametrized(lens)
         # TODO: assert all z_l are the same?
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
@@ -76,7 +76,7 @@ class SinglePlane(ThinLens):
             ay = ay + ay_cur
         return ax, ay
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
@@ -112,7 +112,7 @@ class SinglePlane(ThinLens):
             convergence = convergence + convergence_cur
         return convergence
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,

@@ -38,7 +38,7 @@ class Multiplane(ThickLens):
         for lens in lenses:
             self.add_parametrized(lens)
 
-    @unpack(0)
+    @unpack
     def get_z_ls(
         self, *args, params: Optional["Packed"] = None, **kwargs
     ) -> list[Tensor]:
@@ -59,7 +59,7 @@ class Multiplane(ThickLens):
         # be the case for a ThinLens
         return [lens.unpack(params)[0] for lens in self.lenses]
 
-    @unpack(3)
+    @unpack
     def _raytrace_helper(
         self,
         x: Tensor,
@@ -138,7 +138,7 @@ class Multiplane(ThickLens):
             "No return value specified. Must choose one or more of: ray_coords, shapiro_time_delay, or geometric_time_delay to be True."
         )
 
-    @unpack(3)
+    @unpack
     def raytrace(
         self,
         x: Tensor,
@@ -202,9 +202,10 @@ class Multiplane(ThickLens):
             shapiro_time_delay=False,
             geometric_time_delay=False,
             ray_coords=True,
+            **kwargs,
         )
 
-    @unpack(3)
+    @unpack
     def effective_reduced_deflection_angle(
         self,
         x: Tensor,
@@ -217,7 +218,7 @@ class Multiplane(ThickLens):
         bx, by = self.raytrace(x, y, z_s, params)
         return x - bx, y - by
 
-    @unpack(3)
+    @unpack
     def surface_density(
         self,
         x: Tensor,
@@ -254,7 +255,7 @@ class Multiplane(ThickLens):
         # TODO: rescale mass densities of each lens and sum
         raise NotImplementedError()
 
-    @unpack(3)
+    @unpack
     def time_delay(
         self,
         x: Tensor,
@@ -318,4 +319,5 @@ class Multiplane(ThickLens):
             shapiro_time_delay=shapiro_time_delay,
             geometric_time_delay=geometric_time_delay,
             ray_coords=False,
+            **kwargs,
         )
