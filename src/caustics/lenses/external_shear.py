@@ -53,19 +53,19 @@ class ExternalShear(ThinLens):
         self.add_param("gamma_2", gamma_2)
         self.s = s
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        gamma_1,
-        gamma_2,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        gamma_1: Tensor = None,
+        gamma_2: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -98,19 +98,19 @@ class ExternalShear(ThinLens):
 
         return a1, a2  # I'm not sure but I think no derotation necessary
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        gamma_1,
-        gamma_2,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        gamma_1: Tensor = None,
+        gamma_2: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -136,19 +136,19 @@ class ExternalShear(ThinLens):
         x, y = translate_rotate(x, y, x0, y0)
         return 0.5 * (x * ax + y * ay)
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        gamma_1,
-        gamma_2,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        gamma_1: Tensor = None,
+        gamma_2: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

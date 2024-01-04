@@ -1,9 +1,10 @@
 import torch
 import pytest
 import numpy as np
+
 from caustics.sims import Simulator
 from caustics.parameter import Parameter
-from caustics.lenses import EPL
+from caustics.lenses import EPL, Point
 from caustics.light import Sersic
 from caustics.cosmology import FlatLambdaCDM
 from utils import setup_simulator
@@ -88,6 +89,61 @@ def test_unpack_some_modules_static():
     # Test semantic list (one tensor per module)
     x_semantic = [torch.stack(module) for module in [lens_params, source_params]]
     assert sim(x_semantic).shape == torch.Size([n_pix, n_pix])
+
+
+def test_pass_params_as_kwargs():
+    C = FlatLambdaCDM(name="cosmo")
+    lens = Point(cosmology=C)
+    thx, thy = torch.tensor(0.5), torch.tensor(0.5)
+    P = lens.potential(
+        thx,
+        thy,
+        z_s=torch.tensor(1.0),
+        z_l=torch.tensor(0.5),
+        x0=torch.tensor(0.0),
+        y0=torch.tensor(0.0),
+        th_ein=torch.tensor(1.0),
+    )
+    assert torch.all(torch.isfinite(P))
+
+    C.h0 = None
+    with pytest.raises(KeyError):
+        P = lens.potential(
+            thx,
+            thy,
+            z_s=torch.tensor(1.0),
+            z_l=torch.tensor(0.5),
+            x0=torch.tensor(0.0),
+            y0=torch.tensor(0.0),
+            th_ein=torch.tensor(1.0),
+        )
+
+    P = lens.potential(
+        thx,
+        thy,
+        z_s=torch.tensor(1.0),
+        z_l=torch.tensor(0.5),
+        x0=torch.tensor(0.0),
+        y0=torch.tensor(0.0),
+        th_ein=torch.tensor(1.0),
+        cosmo_h0=torch.tensor(0.7),
+    )
+
+    assert torch.all(torch.isfinite(P))
+
+
+def test_pass_params_batched():
+    C = FlatLambdaCDM(name="cosmo")
+    lens = Point(cosmology=C)
+    thx, thy = torch.tensor(0.5), torch.tensor(0.5)
+    params = torch.tensor([0.5, 0.0, 0.0, 1.0])
+    params = params.repeat(5, 1)
+
+    P_batch = torch.vmap(lens.potential, in_dims=(None, None, None, 0))(
+        thx, thy, 1.0, params
+    )
+
+    assert torch.all(torch.isfinite(P_batch))
 
 
 def test_default_names():

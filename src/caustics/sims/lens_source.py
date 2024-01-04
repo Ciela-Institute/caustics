@@ -172,6 +172,7 @@ class Lens_Source(Simulator):
         lens_source=True,
         psf_convolve=True,
         quad_level=None,
+        **kwargs,
     ):
         """
         forward function
