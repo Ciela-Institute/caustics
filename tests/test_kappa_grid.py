@@ -39,11 +39,9 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero"):
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
 
     # Exact calculations
-    Psi = lens_pj.potential(thx, thy, z_s, lens_pj.pack(x_pj))
+    Psi = lens_pj.potential(thx, thy, z_s, x_pj)
     Psi -= Psi.min()
-    alpha_x, alpha_y = lens_pj.reduced_deflection_angle(
-        thx, thy, z_l, lens_pj.pack(x_pj)
-    )
+    alpha_x, alpha_y = lens_pj.reduced_deflection_angle(thx, thy, z_l, x_pj)
 
     # Approximate calculations
     lens_kap = PixelatedConvergence(
@@ -57,16 +55,16 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero"):
         name="kg",
         padding=padding,
     )
-    kappa_map = lens_pj.convergence(thx, thy, z_s, lens_pj.pack(x_pj))
+    kappa_map = lens_pj.convergence(thx, thy, z_s, x_pj)
     x_kap = kappa_map.flatten()
 
-    Psi_approx = lens_kap.potential(thx, thy, z_s, lens_kap.pack(x_kap))
+    Psi_approx = lens_kap.potential(thx, thy, z_s, x_kap)
     Psi_approx -= Psi_approx.min()
     # Try to remove unobservable constant offset
     Psi_approx += torch.mean(Psi - Psi_approx)
 
     alpha_x_approx, alpha_y_approx = lens_kap.reduced_deflection_angle(
-        thx, thy, z_s, lens_kap.pack(x_kap)
+        thx, thy, z_s, x_kap
     )
 
     return Psi, Psi_approx, alpha_x, alpha_x_approx, alpha_y, alpha_y_approx

@@ -139,7 +139,9 @@ def test_pass_params_batched():
     params = torch.tensor([0.5, 0.0, 0.0, 1.0])
     params = params.repeat(5, 1)
 
-    P_batch = torch.vmap(lambda x: lens.potential(thx, thy, 1.0, lens.pack(x)))(params)
+    P_batch = torch.vmap(lens.potential, in_dims=(None, None, None, 0))(
+        thx, thy, 1.0, params
+    )
 
     assert torch.all(torch.isfinite(P_batch))
 

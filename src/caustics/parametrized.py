@@ -2,6 +2,7 @@ from collections import OrderedDict
 from math import prod
 from typing import Optional, Union
 import functools
+import inspect
 
 import torch
 import re
@@ -369,11 +370,11 @@ class Parametrized:
         dynamic = NestedNamespaceDict()
 
         def _get_params(module):
-            MP = module.module_params
-            if MP.static:
-                static[module.name] = MP.static
-            if MP.dynamic:
-                dynamic[module.name] = MP.dynamic
+            mp = module.module_params
+            if mp.static:
+                static[module.name] = mp.static
+            if mp.dynamic:
+                dynamic[module.name] = mp.dynamic
             for child in module._childs.values():
                 _get_params(child)
 
@@ -486,6 +487,23 @@ class Parametrized:
         return dot
 
 
+def count_args_before_varargs(function):
+    """
+    Counts the number of arguments before the *args argument in a function.
+    """
+    signature = inspect.signature(function)
+    count = 0
+
+    for param in signature.parameters.values():
+        if param.kind == inspect.Parameter.VAR_POSITIONAL:
+            break
+        if param.name == "self":
+            continue
+        count += 1
+
+    return count
+
+
 def unpack(method):
     """
     Decorator that unpacks the "params" argument of a method.
@@ -494,20 +512,20 @@ def unpack(method):
     The following are all valid ways to call ``func``:: python
 
         lens.func(x, y, a=a, b=b, c=c) # a and b are Tensors
-        lens.func(x, y, lens.pack([a, b]), c=c) # a and b are Tensors
-        lens.func(x, y, params=lens.pack([a, b]), c=c) # a and b are Tensors
+        lens.func(x, y, [a, b], c=c) # a and b are Tensors, or even [a, b] is a tensor
+        lens.func(x, y, params=[a, b], c=c) # a and b are Tensors, or even [a, b] is a tensor
 
         # If the ``a`` parameter has been set at a static value like this:
         lens.a = a # a is a Tensor
         # then the following is also valid:
         lens.func(x, y, b=b, c=c) # b is a Tensor
-        lens.func(x, y, lens.pack([b]), c=c) # a and b are Tensors
-        lens.func(x, y, params=lens.pack([b]), c=c) # a and b are Tensors
+        lens.func(x, y, [b], c=c) # a and b are Tensors
+        lens.func(x, y, params=[b], c=c) # a and b are Tensors
 
         # If lens.func calls another method from a different parametrized object (say cosmo) and that method takes a dynamic parameter ``d``, then the following is also valid:
         lens.func(x, y, a=a, b=b, cosmo_d=d, c=c) # a, b and d are Tensors
-        lens.func(x, y, lens.pack([a, b, d]), c=c) # a, b and d are Tensors
-        lens.func(x, y, params=lens.pack([a, b, d]), c=c) # a, b and d are Tensors
+        lens.func(x, y, [a, b, d], c=c) # a, b and d are Tensors
+        lens.func(x, y, params=[a, b, d], c=c) # a, b and d are Tensors
 
     In all cases any valid way to construct the ``Packed`` object also works (i.e. by tensor, dict, or tuple).
     This gives a great deal of flexibility in how the parameters are passed to the method.
@@ -520,13 +538,16 @@ def unpack(method):
 
     """
 
+    nargs = count_args_before_varargs(method)
+
     @functools.wraps(method)
     def wrapped(self, *args, **kwargs):
         # Extract "params" regardless of how it is/they are passed
         # ---------------------------------------------------------
-        if args and isinstance(args[-1], Packed):
+        print(nargs, method.__name__, len(args))
+        if len(args) > nargs:
             # Params is given as last argument
-            x = args[-1]
+            x = self.pack(args[-1])
             args = args[:-1]
         elif "params" in kwargs:
             # Params is given as a keyword argument

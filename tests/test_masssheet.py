@@ -16,8 +16,8 @@ def test():
 
     thx, thy = get_meshgrid(0.01, 10, 10)
 
-    ax, ay = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    lens.reduced_deflection_angle(thx, thy, z_s, x)
 
-    lens.potential(thx, thy, z_s, lens.pack(x))
+    lens.potential(thx, thy, z_s, x)
 
-    lens.convergence(thx, thy, z_s, lens.pack(x))
+    lens.convergence(thx, thy, z_s, x)

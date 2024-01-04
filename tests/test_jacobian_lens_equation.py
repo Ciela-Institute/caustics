@@ -18,9 +18,9 @@ def test_jacobian_autograd_vs_finitediff():
     x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
 
     # Evaluate Jacobian
-    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, x)
     J_finitediff = lens.jacobian_lens_equation(
-        thx, thy, z_s, lens.pack(x), method="finitediff", pixelscale=torch.tensor(0.01)
+        thx, thy, z_s, x, method="finitediff", pixelscale=torch.tensor(0.01)
     )
 
     assert (
@@ -53,7 +53,7 @@ def test_multiplane_jacobian():
     # Parameters
     z_s = torch.tensor(1.2)
     x = torch.tensor(xs).flatten()
-    A = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    A = lens.jacobian_lens_equation(thx, thy, z_s, x)
     assert A.shape == (10, 10, 2, 2)
 
 
@@ -83,9 +83,9 @@ def test_multiplane_jacobian_autograd_vs_finitediff():
     x = torch.tensor(xs).flatten()
 
     # Evaluate Jacobian
-    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, x)
     J_finitediff = lens.jacobian_lens_equation(
-        thx, thy, z_s, lens.pack(x), method="finitediff", pixelscale=torch.tensor(0.01)
+        thx, thy, z_s, x, method="finitediff", pixelscale=torch.tensor(0.01)
     )
 
     assert (
@@ -118,9 +118,9 @@ def test_multiplane_effective_convergence():
     # Parameters
     z_s = torch.tensor(1.2)
     x = torch.tensor(xs).flatten()
-    C = lens.effective_convergence_div(thx, thy, z_s, lens.pack(x))
+    C = lens.effective_convergence_div(thx, thy, z_s, x)
     assert C.shape == (10, 10)
-    curl = lens.effective_convergence_curl(thx, thy, z_s, lens.pack(x))
+    curl = lens.effective_convergence_curl(thx, thy, z_s, x)
     assert curl.shape == (10, 10)
 
 
