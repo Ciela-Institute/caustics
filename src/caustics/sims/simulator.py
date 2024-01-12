@@ -1,4 +1,5 @@
 from ..parametrized import Parametrized
+from .state_dict import StateDict
 
 __all__ = ("Simulator",)
 
@@ -25,3 +26,6 @@ class Simulator(Parametrized):
             rest_args = tuple()
 
         return self.forward(packed_args, *rest_args, **kwargs)
+
+    def state_dict(self) -> StateDict:
+        return StateDict.from_params(self.params)
