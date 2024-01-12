@@ -13,9 +13,7 @@ from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
 
 
-def setup_simulator(
-    cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False
-):
+def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False):
     n_pix = 20
 
     class Sim(Simulator):
@@ -150,9 +148,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
 
 def get_default_cosmologies():
     cosmology = FlatLambdaCDM("cosmo")
-    cosmology_ap = FlatLambdaCDM_AP(
-        100 * cosmology.h0.value, cosmology.Om0.value, Tcmb0=0
-    )
+    cosmology_ap = FlatLambdaCDM_AP(100 * cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
     return cosmology, cosmology_ap
 
 
@@ -178,7 +174,7 @@ def setup_grids(res=0.05, n_pix=100):
 
 def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, lens.pack(x))
+    alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(alpha_x.numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.numpy(), alpha_y_ls, rtol, atol)
@@ -186,7 +182,7 @@ def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
 
 def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    Psi = lens.potential(thx, thy, z_s, lens.pack(x))
+    Psi = lens.potential(thx, thy, z_s, x)
     Psi_ls = lens_ls.potential(thx_ls, thy_ls, kwargs_ls)
     # Potential is only defined up to a constant
     Psi -= Psi.min()
@@ -196,7 +192,7 @@ def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
 
 def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     thx, thy, thx_ls, thy_ls = setup_grids()
-    kappa = lens.convergence(thx, thy, z_s, lens.pack(x))
+    kappa = lens.convergence(thx, thy, z_s, x)
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(kappa.numpy(), kappa_ls, rtol, atol)
 
@@ -214,10 +210,10 @@ def lens_test_helper(
     test_kappa=True,
 ):
     if test_alpha:
-        alpha_test_helper(lens, lens_ls, z_s, lens.pack(x), kwargs_ls, atol, rtol)
+        alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
 
     if test_Psi:
-        Psi_test_helper(lens, lens_ls, z_s, lens.pack(x), kwargs_ls, atol, rtol)
+        Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
 
     if test_kappa:
-        kappa_test_helper(lens, lens_ls, z_s, lens.pack(x), kwargs_ls, atol, rtol)
+        kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)

@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from scipy.fft import next_fast_len
 from torch import Tensor
+import numpy as np
 
 from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
@@ -16,6 +17,12 @@ __all__ = ("PixelatedConvergence",)
 
 
 class PixelatedConvergence(ThinLens):
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "convergence_map": np.logspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
+    }
+
     def __init__(
         self,
         pixelscale: float,
@@ -245,18 +252,18 @@ class PixelatedConvergence(ThinLens):
 
         self._convolution_mode = convolution_mode
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -352,18 +359,18 @@ class PixelatedConvergence(ThinLens):
             deflection_angle_y
         )
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -438,18 +445,18 @@ class PixelatedConvergence(ThinLens):
         ).squeeze() * (self.pixelscale**2 / pi)
         return self._unpad_conv2d(potential)
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        convergence_map,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        convergence_map: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

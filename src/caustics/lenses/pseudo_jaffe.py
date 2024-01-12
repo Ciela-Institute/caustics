@@ -42,6 +42,14 @@ class PseudoJaffe(ThinLens):
         Softening parameter to prevent numerical instabilities.
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "mass": 1e12,
+        "core_radius": 0.1,
+        "scale_radius": 1.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
@@ -87,37 +95,37 @@ class PseudoJaffe(ThinLens):
         self.add_param("scale_radius", scale_radius)
         self.s = s
 
-    @unpack(1)
+    @unpack
     def get_convergence_0(
         self,
         z_s,
-        z_l,
-        x0,
-        y0,
-        mass,
-        core_radius,
-        scale_radius,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        core_radius: Tensor = None,
+        scale_radius: Tensor = None,
         **kwargs,
     ):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params)
         return mass / (2 * torch.pi * sigma_crit * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2)  # fmt: skip
 
-    @unpack(2)
+    @unpack
     def mass_enclosed_2d(
         self,
         theta,
         z_s,
-        z_l,
-        x0,
-        y0,
-        mass,
-        core_radius,
-        scale_radius,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        core_radius: Tensor = None,
+        scale_radius: Tensor = None,
         **kwargs,
     ):
         """
@@ -183,20 +191,20 @@ class PseudoJaffe(ThinLens):
         """
         return pi * rho_0 * core_radius * scale_radius / ((core_radius + scale_radius) * critical_surface_density)  # fmt: skip
 
-    @unpack(3)
+    @unpack
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        core_radius,
-        scale_radius,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        core_radius: Tensor = None,
+        scale_radius: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """Calculate the deflection angle.
@@ -225,20 +233,20 @@ class PseudoJaffe(ThinLens):
         ay = alpha * y / R
         return ax, ay
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        core_radius,
-        scale_radius,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        core_radius: Tensor = None,
+        scale_radius: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -258,18 +266,21 @@ class PseudoJaffe(ThinLens):
         Returns
         --------
         Tensor
-            The lensing potential.
+            The lensing potential (arcsec^2).
         """
-
-        # TODO: why do the units come out to arcsec (length) and not arcsec^2? Note that the units in A18 also come out to arcsec.
 
         # fmt: off
         x, y = translate_rotate(x, y, x0, y0)
         d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
+        d_s = self.cosmology.angular_diameter_distance(z_s, params) # Mpc
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params) # Mpc
+
         R_squared = x**2 + y**2 + self.s # arcsec^2
         sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params) # Msun / Mpc^2
         surface_density_0 = self.get_convergence_0(z_s, params) * sigma_crit # Msun / Mpc^2
-        coeff = 4 * pi * G_over_c2 * surface_density_0 * (d_l * arcsec_to_rad) * core_radius * scale_radius / (scale_radius - core_radius) # unitless or arcsec?
+
+        coeff = -8 * pi * G_over_c2 * surface_density_0 * (d_l * d_ls / d_s) * core_radius * scale_radius / (scale_radius - core_radius) # arcsec
+
         scale_a = (scale_radius**2 + R_squared).sqrt() # arcsec
         scale_b = (core_radius**2 + R_squared).sqrt() # arcsec
         scale_c = core_radius * (core_radius + (core_radius**2 + R_squared).sqrt()).log() # arcsec
@@ -279,20 +290,20 @@ class PseudoJaffe(ThinLens):
 
     # fmt: on
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        core_radius,
-        scale_radius,
         *args,
         params: Optional["Packed"] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        core_radius: Tensor = None,
+        scale_radius: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """

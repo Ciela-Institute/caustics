@@ -75,6 +75,14 @@ class TNFW(ThinLens):
 
     """
 
+    _null_params = {
+        "x0": 0.0,
+        "y0": 0.0,
+        "mass": 1e13,
+        "scale_radius": 1.0,
+        "tau": 3.0,
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
@@ -137,17 +145,17 @@ class TNFW(ThinLens):
         """
         return (x / (tau + (tau**2 + x**2).sqrt())).log()  # fmt: skip
 
-    @unpack(0)
+    @unpack
     def get_concentration(
         self,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -181,17 +189,17 @@ class TNFW(ThinLens):
         r_delta = (3 * mass / (4 * pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
         return r_delta / (scale_radius * d_l * arcsec_to_rad)  # fmt: skip
 
-    @unpack(0)
+    @unpack
     def get_truncation_radius(
         self,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -221,17 +229,17 @@ class TNFW(ThinLens):
         """
         return tau * scale_radius
 
-    @unpack(0)
+    @unpack
     def get_M0(
         self,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -267,17 +275,17 @@ class TNFW(ThinLens):
             d_l = self.cosmology.angular_diameter_distance(z_l, params)
             return 4 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 3 * self.get_scale_density(params)  # fmt: skip
 
-    @unpack(0)
+    @unpack
     def get_scale_density(
         self,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -308,20 +316,20 @@ class TNFW(ThinLens):
         c = self.get_concentration(params)
         return DELTA / 3 * self.cosmology.critical_density(z_l, params) * c**3 / ((1 + c).log() - c / (1 + c))  # fmt: skip
 
-    @unpack(3)
+    @unpack
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -369,19 +377,19 @@ class TNFW(ThinLens):
         a5 = (t2 - 1) * L / (tau * (t2 + g**2).sqrt())
         return a1 * (a2 + a3 + a4 + a5) * S / critical_density  # fmt: skip
 
-    @unpack(2)
+    @unpack
     def mass_enclosed_2d(
         self,
         r: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -421,20 +429,20 @@ class TNFW(ThinLens):
         S = self.get_M0(params)
         return S * a1 * (a2 + a3 + a4 + a5)
 
-    @unpack(3)
+    @unpack
     def physical_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """Compute the physical deflection angle (arcsec) for this lens at
@@ -477,20 +485,20 @@ class TNFW(ThinLens):
         S = 4 * G_over_c2 * rad_to_arcsec
         return S * dr * theta.cos(), S * dr * theta.sin()
 
-    @unpack(3)
+    @unpack
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l,
-        x0,
-        y0,
-        mass,
-        scale_radius,
-        tau,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
+        z_l: Tensor = None,
+        x0: Tensor = None,
+        y0: Tensor = None,
+        mass: Tensor = None,
+        scale_radius: Tensor = None,
+        tau: Tensor = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -529,10 +537,12 @@ class TNFW(ThinLens):
         u = g**2
         F = self._F(g)
         L = self._L(g, tau)
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
 
-        # d_l = self.cosmology.angular_diameter_distance(z_l, params)
         # fmt: off
-        S = 2 * self.get_M0(params) * G_over_c2  # * rad_to_arcsec * d_l**2
+        S = 2 * self.get_M0(params) * G_over_c2 * (d_ls / d_s) / (d_l * arcsec_to_rad**2)
         a1 = 1 / (t2 + 1) ** 2
         a2 = 2 * torch.pi * t2 * (tau - (t2 + u).sqrt() + tau * (tau + (t2 + u).sqrt()).log())
         a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L
@@ -541,5 +551,7 @@ class TNFW(ThinLens):
         a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2
         a7 = t2 * ((t2 - 1) * tau.log() - t2 - 1) * u.log()
         a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())
-        # fmt: on
-        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)  # fmt: skip
+
+        return S * a1 * (a2 + a3 + a4 + a5 + a6 + a7 - a8)
+
+    # fmt: on
