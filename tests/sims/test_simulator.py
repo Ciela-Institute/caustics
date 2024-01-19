@@ -1,6 +1,7 @@
 import pytest
 
 from caustics.sims.state_dict import StateDict
+from helpers.sims import extract_tensors, isEquals
 
 
 @pytest.fixture
@@ -10,8 +11,7 @@ def state_dict(simple_common_sim):
 
 @pytest.fixture
 def expected_tensors(simple_common_sim):
-    static_params = simple_common_sim.params["static"].flatten()
-    return {k: v.value for k, v in static_params.items()}
+    return extract_tensors(simple_common_sim.params)
 
 
 class TestSimulator:
@@ -28,4 +28,4 @@ class TestSimulator:
         assert "created_time" in state_dict._metadata
 
         # Check params
-        assert dict(state_dict) == expected_tensors
+        assert isEquals(dict(state_dict), expected_tensors)

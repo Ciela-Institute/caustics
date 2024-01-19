@@ -1,5 +1,6 @@
 exclude: |
   (?x)^(
+    tests/helpers/|
     tests/utils.py
   )
 

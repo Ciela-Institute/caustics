@@ -61,3 +61,6 @@ local_scheme = "no-local-version"
 [tool.ruff]
 # Same as Black.
 line-length = 100
+
+[tool.pytest.ini_options]
+norecursedirs = "tests/helpers"

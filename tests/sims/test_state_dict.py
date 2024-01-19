@@ -1,4 +1,3 @@
-from typing import Dict
 import pytest
 import torch
 from safetensors.torch import save, load
@@ -7,6 +6,8 @@ from caustics.parameter import Parameter
 from caustics.namespace_dict import NamespaceDict, NestedNamespaceDict
 from caustics.sims.state_dict import StateDict, IMMUTABLE_ERR
 from caustics import __version__
+
+from helpers.sims import extract_tensors, isEquals
 
 
 class TestStateDict:
@@ -43,21 +44,17 @@ class TestStateDict:
     def test_from_params(self, simple_common_sim):
         params: NestedNamespaceDict = simple_common_sim.params
 
-        # flatten function only exists for NestedNamespaceDict
-        static_params: NamespaceDict = params["static"].flatten()
-        tensors_dict: Dict[str, torch.Tensor] = {
-            k: v.value for k, v in static_params.items()
-        }
+        tensors_dict, all_params = extract_tensors(params, True)
 
         expected_state_dict = StateDict(tensors_dict)
 
         # Full parameters
         state_dict = StateDict.from_params(params)
-        assert state_dict == expected_state_dict
+        assert isEquals(state_dict, expected_state_dict)
 
         # Static only
-        state_dict = StateDict.from_params(static_params)
-        assert state_dict == expected_state_dict
+        state_dict = StateDict.from_params(all_params)
+        assert isEquals(state_dict, expected_state_dict)
 
     def test_to_params(self, simple_state_dict):
         params = simple_state_dict.to_params()
