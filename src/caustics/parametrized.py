@@ -1,3 +1,4 @@
+# mypy: disable-error-code="var-annotated,index,type-arg"
 from collections import OrderedDict
 from math import prod
 from typing import Optional, Union
@@ -59,7 +60,7 @@ class Parametrized:
         Number of static parameters.
     """
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: Optional[str] = None):
         if name is None:
             name = self._default_name()
         check_valid_name(name)

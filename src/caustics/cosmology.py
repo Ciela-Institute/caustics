@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator"
 from abc import abstractmethod
 from math import pi
 from typing import Optional
@@ -56,7 +57,7 @@ class Cosmology(Parametrized):
         Name of the cosmological model.
     """
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: Optional[str] = None):
         """
         Initialize the Cosmology.
 
@@ -296,7 +297,7 @@ class FlatLambdaCDM(Cosmology):
         h0: Optional[Tensor] = torch.tensor(h0_default),
         critical_density_0: Optional[Tensor] = torch.tensor(critical_density_0_default),
         Om0: Optional[Tensor] = torch.tensor(Om0_default),
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize a new instance of the FlatLambdaCDM class.
@@ -358,9 +359,9 @@ class FlatLambdaCDM(Cosmology):
         z: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        h0: Tensor = None,
-        critical_density_0: Tensor = None,
-        Om0: Tensor = None,
+        h0: Optional[Tensor] = None,
+        critical_density_0: Optional[Tensor] = None,
+        Om0: Optional[Tensor] = None,
         **kwargs,
     ) -> torch.Tensor:
         """
@@ -410,9 +411,9 @@ class FlatLambdaCDM(Cosmology):
         z: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        h0: Tensor = None,
-        critical_density_0: Tensor = None,
-        Om0: Tensor = None,
+        h0: Optional[Tensor] = None,
+        critical_density_0: Optional[Tensor] = None,
+        Om0: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -443,9 +444,9 @@ class FlatLambdaCDM(Cosmology):
         z: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        h0: Tensor = None,
-        critical_density_0: Tensor = None,
-        Om0: Tensor = None,
+        h0: Optional[Tensor] = None,
+        critical_density_0: Optional[Tensor] = None,
+        Om0: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         return self.comoving_distance(z, params, **kwargs)

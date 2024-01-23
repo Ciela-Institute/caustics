@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator"
 from typing import Optional, Union
 
 import torch
@@ -48,7 +49,7 @@ class MassSheet(ThinLens):
         x0: Optional[Union[Tensor, float]] = None,
         y0: Optional[Union[Tensor, float]] = None,
         surface_density: Optional[Union[Tensor, float]] = None,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
@@ -64,10 +65,10 @@ class MassSheet(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        surface_density: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        surface_density: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -103,10 +104,10 @@ class MassSheet(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        surface_density: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        surface_density: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         # Meneghetti eq 3.81
@@ -120,10 +121,10 @@ class MassSheet(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        surface_density: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        surface_density: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         # Essentially by definition

@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator"
 from typing import Optional, Union
 
 import torch
@@ -80,7 +81,7 @@ class EPL(ThinLens):
         t: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         n_iter: int = 18,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize an EPL lens model.
@@ -137,13 +138,13 @@ class EPL(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
-        t: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
+        t: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -220,13 +221,13 @@ class EPL(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
-        t: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
+        t: Optional[Tensor] = None,
         **kwargs,
     ):
         """
@@ -251,7 +252,7 @@ class EPL(ThinLens):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         ax, ay = derotate(ax, ay, -phi)
         x, y = translate_rotate(x, y, x0, y0, phi)
-        return (x * ax + y * ay) / (2 - t)
+        return (x * ax + y * ay) / (2 - t)  # fmt: skip
 
     @unpack
     def convergence(
@@ -261,15 +262,15 @@ class EPL(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
-        t: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
+        t: Optional[Tensor] = None,
         **kwargs,
-    ):
+    ) -> Tensor:
         """
         Compute the convergence of the lens, which describes the local density of the lens.
 

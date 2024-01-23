@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union
 
 from torch import Tensor
@@ -53,7 +54,7 @@ class Sersic(Source):
         Ie: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         use_lenstronomy_k=False,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Constructs the `Sersic` object with the given parameters.
@@ -100,13 +101,13 @@ class Sersic(Source):
         y,
         *args,
         params: Optional["Packed"] = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        n: Tensor = None,
-        Re: Tensor = None,
-        Ie: Tensor = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        n: Optional[Tensor] = None,
+        Re: Optional[Tensor] = None,
+        Ie: Optional[Tensor] = None,
         **kwargs,
     ):
         """
