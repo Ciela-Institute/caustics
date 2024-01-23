@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator"
 from math import pi
 from typing import Optional, Union
 
@@ -60,7 +61,7 @@ class PseudoJaffe(ThinLens):
         core_radius: Optional[Union[Tensor, float]] = None,
         scale_radius: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize the PseudoJaffe class.
@@ -101,12 +102,12 @@ class PseudoJaffe(ThinLens):
         z_s,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        core_radius: Tensor = None,
-        scale_radius: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        core_radius: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
         **kwargs,
     ):
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
@@ -120,12 +121,12 @@ class PseudoJaffe(ThinLens):
         z_s,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        core_radius: Tensor = None,
-        scale_radius: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        core_radius: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
         **kwargs,
     ):
         """
@@ -199,12 +200,12 @@ class PseudoJaffe(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        core_radius: Tensor = None,
-        scale_radius: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        core_radius: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """Calculate the deflection angle.
@@ -241,12 +242,12 @@ class PseudoJaffe(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        core_radius: Tensor = None,
-        scale_radius: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        core_radius: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -298,12 +299,12 @@ class PseudoJaffe(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        core_radius: Tensor = None,
-        scale_radius: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        core_radius: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """

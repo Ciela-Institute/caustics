@@ -1,3 +1,4 @@
+# mypy: disable-error-code="misc"
 from math import pi
 from typing import Callable, Optional, Tuple, Union
 from functools import partial, lru_cache

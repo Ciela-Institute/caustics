@@ -32,7 +32,9 @@ class Multiplane(ThickLens):
         List of thin lenses.
     """
 
-    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None):
+    def __init__(
+        self, cosmology: Cosmology, lenses: list[ThinLens], name: Optional[str] = None
+    ):
         super().__init__(cosmology, name=name)
         self.lenses = lenses
         for lens in lenses:
