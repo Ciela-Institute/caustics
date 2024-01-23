@@ -1,7 +1,7 @@
 import pytest
 
 from caustics.sims.state_dict import StateDict
-from helpers.sims import extract_tensors, isEquals
+from helpers.sims import extract_tensors
 
 
 @pytest.fixture
@@ -28,4 +28,4 @@ class TestSimulator:
         assert "created_time" in state_dict._metadata
 
         # Check params
-        assert isEquals(dict(state_dict), expected_tensors)
+        assert dict(state_dict) == expected_tensors

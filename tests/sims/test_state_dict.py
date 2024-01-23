@@ -4,10 +4,10 @@ from safetensors.torch import save, load
 from datetime import datetime as dt
 from caustics.parameter import Parameter
 from caustics.namespace_dict import NamespaceDict, NestedNamespaceDict
-from caustics.sims.state_dict import StateDict, IMMUTABLE_ERR
+from caustics.sims.state_dict import StateDict, IMMUTABLE_ERR, _sanitize
 from caustics import __version__
 
-from helpers.sims import extract_tensors, isEquals
+from helpers.sims import extract_tensors
 
 
 class TestStateDict:
@@ -15,12 +15,12 @@ class TestStateDict:
 
     @pytest.fixture(scope="class")
     def simple_state_dict(self):
-        return StateDict(self.simple_tensors)
+        return StateDict(**self.simple_tensors)
 
     def test_constructor(self):
         time_format = "%Y-%m-%dT%H:%M:%S"
         time_str_now = dt.utcnow().strftime(time_format)
-        state_dict = StateDict(self.simple_tensors)
+        state_dict = StateDict(**self.simple_tensors)
 
         # Get the created time and format to nearest seconds
         sd_ct_dt = dt.fromisoformat(state_dict._metadata["created_time"])
@@ -46,15 +46,15 @@ class TestStateDict:
 
         tensors_dict, all_params = extract_tensors(params, True)
 
-        expected_state_dict = StateDict(tensors_dict)
+        expected_state_dict = StateDict(**tensors_dict)
 
         # Full parameters
         state_dict = StateDict.from_params(params)
-        assert isEquals(state_dict, expected_state_dict)
+        assert state_dict == expected_state_dict
 
         # Static only
         state_dict = StateDict.from_params(all_params)
-        assert isEquals(state_dict, expected_state_dict)
+        assert state_dict == expected_state_dict
 
     def test_to_params(self, simple_state_dict):
         params = simple_state_dict.to_params()
@@ -66,10 +66,10 @@ class TestStateDict:
             assert v.value == tensor_value
 
     def test__to_safetensors(self):
-        state_dict = StateDict(self.simple_tensors)
+        state_dict = StateDict(**self.simple_tensors)
         # Save to safetensors
         tensors_bytes = state_dict._to_safetensors()
-        expected_bytes = save(state_dict, metadata=state_dict._metadata)
+        expected_bytes = save(_sanitize(state_dict), metadata=state_dict._metadata)
 
         # Reload to back to tensors dict
         # this is done because the information
