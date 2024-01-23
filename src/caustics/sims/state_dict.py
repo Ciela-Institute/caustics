@@ -2,6 +2,7 @@ from datetime import datetime as dt
 from collections import OrderedDict
 from typing import Any, Dict, Optional
 from pathlib import Path
+import os
 
 from torch import Tensor
 import torch
@@ -184,7 +185,7 @@ class StateDict(ImmutableODict):
             The final path of the saved file
         """
         if not file_path:
-            file_path = Path(".") / self.__st_file
+            file_path = Path(os.path.curdir) / self.__st_file
         elif isinstance(file_path, str):
             file_path = Path(file_path)
 

@@ -10,7 +10,9 @@ def _normalize_path(path: "str | Path") -> Path:
     # Convert string path to Path object
     if isinstance(path, str):
         path = Path(path)
-    return path
+
+    # Get absolute path
+    return path.absolute()
 
 
 def to_file(
