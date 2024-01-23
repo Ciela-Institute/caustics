@@ -68,7 +68,7 @@ for ax, im in zip(axarr.flatten(), images):
 plt.show()
 ```
 
-![Batched Caustics lensed images](../../media/minisim_vmap.png)
+![Batched Caustics lensed images](./media/minisim_vmap.png)
 
 ### Automatic Differentiation
 
@@ -82,7 +82,7 @@ for i, ax in enumerate(axarr.flatten()):
 plt.show()
 ```
 
-![Jacobian Caustics lensed image](../../media/minisim_jacobian.png)
+![Jacobian Caustics lensed image](./media/minisim_jacobian.png)
 
 ## Documentation
 
