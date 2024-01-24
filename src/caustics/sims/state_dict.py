@@ -161,7 +161,7 @@ class StateDict(ImmutableODict):
             params[k] = Parameter(v)
         return NestedNamespaceDict(params)
 
-    def save(self, file_path: Optional[str] = None) -> str:
+    def save(self, file_path: "str | Path | None" = None) -> str:
         """
         Saves the state dictionary to an optional
         ``file_path`` as safetensors format.

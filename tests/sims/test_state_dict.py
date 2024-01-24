@@ -160,6 +160,12 @@ class TestStateDict:
             assert Path(saved_path).exists()
             assert saved_path == str(fpath.absolute())
 
+            # Test save Path
+            fpath1 = tempdir / "test1.st"
+            saved_path = simple_state_dict.save(fpath1)
+            assert Path(saved_path).exists()
+            assert saved_path == str(fpath1.absolute())
+
             # Wrong extension
             wrong_fpath = tempdir / "test.txt"
             with pytest.raises(ValueError):
