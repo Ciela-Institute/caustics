@@ -1,6 +1,5 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import os
 import sys
 
 import pytest
@@ -136,17 +135,20 @@ class TestStateDict:
 
         assert simple_state_dict._StateDict__st_file == expected_file
 
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="Built-in open has different behavior on Windows",
+    )
     def test_save(self, simple_state_dict):
         # Check for default save path
-        expected_fpath = Path(os.path.curdir) / simple_state_dict._StateDict__st_file
+        expected_fpath = Path.cwd() / simple_state_dict._StateDict__st_file
         default_fpath = simple_state_dict.save()
 
         assert Path(default_fpath).exists()
         assert default_fpath == str(expected_fpath.absolute())
 
-        # Cleanup after only for non-windows
-        if not sys.platform.startswith("win"):
-            Path(default_fpath).unlink(missing_ok=True)
+        # Cleanup after
+        Path(default_fpath).unlink()
 
         # Check for specified save path
         with TemporaryDirectory() as tempdir:
@@ -163,11 +165,14 @@ class TestStateDict:
             with pytest.raises(ValueError):
                 saved_path = simple_state_dict.save(str(wrong_fpath.absolute()))
 
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="Built-in open has different behavior on Windows",
+    )
     def test_load(self, simple_state_dict):
         fpath = simple_state_dict.save()
         loaded_state_dict = StateDict.load(fpath)
         assert loaded_state_dict == simple_state_dict
 
-        # Cleanup after only for non-windows
-        if not sys.platform.startswith("win"):
-            Path(fpath).unlink(missing_ok=True)
+        # Cleanup after
+        Path(fpath).unlink()

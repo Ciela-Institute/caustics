@@ -44,7 +44,9 @@ def to_file(
     # Normalize path to pathlib.Path object
     path = _normalize_path(path)
 
-    path.write_bytes(data)
+    with open(path, "wb") as f:
+        f.write(data)
+
     return str(path.absolute())
 
 

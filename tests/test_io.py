@@ -14,16 +14,16 @@ from caustics.io import (
 
 
 def test_normalize_path():
+    path_obj = Path().joinpath("path", "to", "file.txt")
     # Test with a string path
-    path_str = "/path/to/file.txt"
+    path_str = str(path_obj)
     normalized_path = _normalize_path(path_str)
-    assert normalized_path == Path(path_str)
-    assert str(normalized_path), path_str
+    assert normalized_path == path_obj.absolute()
+    assert str(normalized_path) == str(path_obj.absolute())
 
     # Test with a Path object
-    path_obj = Path("/path/to/file.txt")
     normalized_path = _normalize_path(path_obj)
-    assert normalized_path == path_obj
+    assert normalized_path == path_obj.absolute()
 
 
 def test_to_and_from_file():

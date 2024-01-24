@@ -43,6 +43,10 @@ class TestSimulator:
         assert simple_common_sim.param1 == params["param1"]
         assert simple_common_sim.param2 == params["param2"]
 
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="Built-in open has different behavior on Windows",
+    )
     def test_load_state_dict(self, simple_common_sim):
         fpath = simple_common_sim.state_dict().save()
         loaded_state_dict = StateDict.load(fpath)
@@ -65,6 +69,5 @@ class TestSimulator:
             == simple_common_sim.z_s.value
         )
 
-        # Cleanup after only for non-windows
-        if not sys.platform.startswith("win"):
-            Path(fpath).unlink(missing_ok=True)
+        # Cleanup after
+        Path(fpath).unlink()
