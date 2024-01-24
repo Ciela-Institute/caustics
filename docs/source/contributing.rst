@@ -61,4 +61,31 @@ Finalizing a Pull Request
 
 Once the PR is submitted, we will look through it and request any changes necessary before merging it into the main branch. You can make those changes just like any other edits on your fork. Then when you push them, they will be joined in to the PR automatically and any unit tests will run again.
 
+Black Formatting Exceptions for Equations
+-----------------------------------------
+
+In the "caustics" project, we utilize the Black code formatter to ensure consistent and readable code. However, there are instances where the automatic formatting performed by Black may not align with the desired formatting for equations within the code.
+
+To address this, we have introduced the use of ``#fmt: skip`` tags to exempt specific code blocks or lines from Black formatting. This is particularly useful when dealing with equations that have a specific format or layout that should not be altered by the code formatter.
+
+How to Use ``#fmt: skip`` for Equations
+---------------------------------------
+
+To exempt a specific section of code, such as an equation, from Black formatting, simply add a comment with the ``#fmt: skip`` tag at the end of the line containing the code block. For example:
+
+.. code-block:: python
+
+    psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
+
+In the above example, the line with the ``#fmt: skip`` comment informs Black to skip formatting for the following line containing the equation. This allows developers to maintain control over the formatting of equations while still benefiting from the automatic formatting provided by Black for the rest of the codebase.
+
+Best Practices for Black Formatting Exceptions
+----------------------------------------------
+
+- Use ``#fmt: skip`` sparingly and only for sections where manual formatting is essential.
+- Clearly document the reason for using ``#fmt: skip`` to provide context for future developers.
+
+By incorporating ``#fmt: skip`` tags for equations, we strike a balance between automated code formatting and the need for manual control over certain code elements.
+
+
 Once the PR has been merged, you may delete your fork if you aren't using it any more, or take on a new issue, it's up to you!
