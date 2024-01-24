@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator,union-attr"
 from math import pi
 from typing import Optional, Union
 
@@ -95,7 +96,7 @@ class TNFW(ThinLens):
         s: float = 0.0,
         interpret_m_total_mass: bool = True,
         use_case="batchable",
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize an instance of the TNFW lens class.
@@ -150,12 +151,12 @@ class TNFW(ThinLens):
         self,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -194,12 +195,12 @@ class TNFW(ThinLens):
         self,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -234,12 +235,12 @@ class TNFW(ThinLens):
         self,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -280,12 +281,12 @@ class TNFW(ThinLens):
         self,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -324,12 +325,12 @@ class TNFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -384,12 +385,12 @@ class TNFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -437,12 +438,12 @@ class TNFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """Compute the physical deflection angle (arcsec) for this lens at
@@ -493,12 +494,12 @@ class TNFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional[Packed] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        mass: Tensor = None,
-        scale_radius: Tensor = None,
-        tau: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        mass: Optional[Tensor] = None,
+        scale_radius: Optional[Tensor] = None,
+        tau: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
