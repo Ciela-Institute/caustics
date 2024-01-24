@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Dict
 from torch import Tensor
 
@@ -40,7 +39,7 @@ class Simulator(Parametrized):
     def state_dict(self) -> StateDict:
         return StateDict.from_params(self.params)
 
-    def load_state_dict(self, file_path: "str | Path") -> "Simulator":
+    def load_state_dict(self, file_path: str) -> "Simulator":
         """
         Loads and then sets the state of the simulator from a file
 

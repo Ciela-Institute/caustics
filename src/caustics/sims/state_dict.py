@@ -136,7 +136,7 @@ class StateDict(ImmutableODict):
                         final_dict[k] = {**final_dict[k], **v}
 
             # Flatten the dictionary to a single level
-            params: NamespaceDict = final_dict.flatten()
+            params = final_dict.flatten()
 
         tensors_dict: Dict[str, Tensor] = {k: v.value for k, v in params.items()}
         return cls(**tensors_dict)
@@ -183,16 +183,20 @@ class StateDict(ImmutableODict):
         str
             The final path of the saved file
         """
+        input_path: Path
+
         if not file_path:
-            file_path = Path.cwd() / self.__st_file
+            input_path = Path.cwd() / self.__st_file
         elif isinstance(file_path, str):
-            file_path = Path(file_path)
+            input_path = Path(file_path)
+        else:
+            input_path = file_path
 
         ext = ".st"
-        if file_path.suffix != ext:
+        if input_path.suffix != ext:
             raise ValueError(f"File must have '{ext}' extension")
 
-        return io.to_file(file_path, self._to_safetensors())
+        return io.to_file(input_path, self._to_safetensors())
 
     @classmethod
     def load(cls, file_path: str) -> "StateDict":
