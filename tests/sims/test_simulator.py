@@ -4,8 +4,10 @@ import sys
 
 import torch
 
-from caustics.sims.state_dict import StateDict
-from helpers.sims import extract_tensors
+from caustics.sims.state_dict import (
+    StateDict,
+    _extract_tensors_dict,
+)
 
 
 @pytest.fixture
@@ -15,7 +17,8 @@ def state_dict(simple_common_sim):
 
 @pytest.fixture
 def expected_tensors(simple_common_sim):
-    return extract_tensors(simple_common_sim.params)
+    tensors_dict = _extract_tensors_dict(simple_common_sim.params)
+    return tensors_dict
 
 
 class TestSimulator:

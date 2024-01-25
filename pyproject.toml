@@ -63,4 +63,4 @@ local_scheme = "no-local-version"
 line-length = 100
 
 [tool.pytest.ini_options]
-norecursedirs = "tests/helpers"
+norecursedirs = "tests/utils"

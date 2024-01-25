@@ -9,10 +9,15 @@ from safetensors.torch import save, load
 from datetime import datetime as dt
 from caustics.parameter import Parameter
 from caustics.namespace_dict import NamespaceDict, NestedNamespaceDict
-from caustics.sims.state_dict import ImmutableODict, StateDict, IMMUTABLE_ERR, _sanitize
+from caustics.sims.state_dict import (
+    ImmutableODict,
+    StateDict,
+    IMMUTABLE_ERR,
+    _sanitize,
+    _merge_and_flatten,
+    _get_param_values,
+)
 from caustics import __version__
-
-from helpers.sims import extract_tensors
 
 
 class TestImmutableODict:
@@ -81,8 +86,8 @@ class TestStateDict:
 
     def test_from_params(self, simple_common_sim):
         params: NestedNamespaceDict = simple_common_sim.params
-
-        tensors_dict, all_params = extract_tensors(params, True)
+        all_params = _merge_and_flatten(params)
+        tensors_dict = _get_param_values(all_params)
 
         expected_state_dict = StateDict(**tensors_dict)
 

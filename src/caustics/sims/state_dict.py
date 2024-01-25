@@ -37,6 +37,107 @@ def _sanitize(tensors_dict: Dict[str, Optional[Tensor]]) -> Dict[str, Tensor]:
     }
 
 
+def _merge_and_flatten(params: "NamespaceDict | NestedNamespaceDict") -> NamespaceDict:
+    """
+    Extract the parameters from a nested dictionary
+    of parameters and merge them into a single
+    dictionary of parameters.
+
+    Parameters
+    ----------
+    params : NamespaceDict | NestedNamespaceDict
+        The nested dictionary of parameters
+        that includes both "static" and "dynamic".
+
+    Returns
+    -------
+    NamespaceDict
+        The merged dictionary of parameters.
+
+    Raises
+    ------
+    TypeError
+        If the input ``params`` is not a
+        ``NamespaceDict`` or ``NestedNamespaceDict``.
+    ValueError
+        If the input ``params`` is a ``NestedNamespaceDict``
+        but does not have the keys ``"static"`` and ``"dynamic"``.
+    """
+    if not isinstance(params, (NamespaceDict, NestedNamespaceDict)):
+        raise TypeError("params must be a NamespaceDict or NestedNamespaceDict")
+
+    if isinstance(params, NestedNamespaceDict):
+        # In this case, params is the full parameters
+        # with both "static" and "dynamic" keys
+        if sorted(params.keys()) != PARAM_KEYS:
+            raise ValueError(f"params must have keys {PARAM_KEYS}")
+
+        # Extract the "static" and "dynamic" parameters
+        param_dicts = list(params.values())
+
+        # Merge the "static" and "dynamic" dictionaries
+        # to a single merged dictionary
+        final_dict = NestedNamespaceDict()
+        for pdict in param_dicts:
+            for k, v in pdict.items():
+                if k not in final_dict:
+                    final_dict[k] = v
+                else:
+                    final_dict[k] = {**final_dict[k], **v}
+
+        # Flatten the dictionary to a single level
+        params = final_dict.flatten()
+    return params
+
+
+def _get_param_values(flat_params: "NamespaceDict") -> Dict[str, Optional[Tensor]]:
+    """
+    Get the values of the parameters from a
+    flattened dictionary of parameters.
+
+    Parameters
+    ----------
+    flat_params : NamespaceDict
+        A flattened dictionary of parameters.
+
+    Returns
+    -------
+    Dict[str, Optional[Tensor]]
+        A dictionary of parameter values,
+        these values can be a tensor or None.
+    """
+    return {k: v.value for k, v in flat_params.items()}
+
+
+def _extract_tensors_dict(
+    params: "NamespaceDict | NestedNamespaceDict",
+) -> Dict[str, Optional[Tensor]]:
+    """
+    Extract the tensors from a nested dictionary
+    of parameters and merge them into a single
+    dictionary of parameters. Then return a
+    dictionary of tensors by getting the parameter
+    tensor values.
+
+    Parameters
+    ----------
+    params : NestedNamespaceDict
+        The nested dictionary of parameters
+        that includes both "static" and "dynamic"
+    export_params : bool, optional
+        Whether to return the merged parameters as well,
+        not just the dictionary of tensors,
+        by default False.
+
+    Returns
+    -------
+    dict
+        A dictionary of tensors
+    """
+    all_params = _merge_and_flatten(params)
+    return _get_param_values(all_params)
+
+
 class ImmutableODict(OrderedDict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,32 +214,7 @@ class StateDict(ImmutableODict):
         StateDict
             A state dictionary object
         """
-        if not isinstance(params, (NamespaceDict, NestedNamespaceDict)):
-            raise TypeError("params must be a NamespaceDict or NestedNamespaceDict")
-
-        if isinstance(params, NestedNamespaceDict):
-            # In this case, params is the full parameters
-            # with both "static" and "dynamic" keys
-            if sorted(params.keys()) != PARAM_KEYS:
-                raise ValueError(f"params must have keys {PARAM_KEYS}")
-
-            # Extract the "static" and "dynamic" parameters
-            param_dicts = list(params.values())
-
-            # Extract the "static" and "dynamic" parameters
-            # to a single merged dictionary
-            final_dict = NestedNamespaceDict()
-            for pdict in param_dicts:
-                for k, v in pdict.items():
-                    if k not in final_dict:
-                        final_dict[k] = v
-                    else:
-                        final_dict[k] = {**final_dict[k], **v}
-
-            # Flatten the dictionary to a single level
-            params = final_dict.flatten()
-
-        tensors_dict: Dict[str, Tensor] = {k: v.value for k, v in params.items()}
+        tensors_dict = _extract_tensors_dict(params)
         return cls(**tensors_dict)
 
     def to_params(self) -> NestedNamespaceDict:
