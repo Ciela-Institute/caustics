@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator,union-attr"
 from math import pi
 from typing import Optional, Union
 
@@ -82,7 +83,7 @@ class NFW(ThinLens):
         c: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
         use_case="batchable",
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize an instance of the NFW lens class.
@@ -133,11 +134,11 @@ class NFW(ThinLens):
         self,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        m: Tensor = None,
-        c: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -168,11 +169,11 @@ class NFW(ThinLens):
         self,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        m: Tensor = None,
-        c: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -201,11 +202,11 @@ class NFW(ThinLens):
         z_s,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        m: Tensor = None,
-        c: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -388,11 +389,11 @@ class NFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        m: Tensor = None,
-        c: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -437,11 +438,11 @@ class NFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        m: Tensor = None,
-        c: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -480,11 +481,11 @@ class NFW(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        m: Tensor = None,
-        c: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        m: Optional[Tensor] = None,
+        c: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """

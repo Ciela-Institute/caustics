@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union
 
 from torch import Tensor
@@ -56,7 +57,7 @@ class SIE(ThinLens):
         phi: Optional[Union[Tensor, float]] = None,
         b: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize the SIE lens model.
@@ -98,12 +99,12 @@ class SIE(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -141,12 +142,12 @@ class SIE(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        x0: Tensor = None,
-        z_l: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
+        x0: Optional[Tensor] = None,
+        z_l: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -181,12 +182,12 @@ class SIE(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """

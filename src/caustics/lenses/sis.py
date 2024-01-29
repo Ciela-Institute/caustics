@@ -1,3 +1,4 @@
+# mypy: disable-error-code="operator"
 from typing import Optional, Union
 
 from torch import Tensor
@@ -47,7 +48,7 @@ class SIS(ThinLens):
         y0: Optional[Union[Tensor, float]] = None,
         th_ein: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize the SIS lens model.
@@ -67,10 +68,10 @@ class SIS(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        th_ein: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        th_ein: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -106,10 +107,10 @@ class SIS(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        th_ein: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        th_ein: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -143,10 +144,10 @@ class SIS(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        th_ein: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        th_ein: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
