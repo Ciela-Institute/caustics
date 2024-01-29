@@ -64,7 +64,7 @@ Once the PR is submitted, we will look through it and request any changes necess
 Black Formatting Exceptions for Equations
 -----------------------------------------
 
-In the "caustics" project, we utilize the Black code formatter to ensure consistent and readable code. However, there are instances where the automatic formatting performed by Black may not align with the desired formatting for equations within the code.
+In the **caustics** project, we utilize the Black code formatter to ensure consistent and readable code. However, there are instances where the automatic formatting performed by Black may not align with the desired formatting for equations within the code.
 
 To address this, we have introduced the use of ``#fmt: skip`` tags to exempt specific code blocks or lines from Black formatting. This is particularly useful when dealing with equations that have a specific format or layout that should not be altered by the code formatter.
 
