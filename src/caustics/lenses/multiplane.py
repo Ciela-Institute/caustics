@@ -120,9 +120,7 @@ class Multiplane(ThickLens):
                 )
                 TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
             if geometric_time_delay:
-                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (
-                    alpha_x**2 + alpha_y**2
-                )
+                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (alpha_x**2 + alpha_y**2)
 
             # Propagate rays to next plane (basically eq 18)
             X = X + D * theta_x * arcsec_to_rad
