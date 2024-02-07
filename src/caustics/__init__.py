@@ -6,7 +6,6 @@ from .light import *
 from .data import *
 from .utils import *
 from .sims import *
-from .tests import test
 
 __version__ = VERSION
 __author__ = "Ciela"
