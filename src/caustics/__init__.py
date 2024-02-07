@@ -10,4 +10,3 @@ from .tests import test
 
 __version__ = VERSION
 __author__ = "Ciela"
-
