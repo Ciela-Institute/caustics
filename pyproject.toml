@@ -45,7 +45,7 @@ Issues = "https://github.com/Ciela-Institute/caustics/issues"
 dev = [
     "numba==0.58", # This is because of lenstronomy broken install thanks
     "lenstronomy==1.11.1",
-    "numpy==1.22.4", # same
+    "numpy==1.23.5" # same
 ]
 
 [tool.hatch.metadata.hooks.requirements_txt]
