@@ -43,7 +43,7 @@ Issues = "https://github.com/Ciela-Institute/caustics/issues"
 
 [project.optional-dependencies]
 dev = [
-    "numba==0.53.0", # This is because of lenstronomy broken install thanks
+    "numba==0.56.0", # This is because of lenstronomy broken install thanks
     "lenstronomy==1.11.1",
     "numpy==1.23.5", # same
 ]
