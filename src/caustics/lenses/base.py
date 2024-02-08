@@ -517,7 +517,7 @@ class ThickLens(Lens):
         J = self._jacobian_effective_deflection_angle_finitediff(
             x, y, z_s, pixelscale, params, **kwargs
         )
-        return torch.eye(2) - J
+        return torch.eye(2).to(J.device) - J
 
     @unpack
     def _jacobian_lens_equation_autograd(
@@ -537,7 +537,7 @@ class ThickLens(Lens):
         J = self._jacobian_effective_deflection_angle_autograd(
             x, y, z_s, params, **kwargs
         )
-        return torch.eye(2) - J.detach()
+        return torch.eye(2).to(J.device) - J.detach()
 
     @unpack
     def effective_convergence_div(
@@ -1017,7 +1017,7 @@ class ThinLens(Lens):
         J = self._jacobian_deflection_angle_finitediff(
             x, y, z_s, pixelscale, params, **kwargs
         )
-        return torch.eye(2) - J
+        return torch.eye(2).to(J.device) - J
 
     @unpack
     def _jacobian_lens_equation_autograd(
@@ -1035,4 +1035,4 @@ class ThinLens(Lens):
         """
         # Build Jacobian
         J = self._jacobian_deflection_angle_autograd(x, y, z_s, params, **kwargs)
-        return torch.eye(2) - J.detach()
+        return torch.eye(2).to(J.device) - J.detach()
