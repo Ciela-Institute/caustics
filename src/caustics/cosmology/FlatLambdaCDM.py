@@ -4,18 +4,35 @@ from typing import Optional
 import torch
 from torch import Tensor
 
+from astropy.cosmology import default_cosmology
+from scipy.special import hyp2f1
+
 from ..utils import interp1d
 from ..parametrized import unpack
 from ..packed import Packed
 from ..constants import c_Mpc_s, km_to_Mpc
 from .base import (
     Cosmology,
-    h0_default,
-    critical_density_0_default,
-    Om0_default,
-    _comoving_distance_helper_x_grid,
-    _comoving_distance_helper_y_grid,
 )
+
+_h0_default = float(default_cosmology.get().h)
+_critical_density_0_default = float(
+    default_cosmology.get().critical_density(0).to("solMass/Mpc^3").value
+)
+_Om0_default = float(default_cosmology.get().Om0)
+
+# Set up interpolator to speed up comoving distance calculations in Lambda-CDM
+# cosmologies. Construct with float64 precision.
+_comoving_distance_helper_x_grid = 10 ** torch.linspace(-3, 1, 500, dtype=torch.float64)
+_comoving_distance_helper_y_grid = torch.as_tensor(
+    _comoving_distance_helper_x_grid
+    * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_distance_helper_x_grid**3)),
+    dtype=torch.float64,
+)
+
+h0_default = torch.tensor(_h0_default)
+critical_density_0_default = torch.tensor(_critical_density_0_default)
+Om0_default = torch.tensor(_Om0_default)
 
 
 class FlatLambdaCDM(Cosmology):
