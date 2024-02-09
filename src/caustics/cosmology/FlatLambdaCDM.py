@@ -43,9 +43,9 @@ class FlatLambdaCDM(Cosmology):
 
     def __init__(
         self,
-        h0: Optional[Tensor] = torch.tensor(h0_default),
-        critical_density_0: Optional[Tensor] = torch.tensor(critical_density_0_default),
-        Om0: Optional[Tensor] = torch.tensor(Om0_default),
+        h0: Optional[Tensor] = h0_default,
+        critical_density_0: Optional[Tensor] = critical_density_0_default,
+        Om0: Optional[Tensor] = Om0_default,
         name: Optional[str] = None,
     ):
         """
