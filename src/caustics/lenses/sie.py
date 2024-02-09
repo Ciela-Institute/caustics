@@ -3,10 +3,10 @@ from typing import Optional, Union
 from torch import Tensor
 
 from ..cosmology import Cosmology
-from ..utils import derotate, translate_rotate
 from .base import ThinLens
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("SIE",)
 
@@ -70,26 +70,6 @@ class SIE(ThinLens):
         self.add_param("b", b)
         self.s = s
 
-    def _get_potential(self, x, y, q):
-        """
-        Compute the radial coordinate in the lens plane.
-
-        Parameters
-        ----------
-        x: Tensor
-            The x-coordinate in the lens plane.
-        y: Tensor
-            The y-coordinate in the lens plane.
-        q: Tensor
-            The axis ratio of the lens.
-
-        Returns
-        --------
-        Tensor
-            The radial coordinate in the lens plane.
-        """
-        return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
-
     @unpack
     def reduced_deflection_angle(
         self,
@@ -125,13 +105,7 @@ class SIE(ThinLens):
         Tuple[Tensor, Tensor]
             The deflection angle in the x and y directions.
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = self._get_potential(x, y, q)
-        f = (1 - q**2).sqrt()
-        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan()  # fmt: skip
-        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh()  # fmt: skip
-
-        return derotate(ax, ay, phi)
+        return func.reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, self.s)
 
     @unpack
     def potential(
@@ -168,10 +142,7 @@ class SIE(ThinLens):
         Tensor
             The lensing potential.
         """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        ax, ay = derotate(ax, ay, -phi)
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        return x * ax + y * ay
+        return func.potential_sie(x0, y0, q, phi, b, x, y, self.s)
 
     @unpack
     def convergence(
@@ -208,6 +179,4 @@ class SIE(ThinLens):
         Tensor
             The projected mass.
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = self._get_potential(x, y, q)
-        return 0.5 * q.sqrt() * b / psi
+        return func.convergence_sie(x0, y0, q, phi, b, x, y, self.s)
