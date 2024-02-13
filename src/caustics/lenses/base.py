@@ -1,3 +1,4 @@
+# mypy: disable-error-code="call-overload"
 from abc import abstractmethod
 from typing import Optional, Union
 from functools import partial
@@ -21,7 +22,7 @@ class Lens(Parametrized):
     Base class for all lenses
     """
 
-    def __init__(self, cosmology: Cosmology, name: str = None):
+    def __init__(self, cosmology: Cosmology, name: Optional[str] = None):
         """
         Initializes a new instance of the Lens class.
 
@@ -609,7 +610,7 @@ class ThinLens(Lens):
         self,
         cosmology: Cosmology,
         z_l: Optional[Union[Tensor, float]] = None,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         super().__init__(cosmology=cosmology, name=name)
         self.add_param("z_l", z_l)
@@ -622,7 +623,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -662,7 +663,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -766,7 +767,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -844,7 +845,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
         **kwargs,
