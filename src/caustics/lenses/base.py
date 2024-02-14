@@ -100,9 +100,7 @@ class Lens(Parametrized):
         Tensor
             Gravitational magnification at the given coordinates.
         """
-        return get_magnification(
-            partial(self.raytrace, params=params), x, y, z_s, **kwargs
-        )
+        return get_magnification(partial(self.raytrace, params=params), x, y, z_s)
 
     @unpack
     def forward_raytrace(
