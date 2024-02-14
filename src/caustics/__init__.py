@@ -44,6 +44,7 @@ from .utils import (
     gaussian,
 )
 from .sims import Lens_Source, Simulator
+from .tests import test
 
 __version__ = VERSION
 __author__ = "Ciela"
@@ -92,4 +93,5 @@ __all__ = [
     "gaussian",
     "Lens_Source",
     "Simulator",
+    "test",
 ]
