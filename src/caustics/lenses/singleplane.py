@@ -27,7 +27,11 @@ class SinglePlane(ThinLens):
     """
 
     def __init__(
-        self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None, **kwargs
+        self,
+        cosmology: Cosmology,
+        lenses: list[ThinLens],
+        name: Optional[str] = None,
+        **kwargs,
     ):
         """
         Initialize the SinglePlane lens model.

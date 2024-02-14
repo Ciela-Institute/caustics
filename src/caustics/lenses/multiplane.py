@@ -32,7 +32,9 @@ class Multiplane(ThickLens):
         List of thin lenses.
     """
 
-    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None):
+    def __init__(
+        self, cosmology: Cosmology, lenses: list[ThinLens], name: Optional[str] = None
+    ):
         super().__init__(cosmology, name=name)
         self.lenses = lenses
         for lens in lenses:
@@ -118,9 +120,7 @@ class Multiplane(ThickLens):
                 )
                 TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
             if geometric_time_delay:
-                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (
-                    alpha_x**2 + alpha_y**2
-                )
+                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (alpha_x**2 + alpha_y**2)
 
             # Propagate rays to next plane (basically eq 18)
             X = X + D * theta_x * arcsec_to_rad
