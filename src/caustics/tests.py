@@ -18,10 +18,11 @@ TORCH_DEVICE = (
 def _test_simulator_runs():
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
+    z_l = torch.tensor(1.0, device=TORCH_DEVICE)
     lensmass = SIE(
         name="lens",
         cosmology=cosmology,
-        z_l=1.0,
+        z_l=z_l,
         x0=0.0,
         y0=0.01,
         q=0.5,
@@ -38,6 +39,7 @@ def _test_simulator_runs():
 
     psf = gaussian(0.05, 11, 11, 0.2, upsample=2, device=TORCH_DEVICE)
 
+    z_s = torch.tensor(2.0, device=TORCH_DEVICE)
     sim = Lens_Source(
         lens=lensmass,
         source=source,
@@ -45,7 +47,7 @@ def _test_simulator_runs():
         pixels_x=50,
         lens_light=lenslight,
         psf=psf,
-        z_s=2.0,
+        z_s=z_s,
     )
 
     # Send to device
