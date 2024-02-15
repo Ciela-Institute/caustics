@@ -15,12 +15,10 @@ __all__ = ["test"]
 # for where the tensors are located
 META_DEVICE = torch.device("meta")
 
-TORCH_DEVICE = (
-    torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-)
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
-def _test_simulator_runs(device=TORCH_DEVICE):
+def _test_simulator_runs(device=DEVICE):
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(1.0, device=device)
@@ -56,7 +54,7 @@ def _test_simulator_runs(device=TORCH_DEVICE):
     )
 
     # Send to device
-    sim = sim.to(TORCH_DEVICE)
+    sim = sim.to(device=device)
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(
@@ -105,7 +103,7 @@ def _test_simulator_runs(device=TORCH_DEVICE):
     )
 
 
-def _test_jacobian_autograd_vs_finitediff(device=TORCH_DEVICE):
+def _test_jacobian_autograd_vs_finitediff(device=DEVICE):
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
     lens = SIE(name="sie", cosmology=cosmology)
@@ -116,7 +114,7 @@ def _test_jacobian_autograd_vs_finitediff(device=TORCH_DEVICE):
     x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4], device=device)
 
     # Send to device
-    lens = lens.to(TORCH_DEVICE)
+    lens = lens.to(device=device)
 
     # Evaluate Jacobian
     J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
@@ -130,7 +128,7 @@ def _test_jacobian_autograd_vs_finitediff(device=TORCH_DEVICE):
     )
 
 
-def _test_multiplane_jacobian(device=TORCH_DEVICE):
+def _test_multiplane_jacobian(device=DEVICE):
     # Setup
     z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -162,7 +160,7 @@ def _test_multiplane_jacobian(device=TORCH_DEVICE):
     assert A.shape == (10, 10, 2, 2)
 
 
-def _test_multiplane_jacobian_autograd_vs_finitediff(device=TORCH_DEVICE):
+def _test_multiplane_jacobian_autograd_vs_finitediff(device=DEVICE):
     # Setup
     z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -203,7 +201,7 @@ def _test_multiplane_jacobian_autograd_vs_finitediff(device=TORCH_DEVICE):
     )
 
 
-def _test_multiplane_effective_convergence(device=TORCH_DEVICE):
+def _test_multiplane_effective_convergence(device=DEVICE):
     # Setup
     z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -237,7 +235,7 @@ def _test_multiplane_effective_convergence(device=TORCH_DEVICE):
     assert curl.shape == (10, 10)
 
 
-def test(device=TORCH_DEVICE):
+def test(device=DEVICE):
     """
     Run tests for caustics basic functionality.
     Run this function to ensure that caustics is working properly.
