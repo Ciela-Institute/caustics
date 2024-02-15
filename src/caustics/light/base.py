@@ -41,10 +41,14 @@ class Source(Parametrized):
             the source brightness.
             This could be a single value or a tensor of values.
 
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate(s) at which to calculate
             the source brightness.
             This could be a single value or a tensor of values.
+
+            *Unit: arcsec*
 
         params: Packed, optional
             Dynamic parameter container that might be required
