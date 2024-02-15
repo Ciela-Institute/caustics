@@ -21,11 +21,10 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 def _test_simulator_runs(device=DEVICE):
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
-    z_l = torch.tensor(1.0, device=device)
     lensmass = SIE(
         name="lens",
         cosmology=cosmology,
-        z_l=z_l,
+        z_l=1.0,
         x0=0.0,
         y0=0.01,
         q=0.5,
@@ -42,7 +41,6 @@ def _test_simulator_runs(device=DEVICE):
 
     psf = gaussian(0.05, 11, 11, 0.2, upsample=2, device=device)
 
-    z_s = torch.tensor(2.0, device=device)
     sim = Lens_Source(
         lens=lensmass,
         source=source,
@@ -50,7 +48,7 @@ def _test_simulator_runs(device=DEVICE):
         pixels_x=50,
         lens_light=lenslight,
         psf=psf,
-        z_s=z_s,
+        z_s=2.0,
     )
 
     # Send to device
