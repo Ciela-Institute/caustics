@@ -1,23 +1,65 @@
 from ._version import version as VERSION  # noqa
 
-from . import constants, lenses, cosmology, packed, parametrized, light, utils, sims
+from .cosmology import (
+    Cosmology,
+    FlatLambdaCDM,
+    h0_default,
+    critical_density_0_default,
+    Om0_default,
+)
+from .lenses import (
+    ThinLens,
+    ThickLens,
+    EPL,
+    ExternalShear,
+    PixelatedConvergence,
+    Multiplane,
+    NFW,
+    Point,
+    PseudoJaffe,
+    SIE,
+    SIS,
+    SinglePlane,
+    MassSheet,
+    TNFW,
+)
+from .light import Source, Pixelated, Sersic  # PROBESDataset conflicts with .data
+from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
+from . import utils
+from .sims import Lens_Source, Simulator
 from .tests import test
-
-# from .demo import *
 
 __version__ = VERSION
 __author__ = "Ciela"
 
 __all__ = [
-    # Modules
-    "constants",
-    "lenses",
-    "cosmology",
-    "packed",
-    "parametrized",
-    "light",
+    "Cosmology",
+    "FlatLambdaCDM",
+    "h0_default",
+    "critical_density_0_default",
+    "Om0_default",
+    "ThinLens",
+    "ThickLens",
+    "EPL",
+    "ExternalShear",
+    "PixelatedConvergence",
+    "Multiplane",
+    "NFW",
+    "Point",
+    "PseudoJaffe",
+    "SIE",
+    "SIS",
+    "SinglePlane",
+    "MassSheet",
+    "TNFW",
+    "Source",
+    "Pixelated",
+    "Sersic",
+    "HDF5Dataset",
+    "IllustrisKappaDataset",
+    "PROBESDataset",
     "utils",
-    "sims",
-    # Functions
+    "Lens_Source",
+    "Simulator",
     "test",
 ]
