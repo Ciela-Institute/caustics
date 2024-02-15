@@ -27,16 +27,34 @@ class NFW(ThinLens):
     -----------
     z_l: Optional[Tensor]
         Redshift of the lens. Default is None.
+
+        *Unit: unitless*
+
     x0: Optional[Tensor]
         x-coordinate of the lens center in the lens plane. Default is None.
+
+        *Unit: arcsec*
+
     y0: Optional[Tensor]
         y-coordinate of the lens center in the lens plane. Default is None.
+
+        *Unit: arcsec*
+
     m: Optional[Tensor]
         Mass of the lens. Default is None.
+
+        *Unit: solMass*
+
     c: Optional[Tensor]
         Concentration parameter of the lens. Default is None.
+
+        *Unit: unitless*
+
     s: float
         Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
+
+        *Unit: meters*
+
     use_case: str
         Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
         specifically can't be both batchable and differentiable. You may select which version
@@ -46,8 +64,10 @@ class NFW(ThinLens):
     -------
     get_scale_radius
         Returns the scale radius of the lens.
+
     get_scale_density
         Returns the scale density of the lens.
+
     get_convergence_s
         Returns the dimensionless surface mass density of the lens.
     _f
@@ -56,14 +76,19 @@ class NFW(ThinLens):
         Helper method for computing lensing potential.
     _h
         Helper method for computing reduced deflection angles.
+
     deflection_angle_hat
         Computes the reduced deflection angle.
+
     deflection_angle
         Computes the deflection angle.
+
     convergence
         Computes the convergence (dimensionless surface mass density).
+
     potential
         Computes the lensing potential.
+
     """
 
     _null_params = {
@@ -92,24 +117,44 @@ class NFW(ThinLens):
         ----------
         name: str
             Name of the lens instance.
+
         cosmology: Cosmology
             An instance of the Cosmology class which contains
             information about the cosmological model and parameters.
+
         z_l: Optional[Union[Tensor, float]]
             Redshift of the lens. Default is None.
+
+            *Unit: unitless*
+
         x0: Optional[Union[Tensor, float]]
             x-coordinate of the lens center in the lens plane.
                 Default is None.
+
+            *Unit: arcsec*
+
         y0: Optional[Union[Tensor, float]]
             y-coordinate of the lens center in the lens plane.
                 Default is None.
+
+            *Unit: arcsec*
+
         m: Optional[Union[Tensor, float]]
             Mass of the lens. Default is None.
+
+            *Unit: solMass*
+
         c: Optional[Union[Tensor, float]]
             Concentration parameter of the lens. Default is None.
+
+            *Unit: unitless*
+
         s: float
             Softening parameter to avoid singularities at the center of the lens.
             Default is 0.0.
+
+            *Unit: meters*
+
         """
         super().__init__(cosmology, z_l, name=name)
 
@@ -148,10 +193,19 @@ class NFW(ThinLens):
         ----------
         z_l: Tensor
             Redshift of the lens.
+
+            *Unit: unitless*
+
         m: Tensor
             Mass of the lens.
+
+            *Unit: solMass*
+
         c: Tensor
             Concentration parameter of the lens.
+
+            *Unit: unitless*
+
         x: dict
             Dynamic parameter container.
 
@@ -159,6 +213,9 @@ class NFW(ThinLens):
         -------
         Tensor
             The scale radius of the lens in Mpc.
+
+            *Unit: megaparsec*
+
         """
         critical_density = self.cosmology.critical_density(z_l, params)
         r_delta = (3 * m / (4 * pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
@@ -183,15 +240,24 @@ class NFW(ThinLens):
         ----------
         z_l: Tensor
             Redshift of the lens.
+
+            *Unit: unitless*
+
         c: Tensor
             Concentration parameter of the lens.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The scale density of the lens in solar masses per Mpc cubed.
+
+            *Unit: solMass/megaparsec^3*
+
         """
         sigma_crit = self.cosmology.critical_density(z_l, params)
         return DELTA / 3 * sigma_crit * c**3 / ((1 + c).log() - c / (1 + c))  # fmt: skip
@@ -216,19 +282,34 @@ class NFW(ThinLens):
         ----------
         z_l: Tensor
             Redshift of the lens.
+
+            *Unit: unitless*
+
         z_s: Tensor
             Redshift of the source.
+
+            *Unit: unitless*
+
         m: Tensor
             Mass of the lens.
+
+            *Unit: solMass*
+
         c: Tensor
             Concentration parameter of the lens.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The dimensionless surface mass density of the lens.
+
+            *Unit: unitless*
+
         """
         critical_surface_density = self.cosmology.critical_surface_density(
             z_l, z_s, params
@@ -245,10 +326,15 @@ class NFW(ThinLens):
         x: Tensor
             The scaled radius (xi / xi_0).
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             Result of the deflection angle computation.
+
+            *Unit: radians*
+
         """
         # TODO: generalize beyond torch, or patch Tensor
         f = torch.zeros_like(x)
@@ -266,10 +352,15 @@ class NFW(ThinLens):
         x: Tensor
             The scaled radius (xi / xi_0).
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             Result of the deflection angle computation.
+
+            *Unit: radians*
+
         """
         # TODO: generalize beyond torch, or patch Tensor
         # fmt: off
@@ -295,10 +386,15 @@ class NFW(ThinLens):
         x: Tensor
             The scaled radius (xi / xi_0).
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             Result of the lensing potential computation.
+
+            *Unit: arcsec^2*
+
         """
         # TODO: generalize beyond torch, or patch Tensor
         term_1 = (x / 2).log() ** 2
@@ -317,10 +413,15 @@ class NFW(ThinLens):
         x: Tensor
             The scaled radius (xi / xi_0).
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             Result of the lensing potential computation.
+
+            *Unit: arcsec^2*
+
         """
         # TODO: generalize beyond torch, or patch Tensor
         term_1 = (x / 2).log() ** 2
@@ -345,10 +446,15 @@ class NFW(ThinLens):
         x: Tensor
             The scaled radius (xi / xi_0).
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             Result of the reduced deflection angle computation.
+
+            *Unit: radians*
+
         """
         term_1 = (x / 2).log()
         term_2 = torch.ones_like(x)
@@ -366,10 +472,15 @@ class NFW(ThinLens):
         x: Tensor
             The scaled radius (xi / xi_0).
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             Result of the reduced deflection angle computation.
+
+            *Unit: radians*
+
         """
         term_1 = (x / 2).log()
         term_2 = torch.where(
@@ -403,17 +514,34 @@ class NFW(ThinLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            The reduced deflection angles in the x and y directions.
+        x_component: Tensor
+            The x-component of the reduced deflection angle.
+
+            *Unit: radians*
+
+        y_component: Tensor
+            The y-component of the reduced deflection angle.
+
+            *Unit: radians*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -452,17 +580,29 @@ class NFW(ThinLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The convergence (dimensionless surface mass density).
+
+            *Unit: unitless*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -495,17 +635,29 @@ class NFW(ThinLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
