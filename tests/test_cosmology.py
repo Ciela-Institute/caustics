@@ -24,27 +24,29 @@ def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
     return cosmologies
 
 
-def test_comoving_dist():
+def test_comoving_dist(device):
     rtol = 1e-3
     atol = 0
 
-    zs = torch.linspace(0.05, 3, 10)
+    zs = torch.linspace(0.05, 3, 10, device=device)
     for cosmology, cosmology_ap in get_cosmologies():
+        cosmology.to(device=device)
+
         vals = cosmology.comoving_distance(zs).numpy()
         vals_ref = cosmology_ap.comoving_distance(zs).value / 1e2  # type: ignore
         assert np.allclose(vals, vals_ref, rtol, atol)
 
 
-def test_to_method_flatlambdacdm():
+def test_to_method_flatlambdacdm(device):
     cosmo = CausticFlatLambdaCDM()
     # Make sure private tensors are created on float32 by default
     assert cosmo._comoving_distance_helper_x_grid.dtype == torch.float32
     assert cosmo._comoving_distance_helper_y_grid.dtype == torch.float32
-    cosmo.to(dtype=torch.float64)
+    cosmo.to(dtype=torch.float64, device=device)
     # Make sure distance helper get sent to proper dtype and device
     assert cosmo._comoving_distance_helper_x_grid.dtype == torch.float64
     assert cosmo._comoving_distance_helper_y_grid.dtype == torch.float64
 
 
 if __name__ == "__main__":
-    test_comoving_dist()
+    test_comoving_dist(None)
