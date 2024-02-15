@@ -6,9 +6,9 @@ from caustics.lenses import SIE
 from caustics import test as mini_test
 
 
-def test(tensor_device):
-    z_l = torch.tensor(0.5, dtype=torch.float32, device=tensor_device)
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=tensor_device)
+def test(device):
+    z_l = torch.tensor(0.5, dtype=torch.float32, device=device)
+    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
 
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -23,11 +23,11 @@ def test(tensor_device):
         b=torch.tensor(1.0),
     )
     # Send to device
-    lens = lens.to(tensor_device)
+    lens = lens.to(device)
 
     # Point in the source plane
-    sp_x = torch.tensor(0.2, device=tensor_device)
-    sp_y = torch.tensor(0.2, device=tensor_device)
+    sp_x = torch.tensor(0.2, device=device)
+    sp_y = torch.tensor(0.2, device=device)
 
     # Points in image plane
     x, y = lens.forward_raytrace(sp_x, sp_y, z_s)
@@ -39,8 +39,8 @@ def test(tensor_device):
     assert torch.all((sp_y - by).abs() < 1e-3)
 
 
-def test_quicktest():
+def test_quicktest(device):
     """
     Quick test to check that the built-in `test` module is working
     """
-    mini_test()
+    mini_test(device=device)
