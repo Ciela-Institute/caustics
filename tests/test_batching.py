@@ -3,10 +3,10 @@ from torch import vmap
 from utils import setup_image_simulator, setup_simulator
 
 
-def test_vmapped_simulator(tensor_device):
+def test_vmapped_simulator(device):
     sim, (sim_params, cosmo_params, lens_params, source_params) = setup_simulator(
         batched_params=True,
-        device=tensor_device,
+        device=device,
     )
     n_pix = sim.n_pix
     print(sim.params)
@@ -36,9 +36,9 @@ def test_vmapped_simulator(tensor_device):
     assert vmap(sim)(x_semantic).shape == torch.Size([2, n_pix, n_pix])
 
 
-def test_vmapped_simulator_with_pixelated_modules(tensor_device):
+def test_vmapped_simulator_with_pixelated_modules(device):
     sim, (cosmo_params, lens_params, kappa, source) = setup_image_simulator(
-        batched_params=True, device=tensor_device
+        batched_params=True, device=device
     )
     n_pix = sim.n_pix
     print(sim.params)
