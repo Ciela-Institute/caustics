@@ -16,7 +16,7 @@ from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
 
 
-def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False):
+def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None):
     n_pix = 20
 
     class Sim(Simulator):
@@ -83,10 +83,20 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
         cosmo_params = [_x[0] for _x in cosmo_params]
         lens_params = [_x[0] for _x in lens_params]
         source_params = [_x[0] for _x in source_params]
-    return Sim(), (sim_params, cosmo_params, lens_params, source_params)
+    
+    sim = Sim()
+    # Set device when not None
+    if device is not None:
+        sim = sim.to(device=device)
+        sim_params = [_p.to(device=device) for _p in sim_params]
+        cosmo_params = [_p.to(device=device) for _p in cosmo_params]
+        lens_params = [_p.to(device=device) for _p in lens_params]
+        source_params = [_p.to(device=device) for _p in source_params]
+    
+    return sim, (sim_params, cosmo_params, lens_params, source_params)
 
 
-def setup_image_simulator(cosmo_static=False, batched_params=False):
+def setup_image_simulator(cosmo_static=False, batched_params=False, device=None):
     n_pix = 20
 
     class Sim(Simulator):
@@ -146,18 +156,34 @@ def setup_image_simulator(cosmo_static=False, batched_params=False):
         lens_params = [_x[0] for _x in lens_params]
         kappa = kappa[0]
         source = source[0]
-    return Sim(), (cosmo_params, lens_params, [kappa], [source])
+    
+    sim = Sim()
+    # Set device when not None
+    if device is not None:
+        sim = sim.to(device=device)
+        cosmo_params = [_p.to(device=device) for _p in cosmo_params]
+        lens_params = [_p.to(device=device) for _p in lens_params]
+        kappa = kappa.to(device=device)
+        source = source.to(device=device)
+
+    return sim, (cosmo_params, lens_params, [kappa], [source])
 
 
-def get_default_cosmologies():
+def get_default_cosmologies(device=None):
     cosmology = FlatLambdaCDM("cosmo")
     cosmology_ap = FlatLambdaCDM_AP(100 * cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
+    
+    if device is not None:
+        cosmology = cosmology.to(device=device)
     return cosmology, cosmology_ap
 
 
-def setup_grids(res=0.05, n_pix=100):
+def setup_grids(res=0.05, n_pix=100, device=None):
     # Caustics setup
-    thx, thy = get_meshgrid(res, n_pix, n_pix)
+    thx, thy = get_meshgrid(res, n_pix, n_pix, device=device)
+    if device is not None:
+        thx = thx.to(device=device)
+        thy = thy.to(device=device)
 
     # Lenstronomy setup
     fov = res * n_pix
@@ -175,16 +201,16 @@ def setup_grids(res=0.05, n_pix=100):
     return thx, thy, thx_ls, thy_ls
 
 
-def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
-    thx, thy, thx_ls, thy_ls = setup_grids()
+def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(alpha_x.numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.numpy(), alpha_y_ls, rtol, atol)
 
 
-def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
-    thx, thy, thx_ls, thy_ls = setup_grids()
+def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     Psi = lens.potential(thx, thy, z_s, x)
     Psi_ls = lens_ls.potential(thx_ls, thy_ls, kwargs_ls)
     # Potential is only defined up to a constant
@@ -193,8 +219,8 @@ def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
     assert np.allclose(Psi.numpy(), Psi_ls, rtol, atol)
 
 
-def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol):
-    thx, thy, thx_ls, thy_ls = setup_grids()
+def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     kappa = lens.convergence(thx, thy, z_s, x)
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(kappa.numpy(), kappa_ls, rtol, atol)
@@ -211,12 +237,18 @@ def lens_test_helper(
     test_alpha=True,
     test_Psi=True,
     test_kappa=True,
+    device=None,
 ):
+    if device is not None:
+        lens = lens.to(device=device)
+        z_s = z_s.to(device=device)
+        x = x.to(device=device)
+
     if test_alpha:
-        alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
+        alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
 
     if test_Psi:
-        Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
+        Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
 
     if test_kappa:
-        kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
+        kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
