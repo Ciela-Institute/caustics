@@ -32,7 +32,7 @@ def test_comoving_dist(device):
     for cosmology, cosmology_ap in get_cosmologies():
         cosmology.to(device=device)
 
-        vals = cosmology.comoving_distance(zs).numpy()
+        vals = cosmology.comoving_distance(zs).to("cpu").numpy()
         vals_ref = cosmology_ap.comoving_distance(zs).value / 1e2  # type: ignore
         assert np.allclose(vals, vals_ref, rtol, atol)
 
