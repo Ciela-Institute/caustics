@@ -35,8 +35,9 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
             else:
                 self.lens = EPL(self.cosmo, z_l=z_l, name="lens")
             self.sersic = Sersic(name="source")
-            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix)
+            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix, device=device)
             self.n_pix = n_pix
+            self.to(device=device)
 
         def forward(self, params):
             (z_s,) = self.unpack(params)
@@ -122,8 +123,9 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
                 shape=(n_pix, n_pix),
                 name="source",
             )
-            self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix)
+            self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix, device=device)
             self.n_pix = n_pix
+            self.to(device=device)
 
         def forward(self, params):
             alphax, alphay = self.epl.reduced_deflection_angle(
