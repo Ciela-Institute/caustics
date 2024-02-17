@@ -179,7 +179,10 @@ def test_params(device):
     )
 
     # Test that we can pass a dictionary
-    params = {f"plane_{p}": torch.randn(pixels, pixels) for p in range(n_planes)}
+    params = {
+        f"plane_{p}": torch.randn(pixels, pixels, device=device)
+        for p in range(n_planes)
+    }
 
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, z_s, params)
     assert kappa_eff.shape == torch.Size([32, 32])
