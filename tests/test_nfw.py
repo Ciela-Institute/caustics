@@ -18,7 +18,7 @@ Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
 
 
-def test():
+def test(device):
     atol = 1e-5
     rtol = 3e-2
 
@@ -50,14 +50,14 @@ def test():
         {"Rs": Rs_angle, "alpha_Rs": alpha_Rs, "center_x": thx0, "center_y": thy0}
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
 
 
-def test_runs():
+def test_runs(device):
     cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
     lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
-
+    lens.to(device=device)
     # Parameters
     z_s = torch.tensor(0.5)
 
@@ -67,7 +67,7 @@ def test_runs():
     rs = 8.0
     x = torch.tensor([thx0, thy0, m, rs])
 
-    thx, thy, thx_ls, thy_ls = setup_grids()
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
     Psi = lens.potential(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(Psi))

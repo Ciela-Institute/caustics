@@ -6,7 +6,7 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PseudoJaffe
 
 
-def test():
+def test(device):
     atol = 1e-5
     rtol = 1e-5
 
@@ -48,12 +48,13 @@ def test():
         }
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
 
 
-def test_massenclosed():
+def test_massenclosed(device):
     cosmology = FlatLambdaCDM(name="cosmo")
     lens = PseudoJaffe(name="pj", cosmology=cosmology)
+    lens.to(device=device)
     z_s = torch.tensor(2.1)
     x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
     d_l = cosmology.angular_diameter_distance(x[0])
@@ -82,4 +83,4 @@ def test_massenclosed():
 
 
 if __name__ == "__main__":
-    test()
+    test(None)
