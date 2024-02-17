@@ -182,8 +182,6 @@ def gaussian_quadrature_grid(
     X,
     Y,
     quad_level=3,
-    device=None,
-    dtype=torch.float32,
 ):
     """
     Generates a 2D meshgrid for Gaussian quadrature based on the provided pixelscale and dimensions.
@@ -198,10 +196,6 @@ def gaussian_quadrature_grid(
         The y-coordinates of the pixel centers.
     quad_level : int, optional
         The number of quadrature points in each dimension. Default is 3.
-    device : torch.device, optional
-        The device on which to create the tensor. Default is None.
-    dtype : torch.dtype, optional
-        The desired data type of the tensor. Default is torch.float32.
 
     Returns
     -------
@@ -219,7 +213,9 @@ def gaussian_quadrature_grid(
     """
 
     # collect gaussian quadrature weights
-    abscissaX, abscissaY, weight = _quad_table(quad_level, pixelscale, dtype, device)
+    abscissaX, abscissaY, weight = _quad_table(
+        quad_level, pixelscale, dtype=X.dtype, device=X.device
+    )
 
     # Gaussian quadrature evaluation points
     Xs = torch.repeat_interleave(X[..., None], quad_level**2, -1) + abscissaX
@@ -271,8 +267,6 @@ def quad(
     Y: Tensor,
     args: Optional[Tuple] = None,
     quad_level: int = 3,
-    device=None,
-    dtype=torch.float32,
 ):
     """
     Performs a pixel-wise integration on a function using Gaussian quadrature.
@@ -292,17 +286,13 @@ def quad(
         Additional arguments to be passed to the brightness function, by default None.
     quad_level : int, optional
         The level of quadrature to use, by default 3.
-    device : torch.device, optional
-        The device to perform the computation on, by default None.
-    dtype : torch.dtype, optional
-        The data type of the computation, by default torch.float32.
 
     Returns
     -------
     Tensor
         The integrated brightness function at each pixel.
     """
-    X, Y, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level, device, dtype)
+    X, Y, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
     F = F(X, Y, *args)
     return gaussian_quadrature_integrator(F, weight)
 
