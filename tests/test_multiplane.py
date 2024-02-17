@@ -160,7 +160,7 @@ def test_params(device):
     multiplane_lens.to(device=device)
     z_s = torch.tensor(z_s)
     x, y = get_meshgrid(pixel_size, 32, 32, device=device)
-    params = [torch.randn(pixels, pixels) for i in range(10)]
+    params = [torch.randn(pixels, pixels, device=device) for i in range(10)]
 
     # Test out the computation of a few quantities to make sure params are passed correctly
 

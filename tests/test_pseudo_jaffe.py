@@ -76,7 +76,7 @@ def test_massenclosed(device):
         * x[5]
         * (d_l * arcsec_to_rad) ** 2
     )
-    xx = torch.linspace(0, 10, 10)
+    xx = torch.linspace(0, 10, 10, device=device)
     masses = lens.mass_enclosed_2d(xx, z_s, x)
 
     assert torch.all(masses < x[3])
