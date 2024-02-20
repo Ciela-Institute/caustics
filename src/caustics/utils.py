@@ -577,7 +577,7 @@ def get_cluster_means(xs: Tensor, k: int):
     return torch.stack(means)
 
 
-def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
+def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     # Forward
     fY = f(X)
     dY = Y - fY
@@ -611,7 +611,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
     # Update
     X = torch.where(rho >= epsilon, X + h, X)
     chi2 = torch.where(rho > epsilon, chi2_new, chi2)
-    L = torch.clamp(torch.where(rho >= epsilon, L / Ldn, L * Lup), 1e-9, 1e9)
+    L = torch.clamp(torch.where(rho >= epsilon, L / Ldn, L * Lup), L_min, L_max)
 
     return X, L, chi2
 
@@ -639,16 +639,23 @@ def batch_lm(
         raise ValueError("x and y must having matching batch dimension")
 
     if C is None:
-        C = torch.eye(Dout).repeat(B, 1, 1)
+        C = torch.eye(Dout, device=X.device).repeat(B, 1, 1)
     Cinv = torch.linalg.inv(C)
 
-    v_lm_step = torch.vmap(partial(_lm_step, lambda x: f(x, *f_args, **f_kwargs)))
-    L = L * torch.ones(B)
-    Lup = L_up * torch.ones(B)
-    Ldn = L_dn * torch.ones(B)
-    e = epsilon * torch.ones(B)
+    v_lm_step = torch.vmap(
+        partial(
+            _lm_step,
+            lambda x: f(x, *f_args, **f_kwargs),
+            Lup=L_up,
+            Ldn=L_dn,
+            epsilon=epsilon,
+            L_min=L_min,
+            L_max=L_max,
+        )
+    )
+    L = L * torch.ones(B, device=X.device)
     for _ in range(max_iter):
-        Xnew, L, C = v_lm_step(X, Y, Cinv, L, Lup, Ldn, e)
+        Xnew, L, C = v_lm_step(X, Y, Cinv, L)
         if (
             torch.all((Xnew - X).abs() < stopping)
             and torch.sum(L < 1e-2).item() > B / 3
