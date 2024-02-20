@@ -8,7 +8,6 @@ from torch import Tensor
 from torch.func import jacfwd
 import numpy as np
 from scipy.special import roots_legendre
-from .core import sync_device
 
 
 def flip_axis_ratio(q, phi):
@@ -31,7 +30,6 @@ def flip_axis_ratio(q, phi):
     return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
 
 
-@sync_device
 def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
     """
     Translates and rotates the points (x, y) by subtracting (x0, y0)
@@ -579,7 +577,6 @@ def get_cluster_means(xs: Tensor, k: int):
     return torch.stack(means)
 
 
-@sync_device
 def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
     # Forward
     fY = f(X)
