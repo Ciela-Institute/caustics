@@ -458,9 +458,9 @@ class ThickLens(Lens):
         -------
         Tensor
             The projected mass density at the given coordinates
-            in units of solar masses per square Megaparsec.
+            in units of solar masses per square Mpc.
 
-            *Unit: solMass/megaparsec^2*
+            *Unit: Msun/Mpc^2*
 
         """
         ...
@@ -963,7 +963,7 @@ class ThinLens(Lens):
         Tensor
             Surface mass density at the given coordinates in solar masses per Mpc^2.
 
-            *Unit: solMass/megaparsec^2*
+            *Unit: Msun/Mpc^2*
 
         """
         critical_surface_density = self.cosmology.critical_surface_density(
