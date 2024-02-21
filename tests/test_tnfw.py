@@ -18,7 +18,7 @@ Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
 
 
-def test():
+def test(device):
     atol = 1e-5
     rtol = 3e-2
 
@@ -69,14 +69,15 @@ def test():
         test_alpha=True,
         test_Psi=False,
         test_kappa=True,
+        device=device,
     )
 
 
-def test_runs():
+def test_runs(device):
     cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
     lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
-
+    lens.to(device=device)
     # Parameters
     z_s = torch.tensor(0.5)
 
@@ -87,7 +88,7 @@ def test_runs():
     t = 3.0
     x = torch.tensor([thx0, thy0, m, rs, t])
 
-    thx, thy, thx_ls, thy_ls = setup_grids()
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
     Psi = lens.potential(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(Psi))
@@ -98,4 +99,4 @@ def test_runs():
 
 
 if __name__ == "__main__":
-    test()
+    test(None)
