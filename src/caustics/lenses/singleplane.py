@@ -84,12 +84,12 @@ class SinglePlane(ThinLens):
         x_component: Tensor
             The x-component of the deflection angle.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             The y-component of the deflection angle.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         """
         ax = torch.zeros_like(x)
@@ -139,7 +139,7 @@ class SinglePlane(ThinLens):
         Tensor
             The total projected mass density.
 
-            *Unit: unitless*
+            *Unit: solMass/megaparsec^2*
 
         """
         convergence = torch.zeros_like(x)

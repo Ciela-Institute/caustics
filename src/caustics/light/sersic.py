@@ -56,16 +56,17 @@ class Sersic(Source):
     Ie: Optional[Tensor]
         The intensity at the effective radius.
 
-        *Unit: flux*
+        *Unit: unitless*
 
     s: float
         A small constant for numerical stability.
 
-        *Unit: arcsec*
+        *Unit: unitless*
 
     lenstronomy_k_mode: bool
         A flag indicating whether to use lenstronomy to compute the value of k.
 
+        *Unit: unitless*
 
     """
 
@@ -128,11 +129,12 @@ class Sersic(Source):
         s: float
             A small constant for numerical stability.
 
-            *Unit: arcsec*
+            *Unit: unitless*
 
         use_lenstronomy_k: bool
             A flag indicating whether to use lenstronomy to compute the value of k.
 
+            *Unit: unitless*
 
         """
         super().__init__(name=name)
@@ -190,7 +192,7 @@ class Sersic(Source):
             The brightness of the source at the given point(s).
             The output tensor has the same shape as `x` and `y`.
 
-            *Unit: flux*
+            *Unit: unitless*
 
         Notes
         -----

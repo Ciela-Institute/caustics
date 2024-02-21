@@ -48,7 +48,7 @@ class Point(ThinLens):
     s: float
         Softening parameter to prevent numerical instabilities.
 
-        *Unit: arcsec*
+        *Unit: meters*
 
     """
 
@@ -102,7 +102,7 @@ class Point(ThinLens):
         s: float
             Softening parameter to prevent numerical instabilities.
 
-            *Unit: arcsec*
+            *Unit: meters*
 
         """
         super().__init__(cosmology, z_l, name=name)
@@ -154,12 +154,12 @@ class Point(ThinLens):
         x_component: Tensor
             Deflection Angle in the x-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             Deflection Angle in the y-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         """
         x, y = translate_rotate(x, y, x0, y0)

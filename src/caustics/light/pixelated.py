@@ -37,8 +37,6 @@ class Pixelated(Source):
     image : Tensor, optional
         The source image from which brightness values will be interpolated.
 
-        *Unit: flux*
-
     pixelscale : Tensor, optional
         The pixelscale of the source image in the lens plane.
 
@@ -145,7 +143,7 @@ class Pixelated(Source):
             The brightness is determined by interpolating values
             from the source image.
 
-            *Unit: flux*
+            *Unit: unitless*
 
         """
         fov_x = pixelscale * image.shape[0]

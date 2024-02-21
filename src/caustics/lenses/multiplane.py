@@ -180,12 +180,12 @@ class Multiplane(ThickLens):
         x: Tensor
             angular x-coordinates in the image plane.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y: Tensor
             angular y-coordinates in the image plane.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         z_s: Tensor
             Redshifts of the sources.
@@ -200,12 +200,12 @@ class Multiplane(ThickLens):
         x_component: Tensor
             Reduced deflection angle in the x-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             Reduced deflection angle in the y-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         References
         ----------
@@ -274,7 +274,7 @@ class Multiplane(ThickLens):
         Tensor
             Projected mass density.
 
-            *Unit: Msun / Mpc^2*
+            *Unit: solMass / megaparsec^2*
 
         Raises
         -------
@@ -319,12 +319,12 @@ class Multiplane(ThickLens):
         x: Tensor
             x-coordinates in the image plane.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y: Tensor
             y-coordinates in the image plane.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         z_s: Tensor
             Redshifts of the source.

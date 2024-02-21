@@ -61,6 +61,7 @@ class PixelatedConvergence(ThinLens):
         n_pix: int
             The number of pixels on each side of the grid.
 
+            *Unit: unitless*
 
         cosmology: Cosmology
             An instance of the cosmological parameters.
@@ -88,12 +89,14 @@ class PixelatedConvergence(ThinLens):
         shape: Optional[tuple[int, ...]]
             The shape of the convergence map.
 
+            *Unit: unitless*
 
         convolution_mode: str, optional
             The convolution mode for calculating deflection angles and lensing potential.
             It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution).
             Default is "fft".
 
+            *Unit: unitless*
 
         use_next_fast_len: bool, optional
             If True, adds additional padding to speed up the FFT by calling
@@ -101,6 +104,7 @@ class PixelatedConvergence(ThinLens):
             The speed boost can be substantial when `n_pix` is a multiple of a
             small prime number. Default is True.
 
+            *Unit: unitless*
 
         padding: { "zero", "circular", "reflect", "tile" }
 
@@ -113,6 +117,7 @@ class PixelatedConvergence(ThinLens):
 
             Generally you should use either "zero" or "tile".
 
+            *Unit: unitless*
 
         """
 
@@ -191,12 +196,14 @@ class PixelatedConvergence(ThinLens):
         x: Tensor
             The input tensor to be transformed.
 
+            *Unit: unitless*
 
         Returns
         -------
         Tensor
             The 2D FFT of the input tensor with zero-padding.
 
+            *Unit: unitless*
 
         """
         pad = 2 * self.n_pix
@@ -231,6 +238,7 @@ class PixelatedConvergence(ThinLens):
         Tensor
             The input tensor without padding.
 
+            *Unit: unitless*
 
         """
         return torch.roll(x, (-self._s[0] // 2, -self._s[1] // 2), dims=(-2, -1))[..., : self.n_pix, : self.n_pix]  # fmt: skip
@@ -333,12 +341,12 @@ class PixelatedConvergence(ThinLens):
         x_component: Tensor
             Deflection Angle in the x-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             Deflection Angle in the y-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         """
         if self.convolution_mode == "fft":
@@ -376,12 +384,12 @@ class PixelatedConvergence(ThinLens):
         x_component: Tensor
             Deflection Angle in x-component.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             Deflection Angle in y-component.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         """
         convergence_tilde = self._fft2_padded(convergence_map)
@@ -411,12 +419,12 @@ class PixelatedConvergence(ThinLens):
         x_component: Tensor
             Deflection Angle
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             Deflection Angle
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         """
         # Use convergence_map as kernel since the kernel is twice as large. Flip since

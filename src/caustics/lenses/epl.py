@@ -30,7 +30,7 @@ class EPL(ThinLens):
         Softening length for the elliptical power-law profile.
 
 
-        *Unit: meters*
+        *Unit: arcsec*
 
 
     Parameters

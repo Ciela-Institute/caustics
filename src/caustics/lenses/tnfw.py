@@ -69,7 +69,7 @@ class TNFW(ThinLens):
     mass: Optional[Tensor]
         Mass of the lens.
 
-        *Unit: Msun*
+        *Unit: solMass*
 
     scale_radius: Optional[Tensor]
         Scale radius of the TNFW lens.
@@ -85,7 +85,7 @@ class TNFW(ThinLens):
         Softening parameter to avoid singularities at the center of the lens.
         Default is 0.0.
 
-        *Unit: arcsec*
+        *Unit: unitless*
 
     interpret_m_total_mass: boolean
         Indicates how to interpret the mass variable "m". If true
@@ -93,6 +93,7 @@ class TNFW(ThinLens):
         false it is interpreted as what the mass would have been within R200 of a an NFW that
         isn't truncated (good because it is easily compared with an NFW).
 
+        *Unit: unitless*
 
     use_case: str
         Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
@@ -208,7 +209,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -218,8 +219,6 @@ class TNFW(ThinLens):
         tau: Optional[Tensor]
             Truncation scale. Ratio of truncation radius to scale radius.
 
-            *Unit: unitless*
-
         params: dict
             Dynamic parameter container.
 
@@ -228,7 +227,7 @@ class TNFW(ThinLens):
         Tensor
             The scale radius of the lens.
 
-            *Unit: Mpc*
+            *Unit: megaparsec*
 
         """
         critical_density = self.cosmology.critical_density(z_l, params)
@@ -272,7 +271,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -335,7 +334,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -353,9 +352,9 @@ class TNFW(ThinLens):
         Returns
         -------
         Tensor
-            The reference mass of the lens in Msun.
+            The reference mass of the lens in solMass.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         """
         if self.interpret_m_total_mass:
@@ -400,7 +399,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -420,7 +419,7 @@ class TNFW(ThinLens):
         Tensor
             The scale density of the lens.
 
-            *Unit: Msun/Mpc^3*
+            *Unit: solMass/Mpc^3*
 
         """
         c = self.get_concentration(params)
@@ -466,7 +465,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -523,7 +522,7 @@ class TNFW(ThinLens):
         **kwargs,
     ) -> Tensor:
         """
-        Total projected mass (Msun) within a radius r (arcsec).
+        Total projected mass (solMass) within a radius r (arcsec).
 
         Parameters
         -----------
@@ -545,7 +544,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -565,7 +564,7 @@ class TNFW(ThinLens):
         Tensor
             Integrated mass projected in infinite cylinder within radius r.
 
-            *Unit: Msun*
+            *Unit: arcsec*
 
         """
         g = r / scale_radius
@@ -619,9 +618,9 @@ class TNFW(ThinLens):
             *Unit: arcsec*
 
         mass: Optional[Tensor]
-            Mass of the lens (Msun).
+            Mass of the lens (solMass).
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.
@@ -641,12 +640,12 @@ class TNFW(ThinLens):
         x_component: Tensor
             Deflection Angle in x-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         y_component: Tensor
             Deflection Angle in y-direction.
 
-            *Unit: arcsec*
+            *Unit: radians*
 
         """
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
@@ -704,7 +703,7 @@ class TNFW(ThinLens):
         mass: Optional[Tensor]
             Mass of the lens.
 
-            *Unit: Msun*
+            *Unit: solMass*
 
         scale_radius: Optional[Tensor]
             Scale radius of the TNFW lens.

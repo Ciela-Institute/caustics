@@ -19,11 +19,11 @@ class Cosmology(Parametrized):
 
     Distance
 
-        *Unit: megaparsec*
+        *Unit: Mpc*
 
     Mass
 
-        *Unit: solMass*
+        *Unit: Msun*
 
     Attributes
     ----------
@@ -62,7 +62,7 @@ class Cosmology(Parametrized):
         Tensor
             The critical density at each redshift.
 
-            *Unit: solMass/megaparsec^3*
+            *Unit: Msun/Mpc^3*
 
         """
         ...
@@ -90,7 +90,7 @@ class Cosmology(Parametrized):
         Tensor
             The comoving distance to each redshift.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         ...
@@ -118,7 +118,7 @@ class Cosmology(Parametrized):
         Tensor
             The transverse comoving distance to each redshift in Mpc.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         ...
@@ -150,7 +150,7 @@ class Cosmology(Parametrized):
         Tensor
             The comoving distance between each pair of redshifts.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         return self.comoving_distance(z2, params) - self.comoving_distance(z1, params)
@@ -182,7 +182,7 @@ class Cosmology(Parametrized):
         Tensor
             The transverse comoving distance between each pair of redshifts in Mpc.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         return self.transverse_comoving_distance(
@@ -211,7 +211,7 @@ class Cosmology(Parametrized):
         Tensor
             The angular diameter distance to each redshift.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         return self.comoving_distance(z, params, **kwargs) / (1 + z)
@@ -243,7 +243,7 @@ class Cosmology(Parametrized):
         Tensor
             The angular diameter distance between each pair of redshifts.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         return self.comoving_distance_z1z2(z1, z2, params, **kwargs) / (1 + z2)
@@ -280,7 +280,7 @@ class Cosmology(Parametrized):
         Tensor
             The time delay distance for each pair of lens and source redshifts.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         d_l = self.angular_diameter_distance(z_l, params)
@@ -320,7 +320,7 @@ class Cosmology(Parametrized):
         Tensor
             The critical surface density for each pair of lens and source redshifts.
 
-            *Unit: solMass/megaparsec^2*
+            *Unit: Msun/Mpc^2*
 
         """
         d_l = self.angular_diameter_distance(z_l, params)
