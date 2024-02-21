@@ -40,6 +40,8 @@ def get_pix_jacobian(
     The Jacobian matrix of the image position with respect
     to the source position at the given point.
 
+        *Unit: unitless*
+
     """
     jac = torch.func.jacfwd(raytrace, (0, 1))(x, y, z_s)  # type: ignore
     return jac

@@ -43,7 +43,7 @@ class NFW(ThinLens):
     m: Optional[Tensor]
         Mass of the lens. Default is None.
 
-        *Unit: solMass*
+        *Unit: Msun*
 
     c: Optional[Tensor]
         Concentration parameter of the lens. Default is None.
@@ -53,7 +53,7 @@ class NFW(ThinLens):
     s: float
         Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
 
-        *Unit: meters*
+        *Unit: arcsec*
 
     use_case: str
         Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
@@ -142,7 +142,7 @@ class NFW(ThinLens):
         m: Optional[Union[Tensor, float]]
             Mass of the lens. Default is None.
 
-            *Unit: solMass*
+            *Unit: Msun*
 
         c: Optional[Union[Tensor, float]]
             Concentration parameter of the lens. Default is None.
@@ -153,7 +153,7 @@ class NFW(ThinLens):
             Softening parameter to avoid singularities at the center of the lens.
             Default is 0.0.
 
-            *Unit: meters*
+            *Unit: arcsec*
 
         """
         super().__init__(cosmology, z_l, name=name)
@@ -191,30 +191,17 @@ class NFW(ThinLens):
 
         Parameters
         ----------
-        z_l: Tensor
-            Redshift of the lens.
-
-            *Unit: unitless*
-
-        m: Tensor
-            Mass of the lens.
-
-            *Unit: solMass*
-
-        c: Tensor
-            Concentration parameter of the lens.
-
-            *Unit: unitless*
-
-        x: dict
+        params: Packed, optional
             Dynamic parameter container.
+
+            *Unit: unitless*
 
         Returns
         -------
         Tensor
             The scale radius of the lens in Mpc.
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         """
         critical_density = self.cosmology.critical_density(z_l, params)
@@ -256,7 +243,7 @@ class NFW(ThinLens):
         Tensor
             The scale density of the lens in solar masses per Mpc cubed.
 
-            *Unit: solMass/megaparsec^3*
+            *Unit: Msun/Mpc^3*
 
         """
         sigma_crit = self.cosmology.critical_density(z_l, params)
@@ -293,7 +280,7 @@ class NFW(ThinLens):
         m: Tensor
             Mass of the lens.
 
-            *Unit: solMass*
+            *Unit: Msun*
 
         c: Tensor
             Concentration parameter of the lens.
@@ -333,7 +320,7 @@ class NFW(ThinLens):
         Tensor
             Result of the deflection angle computation.
 
-            *Unit: radians*
+            *Unit: unitless*
 
         """
         # TODO: generalize beyond torch, or patch Tensor
@@ -359,7 +346,7 @@ class NFW(ThinLens):
         Tensor
             Result of the deflection angle computation.
 
-            *Unit: radians*
+            *Unit: unitless*
 
         """
         # TODO: generalize beyond torch, or patch Tensor
@@ -393,7 +380,7 @@ class NFW(ThinLens):
         Tensor
             Result of the lensing potential computation.
 
-            *Unit: arcsec^2*
+            *Unit: unitless*
 
         """
         # TODO: generalize beyond torch, or patch Tensor
@@ -420,7 +407,7 @@ class NFW(ThinLens):
         Tensor
             Result of the lensing potential computation.
 
-            *Unit: arcsec^2*
+            *Unit: unitless*
 
         """
         # TODO: generalize beyond torch, or patch Tensor
@@ -453,7 +440,7 @@ class NFW(ThinLens):
         Tensor
             Result of the reduced deflection angle computation.
 
-            *Unit: radians*
+            *Unit: unitless*
 
         """
         term_1 = (x / 2).log()
@@ -479,7 +466,7 @@ class NFW(ThinLens):
         Tensor
             Result of the reduced deflection angle computation.
 
-            *Unit: radians*
+            *Unit: unitless*
 
         """
         term_1 = (x / 2).log()
@@ -535,12 +522,12 @@ class NFW(ThinLens):
         x_component: Tensor
             The x-component of the reduced deflection angle.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         y_component: Tensor
             The y-component of the reduced deflection angle.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         """
         x, y = translate_rotate(x, y, x0, y0)

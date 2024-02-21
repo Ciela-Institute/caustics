@@ -220,6 +220,13 @@ class ExternalShear(ThinLens):
         params: (Packed, optional)
             Dynamic parameter container.
 
+        Returns
+        -------
+        Tensor
+            Convergence for an external shear.
+
+            *Unit: unitless*
+
         Raises
         ------
         NotImplementedError
