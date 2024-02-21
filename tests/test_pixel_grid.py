@@ -27,5 +27,5 @@ def test_get_meshgrid(device):
     }
     pixel_grid = PixelGrid(**kwargs_pixel)
 
-    assert np.allclose(thx.to("cpu").numpy(), pixel_grid.coordinate_grid(nx, ny)[0])
-    assert np.allclose(thy.to("cpu").numpy(), pixel_grid.coordinate_grid(nx, ny)[1])
+    assert np.allclose(thx.cpu().numpy(), pixel_grid.coordinate_grid(nx, ny)[0])
+    assert np.allclose(thy.cpu().numpy(), pixel_grid.coordinate_grid(nx, ny)[1])

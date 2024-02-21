@@ -51,7 +51,7 @@ def test(device):
 
     # Use same cosmology
     cosmo_ap = FlatLambdaCDM_ap(
-        cosmology.h0.to("cpu").value, cosmology.Om0.to("cpu").value, Tcmb0=0
+        cosmology.h0.cpu().value, cosmology.Om0.cpu().value, Tcmb0=0
     )
     lens_ls = LensModel(
         lens_model_list=["SIE" for _ in range(len(xs))],

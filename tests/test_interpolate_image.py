@@ -21,9 +21,9 @@ def test_random_inbounds(device):
         ys = (2 * (torch.rand((n_pts,)).double() - 0.5) * y_max).to(device=device)
         xs = (2 * (torch.rand((n_pts,)).double() - 0.5) * x_max).to(device=device)
         points = np.linspace(-y_max, y_max, ny), np.linspace(-x_max, x_max, nx)
-        rg = RegularGridInterpolator(points, image.double().to("cpu").numpy(), method)
+        rg = RegularGridInterpolator(points, image.double().cpu().numpy(), method)
         res_rg = torch.as_tensor(
-            rg(torch.stack((ys, xs), 1).double().to("cpu").numpy()), device=device
+            rg(torch.stack((ys, xs), 1).double().cpu().numpy()), device=device
         )
 
         res = interp2d(image, xs, ys, method)

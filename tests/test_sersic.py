@@ -71,7 +71,7 @@ def test(device):
     x_ls, y_ls = pixel_grid.coordinate_grid(nx, ny)
     brightness_ls = sersic_ls.surface_brightness(x_ls, y_ls, kwargs_light_source)
 
-    assert np.allclose(brightness.to("cpu").numpy(), brightness_ls)
+    assert np.allclose(brightness.cpu().numpy(), brightness_ls)
 
 
 if __name__ == "__main__":

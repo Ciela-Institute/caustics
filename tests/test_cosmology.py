@@ -33,8 +33,8 @@ def test_comoving_dist(device):
         cosmology.to(device=device)
 
         vals = cosmology.comoving_distance(zs)
-        vals_ref = cosmology_ap.comoving_distance(zs.to("cpu").numpy()).value / 1e2  # type: ignore
-        assert np.allclose(vals.to("cpu").numpy(), vals_ref, rtol, atol)
+        vals_ref = cosmology_ap.comoving_distance(zs.cpu().numpy()).value / 1e2  # type: ignore
+        assert np.allclose(vals.cpu().numpy(), vals_ref, rtol, atol)
 
 
 def test_to_method_flatlambdacdm(device):

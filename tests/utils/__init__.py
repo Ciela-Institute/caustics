@@ -207,8 +207,8 @@ def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None)
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
-    assert np.allclose(alpha_x.to("cpu").numpy(), alpha_x_ls, rtol, atol)
-    assert np.allclose(alpha_y.to("cpu").numpy(), alpha_y_ls, rtol, atol)
+    assert np.allclose(alpha_x.cpu().numpy(), alpha_x_ls, rtol, atol)
+    assert np.allclose(alpha_y.cpu().numpy(), alpha_y_ls, rtol, atol)
 
 
 def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
@@ -218,14 +218,14 @@ def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
     # Potential is only defined up to a constant
     Psi -= Psi.min()
     Psi_ls -= Psi_ls.min()
-    assert np.allclose(Psi.to("cpu").numpy(), Psi_ls, rtol, atol)
+    assert np.allclose(Psi.cpu().numpy(), Psi_ls, rtol, atol)
 
 
 def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     kappa = lens.convergence(thx, thy, z_s, x)
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
-    assert np.allclose(kappa.to("cpu").numpy(), kappa_ls, rtol, atol)
+    assert np.allclose(kappa.cpu().numpy(), kappa_ls, rtol, atol)
 
 
 def lens_test_helper(
