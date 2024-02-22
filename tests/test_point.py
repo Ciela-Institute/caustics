@@ -6,7 +6,7 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Point
 
 
-def test():
+def test(device):
     atol = 1e-5
     rtol = 1e-5
 
@@ -23,8 +23,8 @@ def test():
         {"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": x[2].item()}
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
 
 
 if __name__ == "__main__":
-    test()
+    test(None)

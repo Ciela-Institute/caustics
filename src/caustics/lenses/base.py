@@ -186,8 +186,8 @@ class Lens(Parametrized):
             raise ValueError("fov must be given to generate initial guesses")
 
         # Random starting points in image plane
-        guesses = torch.as_tensor(fov) * (
-            torch.rand(n_init, 2) - 0.5
+        guesses = (torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5)).to(
+            device=bxy.device
         )  # Has shape (n_init, Din:2)
 
         # Optimize guesses in image plane
