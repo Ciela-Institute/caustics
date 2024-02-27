@@ -604,6 +604,10 @@ class ThinLens(Lens):
 
     """
 
+    _meta_params = {
+        "z_l": {"default": None, "description": "The redshift of the lens."},
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

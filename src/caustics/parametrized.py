@@ -1,7 +1,7 @@
 # mypy: disable-error-code="var-annotated,index,type-arg"
 from collections import OrderedDict
 from math import prod
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any
 import functools
 import inspect
 
@@ -59,6 +59,9 @@ class Parametrized:
     n_static: int
         Number of static parameters.
     """
+
+    # Metadata about the parameters
+    _meta_params: Dict[Dict[str, Any]] = {}
 
     def __init__(self, name: Optional[str] = None):
         if name is None:

@@ -41,6 +41,21 @@ class FlatLambdaCDM(Cosmology):
     cosmology with no radiation.
     """
 
+    _meta_params = {
+        "h0": {
+            "default": _h0_default,
+            "description": "Hubble constant over 100",
+        },
+        "critical_density_0": {
+            "default": _critical_density_0_default,
+            "description": "Critical density at z=0",
+        },
+        "Om0": {
+            "default": _Om0_default,
+            "description": "Matter density parameter at z=0",
+        },
+    }
+
     def __init__(
         self,
         h0: Optional[Tensor] = h0_default,

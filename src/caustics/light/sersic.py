@@ -43,6 +43,28 @@ class Sersic(Source):
         A flag indicating whether to use lenstronomy to compute the value of k.
     """
 
+    _meta_params = {
+        "x0": {
+            "default": None,
+            "description": "The x-coordinate of the Sersic source's center.",
+        },
+        "y0": {
+            "default": None,
+            "description": "The y-coordinate of the Sersic source's center.",
+        },
+        "q": {"default": None, "description": "The axis ratio of the Sersic source"},
+        "phi": {
+            "default": None,
+            "description": "The orientation of the Sersic source (position angle)",
+        },
+        "n": {
+            "default": None,
+            "description": "The Sersic index, which describes the degree of concentration of the source",
+        },
+        "Re": {"default": None, "description": "The scale length of the Sersic source"},
+        "Ie": {"default": None, "description": "The intensity at the effective radius"},
+    }
+
     def __init__(
         self,
         x0: Optional[Union[Tensor, float]] = None,

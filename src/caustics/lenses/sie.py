@@ -47,6 +47,26 @@ class SIE(ThinLens):
         "b": 1.0,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "The x-coordinate of the SIE lens's center.",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "The y-coordinate of the SIE lens's center.",
+            },
+            "q": {"default": 0.5, "description": "The axis ratio of the SIE lens"},
+            "phi": {
+                "default": 0.0,
+                "description": "The orientation angle of the SIE lens",
+            },
+            "b": {"default": 1.0, "description": "The Einstein radius of the SIE lens"},
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
