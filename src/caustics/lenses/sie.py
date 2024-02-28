@@ -58,7 +58,7 @@ class SIE(ThinLens):
     s: float
         The core radius of the lens (defaults to 0.0).
 
-        *Unit: meters*
+        *Unit: arcsec*
 
     """
 
@@ -169,12 +169,12 @@ class SIE(ThinLens):
         x_component: Tensor
             The x-component of the deflection angle.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         y_component: Tensor
             The y-component of the deflection angle.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         """
         x, y = translate_rotate(x, y, x0, y0, phi)
@@ -281,7 +281,7 @@ class SIE(ThinLens):
         Tensor
             The projected mass density.
 
-            *Unit: solMass/megaparsec^2*
+            *Unit: unitless*
 
         """
         x, y = translate_rotate(x, y, x0, y0, phi)

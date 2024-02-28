@@ -48,7 +48,7 @@ class SIS(ThinLens):
     s: float
         A smoothing factor, default is 0.0.
 
-        *Unit: meters*
+        *Unit: arcsec*
 
     """
 
@@ -120,12 +120,12 @@ class SIS(ThinLens):
         x_component: Tensor
             Deflection Angle
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         y_component: Tensor
             Deflection Angle
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         """
         x, y = translate_rotate(x, y, x0, y0)
@@ -225,7 +225,7 @@ class SIS(ThinLens):
         Tensor
             The projected mass density.
 
-            *Unit: solMass/megaparsec^2*
+            *Unit: unitless*
 
         """
         x, y = translate_rotate(x, y, x0, y0)

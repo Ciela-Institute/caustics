@@ -136,12 +136,12 @@ class Lens(Parametrized):
         bx: Tensor
             Tensor of x coordinate in the source plane.
 
-            *Unit: scalar*
+            *Unit: arcsec*
 
         by: Tensor
             Tensor of y coordinate in the source plane.
 
-            *Unit: scalar*
+            *Unit: arcsec*
 
         z_s: Tensor
             Tensor of source redshifts.
@@ -158,8 +158,6 @@ class Lens(Parametrized):
 
         n_init: int
             number of random initialization points used to try and find image plane points.
-
-            *Unit: unitless*
 
         fov: float
             the field of view in which the initial random samples are taken.
@@ -252,7 +250,7 @@ class ThickLens(Lens):
         y: Tensor
             Tensor of y coordinates in the lens plane.
 
-            *Unit: arcsec*
+            *Unit: unitless*
 
         z_s: Tensor
             Tensor of source redshifts.
@@ -504,7 +502,7 @@ class ThickLens(Lens):
         Tensor
             The gravitational time delay at the given coordinates.
 
-            *Unit: milliseconds*
+            *Unit: seconds*
 
         """
         ...
@@ -875,7 +873,9 @@ class ThinLens(Lens):
         Returns
         -------
         Tensor
-            Convergence at the given coordinates.
+            Dimensionless convergence, normalized by the critical surface density at the lens plane
+
+            *Unit: unitless*
 
         """
         ...
@@ -1094,7 +1094,7 @@ class ThinLens(Lens):
         Tensor
             Time delay at the given coordinates.
 
-            *Unit: milliseconds*
+            *Unit: seconds*
 
         References
         ----------

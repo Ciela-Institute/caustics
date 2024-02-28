@@ -268,7 +268,7 @@ class EPL(ThinLens):
         Tensor
             The value of `R * omega(phi)`.
 
-            *Unit: meters*
+            *Unit: arcsec*
 
         """
         # constants

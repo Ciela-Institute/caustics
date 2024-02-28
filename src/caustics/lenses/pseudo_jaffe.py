@@ -43,9 +43,9 @@ class PseudoJaffe(ThinLens):
         *Unit: arcsec*
 
     mass: Optional[Union[Tensor, float]]
-        Total mass of the lens (solMass).
+        Total mass of the lens (Msun).
 
-        *Unit: solMass*
+        *Unit: Msun*
 
     core_radius: Optional[Union[Tensor, float]]
         Core radius of the lens (arcsec).
@@ -111,9 +111,9 @@ class PseudoJaffe(ThinLens):
             *Unit: arcsec*
 
         mass: Optional[Tensor]
-            Total mass of the lens (solMass).
+            Total mass of the lens (Msun).
 
-            *Unit: solMass*
+            *Unit: Msun*
 
         core_radius: Optional[Tensor]
             Core radius of the lens.
@@ -127,6 +127,8 @@ class PseudoJaffe(ThinLens):
 
         s: float
             Softening parameter to prevent numerical instabilities.
+
+            *Unit: arcsec*
 
         """
         super().__init__(cosmology, z_l, name=name)
@@ -194,7 +196,7 @@ class PseudoJaffe(ThinLens):
         Tensor
             The mass enclosed within the given radius.
 
-            *Unit: solMass*
+            *Unit: Msun*
 
         """
         # fmt: off
@@ -236,17 +238,17 @@ class PseudoJaffe(ThinLens):
         rho_0: Tensor
             Central mass density.
 
-            *Unit: solMass/megaparsec^3*
+            *Unit: Msun/Mpc^3*
 
         core_radius: Tensor
             Core radius of the lens (must be in Mpc).
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         scale_radius: Tensor
             Scaling radius of the lens (must be in Mpc).
 
-            *Unit: megaparsec*
+            *Unit: Mpc*
 
         cosmology: Cosmology
             The cosmology used for calculations.
@@ -304,12 +306,12 @@ class PseudoJaffe(ThinLens):
         x_component: Tensor
             x-component of the deflection angle.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         y_component: Tensor
             y-component of the deflection angle.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         """
         x, y = translate_rotate(x, y, x0, y0)
@@ -433,7 +435,7 @@ class PseudoJaffe(ThinLens):
         Tensor
             The projected mass density.
 
-            *Unit: solMass/Mpc^2*
+            *Unit: unitless*
 
         """
         x, y = translate_rotate(x, y, x0, y0)
