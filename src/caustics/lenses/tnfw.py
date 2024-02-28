@@ -84,6 +84,32 @@ class TNFW(ThinLens):
         "tau": 3.0,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the center of the lens",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the center of the lens",
+            },
+            "mass": {
+                "default": 1e13,
+                "description": "Mass of the lens (Msol)",
+            },
+            "scale_radius": {
+                "default": 1.0,
+                "description": "Scale radius of the TNFW lens (arcsec)",
+            },
+            "tau": {
+                "default": 3.0,
+                "description": "Truncation scale. Ratio of truncation radius to scale radius (rt/rs)",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

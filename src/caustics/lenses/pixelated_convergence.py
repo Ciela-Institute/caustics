@@ -24,6 +24,24 @@ class PixelatedConvergence(ThinLens):
         "convergence_map": np.logspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the shear center in the lens plane",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the shear center in the lens plane",
+            },
+            "convergence_map": {
+                "default": np.logspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
+                "description": "The convergence map",
+            },
+        },
+    }
+
     def __init__(
         self,
         pixelscale: float,

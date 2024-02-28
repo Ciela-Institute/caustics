@@ -41,6 +41,24 @@ class Point(ThinLens):
         "th_ein": 1.0,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the center of the lens",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the center of the lens",
+            },
+            "th_ein": {
+                "default": 1.0,
+                "description": "Einstein radius of the lens",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

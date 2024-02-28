@@ -74,6 +74,13 @@ class Lens_Source(Simulator):
 
     """  # noqa: E501
 
+    _meta_params = {
+        "z_s": {
+            "default": None,
+            "description": "Redshift of the source",
+        }
+    }
+
     def __init__(
         self,
         lens,

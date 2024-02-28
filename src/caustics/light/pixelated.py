@@ -36,6 +36,29 @@ class Pixelated(Source):
         The shape of the source image.
     """
 
+    _meta_params = {
+        "x0": {
+            "default": None,
+            "description": "The x-coordinate of the source image's center.",
+        },
+        "y0": {
+            "default": None,
+            "description": "The y-coordinate of the source image's center.",
+        },
+        "image": {
+            "default": None,
+            "description": "The source image from which brightness values will be interpolated.",
+        },
+        "pixelscale": {
+            "default": None,
+            "description": "The pixelscale of the source image in the lens plane in units of arcsec/pixel.",
+        },
+        "shape": {
+            "default": None,
+            "description": "The shape of the source image.",
+        },
+    }
+
     def __init__(
         self,
         image: Optional[Tensor] = None,

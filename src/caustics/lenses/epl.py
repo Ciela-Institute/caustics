@@ -69,6 +69,36 @@ class EPL(ThinLens):
         "t": 1.0,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "X coordinate of the lens center.",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "Y coordinate of the lens center.",
+            },
+            "q": {
+                "default": 0.5,
+                "description": "Axis ratio of the lens.",
+            },
+            "phi": {
+                "default": 0.0,
+                "description": "Position angle of the lens.",
+            },
+            "b": {
+                "default": 1.0,
+                "description": "Scale length of the lens.",
+            },
+            "t": {
+                "default": 1.0,
+                "description": "Power law slope of the lens.",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

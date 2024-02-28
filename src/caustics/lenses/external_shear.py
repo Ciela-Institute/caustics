@@ -41,6 +41,28 @@ class ExternalShear(ThinLens):
         "gamma_2": 0.1,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the shear center in the lens plane",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the shear center in the lens plane",
+            },
+            "gamma_1": {
+                "default": 0.1,
+                "description": "Shear component in the x-direction",
+            },
+            "gamma_2": {
+                "default": 0.1,
+                "description": "Shear component in the y-direction",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

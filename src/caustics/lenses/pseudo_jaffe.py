@@ -51,6 +51,32 @@ class PseudoJaffe(ThinLens):
         "scale_radius": 1.0,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the center of the lens",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the center of the lens",
+            },
+            "mass": {
+                "default": 1e12,
+                "description": "Total mass of the lens (Msol)",
+            },
+            "core_radius": {
+                "default": 0.1,
+                "description": "Core radius of the lens (arcsec)",
+            },
+            "scale_radius": {
+                "default": 1.0,
+                "description": "Scaling radius of the lens (arcsec)",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

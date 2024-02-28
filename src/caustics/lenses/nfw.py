@@ -73,6 +73,28 @@ class NFW(ThinLens):
         "c": 5.0,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the lens center in the lens plane",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the lens center in the lens plane",
+            },
+            "m": {
+                "default": 1e13,
+                "description": "Mass of the lens",
+            },
+            "c": {
+                "default": 5.0,
+                "description": "Concentration parameter of the lens",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,

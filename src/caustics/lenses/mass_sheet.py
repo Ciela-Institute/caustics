@@ -42,6 +42,24 @@ class MassSheet(ThinLens):
         "surface_density": 0.1,
     }
 
+    _meta_params = {
+        **ThinLens._meta_params,
+        **{
+            "x0": {
+                "default": 0.0,
+                "description": "x-coordinate of the shear center in the lens plane",
+            },
+            "y0": {
+                "default": 0.0,
+                "description": "y-coordinate of the shear center in the lens plane",
+            },
+            "surface_density": {
+                "default": 0.1,
+                "description": "Surface density",
+            },
+        },
+    }
+
     def __init__(
         self,
         cosmology: Cosmology,
