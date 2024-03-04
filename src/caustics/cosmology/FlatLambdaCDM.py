@@ -1,5 +1,5 @@
 # mypy: disable-error-code="operator"
-from typing import Optional
+from typing import Optional, Annotated
 
 import torch
 from torch import Tensor
@@ -11,9 +11,7 @@ from ..utils import interp1d
 from ..parametrized import unpack
 from ..packed import Packed
 from ..constants import c_Mpc_s, km_to_Mpc
-from .base import (
-    Cosmology,
-)
+from .base import Cosmology, NameType
 
 _h0_default = float(default_cosmology.get().h)
 _critical_density_0_default = float(
@@ -41,27 +39,16 @@ class FlatLambdaCDM(Cosmology):
     cosmology with no radiation.
     """
 
-    _meta_params = {
-        "h0": {
-            "default": _h0_default,
-            "description": "Hubble constant over 100",
-        },
-        "critical_density_0": {
-            "default": _critical_density_0_default,
-            "description": "Critical density at z=0",
-        },
-        "Om0": {
-            "default": _Om0_default,
-            "description": "Matter density parameter at z=0",
-        },
-    }
-
     def __init__(
         self,
-        h0: Optional[Tensor] = h0_default,
-        critical_density_0: Optional[Tensor] = critical_density_0_default,
-        Om0: Optional[Tensor] = Om0_default,
-        name: Optional[str] = None,
+        h0: Annotated[Optional[Tensor], "Hubble constant over 100", True] = h0_default,
+        critical_density_0: Annotated[
+            Optional[Tensor], "Critical density at z=0", True
+        ] = critical_density_0_default,
+        Om0: Annotated[
+            Optional[Tensor], "Matter density parameter at z=0", True
+        ] = Om0_default,
+        name: NameType = None,
     ):
         """
         Initialize a new instance of the FlatLambdaCDM class.

@@ -1,12 +1,11 @@
-# mypy: disable-error-code="operator"
-from typing import Optional, Union
+# mypy: disable-error-code="operator,dict-item"
+from typing import Optional, Union, Annotated
 
 import torch
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -42,32 +41,24 @@ class MassSheet(ThinLens):
         "surface_density": 0.1,
     }
 
-    _meta_params = {
-        **ThinLens._meta_params,
-        **{
-            "x0": {
-                "default": 0.0,
-                "description": "x-coordinate of the shear center in the lens plane",
-            },
-            "y0": {
-                "default": 0.0,
-                "description": "y-coordinate of the shear center in the lens plane",
-            },
-            "surface_density": {
-                "default": 0.1,
-                "description": "Surface density",
-            },
-        },
-    }
-
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        surface_density: Optional[Union[Tensor, float]] = None,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "x-coordinate of the shear center in the lens plane",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "y-coordinate of the shear center in the lens plane",
+            True,
+        ] = None,
+        surface_density: Annotated[
+            Optional[Union[Tensor, float]], "Surface density", True
+        ] = None,
+        name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 

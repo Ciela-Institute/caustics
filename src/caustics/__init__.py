@@ -28,6 +28,7 @@ from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
 from . import utils
 from .sims import Lens_Source, Simulator
 from .tests import test
+from .models.api import build_simulator
 
 __version__ = VERSION
 __author__ = "Ciela"
@@ -62,4 +63,5 @@ __all__ = [
     "Lens_Source",
     "Simulator",
     "test",
+    "build_simulator",
 ]

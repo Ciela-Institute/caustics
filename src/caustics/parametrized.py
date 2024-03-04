@@ -1,7 +1,8 @@
 # mypy: disable-error-code="var-annotated,index,type-arg"
 from collections import OrderedDict
 from math import prod
-from typing import Optional, Union, Dict
+from typing import Optional, Union
+from dataclasses import dataclass
 import functools
 import inspect
 
@@ -16,6 +17,13 @@ from .namespace_dict import NamespaceDict, NestedNamespaceDict
 from .parameter import Parameter
 
 __all__ = ("Parametrized", "unpack")
+
+
+@dataclass
+class ClassParam:
+    description: str
+    isParam: bool = False
+    unit: Optional[str] = None
 
 
 def check_valid_name(name):
@@ -59,9 +67,6 @@ class Parametrized:
     n_static: int
         Number of static parameters.
     """
-
-    # Metadata about the parameters
-    _meta_params: Dict = {}
 
     def __init__(self, name: Optional[str] = None):
         if name is None:

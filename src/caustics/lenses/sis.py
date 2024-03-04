@@ -1,11 +1,10 @@
-# mypy: disable-error-code="operator"
-from typing import Optional, Union
+# mypy: disable-error-code="operator,dict-item"
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -29,7 +28,8 @@ class SIS(ThinLens):
         The x-coordinate of the lens center.
     y0: Optional[Union[Tensor, float]]
         The y-coordinate of the lens center.
-        th_ein (Optional[Union[Tensor, float]]): The Einstein radius of the lens.
+    th_ein: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens.
     s: float
         A smoothing factor, default is 0.0.
     """
@@ -40,33 +40,21 @@ class SIS(ThinLens):
         "th_ein": 1.0,
     }
 
-    _meta_params = {
-        **ThinLens._meta_params,
-        **{
-            "x0": {
-                "default": 0.0,
-                "description": "x-coordinate of the center of the lens",
-            },
-            "y0": {
-                "default": 0.0,
-                "description": "y-coordinate of the center of the lens",
-            },
-            "th_ein": {
-                "default": 1.0,
-                "description": "Einstein radius of the lens",
-            },
-        },
-    }
-
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        th_ein: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+        ] = None,
+        th_ein: Annotated[
+            Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
+        ] = None,
+        s: Annotated[float, "A smoothing factor"] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the SIS lens model.

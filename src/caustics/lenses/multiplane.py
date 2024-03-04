@@ -5,8 +5,7 @@ import torch
 from torch import Tensor
 
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s
-from ..cosmology import Cosmology
-from .base import ThickLens, ThinLens
+from .base import ThickLens, NameType, CosmologyType, LensesType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -19,7 +18,7 @@ class Multiplane(ThickLens):
 
     Attributes
     ----------
-    lenses (list[ThinLens])
+    lenses list of ThinLens
         List of thin lenses.
 
     Parameters
@@ -33,7 +32,7 @@ class Multiplane(ThickLens):
     """
 
     def __init__(
-        self, cosmology: Cosmology, lenses: list[ThinLens], name: Optional[str] = None
+        self, cosmology: CosmologyType, lenses: LensesType, name: NameType = None
     ):
         super().__init__(cosmology, name=name)
         self.lenses = lenses

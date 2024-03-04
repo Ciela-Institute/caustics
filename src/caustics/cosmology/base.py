@@ -1,13 +1,15 @@
 # mypy: disable-error-code="operator"
 from abc import abstractmethod
 from math import pi
-from typing import Optional
+from typing import Optional, Annotated
 
 from torch import Tensor
 
 from ..constants import G_over_c2
 from ..parametrized import Parametrized, unpack
 from ..packed import Packed
+
+NameType = Annotated[Optional[str], "Name of the cosmology"]
 
 
 class Cosmology(Parametrized):
@@ -30,7 +32,7 @@ class Cosmology(Parametrized):
         Name of the cosmological model.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(self, name: NameType = None):
         """
         Initialize the Cosmology.
 

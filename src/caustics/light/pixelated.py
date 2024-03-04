@@ -1,10 +1,10 @@
 # mypy: disable-error-code="union-attr"
-from typing import Optional, Union
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
 from ..utils import interp2d
-from .base import Source
+from .base import Source, NameType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -36,37 +36,33 @@ class Pixelated(Source):
         The shape of the source image.
     """
 
-    _meta_params = {
-        "x0": {
-            "default": None,
-            "description": "The x-coordinate of the source image's center.",
-        },
-        "y0": {
-            "default": None,
-            "description": "The y-coordinate of the source image's center.",
-        },
-        "image": {
-            "default": None,
-            "description": "The source image from which brightness values will be interpolated.",
-        },
-        "pixelscale": {
-            "default": None,
-            "description": "The pixelscale of the source image in the lens plane in units of arcsec/pixel.",
-        },
-        "shape": {
-            "default": None,
-            "description": "The shape of the source image.",
-        },
-    }
-
     def __init__(
         self,
-        image: Optional[Tensor] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        pixelscale: Optional[Union[Tensor, float]] = None,
-        shape: Optional[tuple[int, ...]] = None,
-        name: Optional[str] = None,
+        image: Annotated[
+            Optional[Tensor],
+            "The source image from which brightness values will be interpolated.",
+            True,
+        ] = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The x-coordinate of the source image's center.",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The y-coordinate of the source image's center.",
+            True,
+        ] = None,
+        pixelscale: Annotated[
+            Optional[Union[Tensor, float]],
+            "The pixelscale of the source image in the lens plane",
+            True,
+            "arcsec/pixel",
+        ] = None,
+        shape: Annotated[
+            Optional[tuple[int, ...]], "The shape of the source image."
+        ] = None,
+        name: NameType = None,
     ):
         """
         Constructs the `Pixelated` object with the given parameters.
