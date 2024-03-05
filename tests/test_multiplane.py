@@ -1,4 +1,5 @@
 from math import pi
+import yaml
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -12,14 +13,12 @@ from caustics.lenses import SIE, Multiplane, PixelatedConvergence
 from caustics.utils import get_meshgrid
 
 
-def test(device):
+def test(sim_source, device, lens_models):
     rtol = 0
     atol = 5e-3
 
     # Setup
     z_s = torch.tensor(1.5, dtype=torch.float32)
-    cosmology = FlatLambdaCDM(name="cosmo")
-    cosmology.to(dtype=torch.float32, device=device)
 
     # Parameters
     xs = [
@@ -29,11 +28,50 @@ def test(device):
     ]
     x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32, device=device)
 
-    lens = Multiplane(
-        name="multiplane",
-        cosmology=cosmology,
-        lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
-    )
+    if sim_source == "yaml":
+        yaml_str = """\
+        cosmology: &cosmology
+            name: cosmo
+            kind: FlatLambdaCDM
+        sie1: &sie1
+            name: sie_1
+            kind: SIE
+            init_kwargs:
+                cosmology: *cosmology
+        sie2: &sie2
+            name: sie_2
+            kind: SIE
+            init_kwargs:
+                cosmology: *cosmology
+        sie3: &sie3
+            name: sie_3
+            kind: SIE
+            init_kwargs:
+                cosmology: *cosmology
+
+        lens: &lens
+            name: multiplane
+            kind: Multiplane
+            init_kwargs:
+                cosmology: *cosmology
+                lenses:
+                    - *sie1
+                    - *sie2
+                    - *sie3
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = lens_models.get("Multiplane")
+        lens = mod(**yaml_dict["lens"]).model_obj()
+        lens.to(dtype=torch.float32, device=device)
+        cosmology = lens.cosmology
+    else:
+        cosmology = FlatLambdaCDM(name="cosmo")
+        cosmology.to(dtype=torch.float32, device=device)
+        lens = Multiplane(
+            name="multiplane",
+            cosmology=cosmology,
+            lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
+        )
 
     # lenstronomy
     kwargs_ls = []

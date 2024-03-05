@@ -1,5 +1,5 @@
 from functools import lru_cache
-from collections import ChainMap, OrderedDict
+from collections import ChainMap
 from typing import MutableMapping, Iterator, Optional
 
 from caustics.parametrized import Parametrized
@@ -31,16 +31,6 @@ class _KindRegistry(MutableMapping[str, "Parametrized | str"]):
         "Sersic": "caustics.light.sersic.Sersic",
     }
     simulators = {"Lens_Source": "caustics.sims.lens_source.Lens_Source"}
-
-    _categories = OrderedDict(
-        [
-            ("cosmology", list(cosmology.keys())),
-            ("single_lenses", list(single_lenses.keys())),
-            ("multi_lenses", list(multi_lenses.keys())),
-            ("light", list(light.keys())),
-            ("simulators", list(simulators.keys())),
-        ]
-    )
 
     known_kinds = {
         **cosmology,

@@ -1,6 +1,7 @@
 # from math import pi
 
 # import lenstronomy.Util.param_util as param_util
+import yaml
 import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from astropy.cosmology import default_cosmology
@@ -18,14 +19,35 @@ Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
 
 
-def test(device):
+def test(sim_source, device, lens_models):
     atol = 1e-5
     rtol = 3e-2
-
-    # Models
-    cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
-    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l, interpret_m_total_mass=False)
+
+    if sim_source == "yaml":
+        yaml_str = f"""\
+        cosmology: &cosmology
+            name: cosmo
+            kind: FlatLambdaCDM
+        lens: &lens
+            name: tnfw
+            kind: TNFW
+            params:
+                z_l: {float(z_l)}
+            init_kwargs:
+                cosmology: *cosmology
+                interpret_m_total_mass: false
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = lens_models.get("TNFW")
+        lens = mod(**yaml_dict["lens"]).model_obj()
+    else:
+        # Models
+        cosmology = CausticFlatLambdaCDM(name="cosmo")
+        lens = TNFW(
+            name="tnfw", cosmology=cosmology, z_l=z_l, interpret_m_total_mass=False
+        )
+
     lens_model_list = ["TNFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

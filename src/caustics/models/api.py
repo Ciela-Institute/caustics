@@ -1,5 +1,7 @@
 # mypy: disable-error-code="import-untyped"
 import yaml
+from pathlib import Path
+from typing import Union
 
 from ..sims.simulator import Simulator
 from ..io import from_file
@@ -7,7 +9,7 @@ from .utils import setup_simulator_models, create_model, Field
 from .base_models import StateConfig
 
 
-def build_simulator(config_path: "str") -> Simulator:
+def build_simulator(config_path: Union[str, Path]) -> Simulator:
     """
     Build a simulator from the configuration
     """
