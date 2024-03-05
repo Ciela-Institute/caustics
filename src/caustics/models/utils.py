@@ -156,6 +156,10 @@ def create_pydantic_model(
                             # `caustics.utils.gaussian`
                             func = _import_func_or_class(v["func"])
                             v = func(**v["kwargs"])  # type: ignore
+                        else:
+                            raise ValueError(
+                                f"Dictionary with keys 'func' and 'kwargs' expected, got: {v.keys()}"
+                            )
                     elif expected_type == torch.Tensor:
                         # Try to cast to tensor if expected type is tensor
                         v = torch.as_tensor(v)
