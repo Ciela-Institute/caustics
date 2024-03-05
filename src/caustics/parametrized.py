@@ -5,6 +5,7 @@ from typing import Optional, Union, List
 import functools
 import itertools as it
 import inspect
+import textwrap
 
 import torch
 import re
@@ -200,18 +201,12 @@ class Parametrized:
 
     @property
     def x_keys(self) -> OrderedDict[str, List[str]]:
-        desc_dynamic_strs = OrderedDict()
-        dynamic = self.module_params.dynamic
-        if self.n_dynamic > 0:
-            keys = list(dynamic.keys())
-            desc_dynamic_strs[self.name] = keys
-
-        for n, d in self._childs.items():
-            if d.n_dynamic > 0:
-                keys = list(d.module_params.dynamic.keys())
-                desc_dynamic_strs[n] = keys
-
-        return desc_dynamic_strs
+        return OrderedDict(
+            [
+                (module.name, list(module.module_params.dynamic.keys()))
+                for module in self.dynamic_modules.values()
+            ]
+        )
 
     @property
     def x_order(self) -> List[str]:
@@ -425,23 +420,31 @@ class Parametrized:
         # TODO reorder
         return modules
 
+    @property
+    def static(self):
+        return list(self.module_params.static.keys())
+
+    @property
+    def dynamic(self):
+        return list(self.module_params.dynamic.keys())
+
     def __repr__(self) -> str:
         # TODO: change
         return str(self)
 
     def __str__(self) -> str:
-        static = self.module_params.static
-        dynamic = self.module_params.dynamic
-        static_str = ", ".join(list(static.keys()))
-        dynamic_str = ", ".join(list(dynamic.keys()))
-        desc_dynamic_str = ", ".join([f"('{k}': {v})" for k, v in self.x_keys.items()])
+        static_str = ", ".join(self.static)
+        dynamic_str = ", ".join(self.dynamic)
+        desc_dynamic_str = textwrap.shorten(
+            ", ".join(self.x_order), width=70, placeholder="..."
+        )
 
         return (
             f"{self.__class__.__name__}(\n"
             f"    name='{self.name}',\n"
             f"    static=[{static_str}],\n"
             f"    dynamic=[{dynamic_str}],\n"
-            f"    x keys=[{desc_dynamic_str}]\n"
+            f"    x_order=[{desc_dynamic_str}]\n"
             f")"
         )
 
