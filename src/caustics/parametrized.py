@@ -1,8 +1,9 @@
 # mypy: disable-error-code="var-annotated,index,type-arg"
 from collections import OrderedDict
 from math import prod
-from typing import Optional, Union
+from typing import Optional, Union, List
 import functools
+import itertools as it
 import inspect
 
 import torch
@@ -196,6 +197,28 @@ class Parametrized:
     @property
     def dynamic_size(self) -> int:
         return sum(prod(dyn.shape) for dyn in self.module_params.dynamic.values())
+
+    @property
+    def x_keys(self) -> OrderedDict[str, List[str]]:
+        desc_dynamic_strs = OrderedDict()
+        dynamic = self.module_params.dynamic
+        if self.n_dynamic > 0:
+            keys = list(dynamic.keys())
+            desc_dynamic_strs[self.name] = keys
+
+        for n, d in self._childs.items():
+            if d.n_dynamic > 0:
+                keys = list(d.module_params.dynamic.keys())
+                desc_dynamic_strs[n] = keys
+
+        return desc_dynamic_strs
+
+    @property
+    def x_order(self) -> List[str]:
+        merged_keys = [
+            [".".join([key, v]) for v in values] for key, values in self.x_keys.items()
+        ]
+        return list(it.chain.from_iterable(merged_keys))
 
     def pack(
         self,
@@ -411,17 +434,7 @@ class Parametrized:
         dynamic = self.module_params.dynamic
         static_str = ", ".join(list(static.keys()))
         dynamic_str = ", ".join(list(dynamic.keys()))
-        desc_dynamic_strs = []
-        if self.n_dynamic > 0:
-            desc_dynamic_strs.append(f"('{self.name}': {list(dynamic.keys())})")
-
-        for n, d in self._childs.items():
-            if d.n_dynamic > 0:
-                desc_dynamic_strs.append(
-                    f"('{n}': {list(d.module_params.dynamic.keys())})"
-                )
-
-        desc_dynamic_str = ", ".join(desc_dynamic_strs)
+        desc_dynamic_str = ", ".join([f"('{k}': {v})" for k, v in self.x_keys.items()])
 
         return (
             f"{self.__class__.__name__}(\n"
