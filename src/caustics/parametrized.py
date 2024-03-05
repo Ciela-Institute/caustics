@@ -1,10 +1,13 @@
 # mypy: disable-error-code="var-annotated,index,type-arg"
 from collections import OrderedDict
 from math import prod
-from typing import Optional, Union
+from typing import Optional, Union, List
 from dataclasses import dataclass
+
 import functools
+import itertools as it
 import inspect
+import textwrap
 
 import torch
 import re
@@ -204,6 +207,22 @@ class Parametrized:
     @property
     def dynamic_size(self) -> int:
         return sum(prod(dyn.shape) for dyn in self.module_params.dynamic.values())
+
+    @property
+    def x_keys(self) -> OrderedDict[str, List[str]]:
+        return OrderedDict(
+            [
+                (module.name, list(module.module_params.dynamic.keys()))
+                for module in self.dynamic_modules.values()
+            ]
+        )
+
+    @property
+    def x_order(self) -> List[str]:
+        merged_keys = [
+            [".".join([key, v]) for v in values] for key, values in self.x_keys.items()
+        ]
+        return list(it.chain.from_iterable(merged_keys))
 
     def pack(
         self,
@@ -410,33 +429,31 @@ class Parametrized:
         # TODO reorder
         return modules
 
+    @property
+    def static(self):
+        return list(self.module_params.static.keys())
+
+    @property
+    def dynamic(self):
+        return list(self.module_params.dynamic.keys())
+
     def __repr__(self) -> str:
         # TODO: change
         return str(self)
 
     def __str__(self) -> str:
-        static = self.module_params.static
-        dynamic = self.module_params.dynamic
-        static_str = ", ".join(list(static.keys()))
-        dynamic_str = ", ".join(list(dynamic.keys()))
-        desc_dynamic_strs = []
-        if self.n_dynamic > 0:
-            desc_dynamic_strs.append(f"('{self.name}': {list(dynamic.keys())})")
-
-        for n, d in self._childs.items():
-            if d.n_dynamic > 0:
-                desc_dynamic_strs.append(
-                    f"('{n}': {list(d.module_params.dynamic.keys())})"
-                )
-
-        desc_dynamic_str = ", ".join(desc_dynamic_strs)
+        static_str = ", ".join(self.static)
+        dynamic_str = ", ".join(self.dynamic)
+        desc_dynamic_str = textwrap.shorten(
+            ", ".join(self.x_order), width=70, placeholder="..."
+        )
 
         return (
             f"{self.__class__.__name__}(\n"
             f"    name='{self.name}',\n"
             f"    static=[{static_str}],\n"
             f"    dynamic=[{dynamic_str}],\n"
-            f"    x keys=[{desc_dynamic_str}]\n"
+            f"    x_order=[{desc_dynamic_str}]\n"
             f")"
         )
 
