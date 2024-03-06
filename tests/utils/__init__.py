@@ -14,15 +14,11 @@ from caustics.light import Sersic, Pixelated
 from caustics.utils import get_meshgrid
 from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
+from .models import mock_from_file
 
-def mock_from_file(mocker, yaml_str):
-    # Mock the from_file function
-    # this way, we don't need to use a real file
-    mocker.patch(
-        'caustics.models.api.from_file',
-        return_value=yaml_str.encode('utf-8')
-    )
-
+__all__ = (
+    "mock_from_file",
+)
 
 def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None):
     n_pix = 20
