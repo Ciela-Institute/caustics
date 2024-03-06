@@ -1,4 +1,4 @@
-```{glossary} Glossary
+```{glossary}
 
 arcsec
     Arcsecond, a unit of angular measurement equal to 1/3600 of a degree. Used here to denote coordinates in the lens plane, deflection angles, the core radius, the scale radius, the Einstein radius of the lens, and the softening parameter.
@@ -30,10 +30,6 @@ seconds
 
 radians
     A unit of angular measure used to denote the orientation of the lens on the sky and the position angle of the lens.
-
-meters
-    A unit of length in the metric system, used here to denote the position vector in the lens plane in the EPL model.
-
 
 arcsec/pixel
     Arcseconds per pixel, used to denote the pixel scale of the source image in the lens plane, indicating the angular size each pixel represents.
