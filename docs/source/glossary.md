@@ -1,3 +1,7 @@
+# Glossary
+
+Glossary terms for units found within the codebase.
+
 ```{glossary}
 
 arcsec
