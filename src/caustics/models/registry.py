@@ -21,9 +21,9 @@ class _KindRegistry(MutableMapping[str, "Parametrized | str"]):
         "SIS": "caustics.lenses.sis.SIS",
         "TNFW": "caustics.lenses.tnfw.TNFW",
         "MassSheet": "caustics.lenses.mass_sheet.MassSheet",
+        "SinglePlane": "caustics.lenses.singleplane.SinglePlane",
     }
     multi_lenses = {
-        "SinglePlane": "caustics.lenses.singleplane.SinglePlane",
         "Multiplane": "caustics.lenses.multiplane.Multiplane",
     }
     light = {

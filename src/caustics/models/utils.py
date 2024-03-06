@@ -215,14 +215,31 @@ def setup_pydantic_models() -> Tuple[type[Annotated], type[Annotated]]:
     single_lens_models = [
         create_pydantic_model(lens, dependant_models=lens_dependant_models)
         for lens in _registry.single_lenses
+        if lens != "SinglePlane"  # make exception for single plane
     ]
     single_lenses = Annotated[
         Union[tuple(single_lens_models)], Field(discriminator="kind")
     ]
+    # Single plane
+    # this is a special case since single plane
+    # is a multi lens system
+    # but this is an option for multi lens
+    single_plane_model = create_pydantic_model(
+        "SinglePlane",
+        dependant_models={"lenses": [single_lenses], **lens_dependant_models},
+    )
+    single_lenses_and_plane = Annotated[
+        Union[tuple([single_plane_model, *single_lens_models])],
+        Field(discriminator="kind"),
+    ]
     # Multi Lens
     multi_lens_models = [
         create_pydantic_model(
-            lens, dependant_models={"lenses": [single_lenses], **lens_dependant_models}
+            lens,
+            dependant_models={
+                "lenses": [single_lenses_and_plane],
+                **lens_dependant_models,
+            },
         )
         for lens in _registry.multi_lenses
     ]
