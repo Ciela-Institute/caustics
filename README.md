@@ -32,10 +32,10 @@ import matplotlib.pyplot as plt
 import caustics
 import torch
 
-cosmology = caustics.cosmology.FlatLambdaCDM()
-sie = caustics.lenses.SIE(cosmology=cosmology, name="lens")
-src = caustics.light.Sersic(name="source")
-lnslt = caustics.light.Sersic(name="lenslight")
+cosmology = caustics.FlatLambdaCDM()
+sie = caustics.SIE(cosmology=cosmology, name="lens")
+src = caustics.Sersic(name="source")
+lnslt = caustics.Sersic(name="lenslight")
 
 x = torch.tensor([
 #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re
@@ -44,7 +44,7 @@ x = torch.tensor([
     5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
 ])  # fmt: skip
 
-minisim = caustics.sims.Lens_Source(
+minisim = caustics.Lens_Source(
     lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
 )
 plt.imshow(minisim(x, quad_level=3), origin="lower")
@@ -68,7 +68,7 @@ for ax, im in zip(axarr.flatten(), images):
 plt.show()
 ```
 
-![Batched Caustics lensed images](../../media/minisim_vmap.png)
+![Batched Caustics lensed images](./media/minisim_vmap.png)
 
 ### Automatic Differentiation
 
@@ -82,7 +82,7 @@ for i, ax in enumerate(axarr.flatten()):
 plt.show()
 ```
 
-![Jacobian Caustics lensed image](../../media/minisim_jacobian.png)
+![Jacobian Caustics lensed image](./media/minisim_jacobian.png)
 
 ## Documentation
 

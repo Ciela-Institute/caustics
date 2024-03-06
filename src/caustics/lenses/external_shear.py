@@ -50,7 +50,7 @@ class ExternalShear(ThinLens):
         gamma_1: Optional[Union[Tensor, float]] = None,
         gamma_2: Optional[Union[Tensor, float]] = None,
         s: float = 0.0,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
@@ -68,11 +68,11 @@ class ExternalShear(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        gamma_1: Tensor = None,
-        gamma_2: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        gamma_1: Optional[Tensor] = None,
+        gamma_2: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -113,11 +113,11 @@ class ExternalShear(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        gamma_1: Tensor = None,
-        gamma_2: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        gamma_1: Optional[Tensor] = None,
+        gamma_2: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -151,11 +151,11 @@ class ExternalShear(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        gamma_1: Tensor = None,
-        gamma_2: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        gamma_1: Optional[Tensor] = None,
+        gamma_2: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """

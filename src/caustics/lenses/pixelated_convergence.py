@@ -1,3 +1,4 @@
+# mypy: disable-error-code="index"
 from math import pi
 from typing import Optional
 
@@ -36,7 +37,7 @@ class PixelatedConvergence(ThinLens):
         convolution_mode: str = "fft",
         use_next_fast_len: bool = True,
         padding: str = "zero",
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """Strong lensing with user provided kappa map
 
@@ -260,10 +261,10 @@ class PixelatedConvergence(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        convergence_map: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        convergence_map: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -367,10 +368,10 @@ class PixelatedConvergence(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        convergence_map: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        convergence_map: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -453,10 +454,10 @@ class PixelatedConvergence(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        convergence_map: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        convergence_map: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """

@@ -1,3 +1,4 @@
+# mypy: disable-error-code="union-attr"
 from typing import Optional, Union
 
 from torch import Tensor
@@ -42,7 +43,7 @@ class Pixelated(Source):
         y0: Optional[Union[Tensor, float]] = None,
         pixelscale: Optional[Union[Tensor, float]] = None,
         shape: Optional[tuple[int, ...]] = None,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """
         Constructs the `Pixelated` object with the given parameters.
@@ -83,10 +84,10 @@ class Pixelated(Source):
         y,
         *args,
         params: Optional["Packed"] = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        image: Tensor = None,
-        pixelscale: Tensor = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        image: Optional[Tensor] = None,
+        pixelscale: Optional[Tensor] = None,
         **kwargs,
     ):
         """

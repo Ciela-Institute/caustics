@@ -1,3 +1,4 @@
+# mypy: disable-error-code="union-attr"
 from typing import Optional, Union
 
 import torch

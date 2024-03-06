@@ -1,3 +1,4 @@
+# mypy: disable-error-code="call-overload"
 from abc import abstractmethod
 from typing import Optional, Union
 from functools import partial
@@ -21,7 +22,7 @@ class Lens(Parametrized):
     Base class for all lenses
     """
 
-    def __init__(self, cosmology: Cosmology, name: str = None):
+    def __init__(self, cosmology: Cosmology, name: Optional[str] = None):
         """
         Initializes a new instance of the Lens class.
 
@@ -99,9 +100,7 @@ class Lens(Parametrized):
         Tensor
             Gravitational magnification at the given coordinates.
         """
-        return get_magnification(
-            partial(self.raytrace, params=params), x, y, z_s, **kwargs
-        )
+        return get_magnification(partial(self.raytrace, params=params), x, y, z_s)
 
     @unpack
     def forward_raytrace(
@@ -517,7 +516,7 @@ class ThickLens(Lens):
         J = self._jacobian_effective_deflection_angle_finitediff(
             x, y, z_s, pixelscale, params, **kwargs
         )
-        return torch.eye(2) - J
+        return torch.eye(2).to(J.device) - J
 
     @unpack
     def _jacobian_lens_equation_autograd(
@@ -537,7 +536,7 @@ class ThickLens(Lens):
         J = self._jacobian_effective_deflection_angle_autograd(
             x, y, z_s, params, **kwargs
         )
-        return torch.eye(2) - J.detach()
+        return torch.eye(2).to(J.device) - J.detach()
 
     @unpack
     def effective_convergence_div(
@@ -609,7 +608,7 @@ class ThinLens(Lens):
         self,
         cosmology: Cosmology,
         z_l: Optional[Union[Tensor, float]] = None,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         super().__init__(cosmology=cosmology, name=name)
         self.add_param("z_l", z_l)
@@ -622,7 +621,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -662,7 +661,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -766,7 +765,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -844,7 +843,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
+        z_l: Optional[Tensor] = None,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
         **kwargs,
@@ -1017,7 +1016,7 @@ class ThinLens(Lens):
         J = self._jacobian_deflection_angle_finitediff(
             x, y, z_s, pixelscale, params, **kwargs
         )
-        return torch.eye(2) - J
+        return torch.eye(2).to(J.device) - J
 
     @unpack
     def _jacobian_lens_equation_autograd(
@@ -1035,4 +1034,4 @@ class ThinLens(Lens):
         """
         # Build Jacobian
         J = self._jacobian_deflection_angle_autograd(x, y, z_s, params, **kwargs)
-        return torch.eye(2) - J.detach()
+        return torch.eye(2).to(J.device) - J.detach()
