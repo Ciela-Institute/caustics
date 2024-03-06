@@ -1,4 +1,4 @@
-```{glossary}Glossary
+```{glossary} Glossary
 
 arcsec
     Arcsecond, a unit of angular measurement equal to 1/3600 of a degree. Used here to denote coordinates in the lens plane, deflection angles, the core radius, the scale radius, the Einstein radius of the lens, and the softening parameter.
