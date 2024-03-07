@@ -1,0 +1,25 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Stone"
+  given-names: "Connor"
+  orcid: "https://orcid.org/0000-000x-xxxx-xxxx"
+- family-names: "Adam"
+  given-names: "Alexandre"
+  orcid: "https://orcid.org/0000-0001-8806-7936"
+- family-names: "Perreault-Levasseur"
+  given-names: "Laurence"
+  orcid: "https://orcid.org/0000-0003-3544-3939"
+- family-names: "Hezaveh"
+  given-names: "Yashar"
+  orcid: "https://orcid.org/0000-0002-8669-5733"
+- family-names: "Core"
+  given-names: "Cordero"
+  orcid: "https://orcid.org/0000-0002-3531-3221"
+- family-names: "Setiawan"
+  given-names: "Don"
+  orcid: "https://orcid.org/0000-0002-1624-2667"
+title: "caustics"
+doi: 10.xxxx/zenodo.xxx
+version: vx.x.0
+date-released: 2024-03-xx
