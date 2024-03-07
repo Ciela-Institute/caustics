@@ -595,13 +595,22 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
     # Jacobian
     J = jacfwd(f)(X)
     J = J.to(dtype=X.dtype)
-    chi2 = (dY @ Cinv @ dY).sum(-1)
+    if Cinv.ndim == 1:
+        chi2 = (dY**2 * Cinv).sum(-1)
+    else:
+        chi2 = (dY @ Cinv @ dY).sum(-1)
 
     # Gradient
-    grad = J.T @ Cinv @ dY
+    if Cinv.ndim == 1:
+        grad = J.T @ (dY * Cinv)
+    else:
+        grad = J.T @ Cinv @ dY
 
     # Hessian
-    hess = J.T @ Cinv @ J
+    if Cinv.ndim == 1:
+        hess = J.T @ (J * Cinv.reshape(-1, 1))
+    else:
+        hess = J.T @ Cinv @ J
     hess_perturb = L * (torch.diag(hess) + 0.1 * torch.eye(hess.shape[0]))
     hess = hess + hess_perturb
 
@@ -611,7 +620,10 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
     # New chi^2
     fYnew = f(X + h)
     dYnew = Y - fYnew
-    chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
+    if Cinv.ndim == 1:
+        chi2_new = (dYnew**2 * Cinv).sum(-1)
+    else:
+        chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
     # Test
     rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))  # fmt: skip
@@ -647,8 +659,11 @@ def batch_lm(
         raise ValueError("x and y must having matching batch dimension")
 
     if C is None:
-        C = torch.eye(Dout).repeat(B, 1, 1)
-    Cinv = torch.linalg.inv(C)
+        C = torch.ones_like(Y)
+    if C.ndim == 2:
+        Cinv = 1 / C
+    else:
+        Cinv = torch.linalg.inv(C)
 
     v_lm_step = torch.vmap(partial(_lm_step, lambda x: f(x, *f_args, **f_kwargs)))
     L = L * torch.ones(B)
@@ -657,6 +672,7 @@ def batch_lm(
     e = epsilon * torch.ones(B)
     for _ in range(max_iter):
         Xnew, L, C = v_lm_step(X, Y, Cinv, L, Lup, Ldn, e)
+        print(C)
         if (
             torch.all((Xnew - X).abs() < stopping)
             and torch.sum(L < 1e-2).item() > B / 3
