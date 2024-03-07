@@ -10,6 +10,7 @@
 [![Documentation Status](https://readthedocs.org/projects/caustics/badge/?version=latest)](https://caustics.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/caustics.svg)](https://pypi.org/project/caustics/)
 [![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustics)](https://app.codecov.io/gh/Ciela-Institute/caustics)
+[![DOI](https://zenodo.org/badge/<doi>.svg)](https://zenodo.org/badge/latestdoi/<doi>)
 
 # caustics
 
