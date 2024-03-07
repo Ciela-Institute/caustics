@@ -154,5 +154,6 @@ if user_menu == "EPL + Shear + Sersic":
         ax1.set_ylabel("Arcseconds from center", fontsize = 15)
         st.pyplot(fig1)
         
-if user_menu == "Page 2":
-    pass
+if user_menu == "Other lenses to follow":
+    st.title("Caustics Gravitational Lensing Simulator")
+    st.header("More lens configurations are on their way!")
