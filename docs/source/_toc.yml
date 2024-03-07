@@ -16,6 +16,11 @@ chapters:
       - file: tutorials/Parameters
       - file: tutorials/Simulators
       - file: tutorials/Playground
+  - file: examples/index
+    sections:
+      - file: examples/Example_ImageFit_LM
+      - file: examples/Example_ImageFit_NUTS
+      - file: examples/Example_QSOLensFit
   - file: contributing
   - file: citation
   - file: license

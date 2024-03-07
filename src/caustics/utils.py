@@ -601,9 +601,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
         hess = J.T @ (J * Cinv.reshape(-1, 1))
     else:
         hess = J.T @ Cinv @ J
-    hess_perturb = L * (
-        torch.diag(hess) + 0.1 * torch.eye(hess.shape[0], device=hess.device)
-    )
+    hess_perturb = L * torch.eye(hess.shape[0], device=hess.device)
     hess = hess + hess_perturb
 
     # Step
@@ -632,7 +630,7 @@ def batch_lm(
     X,  # B, Din
     Y,  # B, Dout
     f,  # Din -> Dout
-    C=None,  # B, Dout, Dout
+    C=None,  # B, Dout, Dout !or! B, Dout
     epsilon=1e-1,
     L=1e0,
     L_dn=11.0,
@@ -675,6 +673,8 @@ def batch_lm(
             torch.all((Xnew - X).abs() < stopping)
             and torch.sum(L < 1e-2).item() > B / 3
         ):
+            break
+        if torch.all(L >= L_max):
             break
         X = Xnew
 
