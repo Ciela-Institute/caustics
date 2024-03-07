@@ -17,6 +17,7 @@ chapters:
       - file: tutorials/Simulators
       - file: tutorials/Playground
   - file: contributing
+  - file: frequently_asked_questions
   - file: citation
   - file: license
   - file: modules
