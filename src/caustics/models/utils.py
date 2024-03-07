@@ -244,7 +244,7 @@ def setup_pydantic_models() -> Tuple[type[Annotated], type[Annotated]]:
         for lens in _registry.multi_lenses
     ]
     lenses = Annotated[
-        Union[tuple([*single_lens_models, *multi_lens_models])],
+        Union[tuple([single_plane_model, *single_lens_models, *multi_lens_models])],
         Field(discriminator="kind"),
     ]
     return light_sources, lenses
