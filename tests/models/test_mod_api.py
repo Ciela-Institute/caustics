@@ -56,7 +56,7 @@ def _write_temp_yaml(yaml_str: str):
 def sim_yaml_file(sim_yaml):
     temp_file = _write_temp_yaml(sim_yaml)
 
-    yield temp_file
+    yield temp_file.name
 
     if os.path.exists(temp_file.name):
         os.unlink(temp_file.name)
@@ -117,13 +117,13 @@ def test_complex_build_simulator():
     temp_file = _write_temp_yaml(yaml_str)
 
     # Open the temp file and build the simulator
-    sim = caustics.build_simulator(temp_file.name)
+    sim = caustics.build_simulator(temp_file)
     image = sim(x, quad_level=3)
     assert isinstance(image, torch.Tensor)
 
     # Remove the temp file
-    if os.path.exists(temp_file.name):
-        os.unlink(temp_file.name)
+    if os.path.exists(temp_file):
+        os.unlink(temp_file)
 
 
 def test_build_simulator_w_state():
