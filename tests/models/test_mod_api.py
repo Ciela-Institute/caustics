@@ -49,17 +49,17 @@ def _write_temp_yaml(yaml_str: str):
     f.flush()
     f.close()
 
-    return f
+    return f.name
 
 
 @pytest.fixture
 def sim_yaml_file(sim_yaml):
     temp_file = _write_temp_yaml(sim_yaml)
 
-    yield temp_file.name
+    yield temp_file
 
-    if os.path.exists(temp_file.name):
-        os.unlink(temp_file.name)
+    if os.path.exists(temp_file):
+        os.unlink(temp_file)
 
 
 @pytest.fixture
