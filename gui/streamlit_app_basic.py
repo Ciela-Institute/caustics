@@ -41,7 +41,6 @@ def caustic_trace(
 
     # Here we compute A's determinant at every point
     detA = torch.linalg.det(A)
-    levels = [0.0]
     CS = plt.contour(
         thx.cpu().detach().numpy(),
         thy.cpu().detach().numpy(),
@@ -50,7 +49,6 @@ def caustic_trace(
         colors="b",
     )
     paths = CS.collections[0].get_paths()
-    caustic_paths = []
     y1s = []
     y2s = []
     for path in paths:
