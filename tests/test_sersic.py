@@ -8,14 +8,14 @@ from caustics.light import Sersic
 from caustics.utils import get_meshgrid
 
 
-def test():
+def test(device):
     # Caustics setup
     res = 0.05
     nx = 200
     ny = 200
-    thx, thy = get_meshgrid(res, nx, ny)
+    thx, thy = get_meshgrid(res, nx, ny, device=device)
     sersic = Sersic(name="sersic", use_lenstronomy_k=True)
-
+    sersic.to(device=device)
     # Lenstronomy setup
     ra_at_xy_0, dec_at_xy_0 = (-5 + res / 2, -5 + res / 2)
     transform_pix2angle = np.array([[1, 0], [0, 1]]) * res
@@ -51,7 +51,8 @@ def test():
             index_src,
             th_e_src,
             I_e_src,
-        ]
+        ],
+        device=device,
     )
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi_src, q=q_src)
     kwargs_light_source = [
@@ -70,8 +71,8 @@ def test():
     x_ls, y_ls = pixel_grid.coordinate_grid(nx, ny)
     brightness_ls = sersic_ls.surface_brightness(x_ls, y_ls, kwargs_light_source)
 
-    assert np.allclose(brightness.numpy(), brightness_ls)
+    assert np.allclose(brightness.cpu().numpy(), brightness_ls)
 
 
 if __name__ == "__main__":
-    test()
+    test(None)

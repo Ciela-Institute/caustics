@@ -180,8 +180,6 @@ def gaussian_quadrature_grid(
     X,
     Y,
     quad_level=3,
-    device=None,
-    dtype=torch.float32,
 ):
     """
     Generates a 2D meshgrid for Gaussian quadrature based on the provided pixelscale and dimensions.
@@ -196,10 +194,6 @@ def gaussian_quadrature_grid(
         The y-coordinates of the pixel centers.
     quad_level : int, optional
         The number of quadrature points in each dimension. Default is 3.
-    device : torch.device, optional
-        The device on which to create the tensor. Default is None.
-    dtype : torch.dtype, optional
-        The desired data type of the tensor. Default is torch.float32.
 
     Returns
     -------
@@ -217,7 +211,9 @@ def gaussian_quadrature_grid(
     """
 
     # collect gaussian quadrature weights
-    abscissaX, abscissaY, weight = _quad_table(quad_level, pixelscale, dtype, device)
+    abscissaX, abscissaY, weight = _quad_table(
+        quad_level, pixelscale, dtype=X.dtype, device=X.device
+    )
 
     # Gaussian quadrature evaluation points
     Xs = torch.repeat_interleave(X[..., None], quad_level**2, -1) + abscissaX
@@ -269,8 +265,6 @@ def quad(
     Y: Tensor,
     args: Optional[Tuple] = None,
     quad_level: int = 3,
-    device=None,
-    dtype=torch.float32,
 ):
     """
     Performs a pixel-wise integration on a function using Gaussian quadrature.
@@ -290,17 +284,13 @@ def quad(
         Additional arguments to be passed to the brightness function, by default None.
     quad_level : int, optional
         The level of quadrature to use, by default 3.
-    device : torch.device, optional
-        The device to perform the computation on, by default None.
-    dtype : torch.dtype, optional
-        The data type of the computation, by default torch.float32.
 
     Returns
     -------
     Tensor
         The integrated brightness function at each pixel.
     """
-    X, Y, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level, device, dtype)
+    X, Y, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
     F = F(X, Y, *args)
     return gaussian_quadrature_integrator(F, weight)
 
@@ -587,7 +577,7 @@ def get_cluster_means(xs: Tensor, k: int):
     return torch.stack(means)
 
 
-def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
+def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     # Forward
     fY = f(X)
     dY = Y - fY
@@ -611,7 +601,9 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
         hess = J.T @ (J * Cinv.reshape(-1, 1))
     else:
         hess = J.T @ Cinv @ J
-    hess_perturb = L * (torch.diag(hess) + 0.1 * torch.eye(hess.shape[0]))
+    hess_perturb = L * (
+        torch.diag(hess) + 0.1 * torch.eye(hess.shape[0], device=hess.device)
+    )
     hess = hess + hess_perturb
 
     # Step
@@ -631,7 +623,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon):
     # Update
     X = torch.where(rho >= epsilon, X + h, X)
     chi2 = torch.where(rho > epsilon, chi2_new, chi2)
-    L = torch.clamp(torch.where(rho >= epsilon, L / Ldn, L * Lup), 1e-9, 1e9)
+    L = torch.clamp(torch.where(rho >= epsilon, L / Ldn, L * Lup), L_min, L_max)
 
     return X, L, chi2
 
@@ -665,14 +657,20 @@ def batch_lm(
     else:
         Cinv = torch.linalg.inv(C)
 
-    v_lm_step = torch.vmap(partial(_lm_step, lambda x: f(x, *f_args, **f_kwargs)))
-    L = L * torch.ones(B)
-    Lup = L_up * torch.ones(B)
-    Ldn = L_dn * torch.ones(B)
-    e = epsilon * torch.ones(B)
+    v_lm_step = torch.vmap(
+        partial(
+            _lm_step,
+            lambda x: f(x, *f_args, **f_kwargs),
+            Lup=L_up,
+            Ldn=L_dn,
+            epsilon=epsilon,
+            L_min=L_min,
+            L_max=L_max,
+        )
+    )
+    L = L * torch.ones(B, device=X.device)
     for _ in range(max_iter):
-        Xnew, L, C = v_lm_step(X, Y, Cinv, L, Lup, Ldn, e)
-        print(C)
+        Xnew, L, C = v_lm_step(X, Y, Cinv, L)
         if (
             torch.all((Xnew - X).abs() < stopping)
             and torch.sum(L < 1e-2).item() > B / 3
