@@ -4,9 +4,10 @@ import torch
 import numpy as np
 from caustics.utils import get_meshgrid
 from caustics.cosmology import FlatLambdaCDM
-from caustics.lenses import SIE, EPL, ExternalShear, SinglePlane
+from caustics.lenses import EPL, ExternalShear, SinglePlane
 from caustics.light import sersic
 import caustics
+
 
 def caustic_trace(
     delta_m,
@@ -40,12 +41,12 @@ def caustic_trace(
 
     # Here we compute A's determinant at every point
     detA = torch.linalg.det(A)
-    levels = [0.]
+    levels = [0.0]
     CS = plt.contour(
         thx.cpu().detach().numpy(),
         thy.cpu().detach().numpy(),
         detA.cpu().detach().numpy(),
-        levels=[0.],
+        levels=[0.0],
         colors="b",
     )
     paths = CS.collections[0].get_paths()
@@ -53,23 +54,18 @@ def caustic_trace(
     y1s = []
     y2s = []
     for path in paths:
-        # Collect the path into a descrete set of points
+        # Collect the path into a discrete set of points
         vertices = path.interpolated(5).vertices
-        x1 = torch.tensor(
-            [float(vs[0]) for vs in vertices], device=device
-        )
-        x2 = torch.tensor(
-            [float(vs[1]) for vs in vertices], device=device
-        )
+        x1 = torch.tensor([float(vs[0]) for vs in vertices], device=device)
+        x2 = torch.tensor([float(vs[1]) for vs in vertices], device=device)
         # raytrace the points to the source plane
-        y1, y2 = lens.raytrace(
-            x1, x2, z_background, params=lens.pack(x)
-        )
+        y1, y2 = lens.raytrace(x1, x2, z_background, params=lens.pack(x))
         y1s += y1.cpu() / delta_m + simulation_size / 2
         y2s += y2.cpu() / delta_m + simulation_size / 2
 
     plt.close()
     return np.array(y1s), np.array(y2s)
+
 
 st.set_page_config(layout="wide")
 css = """
@@ -85,7 +81,9 @@ st.sidebar.write("Check out the [documentation](%s)!" % docs_url)
 user_menu = st.sidebar.radio(
     "Select an Option", ("EPL + Shear + Sersic", "Other lenses to follow")
 )
-st.sidebar.write("Note: if you see an error about contour plots, just reload the webpage and it will go away.")
+st.sidebar.write(
+    "Note: if you see an error about contour plots, just reload the webpage and it will go away."
+)
 
 if user_menu == "EPL + Shear + Sersic":
     st.title("Caustics Gravitational Lensing Simulator")
@@ -96,9 +94,7 @@ if user_menu == "EPL + Shear + Sersic":
 
     # Sliders for lens parameters in the first column
     with col1:
-        st.header(
-            r"$\textsf{\tiny Lens Parameters}$", divider="blue"
-        )
+        st.header(r"$\textsf{\tiny Lens Parameters}$", divider="blue")
         z_lens = st.slider("Lens redshift", min_value=0.0, max_value=10.0, step=0.01)
         x0 = st.slider("EPL X position", -2.0, 2.0, 0.0)
         y0 = st.slider("EPL Y position", -2.0, 2.0, 0.25)
@@ -124,9 +120,7 @@ if user_menu == "EPL + Shear + Sersic":
         )
 
     with col2:
-        st.header(
-            r"$\textsf{\tiny Source Parameters}$", divider="blue"
-        )
+        st.header(r"$\textsf{\tiny Source Parameters}$", divider="blue")
         z_source = st.slider(
             "Source redshift", min_value=z_lens, max_value=10.0, step=0.01
         )
@@ -173,15 +167,11 @@ if user_menu == "EPL + Shear + Sersic":
     minisim = caustics.Lens_Source(
         lens=lens, source=src, pixelscale=deltam, pixels_x=650
     )
-    y1s, y2s = caustic_trace(
-        delta_m=deltam, x=x[1:14], z_background=z_source
-    )
+    y1s, y2s = caustic_trace(delta_m=deltam, x=x[1:14], z_background=z_source)
 
     # Plot the caustic trace and lensed image in the second column
     with col3:
-        st.header(
-            r"$\textsf{\tiny Visualization}$", divider="blue"
-        )
+        st.header(r"$\textsf{\tiny Visualization}$", divider="blue")
 
         # Plot the unlensed image
         fig2, ax2 = plt.subplots(figsize=(7, 7))
@@ -190,9 +180,7 @@ if user_menu == "EPL + Shear + Sersic":
         ax2.plot(y1s, y2s, "-r")
         ax2.set_xticks(
             ticks=np.linspace(0, 650, 5).astype(int),
-            labels=np.round(
-                np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3
-            ),
+            labels=np.round(np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3),
             fontsize=15,
         )
         ax2.set_xlabel("Arcseconds from center", fontsize=15)
@@ -200,9 +188,7 @@ if user_menu == "EPL + Shear + Sersic":
         ax2.yaxis.tick_right()
         ax2.set_yticks(
             ticks=np.linspace(0, 650, 5).astype(int)[1:],
-            labels=np.round(
-                np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3
-            )[1:],
+            labels=np.round(np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3)[1:],
             fontsize=15,
             rotation=90,
         )
@@ -215,9 +201,7 @@ if user_menu == "EPL + Shear + Sersic":
         ax1.imshow(minisim(x, lens_source=True), origin="lower")
         ax1.set_xticks(
             ticks=np.linspace(0, 650, 5).astype(int),
-            labels=np.round(
-                np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3
-            ),
+            labels=np.round(np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3),
             fontsize=15,
         )
         ax1.set_xlabel("Arcseconds from center", fontsize=15)
@@ -225,9 +209,7 @@ if user_menu == "EPL + Shear + Sersic":
         ax1.yaxis.tick_right()
         ax1.set_yticks(
             ticks=np.linspace(0, 650, 5).astype(int)[1:],
-            labels=np.round(
-                np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3
-            )[1:],
+            labels=np.round(np.linspace(-650 * deltam / 2, 650 * deltam / 2, 5), 3)[1:],
             fontsize=15,
             rotation=90,
         )
