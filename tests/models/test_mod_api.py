@@ -177,7 +177,3 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
     assert newsim.get_graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
-
-    # Cleanup
-    if os.path.exists(state_path):
-        os.unlink(state_path)
