@@ -27,34 +27,25 @@ def caustic_critical_line(
 
     # Generate caustic
     CS = plt.contour(thx, thy, detA, levels=[0.0], colors="b")
-    paths = CS.collections[0].get_paths()
+    paths = CS.allsegs[0]
+    x1s = []
+    x2s = []
     y1s = []
     y2s = []
     for path in paths:
         # Collect the path into a discrete set of points
-        vertices = path.interpolated(5).vertices
-        x1 = torch.tensor(list(float(vs[0]) for vs in vertices), device=device)
-        x2 = torch.tensor(list(float(vs[1]) for vs in vertices), device=device)
+        x1 = torch.tensor(list(float(vs[0]) for vs in path), device=device)
+        x2 = torch.tensor(list(float(vs[1]) for vs in path), device=device)
         # raytrace the points to the source plane
         y1, y2 = lens.raytrace(x1, x2, z_s, params=lens.pack(x))
-        y1s += y1.cpu() / res + simulation_size / 2
-        y2s += y2.cpu() / res + simulation_size / 2
+        y1s.append((y1.cpu() / res + simulation_size / 2).numpy())
+        y2s.append((y2.cpu() / res + simulation_size / 2).numpy())
+        x1s.append((x1.cpu() / res + simulation_size / 2).numpy())
+        x2s.append((x2.cpu() / res + simulation_size / 2).numpy())
 
     plt.close()
 
-    d_x = res * simulation_size / (thx.cpu().max() - thx.cpu().min())
-    d_y = res * simulation_size / (thy.cpu().max() - thy.cpu().min())
-    xcoords = (
-        thx.cpu() * simulation_size / (thx.cpu().max() - thx.cpu().min())
-        + simulation_size / 2
-        - d_x
-    )
-    ycoords = (
-        thy.cpu() * simulation_size / (thy.cpu().max() - thy.cpu().min())
-        + simulation_size / 2
-        - d_y
-    )
-    return xcoords, ycoords, detA, np.array(y1s), np.array(y2s)
+    return x1s, x2s, y1s, y2s
 
 
 st.set_page_config(layout="wide")
@@ -161,7 +152,7 @@ if user_menu == "EPL + Shear + Sersic":
     minisim = caustics.Lens_Source(
         lens=lens, source=src, pixelscale=deltam, pixels_x=simulation_size
     )
-    thx, thy, detA, y1s, y2s = caustic_critical_line(
+    x1s, x2s, y1s, y2s = caustic_critical_line(
         lens=lens, x=x[1:14], z_s=z_source, res=deltam, simulation_size=simulation_size
     )
 
@@ -173,7 +164,8 @@ if user_menu == "EPL + Shear + Sersic":
         fig2, ax2 = plt.subplots(figsize=(7, 7))
         ax2.set_title("Unlensed source and caustic", fontsize=15)
         ax2.imshow(minisim(x, lens_source=False), origin="lower", cmap="inferno")
-        ax2.plot(y1s, y2s, "-w")
+        for c in range(len(y1s)):
+            ax2.plot(y1s[c], y2s[c], "-w")
         ax2.set_xticks(
             ticks=np.linspace(0, simulation_size, 5).astype(int),
             labels=np.round(
@@ -203,7 +195,8 @@ if user_menu == "EPL + Shear + Sersic":
 
         fig1, ax1 = plt.subplots(figsize=(7, 7))
         ax1.set_title("Lens and critical curve", fontsize=15)
-        ax1.contour(thx, thy, detA, levels=[0.0], colors="w")
+        for c in range(len(x1s)):
+            ax1.plot(x1s[c], x2s[c], "-w")
         ax1.imshow(minisim(x, lens_source=True), origin="lower", cmap="inferno")
         ax1.set_xticks(
             ticks=np.linspace(0, simulation_size, 5).astype(int),
