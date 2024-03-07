@@ -19,14 +19,24 @@ class ExternalShear(ThinLens):
     ----------
     name: str
         Identifier for the lens instance.
+
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
+
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
+        *Unit: unitless*
+
     x0, y0: Optional[Union[Tensor, float]]
         Coordinates of the shear center in the lens plane.
+
+        *Unit: arcsec*
+
     gamma_1, gamma_2: Optional[Union[Tensor, float]]
         Shear components.
+
+        *Unit: unitless*
 
     Notes
     ------
@@ -96,17 +106,34 @@ class ExternalShear(ThinLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container.
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            The reduced deflection angles in the x and y directions.
+        x_component: Tensor
+            Deflection Angle in x-direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in y-direction.
+
+            *Unit: arcsec*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         # Meneghetti eq 3.83
@@ -141,10 +168,19 @@ class ExternalShear(ThinLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container.
 
@@ -152,6 +188,9 @@ class ExternalShear(ThinLens):
         -------
         Tensor
             The lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         x, y = translate_rotate(x, y, x0, y0)
@@ -179,12 +218,28 @@ class ExternalShear(ThinLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container.
+
+        Returns
+        -------
+        Tensor
+            Convergence for an external shear.
+
+            *Unit: unitless*
 
         Raises
         ------
