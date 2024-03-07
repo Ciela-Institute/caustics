@@ -1,4 +1,6 @@
 from tempfile import NamedTemporaryFile
+import sys
+import os
 
 import pytest
 import torch
@@ -100,13 +102,16 @@ def test_complex_build_simulator():
             10.0,
         ]
     )
-    with NamedTemporaryFile("w", delete=True) as f:
+    delete_file = False if sys.platform.startswith("win") else True
+    with NamedTemporaryFile("w", delete=delete_file) as f:  # Don't delete for windows
         f.write(yaml_str)
         f.flush()
         sim = caustics.build_simulator(f.name)
         image = sim(x, quad_level=3)
         assert isinstance(image, torch.Tensor)
         f.close()
+        if not delete_file:
+            os.unlink(f.name)
 
 
 def test_build_simulator_w_state():
