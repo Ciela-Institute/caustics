@@ -12,9 +12,9 @@ def caustic_trace(delta_m, x, z_background = 3.042, simulation_size = 650, H0=67
     
     cosmology = FlatLambdaCDM(name = "cosmo")
     cosmology.to(dtype=torch.float32)
-    epl = EPL(name = "epl", cosmology = cosmology, z_l = 0.2999)
-    shear = ExternalShear(name = "shear", cosmology = cosmology, z_l = 0.2999)
-    lens = SinglePlane(lenses = [epl, shear], cosmology = cosmology, z_l = 0.2999)
+    epl = EPL(name = "epl", cosmology = cosmology)
+    shear = ExternalShear(name = "shear", cosmology = cosmology)
+    lens = SinglePlane(lenses = [epl, shear], cosmology = cosmology)
     fov = delta_m*simulation_size
     res = fov/simulation_size #Simulation pixel size
     thx, thy = get_meshgrid(res/upsample_factor, upsample_factor*simulation_size, upsample_factor*simulation_size, dtype=torch.float32, device = device)
@@ -43,46 +43,68 @@ def caustic_trace(delta_m, x, z_background = 3.042, simulation_size = 650, H0=67
     plt.close()
     return np.array(y1s),np.array(y2s)
 
+st.set_page_config(layout="wide")
+css='''
+<style>
+    section.main > div {max-width:75rem}
+</style>
+'''
+st.markdown(css, unsafe_allow_html=True)
+logo_url = "https://github.com/Ciela-Institute/caustics/raw/main/media/caustics_logo_white.png?raw=true"
+st.sidebar.image(logo_url)
+docs_url = "https://caustics.readthedocs.io/"
+st.sidebar.write("Check out the [documentation](%s)!" % docs_url)
+user_menu = st.sidebar.radio("Select an Option", ("EPL + Shear + Sersic","Other lenses to follow"))
 
+if user_menu == "EPL + Shear + Sersic":
+    st.title("Caustics Gravitational Lensing Simulator")
+    st.header("EPL + Shear Lens and Sersic Source")
 
+    # Create a two-column layout
+    col1, col2, col3 = st.columns([4, 4, 5])
 
-st.title("Gravitational Lensing Simulator")
+    # Sliders for lens parameters in the first column
+    with col1:
+        st.header(r"$\textsf{\tiny Lens Parameters}$", divider = "blue")
+        z_lens = st.slider("Lens redshift", min_value = 0., max_value = 10., step = 0.01)
+        x0 = st.slider("EPL X position", -2.0, 2.0, 0.0)
+        y0 = st.slider("EPL Y position", -2.0, 2.0, 0.25)
+        q = st.slider("EPL axis ratio", 0.1, 1.0, 0.82)
+        phi = st.slider("EPL rotation angle on sky", 0.0, 2*np.pi, 8*(np.pi/180) + np.pi/2)
+        theta_E = st.slider("EPL Einstein radius", 0.0, 2.0, 1.606)
+        t = st.slider("EPL power law slope ($\gamma - 1$)", 0.0, 2.0, 1.0)
+        shearx = st.slider("Shear x position", -1.0, 1.0, 0.01)
+        sheary = st.slider("Shear y position", -1.0, 1.0, 0.0)
+        gamma1 = st.slider("Shear first component", -1.0, 1.0, 0.036*np.cos(2*3*(np.pi/180)))
+        gamma2 = st.slider("Shear second component", -1.0, 1.0, 0.036*np.sin(2*3*(np.pi/180)))
 
-# Create a two-column layout
-col1, col2 = st.columns(2)
-
-# Sliders for lens parameters in the first column
-with col1:
-    x0 = st.slider("x0", -2.0, 2.0, 0.0)
-    y0 = st.slider("y0", -2.0, 2.0, 0.25)
-    q = st.slider("q", 0.1, 1.0, 0.82)
-    phi = st.slider("phi", 0.0, 2*np.pi, 8*(np.pi/180) + np.pi/2)
-    theta_E = st.slider("theta_E", 0.0, 2.0, 1.606)
-    gamma = st.slider("gamma", 0.0, 2.0, 1.0)
-    gamma1 = st.slider("gamma1", -1.0, 1.0, 0.036*np.cos(2*3*(np.pi/180)))
-    gamma2 = st.slider("gamma2", -1.0, 1.0, 0.036*np.sin(2*3*(np.pi/180)))
-    shear1 = st.slider("shear1", -1.0, 1.0, 0.01)
-    shear2 = st.slider("shear2", -1.0, 1.0, 0.0)
-    src_x0 = st.slider("src_x0", -2.0, 2.0, 0.0)
-    src_y0 = st.slider("src_y0", -2.0, 2.0, -0.2+0.25)
-    src_q = st.slider("src_q", 0.1, 1.0, 0.5)
-    src_phi = st.slider("src_phi", 0.0, 2*np.pi, 0.0)
-    src_n = st.slider("src_n", 0.1, 10.0, 0.8)
-    src_Re = st.slider("src_Re", 0.0, 2.0, 1.25)
-    src_Ie = st.slider("src_Ie", 0.0, 2.0, 0.3)
+    with col2:
+        st.header(r"$\textsf{\tiny Source Parameters}$", divider = "blue")
+        z_source = st.slider("Source redshift", min_value = z_lens, max_value = 10., step = 0.01)
+        src_x0 = st.slider("Sersic x position", -2.0, 2.0, 0.0)
+        src_y0 = st.slider("Sersic y position", -2.0, 2.0, -0.2+0.25)
+        src_q = st.slider("Sersic axis ratio", 0.1, 1.0, 0.5)
+        src_phi = st.slider("Sersic rotation angle on sky", 0.0, 2*np.pi, 0.0)
+        src_n = st.slider("Sersic Sersic index", 0.1, 10.0, 0.8)
+        src_Re = st.slider("Sersic scale length", 0.0, 2.0, 1.25)
+        src_Ie = st.slider("Sersic intensity", 0.0, 2.0, 0.3)
 
     x = torch.tensor(
         [
+            z_source, # Source z
+            z_lens, # Lens z
+            z_lens, # Lens z for EPL
             x0,  #x0
             y0,  #y0
             q, #Minor/major axs
             phi, #Angle
             theta_E, #Einstein radius
-            gamma, #Gamma -1 
+            t, #Gamma -1 
+            z_lens, # Lens z for Shear
+            shearx, # Shear x
+            sheary, #Shear y
             gamma1, #Gamma_1
             gamma2,    #Gamma_2
-            shear1, # Shear x
-            shear2, #Shear y
             src_x0,  # src x0
             src_y0,  # src y0
             src_q,  # src q
@@ -95,23 +117,42 @@ with col1:
 
     deltam = 1e-2
     cosmology = FlatLambdaCDM(name="cosmo")
-    epl = EPL(name="epl", cosmology=cosmology, z_l=0.2999)
-    shear = ExternalShear(name="shear", cosmology=cosmology, z_l=0.2999)
-    lens = SinglePlane(lenses=[epl, shear], cosmology=cosmology, z_l=0.2999)
+    epl = EPL(name="epl", cosmology=cosmology)
+    shear = ExternalShear(name="shear", cosmology=cosmology)
+    lens = SinglePlane(lenses=[epl, shear], cosmology=cosmology)
     src = sersic.Sersic(name="src")
-    minisim = caustics.Lens_Source(lens=lens, source=src, pixelscale=deltam, pixels_x=650, z_s=3.042)
+    minisim = caustics.Lens_Source(lens=lens, source=src, pixelscale=deltam, pixels_x=650)
+    y1s, y2s = caustic_trace(delta_m=deltam, x=x[1:14], z_background=z_source)
 
-# Plot the caustic trace and lensed image in the second column
-with col2:
-    y1s, y2s = caustic_trace(delta_m=deltam, x=x[:10], z_background=3.042, simulation_size=650, H0=67, Om0=0.32, Tcmb0=2.725, upsample_factor=1, device="cpu")
-    fig1, ax1 = plt.subplots(figsize=(7, 7))
-    ax1.plot(y1s, y2s)
-    ax1.imshow(np.rot90(minisim(x, lens_source=True)), origin="lower")
-    st.pyplot(fig1)
+    # Plot the caustic trace and lensed image in the second column
+    with col3:
+        st.header(r"$\textsf{\tiny Visualization}$", divider = "blue")
 
-    # Plot the lensed image
-    fig2, ax2 = plt.subplots(figsize=(7, 7))
-    ax2.imshow(np.rot90(minisim(x, lens_source=False)), origin="lower")
-    st.pyplot(fig2)
+        # Plot the unlensed image
+        fig2, ax2 = plt.subplots(figsize=(7, 7))
+        ax2.set_title("Unlensed source and caustic", fontsize = 15)
+        ax2.imshow(minisim(x, lens_source=False), origin="lower")
+        ax2.plot(y1s, y2s, "-r")
+        ax2.set_xticks(ticks = np.linspace(0, 650, 5).astype(int), labels = np.round(np.linspace(-650*deltam/2, 650*deltam/2, 5), 3), fontsize = 15)
+        ax2.set_xlabel("Arcseconds from center", fontsize = 15)
+        ax2.yaxis.set_label_position("right")
+        ax2.yaxis.tick_right()
+        ax2.set_yticks(ticks = np.linspace(0, 650, 5).astype(int)[1:], labels = np.round(np.linspace(-650*deltam/2, 650*deltam/2, 5), 3)[1:], fontsize = 15, rotation=90)
+        ax2.set_ylabel("Arcseconds from center", fontsize = 15)
+        st.pyplot(fig2)
 
 
+        fig1, ax1 = plt.subplots(figsize=(7, 7))
+        ax1.set_title("Lens and caustic", fontsize = 15)
+        ax1.plot(y1s, y2s, "-r")
+        ax1.imshow(minisim(x, lens_source=True), origin="lower")
+        ax1.set_xticks(ticks = np.linspace(0, 650, 5).astype(int), labels = np.round(np.linspace(-650*deltam/2, 650*deltam/2, 5), 3), fontsize = 15)
+        ax1.set_xlabel("Arcseconds from center", fontsize = 15)
+        ax1.yaxis.set_label_position("right")
+        ax1.yaxis.tick_right()
+        ax1.set_yticks(ticks = np.linspace(0, 650, 5).astype(int)[1:], labels = np.round(np.linspace(-650*deltam/2, 650*deltam/2, 5), 3)[1:], fontsize = 15, rotation=90)
+        ax1.set_ylabel("Arcseconds from center", fontsize = 15)
+        st.pyplot(fig1)
+        
+if user_menu == "Page 2":
+    pass
