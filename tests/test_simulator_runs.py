@@ -9,7 +9,7 @@ from caustics.light import Sersic
 from caustics.utils import gaussian
 
 
-def test_simulator_runs():
+def test_simulator_runs(device):
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
     lensmass = SIE(
@@ -41,6 +41,7 @@ def test_simulator_runs():
         psf=psf,
         z_s=2.0,
     )
+    sim.to(device=device)
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(

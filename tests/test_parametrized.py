@@ -1,3 +1,6 @@
+import itertools as it
+from collections import OrderedDict
+
 import torch
 import pytest
 import numpy as np
@@ -10,8 +13,8 @@ from caustics.cosmology import FlatLambdaCDM
 from utils import setup_simulator
 
 
-def test_params():
-    # Test common simulator structure
+@pytest.fixture
+def Sim():
     class Sim(Simulator):
         def __init__(self):
             super().__init__()
@@ -20,6 +23,25 @@ def test_params():
             self.sersic = Sersic()
             self.add_param("z_s", 1.0)
 
+    return Sim
+
+
+class TestParametrized:
+    def test_x_keys(self, Sim):
+        sim = Sim()
+        assert isinstance(sim.x_keys, OrderedDict)
+        assert list(sim.x_keys.keys()) == list(sim._childs.keys())
+
+    def test_x_order(self, Sim):
+        sim = Sim()
+        merged_keys = [
+            [".".join([key, v]) for v in values] for key, values in sim.x_keys.items()
+        ]
+        return sim.x_order == list(it.chain.from_iterable(merged_keys))
+
+
+def test_params(Sim):
+    # Test common simulator structure
     sim = Sim()
     assert len(sim.module_params) == 2  # dynamic and static
     assert len(sim.module_params.dynamic) == 0  # simulator has no dynamic params

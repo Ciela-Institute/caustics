@@ -10,7 +10,7 @@ from caustics.lenses import SIE
 from caustics.utils import get_meshgrid
 
 
-def test():
+def test(device):
     atol = 1e-5
     rtol = 1e-5
 
@@ -34,7 +34,7 @@ def test():
         }
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
 
 
 def test_sie_time_delay():
@@ -84,4 +84,4 @@ def test_sie_time_delay():
 
 
 if __name__ == "__main__":
-    test()
+    test(None)

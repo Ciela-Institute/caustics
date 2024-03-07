@@ -86,6 +86,8 @@ class FlatLambdaCDM(Cosmology):
             self._comoving_distance_helper_x_grid.to(device, dtype)
         )
 
+        return self
+
     def hubble_distance(self, h0):
         """
         Calculate the Hubble distance.

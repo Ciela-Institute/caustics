@@ -130,6 +130,17 @@ class Lens_Source(Simulator):
         if self.psf is not None:
             self.psf_fft = self._fft2_padded(self.psf)
 
+    def to(
+        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+    ):
+        super().to(device, dtype)
+        if self.psf is not None:
+            self.psf = self.psf.to(device, dtype)
+            self.psf_fft = self.psf_fft.to(device, dtype)
+        self.grid = tuple(x.to(device, dtype) for x in self.grid)
+
+        return self
+
     def _fft2_padded(self, x):
         """
         Compute the 2D Fast Fourier Transform (FFT) of a tensor with zero-padding.
