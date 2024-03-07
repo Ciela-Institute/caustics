@@ -20,10 +20,13 @@ class SinglePlane(ThinLens):
     ----------
     name: str
         The name of the single plane lens.
+
     cosmology: Cosmology
         An instance of the Cosmology class.
+
     lenses: List[ThinLens]
         A list of ThinLens objects that are being combined into a single lensing plane.
+
     """
 
     def __init__(
@@ -60,17 +63,34 @@ class SinglePlane(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
-        Tuple[Tensor, Tensor]
-            The total deflection angle in the x and y directions.
+        x_component: Tensor
+            The x-component of the deflection angle.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            The y-component of the deflection angle.
+
+            *Unit: arcsec*
+
         """
         ax = torch.zeros_like(x)
         ay = torch.zeros_like(x)
@@ -98,17 +118,29 @@ class SinglePlane(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The total projected mass density.
+
+            *Unit: unitless*
+
         """
         convergence = torch.zeros_like(x)
         for lens in self.lenses:
@@ -134,17 +166,29 @@ class SinglePlane(ThinLens):
         -----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The total lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         potential = torch.zeros_like(x)
         for lens in self.lenses:

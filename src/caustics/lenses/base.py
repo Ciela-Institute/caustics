@@ -30,6 +30,7 @@ class Lens(Parametrized):
         ----------
         name: string
             The name of the lens model.
+
         cosmology: Cosmology
             An instance of a Cosmology class that describes
             the cosmological parametersof the model.
@@ -88,17 +89,29 @@ class Lens(Parametrized):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
         Tensor
             Gravitational magnification at the given coordinates.
+
+            *Unit: unitless*
+
         """
         return get_magnification(partial(self.raytrace, params=params), x, y, z_s)
 
@@ -121,24 +134,47 @@ class Lens(Parametrized):
         Parameters
         ----------
         bx: Tensor
-            Tensor of x coordinate in the source plane (scalar).
+            Tensor of x coordinate in the source plane.
+
+            *Unit: arcsec*
+
         by: Tensor
-            Tensor of y coordinate in the source plane (scalar).
+            Tensor of y coordinate in the source plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
+
         epsilon: Tensor
             maximum distance between two images (arcsec) before they are considered the same image.
+
+            *Unit: arcsec*
+
         n_init: int
             number of random initialization points used to try and find image plane points.
+
         fov: float
             the field of view in which the initial random samples are taken.
 
+            *Unit: arcsec*
+
         Returns
         -------
-        tuple[Tensor, Tensor]
-            Ray-traced coordinates in the x and y directions.
+        x_component: Tensor
+            x-coordinate Tensor of the ray-traced light rays
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            y-coordinate Tensor of the ray-traced light rays
+
+            *Unit: arcsec*
         """
 
         bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Dout:2)
@@ -208,10 +244,17 @@ class ThickLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: unitless*
+
         z_s: Tensor
             Tensor of source redshifts.
+
         params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -252,11 +295,20 @@ class ThickLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
 
         """
@@ -281,18 +333,33 @@ class ThickLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            Tuple of Tensors representing the x and y components
-            of the deflection angle, respectively.
+        x_component: Tensor
+            Deflection Angle in x direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in y direction.
+
+            *Unit: arcsec*
 
         """
         raise NotImplementedError(
@@ -320,10 +387,19 @@ class ThickLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -331,8 +407,13 @@ class ThickLens(Lens):
         -------
         x: Tensor
             x coordinate Tensor of the ray-traced light rays
+
+            *Unit: arcsec*
+
         y: Tensor
             y coordinate Tensor of the ray-traced light rays
+
+            *Unit: arcsec*
 
         """
         ...
@@ -355,10 +436,19 @@ class ThickLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -366,7 +456,10 @@ class ThickLens(Lens):
         -------
         Tensor
             The projected mass density at the given coordinates
-            in units of solar masses per square Megaparsec.
+            in units of solar masses per square Mpc.
+
+            *Unit: Msun/Mpc^2*
+
         """
         ...
 
@@ -388,10 +481,19 @@ class ThickLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor ofsource redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -399,6 +501,9 @@ class ThickLens(Lens):
         -------
         Tensor
             The gravitational time delay at the given coordinates.
+
+            *Unit: seconds*
+
         """
         ...
 
@@ -597,10 +702,14 @@ class ThinLens(Lens):
     ----------
     name: string
         Name of the lens model.
+
     cosmology: Cosmology
         Cosmology object that encapsulates cosmological parameters and distances.
+
     z_l: (Optional[Tensor], optional)
         Redshift of the lens. Defaults to None.
+
+        *Unit: unitless*
 
     """
 
@@ -631,17 +740,34 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         --------
-        tuple[Tensor, Tensor]
-            Reduced deflection angle in x and y directions.
+        x_component: Tensor
+            Deflection Angle in the x-direction.
+
+            *Unit: radians*
+
+        y_component: Tensor
+            Deflection Angle in the y-direction.
+
+            *Unit: radians*
+
         """
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
@@ -671,17 +797,34 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            Physical deflection angle in x and y directions in arcseconds.
+        x_component: Tensor
+            Deflection Angle in x-direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in y-direction.
+
+            *Unit: arcsec*
+
         """
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
@@ -711,17 +854,29 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
         Tensor
-            Convergence at the given coordinates.
+            Dimensionless convergence, normalized by the critical surface density at the lens plane
+
+            *Unit: unitless*
+
         """
         ...
 
@@ -743,10 +898,19 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -754,6 +918,9 @@ class ThinLens(Lens):
         -------
         Tensor
             Gravitational lensing potential at the given coordinates in arcsec^2.
+
+            *Unit: arsec^2*
+
         """
         ...
 
@@ -775,10 +942,19 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -786,6 +962,9 @@ class ThinLens(Lens):
         -------
         Tensor
             Surface mass density at the given coordinates in solar masses per Mpc^2.
+
+            *Unit: Msun/Mpc^2*
+
         """
         critical_surface_density = self.cosmology.critical_surface_density(
             z_l, z_s, params
@@ -810,17 +989,34 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            Ray-traced coordinates in the x and y directions.
+        x_component: Tensor
+            Deflection Angle in x direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in y direction.
+
+            *Unit: arcsec*
+
         """
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params, **kwargs)
         return x - ax, y - ay
@@ -866,16 +1062,30 @@ class ThinLens(Lens):
         ----------
         x: Tensor
             Tensor of x coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             Tensor of y coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Tensor of source redshifts.
+
+            *Unit: unitless*
+
         z_l: Tensor
             Redshift of the lens.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container for the lens model. Defaults to None.
+
         shapiro_time_delay: bool
             Whether to include the Shapiro time delay component.
+
         geometric_time_delay: bool
             Whether to include the geometric time delay component.
 
@@ -883,6 +1093,8 @@ class ThinLens(Lens):
         -------
         Tensor
             Time delay at the given coordinates.
+
+            *Unit: seconds*
 
         References
         ----------
