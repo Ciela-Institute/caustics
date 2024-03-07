@@ -42,12 +42,24 @@ def sim_yaml():
     """
 
 
+def _write_temp_yaml(yaml_str: str):
+    # Create temp file
+    f = NamedTemporaryFile("w", delete=False)
+    f.write(yaml_str)
+    f.flush()
+    f.close()
+
+    return f
+
+
 @pytest.fixture
 def sim_yaml_file(sim_yaml):
-    with NamedTemporaryFile("w") as f:
-        f.write(sim_yaml)
-        f.flush()
-        yield f.name
+    temp_file = _write_temp_yaml(sim_yaml)
+
+    yield temp_file
+
+    if os.path.exists(temp_file.name):
+        os.unlink(temp_file.name)
 
 
 @pytest.fixture
@@ -102,19 +114,16 @@ def test_complex_build_simulator():
         ]
     )
     # Create temp file
-    f = NamedTemporaryFile("w", delete=False)
-    f.write(yaml_str)
-    f.flush()
-    f.close()
+    temp_file = _write_temp_yaml(yaml_str)
 
     # Open the temp file and build the simulator
-    sim = caustics.build_simulator(f.name)
+    sim = caustics.build_simulator(temp_file.name)
     image = sim(x, quad_level=3)
     assert isinstance(image, torch.Tensor)
 
     # Remove the temp file
-    if os.path.exists(f.name):
-        os.unlink(f.name)
+    if os.path.exists(temp_file.name):
+        os.unlink(temp_file.name)
 
 
 def test_build_simulator_w_state():
