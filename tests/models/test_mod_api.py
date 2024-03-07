@@ -1,5 +1,4 @@
 from tempfile import NamedTemporaryFile
-import sys
 import os
 
 import pytest
@@ -102,16 +101,20 @@ def test_complex_build_simulator():
             10.0,
         ]
     )
-    delete_file = False if sys.platform.startswith("win") else True
-    with NamedTemporaryFile("w", delete=delete_file) as f:  # Don't delete for windows
-        f.write(yaml_str)
-        f.flush()
-        sim = caustics.build_simulator(f.name)
-        image = sim(x, quad_level=3)
-        assert isinstance(image, torch.Tensor)
-        f.close()
-        if not delete_file:
-            os.unlink(f.name)
+    # Create temp file
+    f = NamedTemporaryFile("w", delete=False)
+    f.write(yaml_str)
+    f.flush()
+    f.close()
+
+    # Open the temp file and build the simulator
+    sim = caustics.build_simulator(f.name)
+    image = sim(x, quad_level=3)
+    assert isinstance(image, torch.Tensor)
+
+    # Remove the temp file
+    if os.path.exists(f.name):
+        os.unlink(f.name)
 
 
 def test_build_simulator_w_state():
