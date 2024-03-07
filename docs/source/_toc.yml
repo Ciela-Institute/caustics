@@ -20,3 +20,5 @@ chapters:
   - file: citation
   - file: license
   - file: modules
+  - file: glossary
+  - file: genindex
