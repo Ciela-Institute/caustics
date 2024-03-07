@@ -20,9 +20,9 @@ def build_simulator(config_path: Union[str, Path]) -> Simulator:
 
     # Load the yaml config
     yaml_bytes = from_file(config_path)
-    config_json = yaml.safe_load(yaml_bytes)
+    config_dict = yaml.safe_load(yaml_bytes)
     # Create config model
-    config = Config(**config_json)
+    config = Config(**config_dict)
 
     # Get the simulator
     sim = config.simulator.model_obj()
