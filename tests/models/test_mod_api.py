@@ -6,11 +6,23 @@ import torch
 
 import caustics
 from utils.models import setup_complex_multiplane_yaml
+import textwrap
+
+
+@pytest.fixture
+def x_input():
+    return torch.tensor([
+    #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re
+        1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
+    #   Ie    x0   y0   q    phi  n   Re   Ie
+        5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
+    ])  # fmt: skip
 
 
 @pytest.fixture
 def sim_yaml():
-    return """\
+    return textwrap.dedent(
+        """\
     cosmology: &cosmo
         name: cosmo
         kind: FlatLambdaCDM
@@ -40,6 +52,7 @@ def sim_yaml():
             pixelscale: 0.05
             pixels_x: 100
     """
+    )
 
 
 def _write_temp_yaml(yaml_str: str):
@@ -73,18 +86,11 @@ def sim_obj():
     )
 
 
-def test_build_simulator(sim_yaml_file, sim_obj):
-    # TODO: Add test for using state_dict
+def test_build_simulator(sim_yaml_file, sim_obj, x_input):
     sim = caustics.build_simulator(sim_yaml_file)
-    x = torch.tensor([
-    #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re
-        1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
-    #   Ie    x0   y0   q    phi  n   Re   Ie
-        5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
-    ])  # fmt: skip
 
-    result = sim(x, quad_level=3)
-    expected_result = sim_obj(x, quad_level=3)
+    result = sim(x_input, quad_level=3)
+    expected_result = sim_obj(x_input, quad_level=3)
     assert sim.get_graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
@@ -126,6 +132,52 @@ def test_complex_build_simulator():
         os.unlink(temp_file)
 
 
-def test_build_simulator_w_state():
-    # TODO: Add test for using state_dict
-    pass
+def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
+    sim = caustics.build_simulator(sim_yaml_file)
+    params = dict(zip(sim.x_order, x_input))
+
+    # Set the parameters from x input
+    # using set attribute to the module objects
+    # this makes the the params to be static
+    for k, v in params.items():
+        n, p = k.split(".")
+        if n == sim.name:
+            setattr(sim, p, v)
+            continue
+        key = sim._module_key_map[n]
+        mod = getattr(sim, key)
+        setattr(mod, p, v)
+
+    state_dict = sim.state_dict()
+
+    # Save the state
+    state_path = None
+    with NamedTemporaryFile("wb", suffix=".st", delete=False) as f:
+        state_path = f.name
+        state_dict.save(state_path)
+
+    # Add the path to state to the sim yaml
+    with open(sim_yaml_file, "a") as f:
+        f.write(
+            textwrap.dedent(
+                f"""
+        state:
+            load:
+                path: {state_path}
+        """
+            )
+        )
+
+    # Load the state
+    # First remove the original sim
+    del sim
+    newsim = caustics.build_simulator(sim_yaml_file)
+    result = newsim(quad_level=3)
+    expected_result = sim_obj(x_input, quad_level=3)
+    assert newsim.get_graph(True, True)
+    assert isinstance(result, torch.Tensor)
+    assert torch.allclose(result, expected_result)
+
+    # Cleanup
+    if os.path.exists(state_path):
+        os.unlink(state_path)
