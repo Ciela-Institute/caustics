@@ -1,4 +1,5 @@
 import torch
+import yaml
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
@@ -6,13 +7,29 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PseudoJaffe
 
 
-def test(device):
+def test(sim_source, device, lens_models):
     atol = 1e-5
     rtol = 1e-5
 
-    # Models
-    cosmology = FlatLambdaCDM(name="cosmo")
-    lens = PseudoJaffe(name="pj", cosmology=cosmology)
+    if sim_source == "yaml":
+        yaml_str = """\
+        cosmology: &cosmology
+            name: cosmo
+            kind: FlatLambdaCDM
+        lens:
+            name: pj
+            kind: PseudoJaffe
+            init_kwargs:
+                cosmology: *cosmology
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = lens_models.get("PseudoJaffe")
+        lens = mod(**yaml_dict["lens"]).model_obj()
+        cosmology = lens.cosmology
+    else:
+        # Models
+        cosmology = FlatLambdaCDM(name="cosmo")
+        lens = PseudoJaffe(name="pj", cosmology=cosmology)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

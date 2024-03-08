@@ -1,10 +1,10 @@
-from typing import Optional, Union
+# mypy: disable-error-code="dict-item"
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -53,14 +53,28 @@ class ExternalShear(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        gamma_1: Optional[Union[Tensor, float]] = None,
-        gamma_2: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "x-coordinate of the shear center in the lens plane",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "y-coordinate of the shear center in the lens plane",
+            True,
+        ] = None,
+        gamma_1: Annotated[
+            Optional[Union[Tensor, float]], "Shear component in the x-direction", True
+        ] = None,
+        gamma_2: Annotated[
+            Optional[Union[Tensor, float]], "Shear component in the y-direction", True
+        ] = None,
+        s: Annotated[
+            float, "Softening length for the elliptical power-law profile"
+        ] = 0.0,
+        name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
