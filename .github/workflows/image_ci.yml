@@ -102,8 +102,12 @@ jobs:
           context: .
           file: ./resources/docker/Dockerfile
           platforms: linux/amd64
-          load: ${{ !contains(fromJSON('["refs/heads/main", "refs/heads/dev"]'), env.GITHUB_REF) }}
-          push: ${{ contains(fromJSON('["refs/heads/main", "refs/heads/dev"]'), env.GITHUB_REF) }}
+          load:
+            ${{ !contains(fromJSON('["refs/heads/main", "refs/heads/dev"]'),
+            env.GITHUB_REF) }}
+          push:
+            ${{ contains(fromJSON('["refs/heads/main", "refs/heads/dev"]'),
+            env.GITHUB_REF) }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
