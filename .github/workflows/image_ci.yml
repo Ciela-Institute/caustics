@@ -12,6 +12,7 @@ on:
       - "resources/docker/*.lock"
       - "resources/docker/*.yaml"
       - "resources/docker/*.sh"
+      - ".github/workflows/image_ci.yml"
   pull_request:
     branches:
       - "dev-**"
