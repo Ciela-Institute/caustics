@@ -2,15 +2,18 @@ from copy import copy
 
 from scipy.fft import next_fast_len
 from torch.nn.functional import avg_pool2d, conv2d
-from typing import Optional
+from typing import Optional, Annotated, Literal, Union
 import torch
+from torch import Tensor
 
-from .simulator import Simulator
+from .simulator import Simulator, NameType
 from ..utils import (
     get_meshgrid,
     gaussian_quadrature_grid,
     gaussian_quadrature_integrator,
 )
+from ..lenses.base import Lens
+from ..light.base import Source
 
 
 __all__ = ("Lens_Source",)
@@ -42,17 +45,17 @@ class Lens_Source(Simulator):
 
     Attributes
     ----------
-    lens
+    lens: Lens
         caustics lens mass model object
-    source
+    source: Source
         caustics light object which defines the background source
     pixelscale: float
         pixelscale of the sampling grid.
     pixels_x: int
         number of pixels on the x-axis for the sampling grid
-    lens_light: (optional)
+    lens_light: Source, optional
         caustics light object which defines the lensing object's light
-    psf: (optional)
+    psf: Tensor, optional
         An image to convolve with the scene. Note that if ``upsample_factor > 1`` the psf must also be at the higher resolution.
     pixels_y: Optional[int]
         number of pixels on the y-axis for the sampling grid. If left as ``None`` then this will simply be equal to ``gridx``
@@ -76,18 +79,31 @@ class Lens_Source(Simulator):
 
     def __init__(
         self,
-        lens,
-        source,
-        pixelscale: float,
-        pixels_x: int,
-        lens_light=None,
-        psf=None,
-        pixels_y: Optional[int] = None,
-        upsample_factor: int = 1,
-        psf_pad=True,
-        psf_mode="fft",
-        z_s=None,
-        name: str = "sim",
+        lens: Annotated[Lens, "caustics lens mass model object"],
+        source: Annotated[
+            Source, "caustics light object which defines the background source"
+        ],
+        pixelscale: Annotated[float, "pixelscale of the sampling grid"],
+        pixels_x: Annotated[
+            int, "number of pixels on the x-axis for the sampling grid"
+        ],
+        lens_light: Annotated[
+            Optional[Source],
+            "caustics light object which defines the lensing object's light",
+        ] = None,
+        psf: Annotated[Optional[Tensor], "An image to convolve with the scene"] = None,
+        pixels_y: Annotated[
+            Optional[int], "number of pixels on the y-axis for the sampling grid"
+        ] = None,
+        upsample_factor: Annotated[int, "Amount of upsampling to model the image"] = 1,
+        psf_pad: Annotated[bool, "Flag to apply padding to psf"] = True,
+        psf_mode: Annotated[
+            Literal["fft", "conv2d"], "Mode for convolving psf"
+        ] = "fft",
+        z_s: Annotated[
+            Optional[Union[Tensor, float]], "Redshift of the source", True
+        ] = None,
+        name: NameType = "sim",
     ):
         super().__init__(name)
 
@@ -129,6 +145,17 @@ class Lens_Source(Simulator):
 
         if self.psf is not None:
             self.psf_fft = self._fft2_padded(self.psf)
+
+    def to(
+        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+    ):
+        super().to(device, dtype)
+        if self.psf is not None:
+            self.psf = self.psf.to(device, dtype)
+            self.psf_fft = self.psf_fft.to(device, dtype)
+        self.grid = tuple(x.to(device, dtype) for x in self.grid)
+
+        return self
 
     def _fft2_padded(self, x):
         """

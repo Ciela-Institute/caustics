@@ -43,10 +43,12 @@ Issues = "https://github.com/Ciela-Institute/caustics/issues"
 
 [project.optional-dependencies]
 dev = [
+    "numba>=0.58.1,<0.59.0",
     "lenstronomy==1.11.1",
     "pytest>=8.0,<9",
     "pytest-cov>=4.1,<5",
-    "pre-commit>=3.6,<4"
+    "pytest-mock>=3.12,<4",
+    "pre-commit>=3.6,<4",
 ]
 
 [tool.hatch.metadata.hooks.requirements_txt]

@@ -1,11 +1,10 @@
-# mypy: disable-error-code="operator"
-from typing import Optional, Union
+# mypy: disable-error-code="operator,dict-item"
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -21,17 +20,33 @@ class SIS(ThinLens):
     ----------
     name: str
         The name of the SIS lens.
+
     cosmology: Cosmology
         An instance of the Cosmology class.
+
     z_l: Optional[Union[Tensor, float]]
         The lens redshift.
+
+        *Unit: unitless*
+
     x0: Optional[Union[Tensor, float]]
         The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
     y0: Optional[Union[Tensor, float]]
         The y-coordinate of the lens center.
-        th_ein (Optional[Union[Tensor, float]]): The Einstein radius of the lens.
+
+    th_ein: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens.
+
+        *Unit: arcsec*
+
     s: float
         A smoothing factor, default is 0.0.
+
+        *Unit: arcsec*
+
     """
 
     _null_params = {
@@ -42,13 +57,19 @@ class SIS(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        th_ein: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+        ] = None,
+        th_ein: Annotated[
+            Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
+        ] = None,
+        s: Annotated[float, "A smoothing factor"] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the SIS lens model.
@@ -81,17 +102,34 @@ class SIS(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container.
 
         Returns
         -------
-        Tuple[Tensor, Tensor]
-            The deflection angle in the x and y directions.
+        x_component: Tensor
+            Deflection Angle
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle
+
+            *Unit: arcsec*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         R = (x**2 + y**2).sqrt() + self.s
@@ -120,10 +158,19 @@ class SIS(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container.
 
@@ -131,6 +178,9 @@ class SIS(ThinLens):
         -------
         Tensor
             The lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s
@@ -157,10 +207,19 @@ class SIS(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             Dynamic parameter container.
 
@@ -168,6 +227,9 @@ class SIS(ThinLens):
         -------
         Tensor
             The projected mass density.
+
+            *Unit: unitless*
+
         """
         x, y = translate_rotate(x, y, x0, y0)
         th = (x**2 + y**2).sqrt() + self.s

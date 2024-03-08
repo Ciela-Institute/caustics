@@ -1,4 +1,5 @@
 from math import pi
+import yaml
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -10,13 +11,28 @@ from caustics.lenses import SIE
 from caustics.utils import get_meshgrid
 
 
-def test():
+def test(sim_source, device, lens_models):
     atol = 1e-5
     rtol = 1e-5
 
-    # Models
-    cosmology = FlatLambdaCDM(name="cosmo")
-    lens = SIE(name="sie", cosmology=cosmology)
+    if sim_source == "yaml":
+        yaml_str = """\
+        cosmology: &cosmology
+            name: cosmo
+            kind: FlatLambdaCDM
+        lens: &lens
+            name: sie
+            kind: SIE
+            init_kwargs:
+                cosmology: *cosmology
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = lens_models.get("SIE")
+        lens = mod(**yaml_dict["lens"]).model_obj()
+    else:
+        # Models
+        cosmology = FlatLambdaCDM(name="cosmo")
+        lens = SIE(name="sie", cosmology=cosmology)
     lens_model_list = ["SIE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
@@ -34,7 +50,7 @@ def test():
         }
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol)
+    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
 
 
 def test_sie_time_delay():
@@ -84,4 +100,4 @@ def test_sie_time_delay():
 
 
 if __name__ == "__main__":
-    test()
+    test(None)

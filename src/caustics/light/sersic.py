@@ -1,10 +1,10 @@
 # mypy: disable-error-code="operator,union-attr"
-from typing import Optional, Union
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
 from ..utils import to_elliptical, translate_rotate
-from .base import Source
+from .base import Source, NameType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -25,36 +25,91 @@ class Sersic(Source):
     -----------
     x0: Optional[Tensor]
         The x-coordinate of the Sersic source's center.
+
+        *Unit: arcsec*
+
     y0: Optional[Tensor]
         The y-coordinate of the Sersic source's center.
+
+        *Unit: arcsec*
+
     q: Optional[Tensor]
         The axis ratio of the Sersic source.
+
+        *Unit: unitless*
+
     phi: Optional[Tensor]
         The orientation of the Sersic source (position angle).
+
+        *Unit: radians*
+
     n: Optional[Tensor]
         The Sersic index, which describes the degree of concentration of the source.
+
+        *Unit: unitless*
+
     Re: Optional[Tensor]
         The scale length of the Sersic source.
+
+        *Unit: arcsec*
+
     Ie: Optional[Tensor]
         The intensity at the effective radius.
+
+        *Unit: flux*
+
     s: float
         A small constant for numerical stability.
+
+        *Unit: arcsec*
+
     lenstronomy_k_mode: bool
         A flag indicating whether to use lenstronomy to compute the value of k.
+
+
     """
 
     def __init__(
         self,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        q: Optional[Union[Tensor, float]] = None,
-        phi: Optional[Union[Tensor, float]] = None,
-        n: Optional[Union[Tensor, float]] = None,
-        Re: Optional[Union[Tensor, float]] = None,
-        Ie: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        use_lenstronomy_k=False,
-        name: Optional[str] = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The x-coordinate of the Sersic source's center",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The y-coordinate of the Sersic source's center",
+            True,
+        ] = None,
+        q: Annotated[
+            Optional[Union[Tensor, float]], "The axis ratio of the Sersic source", True
+        ] = None,
+        phi: Annotated[
+            Optional[Union[Tensor, float]],
+            "The orientation of the Sersic source (position angle)",
+            True,
+        ] = None,
+        n: Annotated[
+            Optional[Union[Tensor, float]],
+            "The Sersic index, which describes the degree of concentration of the source",
+            True,
+        ] = None,
+        Re: Annotated[
+            Optional[Union[Tensor, float]],
+            "The scale length of the Sersic source",
+            True,
+        ] = None,
+        Ie: Annotated[
+            Optional[Union[Tensor, float]],
+            "The intensity at the effective radius",
+            True,
+        ] = None,
+        s: Annotated[float, "A small constant for numerical stability"] = 0.0,
+        use_lenstronomy_k: Annotated[
+            bool,
+            "A flag indicating whether to use lenstronomy to compute the value of k.",
+        ] = False,
+        name: NameType = None,
     ):
         """
         Constructs the `Sersic` object with the given parameters.
@@ -63,24 +118,51 @@ class Sersic(Source):
         ----------
         name: str
             The name of the source.
+
         x0: Optional[Tensor]
             The x-coordinate of the Sersic source's center.
+
+            *Unit: arcsec*
+
         y0: Optional[Tensor]
             The y-coordinate of the Sersic source's center.
+
+            *Unit: arcsec*
+
         q: Optional[Tensor])
             The axis ratio of the Sersic source.
+
+            *Unit: unitless*
+
         phi: Optional[Tensor]
             The orientation of the Sersic source.
+
+            *Unit: radians*
+
         n: Optional[Tensor]
             The Sersic index, which describes the degree of concentration of the source.
+
+            *Unit: unitless*
+
         Re: Optional[Tensor]
             The scale length of the Sersic source.
+
+            *Unit: flux*
+
         Ie: Optional[Tensor]
             The intensity at the effective radius.
+
+            *Unit: flux*
+
         s: float
             A small constant for numerical stability.
+
+            *Unit: arcsec*
+
         use_lenstronomy_k: bool
             A flag indicating whether to use lenstronomy to compute the value of k.
+
+
         """
         super().__init__(name=name)
         self.add_param("x0", x0)
@@ -119,9 +201,15 @@ class Sersic(Source):
         x: Tensor
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
+
+            *Unit: arcsec*
+
         params: Packed, optional
             Dynamic parameter container.
 
@@ -130,6 +218,8 @@ class Sersic(Source):
         Tensor
             The brightness of the source at the given point(s).
             The output tensor has the same shape as `x` and `y`.
+
+            *Unit: flux*
 
         Notes
         -----

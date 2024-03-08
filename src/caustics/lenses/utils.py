@@ -22,15 +22,25 @@ def get_pix_jacobian(
         A function that maps the lensing plane coordinates to the source plane coordinates.
     x: Tensor
         The x-coordinate on the lensing plane.
+
+        *Unit: arcsec*
+
     y: Tensor
         The y-coordinate on the lensing plane.
+
+        *Unit: arcsec*
+
     z_s: Tensor
         The redshift of the source.
+
+        *Unit: unitless*
 
     Returns
     --------
     The Jacobian matrix of the image position with respect
     to the source position at the given point.
+
+        *Unit: unitless*
 
     """
     jac = torch.func.jacfwd(raytrace, (0, 1))(x, y, z_s)  # type: ignore
@@ -47,17 +57,29 @@ def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
     ----------
     raytrace: function
         A function that maps the lensing plane coordinates to the source plane coordinates.
+
     x: Tensor
         The x-coordinate on the lensing plane.
+
+        *Unit: arcsec*
+
     y: Tensor
         The y-coordinate on the lensing plane.
+
+        *Unit: arcsec*
+
     z_s: Tensor
         The redshift of the source.
+
+        *Unit: unitless*
 
     Returns
     -------
     Tensor
         The magnification at the given point on the lensing plane.
+
+        *Unit: unitless*
+
     """
     jac = get_pix_jacobian(raytrace, x, y, z_s)
     return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()  # fmt: skip
@@ -73,16 +95,28 @@ def get_magnification(raytrace, x, y, z_s) -> Tensor:
     ----------
     raytrace: function
         A function that maps the lensing plane coordinates to the source plane coordinates.
+
     x: Tensor
         The x-coordinates on the lensing plane.
+
+        *Unit: arcsec*
+
     y: Tensor
         The y-coordinates on the lensing plane.
+
+        *Unit: arcsec*
+
     z_s: Tensor
         The redshift of the source.
+
+        *Unit: unitless*
 
     Returns
     --------
     Tensor
         A tensor representing the magnification at each point on the grid.
+
+        *Unit: unitless*
+
     """
     return vmap_n(get_pix_magnification, 2, (None, 0, 0, None))(raytrace, x, y, z_s)
