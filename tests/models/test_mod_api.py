@@ -1,12 +1,24 @@
 from tempfile import NamedTemporaryFile
 import os
+import yaml
 
 import pytest
 import torch
+from pydantic import create_model
 
 import caustics
+from caustics.models.utils import setup_simulator_models
+from caustics.models.base_models import StateConfig, Field
 from utils.models import setup_complex_multiplane_yaml
 import textwrap
+
+
+@pytest.fixture
+def ConfigModel():
+    simulators = setup_simulator_models()
+    return create_model(
+        "Config", __base__=StateConfig, simulator=(simulators, Field(...))
+    )
 
 
 @pytest.fixture
@@ -73,6 +85,11 @@ def sim_yaml_file(sim_yaml):
 
     if os.path.exists(temp_file):
         os.unlink(temp_file)
+
+
+@pytest.fixture
+def simple_config_dict(sim_yaml):
+    return yaml.safe_load(sim_yaml)
 
 
 @pytest.fixture
@@ -177,3 +194,35 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
     assert newsim.get_graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
+
+
+@pytest.mark.parametrize(
+    "psf",
+    [
+        {
+            "func": "caustics.utils.gaussian",
+            "kwargs": {
+                "pixelscale": 0.05,
+                "nx": 11,
+                "ny": 12,
+                "sigma": 0.2,
+                "upsample": 2,
+            },
+        },
+        {"function": "caustics.utils.gaussian", "sigma": 0.2},
+        [[2.0], [2.0]],
+    ],
+)
+@pytest.mark.parametrize("pixels_y", ["50", 50.3])  # will get casted to int
+def test_init_kwargs_validate(ConfigModel, simple_config_dict, psf, pixels_y):
+    # Add psf
+    test_config_dict = {**simple_config_dict}
+    test_config_dict["simulator"]["init_kwargs"]["psf"] = psf
+    test_config_dict["simulator"]["init_kwargs"]["pixels_y"] = pixels_y
+    if isinstance(psf, dict) and "func" not in psf:
+        with pytest.raises(ValueError):
+            ConfigModel(**test_config_dict)
+    else:
+        # Test that the init_kwargs are validated
+        config = ConfigModel(**test_config_dict)
+        assert config.simulator.model_obj()

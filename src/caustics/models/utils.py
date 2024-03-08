@@ -149,7 +149,7 @@ def create_pydantic_model(
                 )
                 if not isinstance(v, expected_type):
                     if isinstance(v, dict):
-                        if all(k for k in ["func", "kwargs"]):
+                        if all(k in ["func", "kwargs"] for k in v.keys()):
                             # Special case for the init_kwargs
                             # this is to allow for creating tensor with some
                             # caustics utils function, such as
