@@ -109,6 +109,7 @@ with col2:
         source_img = torch.tensor(img).permute(2, 0, 1).float()
         x_source = torch.tensor([])
         src_pixelscale = fov / (max(source_shape))
+        fov_scale = st.slider("FOV scale", min_value=0.1, max_value=2.0, value=1.0)
     else:
         x_source = []
         for param, label, bounds in source_slider_configs[source_menu]:
@@ -131,7 +132,7 @@ if source_menu == "Pixelated":
         name_map[source_menu](
             name="src",
             image=img,
-            pixelscale=src_pixelscale,
+            pixelscale=src_pixelscale * fov_scale,
             shape=source_shape,
             **default_params[source_menu],
         )
