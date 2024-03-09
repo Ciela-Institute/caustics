@@ -76,10 +76,10 @@ source_slider_configs = {
         ["n", "Sersic Index", [0.1, 10.0, 0.8]],
         ["Re", "Sersic Scale Length", [0.0, 2.0, 1.25]],
     ],
-    # "Pixelated": [
-    #     ["x0", "Pix X Position", [-2.0, 2.0, 0.0]],
-    #     ["y0", "Pix Y Position", [-2.0, 2.0, -0.2 + 0.25]],
-    # ],
+    "Pixelated": [
+        ["x0", "Pix X Position", [-2.0, 2.0, 0.0]],
+        ["y0", "Pix Y Position", [-2.0, 2.0, -0.2 + 0.25]],
+    ],
 }
 
 name_map = {
@@ -94,7 +94,7 @@ name_map = {
     "SIE": caustics.SIE,
     "TNFW": caustics.TNFW,
     "Sersic": caustics.Sersic,
-    # "Pixelated": caustics.Pixelated,
+    "Pixelated": caustics.Pixelated,
 }
 
 default_params = {
@@ -109,5 +109,5 @@ default_params = {
     "SIE": {},
     "TNFW": {},
     "Sersic": {"Ie": 10.0},
-    # "Pixelated": {},
+    "Pixelated": {"x0": 0.0, "y0": 0.0},
 }

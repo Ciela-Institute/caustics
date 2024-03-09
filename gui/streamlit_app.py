@@ -100,12 +100,24 @@ with col1:
 with col2:
     st.header(r"$\textsf{\tiny Source Parameters}$", divider="blue")
     # z_source = st.slider("Source redshift", min_value=z_lens, max_value=10.0, step=0.01)
-    x_source = []
-    for param, label, bounds in source_slider_configs[source_menu]:
-        x_source.append(
-            st.slider(label, min_value=bounds[0], max_value=bounds[1], value=bounds[2])
+    if source_menu == "Pixelated":
+        source_file = st.file_uploader(
+            "Upload a source image", type=["png", "jpg"], accept_multiple_files=False
         )
-    x_source = torch.tensor(x_source)
+        img = plt.imread(source_file)
+        source_shape = img.shape[:-1][::-1]
+        source_img = torch.tensor(img).permute(2, 0, 1).float()
+        x_source = torch.tensor([])
+        src_pixelscale = fov / (max(source_shape))
+    else:
+        x_source = []
+        for param, label, bounds in source_slider_configs[source_menu]:
+            x_source.append(
+                st.slider(
+                    label, min_value=bounds[0], max_value=bounds[1], value=bounds[2]
+                )
+            )
+        x_source = torch.tensor(x_source)
 x_all = torch.cat((x_lens, x_source))
 z_lens = 1.0
 z_source = 2.0
@@ -114,13 +126,35 @@ lenses = []
 for lens in lens_menu:
     lenses.append(name_map[lens](cosmology, **default_params[lens], z_l=z_lens))
 lens = SinglePlane(lenses=lenses, cosmology=cosmology, z_l=z_lens)
-src = name_map[source_menu](name="src", **default_params[source_menu])
-minisim = caustics.Lens_Source(
-    lens=lens, source=src, pixelscale=deltam, pixels_x=simulation_size, z_s=z_source
-)
-x1s, x2s, y1s, y2s = caustic_critical_line(
-    lens=lens, x=x_lens, z_s=z_source, res=deltam, simulation_size=simulation_size
-)
+if source_menu == "Pixelated":
+    src = list(
+        name_map[source_menu](
+            name="src",
+            image=img,
+            pixelscale=src_pixelscale,
+            shape=source_shape,
+            **default_params[source_menu],
+        )
+        for img in source_img
+    )
+    minisim = list(
+        caustics.Lens_Source(
+            lens=lens,
+            source=subsrc,
+            pixelscale=deltam,
+            pixels_x=simulation_size,
+            z_s=z_source,
+        )
+        for subsrc in src
+    )
+else:
+    src = name_map[source_menu](name="src", **default_params[source_menu])
+    minisim = caustics.Lens_Source(
+        lens=lens, source=src, pixelscale=deltam, pixels_x=simulation_size, z_s=z_source
+    )
+    x1s, x2s, y1s, y2s = caustic_critical_line(
+        lens=lens, x=x_lens, z_s=z_source, res=deltam, simulation_size=simulation_size
+    )
 
 # Plot the caustic trace and lensed image in the second column
 with col3:
@@ -129,9 +163,20 @@ with col3:
     # Plot the unlensed image
     fig2, ax2 = plt.subplots(figsize=(7, 7))
     ax2.set_title("Unlensed source and caustic", fontsize=15)
-    ax2.imshow(minisim(x_all, lens_source=False), origin="lower", cmap="inferno")
-    for c in range(len(y1s)):
-        ax2.plot(y1s[c], y2s[c], "-w")
+    if source_menu == "Pixelated":
+        ax2.imshow(
+            np.stack(
+                list(
+                    subsim(x_all, lens_source=False).detach().numpy()
+                    for subsim in minisim
+                ),
+                axis=2,
+            ),
+        )
+    else:
+        ax2.imshow(minisim(x_all, lens_source=False), origin="lower", cmap="inferno")
+        for c in range(len(y1s)):
+            ax2.plot(y1s[c], y2s[c], "-w")
     ax2.set_xticks(
         ticks=np.linspace(0, simulation_size, 5).astype(int),
         labels=np.round(
@@ -157,9 +202,20 @@ with col3:
 
     fig1, ax1 = plt.subplots(figsize=(7, 7))
     ax1.set_title("Lens and critical curve", fontsize=15)
-    for c in range(len(x1s)):
-        ax1.plot(x1s[c], x2s[c], "-w")
-    ax1.imshow(minisim(x_all, lens_source=True), origin="lower", cmap="inferno")
+    if source_menu == "Pixelated":
+        ax1.imshow(
+            np.stack(
+                list(
+                    subsim(x_all, lens_source=True).detach().numpy()
+                    for subsim in minisim
+                ),
+                axis=2,
+            ),
+        )
+    else:
+        for c in range(len(x1s)):
+            ax1.plot(x1s[c], x2s[c], "-w")
+        ax1.imshow(minisim(x_all, lens_source=True), origin="lower", cmap="inferno")
     ax1.set_xticks(
         ticks=np.linspace(0, simulation_size, 5).astype(int),
         labels=np.round(
