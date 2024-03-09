@@ -4,9 +4,14 @@ import torch
 import numpy as np
 from caustics.utils import get_meshgrid
 from caustics.cosmology import FlatLambdaCDM
-from caustics.lenses import EPL, ExternalShear, SinglePlane
-from caustics.light import sersic
+from caustics.lenses import SinglePlane
 import caustics
+from app_configs import (
+    lens_slider_configs,
+    source_slider_configs,
+    name_map,
+    default_params,
+)
 
 
 def caustic_critical_line(
@@ -59,172 +64,121 @@ logo_url = "https://github.com/Ciela-Institute/caustics/raw/main/media/caustics_
 st.sidebar.image(logo_url)
 docs_url = "https://caustics.readthedocs.io/"
 st.sidebar.write("Check out the [documentation](%s)!" % docs_url)
-user_menu = st.sidebar.radio(
-    "Select an Option", ("EPL + Shear + Sersic", "Other lenses to follow")
+lens_menu = st.sidebar.multiselect(
+    "Select your Lens(es)", lens_slider_configs.keys(), default=["EPL", "Shear"]
+)
+source_menu = st.sidebar.radio(
+    "Select your Source (more to come)", source_slider_configs.keys()
 )
 st.sidebar.write(
     "Note: if you see an error about contour plots, just reload the webpage and it will go away."
 )
 
-if user_menu == "EPL + Shear + Sersic":
-    st.title("Caustics Gravitational Lensing Simulator")
-    st.header("EPL + Shear Lens and Sersic Source")
-    simulation_size = st.number_input("Simulation resolution", min_value=64, value=256)
-    fov = 6.5
-    deltam = fov / simulation_size
-    # Create a two-column layout
-    col1, col2, col3 = st.columns([4, 4, 5])
+st.title("Caustics Gravitational Lensing Simulator")
+st.header(f"{'+'.join(lens_menu)} and {source_menu} Source")
+simulation_size = st.number_input("Simulation resolution", min_value=64, value=256)
+fov = 6.5
+deltam = fov / simulation_size
+# Create a two-column layout
+col1, col2, col3 = st.columns([4, 4, 5])
 
-    # Sliders for lens parameters in the first column
-    with col1:
-        st.header(r"$\textsf{\tiny Lens Parameters}$", divider="blue")
-        # z_lens = st.slider("Lens redshift", min_value=0.0, max_value=10.0, step=0.01)
-        z_lens = 0
-        x0 = st.slider("EPL X position", -2.0, 2.0, 0.0)
-        y0 = st.slider("EPL Y position", -2.0, 2.0, 0.25)
-        q = st.slider("EPL axis ratio", 0.1, 1.0, 0.82)
-        phi = st.slider(
-            "EPL rotation angle on sky", 0.0, np.pi, 8 * (np.pi / 180) + np.pi / 2
-        )
-        theta_E = st.slider("EPL Einstein radius", 0.0, 2.0, 1.606)
-        t = st.slider("EPL power law slope ($\gamma - 1$)", 0.0, 2.0, 1.0)
-        # shearx = st.slider("Shear x position", -1.0, 1.0, 0.01)
-        shearx = 0
-        # sheary = st.slider("Shear y position", -1.0, 1.0, 0.0)
-        sheary = 0
-        gamma1 = st.slider(
-            "Shear first component",
-            -1.0,
-            1.0,
-            0.036 * np.cos(2 * 3 * (np.pi / 180)),
-        )
-        gamma2 = st.slider(
-            "Shear second component",
-            -1.0,
-            1.0,
-            0.036 * np.sin(2 * 3 * (np.pi / 180)),
-        )
+# Sliders for lens parameters in the first column
+with col1:
+    st.header(r"$\textsf{\tiny Lens Parameters}$", divider="blue")
+    # z_lens = st.slider("Lens redshift", min_value=0.0, max_value=10.0, step=0.01)
+    x_lens = []
+    for lens in lens_menu:
+        for param, label, bounds in lens_slider_configs[lens]:
+            x_lens.append(
+                st.slider(
+                    label, min_value=bounds[0], max_value=bounds[1], value=bounds[2]
+                )
+            )
 
-    with col2:
-        st.header(r"$\textsf{\tiny Source Parameters}$", divider="blue")
-        # z_source = st.slider("Source redshift", min_value=z_lens, max_value=10.0, step=0.01)
-        z_source = 1
-        src_x0 = st.slider("Sersic x position", -2.0, 2.0, 0.0)
-        src_y0 = st.slider("Sersic y position", -2.0, 2.0, -0.2 + 0.25)
-        src_q = st.slider("Sersic axis ratio", 0.1, 1.0, 0.5)
-        src_phi = st.slider("Sersic rotation angle on sky", 0.0, np.pi, 0.0)
-        src_n = st.slider("Sersic Sersic index", 0.1, 10.0, 0.8)
-        src_Re = st.slider("Sersic scale length", 0.0, 2.0, 1.25)
-        # src_Ie = st.slider("Sersic intensity", 0.0, 2.0, 0.3)
-        src_Ie = 10.0
+    x_lens = torch.tensor(x_lens)
 
-    x = torch.tensor(
-        [
-            z_source,  # Source z
-            z_lens,  # Lens z
-            z_lens,  # Lens z for EPL
-            x0,  # x0
-            y0,  # y0
-            q,  # Minor/major axs
-            phi,  # Angle
-            theta_E,  # Einstein radius
-            t,  # Gamma -1
-            z_lens,  # Lens z for Shear
-            shearx,  # Shear x
-            sheary,  # Shear y
-            gamma1,  # Gamma_1
-            gamma2,  # Gamma_2
-            src_x0,  # src x0
-            src_y0,  # src y0
-            src_q,  # src q
-            src_phi,  # src phi
-            src_n,  # src n
-            src_Re,  # src Re
-            src_Ie,  # src Ie
-        ]
+with col2:
+    st.header(r"$\textsf{\tiny Source Parameters}$", divider="blue")
+    # z_source = st.slider("Source redshift", min_value=z_lens, max_value=10.0, step=0.01)
+    x_source = []
+    for param, label, bounds in source_slider_configs[source_menu]:
+        x_source.append(
+            st.slider(label, min_value=bounds[0], max_value=bounds[1], value=bounds[2])
+        )
+    x_source = torch.tensor(x_source)
+x_all = torch.cat((x_lens, x_source))
+z_lens = 1.0
+z_source = 2.0
+cosmology = FlatLambdaCDM(name="cosmo")
+lenses = []
+for lens in lens_menu:
+    lenses.append(name_map[lens](cosmology, **default_params[lens], z_l=z_lens))
+lens = SinglePlane(lenses=lenses, cosmology=cosmology, z_l=z_lens)
+src = name_map[source_menu](name="src", **default_params[source_menu])
+minisim = caustics.Lens_Source(
+    lens=lens, source=src, pixelscale=deltam, pixels_x=simulation_size, z_s=z_source
+)
+x1s, x2s, y1s, y2s = caustic_critical_line(
+    lens=lens, x=x_lens, z_s=z_source, res=deltam, simulation_size=simulation_size
+)
+
+# Plot the caustic trace and lensed image in the second column
+with col3:
+    st.header(r"$\textsf{\tiny Visualization}$", divider="blue")
+
+    # Plot the unlensed image
+    fig2, ax2 = plt.subplots(figsize=(7, 7))
+    ax2.set_title("Unlensed source and caustic", fontsize=15)
+    ax2.imshow(minisim(x_all, lens_source=False), origin="lower", cmap="inferno")
+    for c in range(len(y1s)):
+        ax2.plot(y1s[c], y2s[c], "-w")
+    ax2.set_xticks(
+        ticks=np.linspace(0, simulation_size, 5).astype(int),
+        labels=np.round(
+            np.linspace(-simulation_size * deltam / 2, simulation_size * deltam / 2, 5),
+            3,
+        ),
+        fontsize=15,
     )
-
-    cosmology = FlatLambdaCDM(name="cosmo")
-    epl = EPL(name="epl", cosmology=cosmology)
-    shear = ExternalShear(name="shear", cosmology=cosmology)
-    lens = SinglePlane(lenses=[epl, shear], cosmology=cosmology)
-    src = sersic.Sersic(name="src")
-    minisim = caustics.Lens_Source(
-        lens=lens, source=src, pixelscale=deltam, pixels_x=simulation_size
+    ax2.set_xlabel("Arcseconds from center", fontsize=15)
+    ax2.yaxis.set_label_position("right")
+    ax2.yaxis.tick_right()
+    ax2.set_yticks(
+        ticks=np.linspace(0, simulation_size, 5).astype(int)[1:],
+        labels=np.round(
+            np.linspace(-simulation_size * deltam / 2, simulation_size * deltam / 2, 5),
+            3,
+        )[1:],
+        fontsize=15,
+        rotation=90,
     )
-    x1s, x2s, y1s, y2s = caustic_critical_line(
-        lens=lens, x=x[1:14], z_s=z_source, res=deltam, simulation_size=simulation_size
+    ax2.set_ylabel("Arcseconds from center", fontsize=15)
+    st.pyplot(fig2)
+
+    fig1, ax1 = plt.subplots(figsize=(7, 7))
+    ax1.set_title("Lens and critical curve", fontsize=15)
+    for c in range(len(x1s)):
+        ax1.plot(x1s[c], x2s[c], "-w")
+    ax1.imshow(minisim(x_all, lens_source=True), origin="lower", cmap="inferno")
+    ax1.set_xticks(
+        ticks=np.linspace(0, simulation_size, 5).astype(int),
+        labels=np.round(
+            np.linspace(-simulation_size * deltam / 2, simulation_size * deltam / 2, 5),
+            3,
+        ),
+        fontsize=15,
     )
-
-    # Plot the caustic trace and lensed image in the second column
-    with col3:
-        st.header(r"$\textsf{\tiny Visualization}$", divider="blue")
-
-        # Plot the unlensed image
-        fig2, ax2 = plt.subplots(figsize=(7, 7))
-        ax2.set_title("Unlensed source and caustic", fontsize=15)
-        ax2.imshow(minisim(x, lens_source=False), origin="lower", cmap="inferno")
-        for c in range(len(y1s)):
-            ax2.plot(y1s[c], y2s[c], "-w")
-        ax2.set_xticks(
-            ticks=np.linspace(0, simulation_size, 5).astype(int),
-            labels=np.round(
-                np.linspace(
-                    -simulation_size * deltam / 2, simulation_size * deltam / 2, 5
-                ),
-                3,
-            ),
-            fontsize=15,
-        )
-        ax2.set_xlabel("Arcseconds from center", fontsize=15)
-        ax2.yaxis.set_label_position("right")
-        ax2.yaxis.tick_right()
-        ax2.set_yticks(
-            ticks=np.linspace(0, simulation_size, 5).astype(int)[1:],
-            labels=np.round(
-                np.linspace(
-                    -simulation_size * deltam / 2, simulation_size * deltam / 2, 5
-                ),
-                3,
-            )[1:],
-            fontsize=15,
-            rotation=90,
-        )
-        ax2.set_ylabel("Arcseconds from center", fontsize=15)
-        st.pyplot(fig2)
-
-        fig1, ax1 = plt.subplots(figsize=(7, 7))
-        ax1.set_title("Lens and critical curve", fontsize=15)
-        for c in range(len(x1s)):
-            ax1.plot(x1s[c], x2s[c], "-w")
-        ax1.imshow(minisim(x, lens_source=True), origin="lower", cmap="inferno")
-        ax1.set_xticks(
-            ticks=np.linspace(0, simulation_size, 5).astype(int),
-            labels=np.round(
-                np.linspace(
-                    -simulation_size * deltam / 2, simulation_size * deltam / 2, 5
-                ),
-                3,
-            ),
-            fontsize=15,
-        )
-        ax1.set_xlabel("Arcseconds from center", fontsize=15)
-        ax1.yaxis.set_label_position("right")
-        ax1.yaxis.tick_right()
-        ax1.set_yticks(
-            ticks=np.linspace(0, simulation_size, 5).astype(int)[1:],
-            labels=np.round(
-                np.linspace(
-                    -simulation_size * deltam / 2, simulation_size * deltam / 2, 5
-                ),
-                3,
-            )[1:],
-            fontsize=15,
-            rotation=90,
-        )
-        ax1.set_ylabel("Arcseconds from center", fontsize=15)
-        st.pyplot(fig1)
-
-if user_menu == "Other lenses to follow":
-    st.title("Caustics Gravitational Lensing Simulator")
-    st.header("More lens configurations are on their way!")
+    ax1.set_xlabel("Arcseconds from center", fontsize=15)
+    ax1.yaxis.set_label_position("right")
+    ax1.yaxis.tick_right()
+    ax1.set_yticks(
+        ticks=np.linspace(0, simulation_size, 5).astype(int)[1:],
+        labels=np.round(
+            np.linspace(-simulation_size * deltam / 2, simulation_size * deltam / 2, 5),
+            3,
+        )[1:],
+        fontsize=15,
+        rotation=90,
+    )
+    ax1.set_ylabel("Arcseconds from center", fontsize=15)
+    st.pyplot(fig1)
