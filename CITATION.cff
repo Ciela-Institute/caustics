@@ -20,6 +20,6 @@ authors:
   given-names: "Don"
   orcid: "https://orcid.org/0000-0002-1624-2667"
 title: "caustics"
-doi: 10.xxxx/zenodo.xxx
-version: vx.x.0
-date-released: 2024-03-xx
+doi: 10.5281/zenodo.10806383
+version: v0.9.0
+date-released: 2024-03-11
