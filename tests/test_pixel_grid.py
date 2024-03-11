@@ -4,11 +4,11 @@ from lenstronomy.Data.pixel_grid import PixelGrid
 from caustics.utils import get_meshgrid
 
 
-def test_get_meshgrid():
+def test_get_meshgrid(device):
     res = 0.05
     nx = 200
     ny = 200
-    thx, thy = get_meshgrid(res, nx, ny)
+    thx, thy = get_meshgrid(res, nx, ny, device=device)
 
     res = 0.05  # size of pixel in angular coordinates #
     ra_at_xy_0, dec_at_xy_0 = (
@@ -27,5 +27,5 @@ def test_get_meshgrid():
     }
     pixel_grid = PixelGrid(**kwargs_pixel)
 
-    assert np.allclose(thx.numpy(), pixel_grid.coordinate_grid(nx, ny)[0])
-    assert np.allclose(thy.numpy(), pixel_grid.coordinate_grid(nx, ny)[1])
+    assert np.allclose(thx.cpu().numpy(), pixel_grid.coordinate_grid(nx, ny)[0])
+    assert np.allclose(thy.cpu().numpy(), pixel_grid.coordinate_grid(nx, ny)[1])

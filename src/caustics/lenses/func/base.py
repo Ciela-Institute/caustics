@@ -30,8 +30,8 @@ def forward_raytrace(bx, by, raytrace, epsilon, n_init, fov):
     bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Dout:2)
 
     # Random starting points in image plane
-    guesses = torch.as_tensor(fov) * (
-        torch.rand(n_init, 2) - 0.5
+    guesses = (torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5)).to(
+        device=bxy.device
     )  # Has shape (n_init, Din:2)
 
     # Optimize guesses in image plane

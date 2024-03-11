@@ -5,8 +5,7 @@ import torch
 from torch import Tensor
 
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s
-from ..cosmology import Cosmology
-from .base import ThickLens, ThinLens
+from .base import ThickLens, NameType, CosmologyType, LensesType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -19,7 +18,7 @@ class Multiplane(ThickLens):
 
     Attributes
     ----------
-    lenses (list[ThinLens])
+    lenses list of ThinLens
         List of thin lenses.
 
     Parameters
@@ -32,7 +31,9 @@ class Multiplane(ThickLens):
         List of thin lenses.
     """
 
-    def __init__(self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None):
+    def __init__(
+        self, cosmology: CosmologyType, lenses: LensesType, name: NameType = None
+    ):
         super().__init__(cosmology, name=name)
         self.lenses = lenses
         for lens in lenses:
@@ -54,6 +55,8 @@ class Multiplane(ThickLens):
         --------
         List[Tensor]
             Redshifts of the lenses.
+
+            *Unit: unitless*
         """
         # Relies on z_l being the first element to be unpacked, which should always
         # be the case for a ThinLens
@@ -118,9 +121,7 @@ class Multiplane(ThickLens):
                 )
                 TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
             if geometric_time_delay:
-                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (
-                    alpha_x**2 + alpha_y**2
-                )
+                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (alpha_x**2 + alpha_y**2)
 
             # Propagate rays to next plane (basically eq 18)
             X = X + D * theta_x * arcsec_to_rad
@@ -177,17 +178,33 @@ class Multiplane(ThickLens):
         ----------
         x: Tensor
             angular x-coordinates in the image plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             angular y-coordinates in the image plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
-        (Tensor, Tensor)
-            The reduced deflection angle.
+        x_component: Tensor
+            Reduced deflection angle in the x-direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Reduced deflection angle in the y-direction.
+
+            *Unit: arcsec*
 
         References
         ----------
@@ -235,17 +252,28 @@ class Multiplane(ThickLens):
         ----------
         x: Tensor
             x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the sources.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
-            Projected mass density [solMass / Mpc^2].
+            Projected mass density.
+
+            *Unit: Msun/Mpc^2*
 
         Raises
         -------
@@ -289,14 +317,25 @@ class Multiplane(ThickLens):
         ----------
         x: Tensor
             x-coordinates in the image plane.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinates in the image plane.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Redshifts of the source.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
+
         shapiro_time_delay: bool
             Whether to include the Shapiro time delay component.
+
         geometric_time_delay: bool
             Whether to include the geometric time delay component.
 
@@ -304,6 +343,8 @@ class Multiplane(ThickLens):
         -------
         Tensor
             Time delay caused by the lensing.
+
+            *Unit: seconds*
 
         References
         ----------

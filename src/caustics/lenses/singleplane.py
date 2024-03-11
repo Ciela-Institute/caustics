@@ -3,8 +3,7 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from ..cosmology import Cosmology
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, LensesType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -20,19 +19,26 @@ class SinglePlane(ThinLens):
     ----------
     name: str
         The name of the single plane lens.
+
     cosmology: Cosmology
         An instance of the Cosmology class.
+
     lenses: List[ThinLens]
         A list of ThinLens objects that are being combined into a single lensing plane.
+
     """
 
     def __init__(
-        self, cosmology: Cosmology, lenses: list[ThinLens], name: str = None, **kwargs
+        self,
+        cosmology: CosmologyType,
+        lenses: LensesType,
+        name: NameType = None,
+        z_l: ZLType = None,
     ):
         """
         Initialize the SinglePlane lens model.
         """
-        super().__init__(cosmology, name=name, **kwargs)
+        super().__init__(cosmology, z_l=z_l, name=name)
         self.lenses = lenses
         for lens in lenses:
             self.add_parametrized(lens)
@@ -56,17 +62,34 @@ class SinglePlane(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
-        Tuple[Tensor, Tensor]
-            The total deflection angle in the x and y directions.
+        x_component: Tensor
+            The x-component of the deflection angle.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            The y-component of the deflection angle.
+
+            *Unit: arcsec*
+
         """
         ax = torch.zeros_like(x)
         ay = torch.zeros_like(x)
@@ -94,17 +117,29 @@ class SinglePlane(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The total projected mass density.
+
+            *Unit: unitless*
+
         """
         convergence = torch.zeros_like(x)
         for lens in self.lenses:
@@ -130,17 +165,29 @@ class SinglePlane(ThinLens):
         -----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The total lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         potential = torch.zeros_like(x)
         for lens in self.lenses:

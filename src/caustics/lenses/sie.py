@@ -1,9 +1,9 @@
-from typing import Optional, Union
+# mypy: disable-error-code="operator,union-attr,dict-item"
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..cosmology import Cosmology
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 from . import func
@@ -20,22 +20,45 @@ class SIE(ThinLens):
     ----------
     name: str
         The name of the lens.
+
     cosmology: Cosmology
         An instance of the Cosmology class.
+
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
+        *Unit: unitless*
+
     x0: Optional[Union[Tensor, float]]
         The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
     y0: Optional[Union[Tensor, float]]
         The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
     q: Optional[Union[Tensor, float]]
         The axis ratio of the lens.
+
+        *Unit: unitless*
+
     phi: Optional[Union[Tensor, float]]
         The orientation angle of the lens (position angle).
+
+        *Unit: radians*
+
     b: Optional[Union[Tensor, float]]
         The Einstein radius of the lens.
+
+        *Unit: arcsec*
+
     s: float
         The core radius of the lens (defaults to 0.0).
+
+        *Unit: arcsec*
+
     """
 
     _null_params = {
@@ -48,15 +71,27 @@ class SIE(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        q: Optional[Union[Tensor, float]] = None,  # TODO change to true axis ratio
-        phi: Optional[Union[Tensor, float]] = None,
-        b: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: str = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+        ] = None,
+        q: Annotated[
+            Optional[Union[Tensor, float]], "The axis ratio of the lens", True
+        ] = None,  # TODO change to true axis ratio
+        phi: Annotated[
+            Optional[Union[Tensor, float]],
+            "The orientation angle of the lens (position angle)",
+            True,
+        ] = None,
+        b: Annotated[
+            Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
+        ] = None,
+        s: Annotated[float, "The core radius of the lens"] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the SIE lens model.
@@ -70,6 +105,37 @@ class SIE(ThinLens):
         self.add_param("b", b)
         self.s = s
 
+    def _get_potential(self, x, y, q):
+        """
+        Compute the radial coordinate in the lens plane.
+
+        Parameters
+        ----------
+        x: Tensor
+            The x-coordinate in the lens plane.
+
+            *Unit: arcsec*
+
+        y: Tensor
+            The y-coordinate in the lens plane.
+
+            *Unit: arcsec*
+
+        q: Tensor
+            The axis ratio of the lens.
+
+            *Unit: unitless*
+
+        Returns
+        --------
+        Tensor
+            The radial coordinate in the lens plane.
+
+            *Unit: arcsec*
+
+        """
+        return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
+
     @unpack
     def reduced_deflection_angle(
         self,
@@ -78,12 +144,12 @@ class SIE(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -93,17 +159,34 @@ class SIE(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         --------
-        Tuple[Tensor, Tensor]
-            The deflection angle in the x and y directions.
+        x_component: Tensor
+            The x-component of the deflection angle.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            The y-component of the deflection angle.
+
+            *Unit: arcsec*
+
         """
         return func.reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, self.s)
 
@@ -115,12 +198,12 @@ class SIE(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        x0: Tensor = None,
-        z_l: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
+        x0: Optional[Tensor] = None,
+        z_l: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -130,17 +213,29 @@ class SIE(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         return func.potential_sie(x0, y0, q, phi, b, x, y, self.s)
 
@@ -152,12 +247,12 @@ class SIE(ThinLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        z_l: Tensor = None,
-        x0: Tensor = None,
-        y0: Tensor = None,
-        q: Tensor = None,
-        phi: Tensor = None,
-        b: Tensor = None,
+        z_l: Optional[Tensor] = None,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        q: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        b: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -167,16 +262,28 @@ class SIE(ThinLens):
         ----------
         x: Tensor
             The x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
-            The projected mass.
+            The projected mass density.
+
+            *Unit: unitless*
+
         """
         return func.convergence_sie(x0, y0, q, phi, b, x, y, self.s)
