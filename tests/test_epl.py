@@ -1,4 +1,5 @@
 from math import pi
+import yaml
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -9,10 +10,25 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
 
 
-def test_lenstronomy(device):
-    # Models
-    cosmology = FlatLambdaCDM(name="cosmo")
-    lens = EPL(name="epl", cosmology=cosmology)
+def test_lenstronomy(sim_source, device, lens_models):
+    if sim_source == "yaml":
+        yaml_str = """\
+        cosmology: &cosmology
+            name: cosmo
+            kind: FlatLambdaCDM
+        lens: &lens
+            name: epl
+            kind: EPL
+            init_kwargs:
+                cosmology: *cosmology
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = lens_models.get("EPL")
+        lens = mod(**yaml_dict["lens"]).model_obj()
+    else:
+        # Models
+        cosmology = FlatLambdaCDM(name="cosmo")
+        lens = EPL(name="epl", cosmology=cosmology)
     lens = lens.to(device=device)
     # There is also an EPL_NUMBA class lenstronomy, but it shouldn't matter much
     lens_model_list = ["EPL"]

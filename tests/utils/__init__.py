@@ -14,7 +14,11 @@ from caustics.light import Sersic, Pixelated
 from caustics.utils import get_meshgrid
 from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
+from .models import mock_from_file
 
+__all__ = (
+    "mock_from_file",
+)
 
 def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None):
     n_pix = 20

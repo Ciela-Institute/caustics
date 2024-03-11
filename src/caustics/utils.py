@@ -1,6 +1,7 @@
 # mypy: disable-error-code="misc"
 from math import pi
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union, Any
+from importlib import import_module
 from functools import partial, lru_cache
 
 import torch
@@ -8,6 +9,58 @@ from torch import Tensor
 from torch.func import jacfwd
 import numpy as np
 from scipy.special import roots_legendre
+
+
+def _import_func_or_class(module_path: str) -> Any:
+    """
+    Import a function or class from a module path
+
+    Parameters
+    ----------
+    module_path : str
+        The module path to import from
+
+    Returns
+    -------
+    Callable
+        The imported function or class
+    """
+    module_name, name = module_path.rsplit(".", 1)
+    mod = import_module(module_name)
+    return getattr(mod, name)  # type: ignore
+
+
+def _eval_expression(input_string: str) -> Union[int, float]:
+    """
+    Evaluates a string expression to create an integer or float
+
+    Parameters
+    ----------
+    input_string : str
+        The string expression to evaluate
+
+    Returns
+    -------
+    Union[int, float]
+        The result of the evaluation
+
+    Raises
+    ------
+    NameError
+        If a disallowed constant is used
+    """
+    # Allowed modules to use string evaluation
+    allowed_names = {"pi": pi}
+    # Compile the input string
+    code = compile(input_string, "<string>", "eval")
+    # Check for disallowed names
+    for name in code.co_names:
+        if name not in allowed_names:
+            # Throw an error if a disallowed name is used
+            raise NameError(f"Use of {name} not allowed")
+    # Evaluate the input string without using builtins
+    # for security
+    return eval(code, {"__builtins__": {}}, allowed_names)
 
 
 def flip_axis_ratio(q, phi):

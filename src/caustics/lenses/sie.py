@@ -1,11 +1,10 @@
-# mypy: disable-error-code="operator,union-attr"
-from typing import Optional, Union
+# mypy: disable-error-code="operator,union-attr,dict-item"
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -72,15 +71,27 @@ class SIE(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        q: Optional[Union[Tensor, float]] = None,  # TODO change to true axis ratio
-        phi: Optional[Union[Tensor, float]] = None,
-        b: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+        ] = None,
+        q: Annotated[
+            Optional[Union[Tensor, float]], "The axis ratio of the lens", True
+        ] = None,  # TODO change to true axis ratio
+        phi: Annotated[
+            Optional[Union[Tensor, float]],
+            "The orientation angle of the lens (position angle)",
+            True,
+        ] = None,
+        b: Annotated[
+            Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
+        ] = None,
+        s: Annotated[float, "The core radius of the lens"] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the SIE lens model.

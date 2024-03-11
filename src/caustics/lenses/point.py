@@ -1,12 +1,11 @@
-# mypy: disable-error-code="operator"
-from typing import Optional, Union
+# mypy: disable-error-code="operator,dict-item"
+from typing import Optional, Union, Annotated
 
 import torch
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -60,13 +59,25 @@ class Point(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        th_ein: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "X coordinate of the center of the lens",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "Y coordinate of the center of the lens",
+            True,
+        ] = None,
+        th_ein: Annotated[
+            Optional[Union[Tensor, float]], "Einstein radius of the lens", True
+        ] = None,
+        s: Annotated[
+            float, "Softening parameter to prevent numerical instabilities"
+        ] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the Point class.

@@ -1,14 +1,13 @@
-# mypy: disable-error-code="operator,union-attr"
+# mypy: disable-error-code="operator,union-attr,dict-item"
 from math import pi
-from typing import Optional, Union
+from typing import Optional, Union, Literal, Annotated
 
 import torch
 from torch import Tensor
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -111,17 +110,46 @@ class TNFW(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        mass: Optional[Union[Tensor, float]] = None,
-        scale_radius: Optional[Union[Tensor, float]] = None,
-        tau: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        interpret_m_total_mass: bool = True,
-        use_case="batchable",
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "Center of lens position on x-axis",
+            True,
+            "arcsec",
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "Center of lens position on y-axis",
+            True,
+            "arcsec",
+        ] = None,
+        mass: Annotated[
+            Optional[Union[Tensor, float]], "Mass of the lens", True, "Msol"
+        ] = None,
+        scale_radius: Annotated[
+            Optional[Union[Tensor, float]],
+            "Scale radius of the TNFW lens",
+            True,
+            "arcsec",
+        ] = None,
+        tau: Annotated[
+            Optional[Union[Tensor, float]],
+            "Truncation scale. Ratio of truncation radius to scale radius",
+            True,
+            "rt/rs",
+        ] = None,
+        s: Annotated[
+            float,
+            "Softening parameter to avoid singularities at the center of the lens",
+        ] = 0.0,
+        interpret_m_total_mass: Annotated[
+            bool, "Indicates how to interpret the mass variable 'm'"
+        ] = True,
+        use_case: Annotated[
+            Literal["batchable", "differentiable"], "the NFW/TNFW profile"
+        ] = "batchable",
+        name: NameType = None,
     ):
         """
         Initialize an instance of the TNFW lens class.
