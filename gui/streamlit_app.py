@@ -135,7 +135,6 @@ if source_menu == "Pixelated":
             name="src",
             image=img,
             pixelscale=src_pixelscale * fov_scale,
-            shape=source_shape,
             **default_params[source_menu],
         )
         for img in source_img
@@ -177,7 +176,11 @@ with col3:
             ),
         )
     else:
-        ax2.imshow(minisim(x_all, lens_source=False), origin="lower", cmap="inferno")
+        ax2.imshow(
+            minisim(x_all, lens_source=False),
+            origin="lower",
+            cmap="inferno",
+        )
         for c in range(len(y1s)):
             ax2.plot(y1s[c], y2s[c], "-w")
     ax2.set_xticks(
@@ -218,7 +221,11 @@ with col3:
     else:
         for c in range(len(x1s)):
             ax1.plot(x1s[c], x2s[c], "-w")
-        ax1.imshow(minisim(x_all, lens_source=True), origin="lower", cmap="inferno")
+        ax1.imshow(
+            minisim(x_all, lens_source=True),
+            origin="lower",
+            cmap="inferno",
+        )
     ax1.set_xticks(
         ticks=np.linspace(0, simulation_size, 5).astype(int),
         labels=np.round(
