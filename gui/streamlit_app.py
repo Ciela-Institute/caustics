@@ -107,6 +107,8 @@ with col2:
         img = plt.imread(source_file)
         source_shape = img.shape[:-1][::-1]
         source_img = torch.tensor(img).permute(2, 0, 1).float()
+        if torch.any(source_img > 1).item():
+            source_img /= 255.0
         x_source = torch.tensor([])
         src_pixelscale = fov / (max(source_shape))
         fov_scale = st.slider("FOV scale", min_value=0.1, max_value=2.0, value=1.0)
