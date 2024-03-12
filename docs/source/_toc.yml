@@ -6,6 +6,7 @@ root: intro
 chapters:
   - file: getting_started
   - file: install
+  - file: websim
   - file: tutorials/index
     sections:
       - file: tutorials/BasicIntroduction
