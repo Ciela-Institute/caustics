@@ -9,5 +9,5 @@ Check out the "Pixelated" source to lens any image you want!
 
     <iframe
         src="https://ciela-institute-caustics-webapp-guistreamlit-app-yanhhm.streamlit.app/?embed=true"
-        style={{ width: "100%", border: "none" }}
+        style={{ width: "100%", height: "100%", border: "none" }}
     ></iframe>
