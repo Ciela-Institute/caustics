@@ -2,6 +2,8 @@
 from collections import OrderedDict
 from math import prod
 from typing import Optional, Union, List
+from dataclasses import dataclass
+
 import functools
 import itertools as it
 import inspect
@@ -18,6 +20,13 @@ from .namespace_dict import NamespaceDict, NestedNamespaceDict
 from .parameter import Parameter
 
 __all__ = ("Parametrized", "unpack")
+
+
+@dataclass
+class ClassParam:
+    description: str
+    isParam: bool = False
+    unit: Optional[str] = None
 
 
 def check_valid_name(name):

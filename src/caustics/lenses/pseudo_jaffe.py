@@ -1,14 +1,13 @@
-# mypy: disable-error-code="operator"
+# mypy: disable-error-code="operator,dict-item"
 from math import pi
-from typing import Optional, Union
+from typing import Optional, Union, Annotated
 
 import torch
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..constants import arcsec_to_rad, G_over_c2
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -74,15 +73,34 @@ class PseudoJaffe(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        mass: Optional[Union[Tensor, float]] = None,
-        core_radius: Optional[Union[Tensor, float]] = None,
-        scale_radius: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "X coordinate of the center of the lens",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "Y coordinate of the center of the lens",
+            True,
+        ] = None,
+        mass: Annotated[
+            Optional[Union[Tensor, float]], "Total mass of the lens", True, "Msol"
+        ] = None,
+        core_radius: Annotated[
+            Optional[Union[Tensor, float]], "Core radius of the lens", True, "arcsec"
+        ] = None,
+        scale_radius: Annotated[
+            Optional[Union[Tensor, float]],
+            "Scaling radius of the lens",
+            True,
+            "arcsec",
+        ] = None,
+        s: Annotated[
+            float, "Softening parameter to prevent numerical instabilities"
+        ] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the PseudoJaffe class.

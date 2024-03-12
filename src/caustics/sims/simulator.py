@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Annotated, Optional
 from torch import Tensor
 
 from ..parametrized import Parametrized
@@ -6,6 +6,8 @@ from .state_dict import StateDict
 from ..namespace_dict import NestedNamespaceDict
 
 __all__ = ("Simulator",)
+
+NameType = Annotated[Optional[str], "Name of the simulator"]
 
 
 class Simulator(Parametrized):

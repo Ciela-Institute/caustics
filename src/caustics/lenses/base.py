@@ -1,6 +1,6 @@
 # mypy: disable-error-code="call-overload"
 from abc import abstractmethod
-from typing import Optional, Union
+from typing import Optional, Union, Annotated, List
 from functools import partial
 import warnings
 
@@ -16,13 +16,21 @@ from ..packed import Packed
 
 __all__ = ("ThinLens", "ThickLens")
 
+CosmologyType = Annotated[
+    Cosmology,
+    "Cosmology object that encapsulates cosmological parameters and distances",
+]
+NameType = Annotated[Optional[str], "Name of the lens model"]
+ZLType = Annotated[Optional[Union[Tensor, float]], "The redshift of the lens", True]
+LensesType = Annotated[List["ThinLens"], "A list of ThinLens objects"]
+
 
 class Lens(Parametrized):
     """
     Base class for all lenses
     """
 
-    def __init__(self, cosmology: Cosmology, name: Optional[str] = None):
+    def __init__(self, cosmology: CosmologyType, name: NameType = None):
         """
         Initializes a new instance of the Lens class.
 
@@ -715,9 +723,9 @@ class ThinLens(Lens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        name: NameType = None,
     ):
         super().__init__(cosmology=cosmology, name=name)
         self.add_param("z_l", z_l)

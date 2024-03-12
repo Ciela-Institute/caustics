@@ -1,4 +1,5 @@
 import torch
+import yaml
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
@@ -6,13 +7,31 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Point
 
 
-def test(device):
+def test(sim_source, device, lens_models):
     atol = 1e-5
     rtol = 1e-5
+    z_l = torch.tensor(0.9)
 
-    # Models
-    cosmology = FlatLambdaCDM(name="cosmo")
-    lens = Point(name="point", cosmology=cosmology, z_l=torch.tensor(0.9))
+    if sim_source == "yaml":
+        yaml_str = f"""\
+        cosmology: &cosmology
+            name: cosmo
+            kind: FlatLambdaCDM
+        lens: &lens
+            name: point
+            kind: Point
+            params:
+                z_l: {float(z_l)}
+            init_kwargs:
+                cosmology: *cosmology
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = lens_models.get("Point")
+        lens = mod(**yaml_dict["lens"]).model_obj()
+    else:
+        # Models
+        cosmology = FlatLambdaCDM(name="cosmo")
+        lens = Point(name="point", cosmology=cosmology, z_l=z_l)
     lens_model_list = ["POINT_MASS"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 

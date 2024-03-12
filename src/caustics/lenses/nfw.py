@@ -1,14 +1,13 @@
-# mypy: disable-error-code="operator,union-attr"
+# mypy: disable-error-code="operator,union-attr,dict-item"
 from math import pi
-from typing import Optional, Union
+from typing import Optional, Union, Annotated, Literal
 
 import torch
 from torch import Tensor
 
 from ..constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
-from ..cosmology import Cosmology
 from ..utils import translate_rotate
-from .base import ThinLens
+from .base import ThinLens, NameType, CosmologyType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -100,15 +99,26 @@ class NFW(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        m: Optional[Union[Tensor, float]] = None,
-        c: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        use_case="batchable",
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "X coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "Y coordinate of the lens center", True
+        ] = None,
+        m: Annotated[Optional[Union[Tensor, float]], "Mass of the lens", True] = None,
+        c: Annotated[
+            Optional[Union[Tensor, float]], "Concentration parameter of the lens", True
+        ] = None,
+        s: Annotated[
+            float,
+            "Softening parameter to avoid singularities at the center of the lens",
+        ] = 0.0,
+        use_case: Annotated[
+            Literal["batchable", "differentiable"], "the NFW/TNFW profile"
+        ] = "batchable",
+        name: NameType = None,
     ):
         """
         Initialize an instance of the NFW lens class.

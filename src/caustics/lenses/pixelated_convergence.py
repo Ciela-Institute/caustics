@@ -1,6 +1,6 @@
-# mypy: disable-error-code="index"
+# mypy: disable-error-code="index,dict-item"
 from math import pi
-from typing import Optional
+from typing import Optional, Annotated, Union, Literal
 
 import torch
 import torch.nn.functional as F
@@ -8,9 +8,8 @@ from scipy.fft import next_fast_len
 from torch import Tensor
 import numpy as np
 
-from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -26,18 +25,41 @@ class PixelatedConvergence(ThinLens):
 
     def __init__(
         self,
-        pixelscale: float,
-        n_pix: int,
-        cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = torch.tensor(0.0),
-        y0: Optional[Tensor] = torch.tensor(0.0),
-        convergence_map: Optional[Tensor] = None,
-        shape: Optional[tuple[int, ...]] = None,
-        convolution_mode: str = "fft",
-        use_next_fast_len: bool = True,
-        padding: str = "zero",
-        name: Optional[str] = None,
+        pixelscale: Annotated[float, "pixelscale"],
+        n_pix: Annotated[int, "The number of pixels on each side of the grid"],
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The x-coordinate of the center of the grid",
+            True,
+        ] = torch.tensor(0.0),
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The y-coordinate of the center of the grid",
+            True,
+        ] = torch.tensor(0.0),
+        convergence_map: Annotated[
+            Optional[Tensor],
+            "A 2D tensor representing the convergence map",
+            True,
+        ] = None,
+        shape: Annotated[
+            Optional[tuple[int, ...]], "The shape of the convergence map"
+        ] = None,
+        convolution_mode: Annotated[
+            Literal["fft", "conv2d"],
+            "The convolution mode for calculating deflection angles and lensing potential",
+        ] = "fft",
+        use_next_fast_len: Annotated[
+            bool,
+            "If True, adds additional padding to speed up the FFT by calling `scipy.fft.next_fast_len`",
+        ] = True,
+        padding: Annotated[
+            Literal["zero", "circular", "reflect", "tile"],
+            "Specifies the type of padding",
+        ] = "zero",
+        name: NameType = None,
     ):
         """Strong lensing with user provided kappa map
 

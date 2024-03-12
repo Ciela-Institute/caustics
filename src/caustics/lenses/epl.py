@@ -1,12 +1,11 @@
-# mypy: disable-error-code="operator"
-from typing import Optional, Union
+# mypy: disable-error-code="operator,dict-item"
+from typing import Optional, Union, Annotated
 
 import torch
 from torch import Tensor
 
-from ..cosmology import Cosmology
 from ..utils import derotate, translate_rotate
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -92,17 +91,33 @@ class EPL(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        q: Optional[Union[Tensor, float]] = None,
-        phi: Optional[Union[Tensor, float]] = None,
-        b: Optional[Union[Tensor, float]] = None,
-        t: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        n_iter: int = 18,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "X coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "Y coordinate of the lens center", True
+        ] = None,
+        q: Annotated[
+            Optional[Union[Tensor, float]], "Axis ratio of the lens", True
+        ] = None,
+        phi: Annotated[
+            Optional[Union[Tensor, float]], "Position angle of the lens", True
+        ] = None,
+        b: Annotated[
+            Optional[Union[Tensor, float]], "Scale length of the lens", True
+        ] = None,
+        t: Annotated[
+            Optional[Union[Tensor, float]],
+            "Power law slope (`gamma-1`) of the lens",
+            True,
+        ] = None,
+        s: Annotated[
+            float, "Softening length for the elliptical power-law profile"
+        ] = 0.0,
+        n_iter: Annotated[int, "Number of iterations for the iterative solver"] = 18,
+        name: NameType = None,
     ):
         """
         Initialize an EPL lens model.
