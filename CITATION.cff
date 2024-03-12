@@ -30,6 +30,9 @@ authors:
 - family-names: "Legin"
   given-names: "Ronan"
 title: "caustics"
+# Update below with the appropriate
+# zenodo DOI, version, and release date
+# for each release
 doi: 10.5281/zenodo.10806383
 version: v0.9.0
 date-released: 2024-03-11
