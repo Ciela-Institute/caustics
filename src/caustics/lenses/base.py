@@ -748,12 +748,12 @@ class ThinLens(Lens):
         x_component: Tensor
             Deflection Angle in the x-direction.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         y_component: Tensor
             Deflection Angle in the y-direction.
 
-            *Unit: radians*
+            *Unit: arcsec*
 
         """
         d_s = self.cosmology.angular_diameter_distance(z_s, params)

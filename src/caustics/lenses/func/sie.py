@@ -2,6 +2,64 @@ from ...utils import translate_rotate, derotate
 
 
 def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
+    """
+    Calculate the physical deflection angle.
+
+    Parameters
+    ----------
+    x0: Optional[Union[Tensor, float]]
+        The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    y0: Optional[Union[Tensor, float]]
+        The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    q: Optional[Union[Tensor, float]]
+        The axis ratio of the lens.
+
+        *Unit: unitless*
+
+    phi: Optional[Union[Tensor, float]]
+        The orientation angle of the lens (position angle).
+
+        *Unit: radians*
+
+    b: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens.
+
+        *Unit: arcsec*
+
+    x: Tensor
+        The x-coordinate of the lens.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate of the lens.
+
+        *Unit: arcsec*
+
+    s: float
+        The core radius of the lens (defaults to 0.0).
+
+        *Unit: arcsec*
+
+    Returns
+    --------
+    x_component: Tensor
+        The x-component of the deflection angle.
+
+        *Unit: arcsec*
+
+    y_component: Tensor
+        The y-component of the deflection angle.
+
+        *Unit: arcsec*
+
+    """
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
     f = (1 - q**2).sqrt()
@@ -12,6 +70,59 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
 
 def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
+    """
+    Compute the lensing potential.
+
+    Parameters
+    ----------
+    x0: Optional[Union[Tensor, float]]
+        The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    y0: Optional[Union[Tensor, float]]
+        The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    q: Optional[Union[Tensor, float]]
+        The axis ratio of the lens.
+
+        *Unit: unitless*
+
+    phi: Optional[Union[Tensor, float]]
+        The orientation angle of the lens (position angle).
+
+        *Unit: radians*
+
+    b: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens.
+
+        *Unit: arcsec*
+
+    x: Tensor
+        The x-coordinate of the lens.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate of the lens.
+
+        *Unit: arcsec*
+
+    s: float
+        The core radius of the lens (defaults to 0.0).
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    Tensor
+        The lensing potential.
+
+        *Unit: arcsec^2*
+
+    """
     ax, ay = reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s)
     ax, ay = derotate(ax, ay, -phi)
     x, y = translate_rotate(x, y, x0, y0, phi)
@@ -19,6 +130,59 @@ def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
 
 def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
+    """
+    Calculate the projected mass density.
+
+    Parameters
+    ----------
+    x0: Optional[Union[Tensor, float]]
+        The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    y0: Optional[Union[Tensor, float]]
+        The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    q: Optional[Union[Tensor, float]]
+        The axis ratio of the lens.
+
+        *Unit: unitless*
+
+    phi: Optional[Union[Tensor, float]]
+        The orientation angle of the lens (position angle).
+
+        *Unit: radians*
+
+    b: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens.
+
+        *Unit: arcsec*
+
+    x: Tensor
+        The x-coordinate of the lens.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate of the lens.
+
+        *Unit: arcsec*
+
+    s: float
+        The core radius of the lens (defaults to 0.0).
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    Tensor
+        The projected mass density.
+
+        *Unit: unitless*
+
+    """
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
     return 0.5 * q.sqrt() * b / psi

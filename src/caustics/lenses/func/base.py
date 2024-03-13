@@ -10,22 +10,42 @@ def forward_raytrace(bx, by, raytrace, epsilon, n_init, fov):
     Parameters
     ----------
     bx: Tensor
-        Tensor of x coordinate in the source plane (scalar).
+        Tensor of x coordinate in the source plane.
+
+        *Unit: arcsec*
+
     by: Tensor
-        Tensor of y coordinate in the source plane (scalar).
-    raytrace: callable
-        function which takes in the image plane coordinates and returns the source plane coordinates.
+        Tensor of y coordinate in the source plane.
+
+        *Unit: arcsec*
+
+    raytrace: function
+        function that takes in the x and y coordinates in the image plane and returns the x and y coordinates in the source plane.
+
     epsilon: Tensor
         maximum distance between two images (arcsec) before they are considered the same image.
+
+        *Unit: arcsec*
+
     n_init: int
         number of random initialization points used to try and find image plane points.
+
     fov: float
         the field of view in which the initial random samples are taken.
 
+        *Unit: arcsec*
+
     Returns
     -------
-    tuple[Tensor, Tensor]
-        Ray-traced coordinates in the x and y directions.
+    x_component: Tensor
+        x-coordinate Tensor of the ray-traced light rays
+
+        *Unit: arcsec*
+
+    y_component: Tensor
+        y-coordinate Tensor of the ray-traced light rays
+
+        *Unit: arcsec*
     """
     bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Dout:2)
 
@@ -59,35 +79,85 @@ def forward_raytrace(bx, by, raytrace, epsilon, n_init, fov):
 
 def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
     """
-    Compute the physical deflection angle from the reduced deflection angle.
+    Computes the physical deflection angle of the given the reduced deflection angles [arcsec].
 
     Parameters
     ----------
     ax: Tensor
-        x component of the reduced deflection angle.
-    ay: Tensor
-        y component of the reduced deflection angle.
+        Tensor of x axis reduced deflection angles in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        Tensor of y axis reduced deflection angles in the lens plane.
+
+        *Unit: arcsec*
+
     d_s: float
-        distance to the source (Mpc).
+        distance to the source.
+
+        *Unit: Mpc*
+
     d_ls: float
-        distance from lens to source (Mpc).
+        distance from lens to source.
+
+        *Unit: Mpc*
+
+    Returns
+    --------
+    x_component: Tensor
+        Physical deflection Angle in the x-direction.
+
+        *Unit: arcsec*
+
+    y_component: Tensor
+        Physical deflection Angle in the y-direction.
+
+        *Unit: arcsec*
+
     """
+
     return ((d_s / d_ls) * ax, (d_s / d_ls) * ay)
 
 
 def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
     """
-    Compute the reduced deflection angle from the physical deflection angle.
+    Computes the reduced deflection angle of the lens at given coordinates [arcsec].
 
     Parameters
     ----------
     ax: Tensor
-        x component of the physical deflection angle.
-    ay: Tensor
-        y component of the physical deflection angle.
+        Tensor of x axis physical deflection angles in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        Tensor of y axis physical deflection angles in the lens plane.
+
+        *Unit: arcsec*
+
     d_s: float
-        distance to the source (Mpc).
+        distance to the source.
+
+        *Unit: Mpc*
+
     d_ls: float
-        distance from lens to source (Mpc).
+        distance from lens to source.
+
+        *Unit: Mpc*
+
+    Returns
+    --------
+    x_component: Tensor
+        Reduced deflection Angle in the x-direction.
+
+        *Unit: arcsec*
+
+    y_component: Tensor
+        Reduced deflection Angle in the y-direction.
+
+        *Unit: arcsec*
+
     """
+
     return ((d_ls / d_s) * ax, (d_ls / d_s) * ay)
