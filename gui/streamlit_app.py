@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import torch
+
 import numpy as np
 from caustics.utils import get_meshgrid
 from caustics.cosmology import FlatLambdaCDM
@@ -14,6 +15,9 @@ from app_configs import (
 )
 
 
+from skimage import measure
+
+
 def caustic_critical_line(
     lens, x, z_s, res, simulation_size, upsample_factor=1, device="cpu"
 ):
@@ -25,32 +29,31 @@ def caustic_critical_line(
         device=device,
     )
     A = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
-    # Note that if this is too slow you can set `method = "finitediff"` to run a faster version. You will also need to provide `pixelscale` then
-
-    # Here we compute A's determinant at every point
+    
+    # Compute A's determinant at every point
     detA = torch.linalg.det(A)
 
-    # Generate caustic
-    CS = plt.contour(thx, thy, detA, levels=[0.0], colors="b")
-    paths = CS.allsegs[0]
+    # Generate caustic using skimage's find_contours
+    contours = measure.find_contours(detA.cpu().numpy(), 0.0)
+    
     x1s = []
     x2s = []
     y1s = []
     y2s = []
-    for path in paths:
-        # Collect the path into a discrete set of points
-        x1 = torch.tensor(list(float(vs[0]) for vs in path), device=device)
-        x2 = torch.tensor(list(float(vs[1]) for vs in path), device=device)
-        # raytrace the points to the source plane
-        y1, y2 = lens.raytrace(x1, x2, z_s, params=lens.pack(x))
-        y1s.append((y1.cpu() / res + simulation_size / 2).numpy())
-        y2s.append((y2.cpu() / res + simulation_size / 2).numpy())
-        x1s.append((x1.cpu() / res + simulation_size / 2).numpy())
-        x2s.append((x2.cpu() / res + simulation_size / 2).numpy())
-
-    plt.close()
+    for contour in contours:
+        # Convert contour to device tensor
+        contour = torch.tensor(contour, device=device)
+        # Raytrace the points to the source plane
+        x1 = contour[:, 1]# * res / upsample_factor + simulation_size / 2
+        x2 = contour[:, 0]# * res / upsample_factor + simulation_size / 2
+        y1, y2 = lens.raytrace((x1 - simulation_size / 2) * res, (x2 - simulation_size / 2) * res, z_s, params=lens.pack(x))
+        y1s.append(y1.cpu().numpy() / res + simulation_size / 2)
+        y2s.append(y2.cpu().numpy() / res + simulation_size / 2)
+        x1s.append(x1.cpu().numpy())
+        x2s.append(x2.cpu().numpy())
 
     return x1s, x2s, y1s, y2s
+
 
 
 st.set_page_config(layout="wide")
@@ -70,6 +73,10 @@ lens_menu = st.sidebar.multiselect(
 source_menu = st.sidebar.radio(
     "Select your Source (more to come)", source_slider_configs.keys()
 )
+
+caustic_trace = st.sidebar.toggle("Trace the caustic", value = True)
+critical_curve_trace = st.sidebar.toggle("Trace the critical curve", value = True)
+
 st.sidebar.write(
     "Note: if you see an error about contour plots, just reload the webpage and it will go away."
 )
@@ -149,6 +156,9 @@ if source_menu == "Pixelated":
         )
         for subsrc in src
     )
+    x1s, x2s, y1s, y2s = caustic_critical_line(
+        lens=lens, x=x_lens, z_s=z_source, res=deltam, simulation_size=simulation_size
+    )
 else:
     src = name_map[source_menu](name="src", **default_params[source_menu])
     minisim = caustics.Lens_Source(
@@ -175,14 +185,18 @@ with col3:
                 axis=2,
             ),
         )
+        if caustic_trace:
+            for c in range(len(y1s)):
+                ax2.plot(y1s[c], y2s[c], "-w")
     else:
         ax2.imshow(
             minisim(x_all, lens_source=False),
             origin="lower",
             cmap="inferno",
         )
-        for c in range(len(y1s)):
-            ax2.plot(y1s[c], y2s[c], "-w")
+        if caustic_trace:
+            for c in range(len(y1s)):
+                ax2.plot(y1s[c], y2s[c], "-w")
     ax2.set_xticks(
         ticks=np.linspace(0, simulation_size, 5).astype(int),
         labels=np.round(
@@ -218,14 +232,18 @@ with col3:
                 axis=2,
             ),
         )
+        if critical_curve_trace:
+            for c in range(len(x1s)):
+                ax1.plot(x1s[c], x2s[c], "-w")
     else:
-        for c in range(len(x1s)):
-            ax1.plot(x1s[c], x2s[c], "-w")
         ax1.imshow(
             minisim(x_all, lens_source=True),
             origin="lower",
             cmap="inferno",
         )
+        if critical_curve_trace:
+            for c in range(len(x1s)):
+                ax1.plot(x1s[c], x2s[c], "-w")
     ax1.set_xticks(
         ticks=np.linspace(0, simulation_size, 5).astype(int),
         labels=np.round(
@@ -248,3 +266,5 @@ with col3:
     )
     ax1.set_ylabel("Arcseconds from center", fontsize=15)
     st.pyplot(fig1)
+
+    
