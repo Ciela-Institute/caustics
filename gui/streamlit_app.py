@@ -29,13 +29,13 @@ def caustic_critical_line(
         device=device,
     )
     A = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
-    
+
     # Compute A's determinant at every point
     detA = torch.linalg.det(A)
 
     # Generate caustic using skimage's find_contours
     contours = measure.find_contours(detA.cpu().numpy(), 0.0)
-    
+
     x1s = []
     x2s = []
     y1s = []
@@ -44,16 +44,20 @@ def caustic_critical_line(
         # Convert contour to device tensor
         contour = torch.tensor(contour, device=device)
         # Raytrace the points to the source plane
-        x1 = contour[:, 1]# * res / upsample_factor + simulation_size / 2
-        x2 = contour[:, 0]# * res / upsample_factor + simulation_size / 2
-        y1, y2 = lens.raytrace((x1 - simulation_size / 2) * res, (x2 - simulation_size / 2) * res, z_s, params=lens.pack(x))
+        x1 = contour[:, 1]  # * res / upsample_factor + simulation_size / 2
+        x2 = contour[:, 0]  # * res / upsample_factor + simulation_size / 2
+        y1, y2 = lens.raytrace(
+            (x1 - simulation_size / 2) * res,
+            (x2 - simulation_size / 2) * res,
+            z_s,
+            params=lens.pack(x),
+        )
         y1s.append(y1.cpu().numpy() / res + simulation_size / 2)
         y2s.append(y2.cpu().numpy() / res + simulation_size / 2)
         x1s.append(x1.cpu().numpy())
         x2s.append(x2.cpu().numpy())
 
     return x1s, x2s, y1s, y2s
-
 
 
 st.set_page_config(layout="wide")
@@ -74,8 +78,8 @@ source_menu = st.sidebar.radio(
     "Select your Source (more to come)", source_slider_configs.keys()
 )
 
-caustic_trace = st.sidebar.toggle("Trace the caustic", value = True)
-critical_curve_trace = st.sidebar.toggle("Trace the critical curve", value = True)
+caustic_trace = st.sidebar.toggle("Trace the caustic", value=True)
+critical_curve_trace = st.sidebar.toggle("Trace the critical curve", value=True)
 
 st.sidebar.write(
     "Note: if you see an error about contour plots, just reload the webpage and it will go away."
@@ -266,5 +270,3 @@ with col3:
     )
     ax1.set_ylabel("Arcseconds from center", fontsize=15)
     st.pyplot(fig1)
-
-    
