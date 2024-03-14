@@ -12,6 +12,7 @@ on:
       - "resources/docker/*.lock"
       - "resources/docker/*.yaml"
       - "resources/docker/*.sh"
+      - ".github/workflows/image_ci.yml"
   pull_request:
     branches:
       - "dev-**"
@@ -78,7 +79,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images:
             ${{ steps.registry_org.outputs.image_base }}/${{ env.PROJECT_NAME }}
@@ -102,10 +103,12 @@ jobs:
           context: .
           file: ./resources/docker/Dockerfile
           platforms: linux/amd64
-          load: ${{ env.GITHUB_REF != 'refs/heads/main' }}
+          load:
+            ${{ !contains(fromJSON('["refs/heads/main", "refs/heads/dev"]'),
+            env.GITHUB_REF) }}
           push:
-            ${{ env.GITHUB_REF == 'refs/heads/main' || env.GITHUB_REF ==
-            'refs/heads/dev' }}
+            ${{ contains(fromJSON('["refs/heads/main", "refs/heads/dev"]'),
+            env.GITHUB_REF) }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
