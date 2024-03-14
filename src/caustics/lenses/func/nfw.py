@@ -1,5 +1,8 @@
 import torch
 
+from ...utils import translate_rotate
+from ...constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
+
 
 def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
     """
@@ -99,15 +102,22 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
         The overdensity parameter. Amount above the critical surface density at which the scale radius is computed
 
         *Unit: unitless*
+
+    Returns
+    -------
+    Tensor
+        The dimensionless surface mass density of the lens.
+
+        *Unit: unitless*
     """
     Rs = scale_radius_nfw(critical_density, m, c, DELTA)
     Ds = scale_density_nfw(critical_density, c, DELTA)
     return Rs * Ds / critical_surface_density
 
 
-def _f_differentiable(x):
+def _f_differentiable_nfw(x):
     """
-    Helper method for computing deflection angles.
+    Helper method for computing convergence.
 
     Parameters
     ----------
@@ -127,9 +137,9 @@ def _f_differentiable(x):
     return f
 
 
-def _f_batchable(x):
+def _f_batchable_nfw(x):
     """
-    Helper method for computing deflection angles.
+    Helper method for computing convergence.
 
     Parameters
     ----------
@@ -154,3 +164,295 @@ def _f_batchable(x):
         ),
     )
     # fmt: on
+
+
+def _g_differentiable_nfw(x):
+    """
+    Helper method for computing potential.
+
+    Parameters
+    ----------
+    x: Union[Tensor, float]
+        The input to the function.
+
+    Returns
+    -------
+    Union[Tensor, float]
+        The value of the function g(x).
+
+    """
+    # TODO: generalize beyond torch, or patch Tensor
+    term_1 = (x / 2).log() ** 2
+    term_2 = torch.zeros_like(x)
+    term_2[x > 1] = (1 / x[x > 1]).arccos() ** 2  # fmt: skip
+    term_2[x < 1] = -(1 / x[x < 1]).arccosh() ** 2  # fmt: skip
+    return term_1 + term_2
+
+
+def _g_batchable_nfw(x):
+    """
+    Helper method for computing potential.
+
+    Parameters
+    ----------
+    x: Union[Tensor, float]
+        The input to the function.
+
+    Returns
+    -------
+    Union[Tensor, float]
+        The value of the function g(x).
+
+    """
+    # TODO: generalize beyond torch, or patch Tensor
+    term_1 = (x / 2).log() ** 2
+    term_2 = torch.where(
+        x > 1,
+        (1 / x).arccos() ** 2,
+        torch.where(
+            x < 1,
+            -(1 / x).arccosh() ** 2,
+            torch.zeros_like(x),  # where: x == 1
+        ),
+    )
+    return term_1 + term_2
+
+
+def _h_differentiable_nfw(x):
+    """
+    Helper method for computing deflection angles.
+
+    Parameters
+    ----------
+    x: Union[Tensor, float]
+        The input to the function.
+
+    Returns
+    -------
+    Union[Tensor, float]
+        The value of the function h(x).
+
+    """
+    term_1 = (x / 2).log()
+    term_2 = torch.ones_like(x)
+    term_2[x > 1] = (1 / x[x > 1]).arccos() * 1 / (x[x > 1] ** 2 - 1).sqrt()  # fmt: skip
+    term_2[x < 1] = (1 / x[x < 1]).arccosh() * 1 / (1 - x[x < 1] ** 2).sqrt()  # fmt: skip
+    return term_1 + term_2
+
+
+def _h_batchable_nfw(x):
+    """
+    Helper method for computing deflection angles.
+
+    Parameters
+    ----------
+    x: Union[Tensor, float]
+        The input to the function.
+
+    Returns
+    -------
+    Union[Tensor, float]
+        The value of the function h(x).
+
+    """
+    term_1 = (x / 2).log()
+    term_2 = torch.where(
+        x > 1,
+        (1 / x).arccos() * 1 / (x**2 - 1).sqrt(),  # fmt: skip
+        torch.where(
+            x < 1, (1 / x).arccosh() * 1 / (1 - x**2).sqrt(), torch.ones_like(x)  # fmt: skip
+        ),
+    )
+    return term_1 + term_2
+
+
+def physical_deflection_angle_nfw(
+    x0,
+    y0,
+    m,
+    c,
+    critical_density,
+    d_l,
+    x,
+    y,
+    _h=_h_differentiable_nfw,
+    DELTA=200.0,
+    s=0.0,
+):
+    """
+    Compute the physical deflection angles.
+
+    Parameters
+    ----------
+    x0: Tensor
+        x-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    y0: Tensor
+        y-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    m: Tensor
+        Mass of the lens. Default is None.
+
+        *Unit: Msun*
+
+    c: Tensor
+        Concentration parameter of the lens. Default is None.
+
+        *Unit: unitless*
+
+    x: Tensor
+        x-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        y-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    s: float
+        Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
+
+        *Unit: arcsec*
+    """
+    x, y = translate_rotate(x, y, x0, y0)
+    th = (x**2 + y**2).sqrt() + s
+    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    xi = d_l * th * arcsec_to_rad
+    r = xi / scale_radius
+
+    deflection_angle = 16 * torch.pi * G_over_c2 * scale_density_nfw(critical_density, c, DELTA) * scale_radius**3 * _h(r) * rad_to_arcsec / xi  # fmt: skip
+
+    ax = deflection_angle * x / th
+    ay = deflection_angle * y / th
+    return ax, ay  # fmt: skip
+
+
+def convergence_nfw(
+    critical_surface_density,
+    critical_density,
+    x0,
+    y0,
+    m,
+    c,
+    x,
+    y,
+    d_l,
+    _f=_f_differentiable_nfw,
+    DELTA=200.0,
+    s=0.0,
+):
+    """
+    Compute the convergence.
+
+    Parameters
+    ----------
+    critical_surface_density: Union[Tensor, float]
+        The critical surface density of the Universe at the appropriate redshift.
+
+        *Unit: Msun/Mpc^2*
+
+    critical_density: Union[Tensor, float]
+        The critical density of the Universe at the appropriate redshift.
+
+        *Unit: Msun/Mpc^3*
+
+    m: Union[Tensor, float]
+        The mass of the halo
+
+    c: Optional[Tensor]
+        Concentration parameter of the lens. Default is None.
+
+        *Unit: unitless*
+
+    x: Tensor
+        x-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        y-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    s: float
+        Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
+
+        *Unit: arcsec*
+    """
+    x, y = translate_rotate(x, y, x0, y0)
+    th = (x**2 + y**2).sqrt() + s
+    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    xi = d_l * th * arcsec_to_rad
+    r = xi / scale_radius  # xi / xi_0
+    convergence_s = convergence_s_nfw(
+        critical_surface_density, critical_density, m, c, DELTA
+    )
+    return 2 * convergence_s * _f(r) / (r**2 - 1)  # fmt: skip
+
+
+def potential_nfw(
+    critical_surface_density,
+    critical_density,
+    x0,
+    y0,
+    m,
+    c,
+    d_l,
+    x,
+    y,
+    _g=_g_differentiable_nfw,
+    DELTA=200.0,
+    s=0.0,
+):
+    """
+    Compute the convergence.
+
+    Parameters
+    ----------
+    critical_surface_density: Union[Tensor, float]
+        The critical surface density of the Universe at the appropriate redshift.
+
+        *Unit: Msun/Mpc^2*
+
+    critical_density: Union[Tensor, float]
+        The critical density of the Universe at the appropriate redshift.
+
+        *Unit: Msun/Mpc^3*
+
+    m: Union[Tensor, float]
+        The mass of the halo
+
+    c: Optional[Tensor]
+        Concentration parameter of the lens. Default is None.
+
+        *Unit: unitless*
+
+    x: Tensor
+        x-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        y-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    s: float
+        Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
+
+        *Unit: arcsec*
+    """
+    x, y = translate_rotate(x, y, x0, y0)
+    th = (x**2 + y**2).sqrt() + s
+    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    xi = d_l * th * arcsec_to_rad
+    r = xi / scale_radius  # xi / xi_0
+    convergence_s = convergence_s_nfw(
+        critical_surface_density, critical_density, m, c, DELTA
+    )
+    return 2 * convergence_s * _g(r) * scale_radius**2 / (d_l**2 * arcsec_to_rad**2)  # fmt: skip
