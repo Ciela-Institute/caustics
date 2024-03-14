@@ -1,91 +1,130 @@
-Contributing
-============
+See the `Scientific Python Developer Guide <https://scientific-python-cookie.readthedocs.io/en/stable/>`_ for a detailed
+description of best practices for developing scientific packages.
 
-.. contents:: Table of Contents
-   :local:
+Quick development
+-----------------
 
-Thanks for helping make caustics better! Here you will learn the full process needed to contribute to caustics. Following these steps will make the process as painless as possible for everyone.
+The fastest way to start with development is to use ``nox``. This will set up a
+virtual environment for you to run all the checks and tests. There are 2 ways to
+install ``nox``:
 
-Create An Issue
----------------
+Codespaces
+~~~~~~~~~~
 
-Before actually writing any code, its best to create an issue on the GitHub. Describe the issue in detail and let us know the desired solution. Here it will be possible to address concerns (maybe its already solved and just not yet documented) and plan out the best solution. We may also assign someone to work on it if that seems better. Note that submitting an issue is a contribution to caustics, we appreciate your ideas! Still, if after discussion it seems that the problem does need some work and you're the person to do it, then we can move on to the next steps.
+Nox is pre-installed in the Codespaces environment. So, after activating a
+Codespace, you can just open the terminal and run ``nox`` to run all the checks
+and tests.
 
-1. Navigate to the **Issues** tab of the GitHub repository.
-2. Click on **New Issue**.
-3. Specify a concise and descriptive title.
-4. In the issue body, elaborate on the problem or feature request, employing adequate code snippets or references as necessary.
-5. Submit the issue by clicking **Submit new issue**.
+Local
+~~~~~
 
-Install
--------
+If you don't have nox, you can do the following to install ``nox``:
 
-Please fork the caustics repo, then follow the developer install instructions at the :doc:`install` page. This will ensure you have a version of caustics that you can tinker with and see the results.
+.. code-block:: bash
 
-The reason you should fork the repo is so that you have full control while making your edits. You will still be able to make a Pull Request later when it is time to merge your code with the main caustics branch. Note that you should keep your fork up to date with the caustics repo to make the merge as smooth as possible.
+    pip install nox
 
-Notebooks
----------
+If you use macOS, then ``nox`` is in brew:
 
-You will likely want to see how your changes affect various features of caustics. A good way to quickly see this is to run the tutorial notebooks which can be found `here <https://github.com/Ciela-Institute/caustics-tutorials>`_. Any change that breaks one of these must be addressed, either by changing the nature of your updates to the code, or by forking and updating the caustics-tutorials repo as well (this is usually pretty easy).
+.. code-block:: bash
 
-Resolving the Issue
--------------------
+    brew install nox
 
-As you modify the code, make sure to regularly commit changes and push them to your fork. This makes it easier for you to fix something if you make a mistake, and easier for us to see what changes were made along the way. Feel free to return to the issue on the main GitHub page for advice as to proceed.
+Nox basics
+~~~~~~~~~~
 
-1. Make the necessary code modifications to address the issue.
-2. Use ``git status`` to inspect the changes.
-3. Execute ``git add .`` to stage the changes.
-4. Commit the changes with ``git commit -m "<commit_message>"``.
-5. Push the changes to your fork by executing ``git push origin <branch_name>``.
+What is it?
+^^^^^^^^^^^
 
-Unit Tests
+``nox`` is a command-line tool that automates testing in multiple Python
+environments, similar to tox. Unlike tox, Nox uses a standard Python file for
+configuration, you can find this configuration in ``noxfile.py``.
+
+How do I use it?
+^^^^^^^^^^^^^^^^
+
+To use, run ``nox``. This will lint and test using every installed version of
+Python on your system, skipping ones that are not installed. You can also run
+specific jobs:
+
+.. code-block:: bash
+
+    nox -s lint  # Lint only
+    nox -s tests  # Python tests
+    nox -s build  # Make an SDist and wheel
+
+Nox handles everything for you, including setting up a temporary virtual
+environment for each run.
+
+Setting up a development environment manually
+---------------------------------------------
+
+You can set up a development environment by running:
+
+.. code-block:: bash
+
+    python3 -m venv .venv
+    source ./.venv/bin/activate
+    pip install -v -e .[dev]
+
+If you have the
+`Python Launcher for Unix <https://github.com/brettcannon/python-launcher>`_, you
+can instead do:
+
+.. code-block:: bash
+
+    py -m venv .venv
+    py -m install -v -e .[dev]
+
+Post setup
 ----------
 
-When you think you've solved an issue, please make unit tests related to any code you have added. Any new code added to caustics must have unit tests which match the level of completion of the rest of the code. Generally you should test all cases for the newly added code. Also ensure the previous unit tests run correctly.
+You should prepare pre-commit, which will help you by checking that commits pass
+required checks:
 
-Submitting a Pull Request
--------------------------
+.. code-block:: bash
 
-Once you think your updates are ready to merge with the rest of caustics you can submit a PR! This should provide a description of what you have changed and if it isn't straightforward, why you made those changes.
+    pip install pre-commit # or brew install pre-commit on macOS
+    pre-commit install # Will install a pre-commit hook into the git repo
 
-1. Navigate to the **Pull Requests** tab of the original repository.
-2. Click on **New Pull Request**.
-3. Choose the appropriate base and compare branches.
-4. Provide a concise and descriptive title and elaborate on the pull request body.
-5. Click **Create Pull Request**.
+You can also/alternatively run ``pre-commit run`` (changes only) or
+``pre-commit run --all-files`` to check even without installing the hook.
 
-Finalizing a Pull Request
--------------------------
+Testing
+-------
 
-Once the PR is submitted, we will look through it and request any changes necessary before merging it into the main branch. You can make those changes just like any other edits on your fork. Then when you push them, they will be joined in to the PR automatically and any unit tests will run again.
+Use pytest to run the unit checks:
 
-Black Formatting Exceptions for Equations
------------------------------------------
+.. code-block:: bash
 
-In the **caustics** project, we utilize the Black code formatter to ensure consistent and readable code. However, there are instances where the automatic formatting performed by Black may not align with the desired formatting for equations within the code.
+    pytest
 
-To address this, we have introduced the use of ``#fmt: skip`` tags to exempt specific code blocks or lines from Black formatting. This is particularly useful when dealing with equations that have a specific format or layout that should not be altered by the code formatter.
+Coverage
+--------
 
-How to Use ``#fmt: skip`` for Equations
----------------------------------------
+Use pytest-cov to generate coverage reports:
 
-To exempt a specific section of code, such as an equation, from Black formatting, simply add a comment with the ``#fmt: skip`` tag at the end of the line containing the code block. For example:
+.. code-block:: bash
 
-.. code-block:: python
+    pytest --cov=caustics
 
-    psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
+Pre-commit
+----------
 
-In the above example, the line with the ``#fmt: skip`` comment informs Black to skip formatting for the following line containing the equation. This allows developers to maintain control over the formatting of equations while still benefiting from the automatic formatting provided by Black for the rest of the codebase.
+This project uses pre-commit for all style checking. While you can run it with
+nox, this is such an important tool that it deserves to be installed on its own.
+Install pre-commit and run:
 
-Best Practices for Black Formatting Exceptions
-----------------------------------------------
+.. code-block:: bash
 
-- Use ``#fmt: skip`` sparingly and only for sections where manual formatting is essential.
-- Clearly document the reason for using ``#fmt: skip`` to provide context for future developers.
+    pre-commit run -a
 
-By incorporating ``#fmt: skip`` tags for equations, we strike a balance between automated code formatting and the need for manual control over certain code elements.
+to check all files.
 
+Code of Conduct
+---------------
 
-Once the PR has been merged, you may delete your fork if you aren't using it any more, or take on a new issue, it's up to you!
+By contributing to this project, you agree to abide by the `Code of Conduct
+<https://github.com/Ciela-Institute/caustics/blob/main/CODE_OF_CONDUCT.md>`_.
+Please make sure to read and understand the guidelines outlined in the Code
+of Conduct before making any contributions.
