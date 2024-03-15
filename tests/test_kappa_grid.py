@@ -5,24 +5,25 @@ from caustics.lenses import PixelatedConvergence, PseudoJaffe
 from caustics.utils import get_meshgrid
 
 
-def _setup(n_pix, mode, use_next_fast_len, padding="zero"):
+def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     # TODO understand why this test fails for resolutions != 0.025
     res = 0.025
-    thx, thy = get_meshgrid(res, n_pix, n_pix)
+    thx, thy = get_meshgrid(res, n_pix, n_pix, device=device)
 
-    z_l = torch.tensor(0.5)
-    z_s = torch.tensor(2.1)
+    z_l = torch.tensor(0.5, device=device)
+    z_s = torch.tensor(2.1, device=device)
 
     cosmology = FlatLambdaCDM(name="cosmology")
     # Use PseudoJaffe since it is compact: 99.16% of its mass is contained in
     # the circle circumscribing this image plane
     lens_pj = PseudoJaffe(name="pj", cosmology=cosmology)
+    lens_pj.to(device=device)
 
-    thx0 = torch.tensor(7.0)
-    thy0 = torch.tensor(3.0)
-    th_core = torch.tensor(0.04)
-    th_s = torch.tensor(0.2)
-    rho_0 = torch.tensor(1.0)
+    thx0 = torch.tensor(7.0, device=device)
+    thy0 = torch.tensor(3.0, device=device)
+    th_core = torch.tensor(0.04, device=device)
+    th_s = torch.tensor(0.2, device=device)
+    rho_0 = torch.tensor(1.0, device=device)
 
     d_l = cosmology.angular_diameter_distance(z_l)
     arcsec_to_rad = 1 / (180 / torch.pi * 60**2)
@@ -36,7 +37,7 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero"):
         cosmology.critical_surface_density(z_l, z_s),
     )
     # z_l, thx0, thy0, kappa_0, th_core, th_s
-    x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s])
+    x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s], device=device)
 
     # Exact calculations
     Psi = lens_pj.potential(thx, thy, z_s, x_pj)
@@ -55,6 +56,7 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero"):
         name="kg",
         padding=padding,
     )
+    lens_kap.to(device=device)
     kappa_map = lens_pj.convergence(thx, thy, z_s, x_pj)
     x_kap = kappa_map.flatten()
 
@@ -70,7 +72,7 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero"):
     return Psi, Psi_approx, alpha_x, alpha_x_approx, alpha_y, alpha_y_approx
 
 
-def test_Psi_alpha():
+def test_Psi_alpha(device):
     """
     Tests whether PixelatedConvergence is fairly accurate using a large image.
     """
@@ -83,24 +85,24 @@ def test_Psi_alpha():
         _check_center(alpha_y, alpha_y_approx, 780, 620, atol=1e-20)
 
 
-def test_consistency():
+def test_consistency(device):
     """
     Checks whether using fft and conv2d give the same results.
     """
     for n_pix in [3, 4, 100]:
         for use_next_fast_len in [True, False]:
             _, Psi_fft, _, alpha_x_fft, _, alpha_y_fft = _setup(
-                n_pix, "fft", use_next_fast_len
+                n_pix, "fft", use_next_fast_len, device=device
             )
             _, Psi_conv2d, _, alpha_x_conv2d, _, alpha_y_conv2d = _setup(
-                n_pix, "conv2d", use_next_fast_len
+                n_pix, "conv2d", use_next_fast_len, device=device
             )
             assert torch.allclose(Psi_fft, Psi_conv2d, atol=1e-20, rtol=0)
             assert torch.allclose(alpha_x_fft, alpha_x_conv2d, atol=1e-20, rtol=0)
             assert torch.allclose(alpha_y_fft, alpha_y_conv2d, atol=1e-20, rtol=0)
 
 
-def test_padoptions():
+def test_padoptions(device):
     """
     Checks whether using fft and conv2d give the same results.
     """
@@ -109,12 +111,14 @@ def test_padoptions():
         "fft",
         True,
         "circular",
+        device=device,
     )
     _, Psi_fft_tile, _, alpha_x_fft_tile, _, alpha_y_fft_tile = _setup(
         100,
         "fft",
         True,
         "tile",
+        device=device,
     )
     assert torch.allclose(Psi_fft_circ, Psi_fft_tile, atol=1e-20, rtol=0)
     assert torch.allclose(alpha_x_fft_circ, alpha_x_fft_tile, atol=1e-20, rtol=0)

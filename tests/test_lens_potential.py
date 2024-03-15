@@ -7,13 +7,13 @@ import torch
 import caustics
 
 
-def test_lens_potential_vs_deflection():
+def test_lens_potential_vs_deflection(device):
     """
     Check for internal consistency of the lensing potential for all ThinLens objects against the deflection angles. The gradient of the potential should equal the deflection angle.
     """
     # Define a grid of points to test.
-    x = torch.linspace(-1, 1, 10)
-    y = torch.linspace(-1, 1, 10)
+    x = torch.linspace(-1, 1, 10, device=device)
+    y = torch.linspace(-1, 1, 10, device=device)
     x, y = torch.meshgrid(x, y, indexing="ij")
 
     # Define a source redshift.
@@ -73,6 +73,7 @@ def test_lens_potential_vs_deflection():
     # Loop over the lenses.
     for lens, name in zip(lenses, names):
         print(f"Testing lens: {name}")
+        lens.to(device=device)
         # Compute the deflection angle.
         ax, ay = lens.reduced_deflection_angle(x, y, z_s)
 
@@ -102,13 +103,13 @@ def test_lens_potential_vs_deflection():
             assert torch.allclose(phi_ay, ay)
 
 
-def test_lens_potential_vs_convergence():
+def test_lens_potential_vs_convergence(device):
     """
     Check for internal consistency of the lensing potential for all ThinLens objects against the convergence. The laplacian of the potential should equal the convergence.
     """
     # Define a grid of points to test.
-    x = torch.linspace(-1, 1, 10)
-    y = torch.linspace(-1, 1, 10)
+    x = torch.linspace(-1, 1, 10, device=device)
+    y = torch.linspace(-1, 1, 10, device=device)
     x, y = torch.meshgrid(x, y, indexing="ij")
     x, y = x.clone().detach(), y.clone().detach()
 
@@ -164,6 +165,7 @@ def test_lens_potential_vs_convergence():
     # Loop over the lenses.
     for lens, name in zip(lenses, names):
         print(f"Testing lens: {name}")
+        lens.to(device=device)
         # Compute the convergence.
         try:
             kappa = lens.convergence(x, y, z_s)

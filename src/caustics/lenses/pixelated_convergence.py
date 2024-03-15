@@ -1,6 +1,6 @@
-# mypy: disable-error-code="index"
+# mypy: disable-error-code="index,dict-item"
 from math import pi
-from typing import Optional
+from typing import Optional, Annotated, Union, Literal
 
 import torch
 import torch.nn.functional as F
@@ -8,9 +8,8 @@ from scipy.fft import next_fast_len
 from torch import Tensor
 import numpy as np
 
-from ..cosmology import Cosmology
 from ..utils import get_meshgrid, interp2d, safe_divide, safe_log
-from .base import ThinLens
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
@@ -26,18 +25,41 @@ class PixelatedConvergence(ThinLens):
 
     def __init__(
         self,
-        pixelscale: float,
-        n_pix: int,
-        cosmology: Cosmology,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = torch.tensor(0.0),
-        y0: Optional[Tensor] = torch.tensor(0.0),
-        convergence_map: Optional[Tensor] = None,
-        shape: Optional[tuple[int, ...]] = None,
-        convolution_mode: str = "fft",
-        use_next_fast_len: bool = True,
-        padding: str = "zero",
-        name: Optional[str] = None,
+        pixelscale: Annotated[float, "pixelscale"],
+        n_pix: Annotated[int, "The number of pixels on each side of the grid"],
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The x-coordinate of the center of the grid",
+            True,
+        ] = torch.tensor(0.0),
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "The y-coordinate of the center of the grid",
+            True,
+        ] = torch.tensor(0.0),
+        convergence_map: Annotated[
+            Optional[Tensor],
+            "A 2D tensor representing the convergence map",
+            True,
+        ] = None,
+        shape: Annotated[
+            Optional[tuple[int, ...]], "The shape of the convergence map"
+        ] = None,
+        convolution_mode: Annotated[
+            Literal["fft", "conv2d"],
+            "The convolution mode for calculating deflection angles and lensing potential",
+        ] = "fft",
+        use_next_fast_len: Annotated[
+            bool,
+            "If True, adds additional padding to speed up the FFT by calling `scipy.fft.next_fast_len`",
+        ] = True,
+        padding: Annotated[
+            Literal["zero", "circular", "reflect", "tile"],
+            "Specifies the type of padding",
+        ] = "zero",
+        name: NameType = None,
     ):
         """Strong lensing with user provided kappa map
 
@@ -52,31 +74,53 @@ class PixelatedConvergence(ThinLens):
         ----------
         name: string
             The name of the PixelatedConvergence object.
+
         fov: float
             The field of view in arcseconds.
+
+            *Unit: arcsec*
+
         n_pix: int
             The number of pixels on each side of the grid.
+
+
         cosmology: Cosmology
             An instance of the cosmological parameters.
+
         z_l: Optional[Tensor]
             The redshift of the lens.
+
+            *Unit: unitless*
+
         x0: Optional[Tensor]
             The x-coordinate of the center of the grid.
+
+            *Unit: arcsec*
+
         y0: Optional[Tensor]
             The y-coordinate of the center of the grid.
+
+            *Unit: arcsec*
+
         convergence_map: Optional[Tensor]
             A 2D tensor representing the convergence map.
+
+            *Unit: unitless*
+
         shape: Optional[tuple[int, ...]]
             The shape of the convergence map.
-        convolution_mode: (str, optional)
+
+        convolution_mode: str, optional
             The convolution mode for calculating deflection angles and lensing potential.
             It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution).
             Default is "fft".
-        use_next_fast_len: (bool, optional)
+
+        use_next_fast_len: bool, optional
             If True, adds additional padding to speed up the FFT by calling
             `scipy.fft.next_fast_len`.
             The speed boost can be substantial when `n_pix` is a multiple of a
             small prime number. Default is True.
+
         padding: { "zero", "circular", "reflect", "tile" }
 
             Specifies the type of padding to use:
@@ -141,8 +185,10 @@ class PixelatedConvergence(ThinLens):
         ----------
         device: Optional[torch.device]
             The target device to move the tensors to.
+
         dtype: Optional[torch.dtype]
             The target data type to cast the tensors to.
+
         """
         super().to(device, dtype)
         self.potential_kernel = self.potential_kernel.to(device=device, dtype=dtype)
@@ -167,6 +213,7 @@ class PixelatedConvergence(ThinLens):
         -------
         Tensor
             The 2D FFT of the input tensor with zero-padding.
+
         """
         pad = 2 * self.n_pix
         if self.use_next_fast_len:
@@ -193,10 +240,13 @@ class PixelatedConvergence(ThinLens):
         x: Tensor
             The input tensor with padding.
 
+            *Unit: arcsec*
+
         Returns
         -------
         Tensor
             The input tensor without padding.
+
         """
         return torch.roll(x, (-self._s[0] // 2, -self._s[1] // 2), dims=(-2, -1))[..., : self.n_pix, : self.n_pix]  # fmt: skip
 
@@ -213,6 +263,7 @@ class PixelatedConvergence(ThinLens):
         -------
         Tensor
             The input tensor without padding.
+
         """
         return x  # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
 
@@ -225,6 +276,7 @@ class PixelatedConvergence(ThinLens):
         -------
         string
             The convolution mode, either "fft" or "conv2d".
+
         """
         return self._convolution_mode
 
@@ -237,6 +289,7 @@ class PixelatedConvergence(ThinLens):
         ----------
         mode: string
             The convolution mode to be set, either "fft" or "conv2d".
+
         """
         if convolution_mode == "fft":
             # Create FFTs of kernels
@@ -274,17 +327,34 @@ class PixelatedConvergence(ThinLens):
         ----------
         x: Tensor
             The x-coordinates of the positions to compute the deflection angles for.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinates of the positions to compute the deflection angles for.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             A dictionary containing additional parameters.
 
         Returns
         -------
-        tuple[Tensor, Tensor]
-            The x and y components of the deflection angles at the specified positions.
+        x_component: Tensor
+            Deflection Angle in the x-direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in the y-direction.
+
+            *Unit: arcsec*
+
         """
         if self.convolution_mode == "fft":
             deflection_angle_x_map, deflection_angle_y_map = self._deflection_angle_fft(
@@ -314,10 +384,20 @@ class PixelatedConvergence(ThinLens):
         convergence_map: Tensor
             The 2D tensor representing the convergence map.
 
+            *Unit: unitless*
+
         Returns
         -------
-        tuple[Tensor, Tensor]
-            The x and y components of the deflection angles.
+        x_component: Tensor
+            Deflection Angle in x-component.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in y-component.
+
+            *Unit: arcsec*
+
         """
         convergence_tilde = self._fft2_padded(convergence_map)
         deflection_angle_x = torch.fft.irfft2(
@@ -339,10 +419,20 @@ class PixelatedConvergence(ThinLens):
         convergence_map: Tensor
             The 2D tensor representing the convergence map.
 
+            *Unit: unitless*
+
         Returns
         -------
-        tuple[Tensor, Tensor]
-            The x and y components of the deflection angles.
+        x_component: Tensor
+            Deflection Angle
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle
+
+            *Unit: arcsec*
+
         """
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
@@ -381,10 +471,19 @@ class PixelatedConvergence(ThinLens):
         ----------
         x: Tensor
             The x-coordinates of the positions to compute the lensing potential for.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinates of the positions to compute the lensing potential for.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             A dictionary containing additional parameters.
 
@@ -392,6 +491,9 @@ class PixelatedConvergence(ThinLens):
         -------
         Tensor
             The lensing potential at the specified positions.
+
+            *Unit: arcsec^2*
+
         """
         if self.convolution_mode == "fft":
             potential_map = self._potential_fft(convergence_map)
@@ -413,10 +515,15 @@ class PixelatedConvergence(ThinLens):
         convergence_map: Tensor
             The 2D tensor representing the convergence map.
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             The lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         convergence_tilde = self._fft2_padded(convergence_map)
         potential = torch.fft.irfft2(
@@ -433,10 +540,15 @@ class PixelatedConvergence(ThinLens):
         convergence_map: Tensor
             The 2D tensor representing the convergence map.
 
+            *Unit: unitless*
+
         Returns
         -------
         Tensor
             The lensing potential.
+
+            *Unit: arcsec^2*
+
         """
         # Use convergence_map as kernel since the kernel is twice as large. Flip since
         # we actually want the cross-correlation.
@@ -467,10 +579,19 @@ class PixelatedConvergence(ThinLens):
         ----------
         x: Tensor
             The x-coordinates of the positions to compute the convergence for.
+
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinates of the positions to compute the convergence for.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             The source redshift.
+
+            *Unit: unitless*
+
         params: (Packed, optional)
             A dictionary containing additional parameters.
 
@@ -479,10 +600,13 @@ class PixelatedConvergence(ThinLens):
         Tensor
             The convergence at the specified positions.
 
+            *Unit: unitless*
+
         Raises
         ------
         NotImplementedError
             This method is not implemented.
+
         """
         return interp2d(
             convergence_map,
