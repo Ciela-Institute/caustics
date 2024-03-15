@@ -147,7 +147,7 @@ class Sersic(Source):
         Re: Optional[Tensor]
             The scale length of the Sersic source.
 
-            *Unit: flux*
+            *Unit: arcsec*
 
         Ie: Optional[Tensor]
             The intensity at the effective radius.
