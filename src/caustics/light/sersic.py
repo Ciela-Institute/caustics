@@ -129,7 +129,7 @@ class Sersic(Source):
 
             *Unit: arcsec*
 
-        q: Optional[Tensor])
+        q: Optional[Tensor]
             The axis ratio of the Sersic source.
 
             *Unit: unitless*
