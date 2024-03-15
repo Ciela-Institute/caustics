@@ -167,8 +167,8 @@ class Pixelated(Source):
             *Unit: flux*
 
         """
-        fov_x = pixelscale * image.shape[0]
-        fov_y = pixelscale * image.shape[1]
+        fov_x = pixelscale * image.shape[1]
+        fov_y = pixelscale * image.shape[0]
         return interp2d(
             image,
             (x - x0).view(-1) / fov_x * 2,
