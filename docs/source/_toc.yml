@@ -1,0 +1,30 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+chapters:
+  - file: getting_started
+  - file: install
+  - file: websim
+  - file: tutorials/index
+    sections:
+      - file: tutorials/BasicIntroduction
+      - file: tutorials/LensZoo
+      - file: tutorials/VisualizeCaustics
+      - file: tutorials/MultiplaneDemo
+      - file: tutorials/InvertLensEquation
+      - file: tutorials/Parameters
+      - file: tutorials/Simulators
+      - file: tutorials/Playground
+  - file: examples/index
+    sections:
+      - file: examples/Example_ImageFit_LM
+      - file: examples/Example_ImageFit_NUTS
+      - file: examples/Example_QSOLensFit
+  - file: contributing
+  - file: citation
+  - file: license
+  - file: modules
+  - file: glossary
+  - file: genindex

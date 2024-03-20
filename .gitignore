@@ -134,3 +134,10 @@ package-lock.json
 package.json
 
 .idea/
+
+# version
+_version.py
+
+# Jupyter book
+conf.py
+caustics*.rst
