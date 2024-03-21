@@ -1,6 +1,6 @@
 from .base import ThinLens, ThickLens
 from .epl import EPL
-from .external_shear import ExternalShear
+from .external_shear import ExternalShear, ExternalShear_angle
 from .pixelated_convergence import PixelatedConvergence
 from .nfw import NFW
 from .point import Point
@@ -18,6 +18,7 @@ __all__ = [
     "ThickLens",
     "EPL",
     "ExternalShear",
+    "ExternalShear_angle",
     "PixelatedConvergence",
     "Multiplane",
     "NFW",
