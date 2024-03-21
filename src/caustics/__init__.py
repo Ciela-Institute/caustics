@@ -12,6 +12,7 @@ from .lenses import (
     ThickLens,
     EPL,
     ExternalShear,
+    ExternalShear_angle,
     PixelatedConvergence,
     Multiplane,
     NFW,
