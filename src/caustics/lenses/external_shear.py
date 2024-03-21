@@ -340,8 +340,8 @@ class ExternalShear_angle(ThinLens):
         z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
-        gamma: Optional[Tensor] = None,
-        theta: Optional[Tensor] = None,
+        gamma: Tensor,
+        theta: Tensor,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -380,9 +380,8 @@ class ExternalShear_angle(ThinLens):
             *Unit: arcsec*
 
         """
-        if theta is not None and gamma is not None:
-            gamma_1 = gamma * torch.cos(2 * theta)
-            gamma_2 = gamma * torch.sin(2 * theta)
+        gamma_1 = gamma * torch.cos(2 * theta)
+        gamma_2 = gamma * torch.sin(2 * theta)
         x, y = translate_rotate(x, y, x0, y0)
         # Meneghetti eq 3.83
         # TODO, why is it not:
