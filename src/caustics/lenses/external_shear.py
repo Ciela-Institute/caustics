@@ -8,7 +8,7 @@ from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
-__all__ = ("ExternalShear","ExternalShear_angle")
+__all__ = ("ExternalShear", "ExternalShear_angle")
 
 
 class ExternalShear(ThinLens):
@@ -66,10 +66,14 @@ class ExternalShear(ThinLens):
             True,
         ] = None,
         gamma_1: Annotated[
-            Optional[Union[Tensor, float]], "Shear component in the vertical direction", True
+            Optional[Union[Tensor, float]],
+            "Shear component in the vertical direction",
+            True,
         ] = None,
         gamma_2: Annotated[
-            Optional[Union[Tensor, float]], "Shear component in the y=-x direction", True
+            Optional[Union[Tensor, float]],
+            "Shear component in the y=-x direction",
+            True,
         ] = None,
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
@@ -249,6 +253,7 @@ class ExternalShear(ThinLens):
         """
         raise NotImplementedError("convergence undefined for external shear")
 
+
 class ExternalShear_angle(ThinLens):
     """
     Represents an external shear effect in a gravitational lensing system. Parametrized using a magnitude and rotation angle.
@@ -285,10 +290,10 @@ class ExternalShear_angle(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "gamma": 0.,
-        "theta": 0.,
-        "gamma_1": 0.,
-        "gamma_2": 0.
+        "gamma": 0.0,
+        "theta": 0.0,
+        "gamma_1": 0.0,
+        "gamma_2": 0.0,
     }
 
     def __init__(
@@ -323,8 +328,6 @@ class ExternalShear_angle(ThinLens):
         self.add_param("gamma", gamma)
         self.add_param("theta", theta)
         self.s = s
-            
-        
 
     @unpack
     def reduced_deflection_angle(
@@ -377,8 +380,8 @@ class ExternalShear_angle(ThinLens):
             *Unit: arcsec*
 
         """
-        gamma_1 = gamma*torch.cos(2*theta)
-        gamma_2 = gamma*torch.sin(2*theta)
+        gamma_1 = gamma * torch.cos(2 * theta)
+        gamma_2 = gamma * torch.sin(2 * theta)
         x, y = translate_rotate(x, y, x0, y0)
         # Meneghetti eq 3.83
         # TODO, why is it not:
@@ -436,8 +439,8 @@ class ExternalShear_angle(ThinLens):
             *Unit: arcsec^2*
 
         """
-        gamma_1 = gamma*torch.cos(2*theta)
-        gamma_2 = gamma*torch.sin(2*theta)
+        gamma_1 = gamma * torch.cos(2 * theta)
+        gamma_2 = gamma * torch.sin(2 * theta)
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         x, y = translate_rotate(x, y, x0, y0)
         return 0.5 * (x * ax + y * ay)
