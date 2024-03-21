@@ -439,8 +439,6 @@ class ExternalShear_angle(ThinLens):
             *Unit: arcsec^2*
 
         """
-        gamma_1 = gamma * torch.cos(2 * theta)
-        gamma_2 = gamma * torch.sin(2 * theta)
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
         x, y = translate_rotate(x, y, x0, y0)
         return 0.5 * (x * ax + y * ay)
