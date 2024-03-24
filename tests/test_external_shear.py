@@ -48,26 +48,26 @@ def test(sim_source, device, lens_models):
         lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_kappa=False, device=device
     )
 
+
 def test_parametrization():
     cosmo = FlatLambdaCDM(name="cosmo")
     lens = ExternalShear(cosmology=cosmo, z_l=0.5, parametrization="cartesian")
     lens_polar = ExternalShear(cosmology=cosmo, z_l=0.5, parametrization="polar")
-    
+
     gamma_1 = torch.tensor(0.1)
     gamma_2 = torch.tensor(0.2)
     gamma = torch.sqrt(gamma_1**2 + gamma_2**2)
     phi = 0.5 * torch.atan2(gamma_2, gamma_1)
-    
+
     # Check that the conversion yields the same results in the deflection angle
     x = torch.tensor([0.1, 0.2])
     y = torch.tensor([0.2, 0.1])
     z_s = torch.tensor(2.0)
-    
+
     a1, a2 = lens.reduced_deflection_angle(x, y, z_s, gamma_1=gamma_1, gamma_2=gamma_2)
     a1_p, a2_p = lens_polar.reduced_deflection_angle(x, y, z_s, gamma=gamma, phi=phi)
     assert torch.allclose(a1, a1_p)
     assert torch.allclose(a2, a2_p)
-    
 
 
 if __name__ == "__main__":
