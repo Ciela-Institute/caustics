@@ -25,6 +25,42 @@ class ExternalShear(ThinLens):
         "gamma_1": 0.01,
         "gamma_2": 0.0,
     }
+    """
+    Represents an external shear effect in a gravitational lensing system.
+
+    Attributes
+    ----------
+    name: str
+        Identifier for the lens instance.
+
+    cosmology: Cosmology
+        The cosmological model used for lensing calculations.
+
+    z_l: Optional[Union[Tensor, float]]
+        The redshift of the lens.
+
+        *Unit: unitless*
+
+    gamma_1, gamma_2: Optional[Union[Tensor, float]]
+        Shear components (cartesian parametrization).
+
+        *Unit: unitless*
+        
+    gamma: Optional[Union[Tensor, float]]
+        Shear magnitude (polar parametrization).
+
+        *Unit: unitless*
+
+    phi: Optional[Union[Tensor, float]]
+        Shear angle (polar parametrization).
+
+        *Unit: radians*
+
+    Notes
+    ------
+    The shear components gamma_1 and gamma_2 represent an external shear, a gravitational
+    distortion that can be caused by nearby structures outside of the main lens galaxy.
+    """
     def __init__(
         self,
         cosmology: CosmologyType,
@@ -107,6 +143,37 @@ class ExternalShear(ThinLens):
         phi: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
+        """
+        Calculates the lensing potential.
+
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        y: Tensor
+            y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        z_s: Tensor
+            Redshifts of the sources.
+
+            *Unit: unitless*
+
+        params: (Packed, optional)
+            Dynamic parameter container.
+
+        Returns
+        -------
+        Tensor
+            The lensing potential.
+
+            *Unit: arcsec^2*
+
+        """
         # Equation 5.127 of Meneghetti et al. 2019
         return 0.5 * gamma_1 * (x**2 - y**2) + gamma_2 * x * y
         
@@ -127,6 +194,42 @@ class ExternalShear(ThinLens):
         phi: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
+        """
+        Calculates the reduced deflection angle.
+
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        y: Tensor
+            y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        z_s: Tensor
+            Redshifts of the sources.
+
+            *Unit: unitless*
+
+        params: (Packed, optional)
+            Dynamic parameter container.
+
+        Returns
+        -------
+        x_component: Tensor
+            Deflection Angle in x-direction.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            Deflection Angle in y-direction.
+
+            *Unit: arcsec*
+
+        """
         # Derivative of the potential
         a1 = x * gamma_1 + y * gamma_2
         a2 = x * gamma_2 - y * gamma_1
@@ -148,6 +251,36 @@ class ExternalShear(ThinLens):
         phi: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
-        # By definition, convergence is zero for external shear
+               """
+        The convergence is zero by definition for an external shear.
+
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        y: Tensor
+            y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        z_s: Tensor
+            Redshifts of the sources.
+
+            *Unit: unitless*
+
+        params: (Packed, optional)
+            Dynamic parameter container.
+
+        Returns
+        -------
+        Tensor
+            Convergence for an external shear.
+
+            *Unit: unitless*
+
+        """
         return torch.zeros_like(x)
 
