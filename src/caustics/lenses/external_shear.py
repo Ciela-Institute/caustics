@@ -8,15 +8,16 @@ from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
 
-__all__ = ("ExternalShear")
+__all__ = "ExternalShear"
 
 
 def convert_params(method: Callable):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        if hasattr(self, '_convert_params'):
+        if hasattr(self, "_convert_params"):
             kwargs = self._convert_params(*args, **kwargs)
         return method(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -78,9 +79,7 @@ class ExternalShear(ThinLens):
         gamma: Annotated[
             Optional[Union[Tensor, float]], "Shear magnitude", True
         ] = None,
-        phi: Annotated[
-            Optional[Union[Tensor, float]], "Shear angle", True
-        ] = None,
+        phi: Annotated[Optional[Union[Tensor, float]], "Shear angle", True] = None,
         parametrization: Annotated[
             str, "Parametrization of the shear field", {"cartesian", "polar"}
         ] = "cartesian",
@@ -102,25 +101,27 @@ class ExternalShear(ThinLens):
             )
         self.s = s
         if parametrization.lower() == "cartesian":
-            self._convert_params = lambda self, *args, **kwargs: kwargs # do nothing
+            self._convert_params = lambda self, *args, **kwargs: kwargs  # do nothing
         elif parametrization.lower() == "polar":
-            self._convert_params = self._convert_polar_to_cartesian # convert polar parameters to cartesian
-    
+            self._convert_params = (
+                self._convert_polar_to_cartesian
+            )  # convert polar parameters to cartesian
+
     def _convert_polar_to_cartesian(self, *args, **kwargs):
-        gamma = kwargs.get('gamma')
-        phi = kwargs.get('phi')
+        gamma = kwargs.get("gamma")
+        phi = kwargs.get("phi")
         # This breaks if gamma or phi are not provided (or are None)
         gamma_1, gamma_2 = self._polar_to_cartesian(gamma, phi)
-        kwargs['gamma_1'] = gamma_1
-        kwargs['gamma_2'] = gamma_2
+        kwargs["gamma_1"] = gamma_1
+        kwargs["gamma_2"] = gamma_2
         return kwargs
-    
+
     @staticmethod
     def _polar_to_cartesian(gamma: Tensor, phi: Tensor) -> tuple[Tensor, Tensor]:
-        gamma_1 = gamma * torch.cos(2*phi)
-        gamma_2 = gamma * torch.sin(2*phi)
+        gamma_1 = gamma * torch.cos(2 * phi)
+        gamma_2 = gamma * torch.sin(2 * phi)
         return gamma_1, gamma_2
-    
+
     @staticmethod
     def _cartesian_to_polar(gamma_1: Tensor, gamma_2: Tensor) -> tuple[Tensor, Tensor]:
         gamma = torch.sqrt(gamma_1**2 + gamma_2**2)
@@ -176,8 +177,7 @@ class ExternalShear(ThinLens):
         """
         # Equation 5.127 of Meneghetti et al. 2019
         return 0.5 * gamma_1 * (x**2 - y**2) + gamma_2 * x * y
-        
-    
+
     @unpack
     @convert_params
     def reduced_deflection_angle(
@@ -283,4 +283,3 @@ class ExternalShear(ThinLens):
 
         """
         return torch.zeros_like(x)
-
