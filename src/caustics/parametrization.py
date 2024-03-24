@@ -1,6 +1,7 @@
 from functools import wraps
 from typing import Callable
 
+
 def convert_params(method: Callable):
     @wraps(method)
     def wrapper(self, *args, **kwargs):

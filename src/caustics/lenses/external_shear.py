@@ -52,6 +52,7 @@ class ExternalShear(ThinLens):
     The shear components gamma_1 and gamma_2 represent an external shear, a gravitational
     distortion that can be caused by nearby structures outside of the main lens galaxy.
     """
+
     def __init__(
         self,
         cosmology: CosmologyType,
@@ -92,11 +93,11 @@ class ExternalShear(ThinLens):
         self.s = s
         # We take cartesian as the fiducial parametrization
         if parametrization.lower() == "cartesian":
-            self._convert_params_to_fiducial = lambda self, *args, **kwargs: kwargs  # do nothing
-        elif parametrization.lower() == "polar":
             self._convert_params_to_fiducial = (
-                self._convert_polar_to_cartesian
-            ) 
+                lambda self, *args, **kwargs: kwargs
+            )  # do nothing
+        elif parametrization.lower() == "polar":
+            self._convert_params_to_fiducial = self._convert_polar_to_cartesian
 
     def _convert_polar_to_cartesian(self, *args, **kwargs):
         gamma = kwargs.get("gamma")
