@@ -46,7 +46,7 @@ class ExternalShear(ThinLens):
         Shear components (cartesian parametrization).
 
         *Unit: unitless*
-        
+
     gamma: Optional[Union[Tensor, float]]
         Shear magnitude (polar parametrization).
 
