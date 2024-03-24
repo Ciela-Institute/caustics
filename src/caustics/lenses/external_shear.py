@@ -1,24 +1,14 @@
-from typing import Optional, Union, Annotated, Callable
-from functools import wraps
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 import torch
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
+from ..parametrization import convert_params
 from ..packed import Packed
 
-__all__ = "ExternalShear"
-
-
-def convert_params(method: Callable):
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if hasattr(self, "_convert_params"):
-            kwargs = self._convert_params(*args, **kwargs)
-        return method(self, *args, **kwargs)
-
-    return wrapper
+__all__ = ("ExternalShear",)
 
 
 class ExternalShear(ThinLens):
@@ -100,12 +90,13 @@ class ExternalShear(ThinLens):
                 f"parametrization must be either 'cartesian' or 'polar', got {parametrization}"
             )
         self.s = s
+        # We take cartesian as the fiducial parametrization
         if parametrization.lower() == "cartesian":
-            self._convert_params = lambda self, *args, **kwargs: kwargs  # do nothing
+            self._convert_params_to_fiducial = lambda self, *args, **kwargs: kwargs  # do nothing
         elif parametrization.lower() == "polar":
-            self._convert_params = (
+            self._convert_params_to_fiducial = (
                 self._convert_polar_to_cartesian
-            )  # convert polar parameters to cartesian
+            ) 
 
     def _convert_polar_to_cartesian(self, *args, **kwargs):
         gamma = kwargs.get("gamma")
@@ -251,7 +242,7 @@ class ExternalShear(ThinLens):
         phi: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
-               """
+        """
         The convergence is zero by definition for an external shear.
 
         Parameters
