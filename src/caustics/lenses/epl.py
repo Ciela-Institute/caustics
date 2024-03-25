@@ -266,7 +266,7 @@ class EPL(ThinLens):
         z: Tensor
             `R * e^(i * phi)`, position vector in the lens plane.
 
-            *Unit: meters*
+            *Unit: arcsec*
 
         t: Tensor
             Power law slow (`gamma-1`).

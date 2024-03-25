@@ -638,16 +638,23 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     # Jacobian
     J = jacfwd(f)(X)
     J = J.to(dtype=X.dtype)
-    chi2 = (dY @ Cinv @ dY).sum(-1)
+    if Cinv.ndim == 1:
+        chi2 = (dY**2 * Cinv).sum(-1)
+    else:
+        chi2 = (dY @ Cinv @ dY).sum(-1)
 
     # Gradient
-    grad = J.T @ Cinv @ dY
+    if Cinv.ndim == 1:
+        grad = J.T @ (dY * Cinv)
+    else:
+        grad = J.T @ Cinv @ dY
 
     # Hessian
-    hess = J.T @ Cinv @ J
-    hess_perturb = L * (
-        torch.diag(hess) + 0.1 * torch.eye(hess.shape[0], device=hess.device)
-    )
+    if Cinv.ndim == 1:
+        hess = J.T @ (J * Cinv.reshape(-1, 1))
+    else:
+        hess = J.T @ Cinv @ J
+    hess_perturb = L * torch.eye(hess.shape[0], device=hess.device)
     hess = hess + hess_perturb
 
     # Step
@@ -656,7 +663,10 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     # New chi^2
     fYnew = f(X + h)
     dYnew = Y - fYnew
-    chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
+    if Cinv.ndim == 1:
+        chi2_new = (dYnew**2 * Cinv).sum(-1)
+    else:
+        chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
     # Test
     rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))  # fmt: skip
@@ -673,7 +683,7 @@ def batch_lm(
     X,  # B, Din
     Y,  # B, Dout
     f,  # Din -> Dout
-    C=None,  # B, Dout, Dout
+    C=None,  # B, Dout, Dout !or! B, Dout
     epsilon=1e-1,
     L=1e0,
     L_dn=11.0,
@@ -692,8 +702,11 @@ def batch_lm(
         raise ValueError("x and y must having matching batch dimension")
 
     if C is None:
-        C = torch.eye(Dout, device=X.device).repeat(B, 1, 1)
-    Cinv = torch.linalg.inv(C)
+        C = torch.ones_like(Y)
+    if C.ndim == 2:
+        Cinv = 1 / C
+    else:
+        Cinv = torch.linalg.inv(C)
 
     v_lm_step = torch.vmap(
         partial(
@@ -713,6 +726,8 @@ def batch_lm(
             torch.all((Xnew - X).abs() < stopping)
             and torch.sum(L < 1e-2).item() > B / 3
         ):
+            break
+        if torch.all(L >= L_max):
             break
         X = Xnew
 
