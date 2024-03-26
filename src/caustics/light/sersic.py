@@ -3,10 +3,10 @@ from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..utils import to_elliptical, translate_rotate
 from .base import Source, NameType
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("Sersic",)
 
@@ -232,14 +232,10 @@ class Sersic(Source):
         If `lenstronomy_k_mode` is True, we use the approximation from Lenstronomy,
         otherwise, we use the approximation from Ciotti & Bertin (1999).
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        ex, ey = to_elliptical(x, y, q)
-        e = (ex**2 + ey**2).sqrt() + self.s
 
         if self.lenstronomy_k_mode:
-            k = 1.9992 * n - 0.3271
+            k = func.k_lenstronomy(n)
         else:
-            k = 2 * n - 1 / 3 + 4 / 405 / n + 46 / 25515 / n**2  # fmt: skip
+            k = func.k_sersic(n)
 
-        exponent = -k * ((e / Re) ** (1 / n) - 1)
-        return Ie * exponent.exp()
+        return func.brightness_sersic(x0, y0, q, phi, n, Re, Ie, x, y, k, self.s)

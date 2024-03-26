@@ -3,10 +3,10 @@ from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..utils import translate_rotate
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("SIS",)
 
@@ -131,11 +131,7 @@ class SIS(ThinLens):
             *Unit: arcsec*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        R = (x**2 + y**2).sqrt() + self.s
-        ax = th_ein * x / R
-        ay = th_ein * y / R
-        return ax, ay
+        return func.reduced_deflection_angle_sis(x0, y0, th_ein, x, y, self.s)
 
     @unpack
     def potential(
@@ -182,9 +178,7 @@ class SIS(ThinLens):
             *Unit: arcsec^2*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        th = (x**2 + y**2).sqrt() + self.s
-        return th_ein * th
+        return func.potential_sis(x0, y0, th_ein, x, y, self.s)
 
     @unpack
     def convergence(
@@ -231,6 +225,4 @@ class SIS(ThinLens):
             *Unit: unitless*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        th = (x**2 + y**2).sqrt() + self.s
-        return 0.5 * th_ein / th
+        return func.convergence_sis(x0, y0, th_ein, x, y, self.s)

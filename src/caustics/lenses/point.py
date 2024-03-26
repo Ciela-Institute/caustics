@@ -1,13 +1,12 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-import torch
 from torch import Tensor
 
-from ..utils import translate_rotate
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("Point",)
 
@@ -173,11 +172,7 @@ class Point(ThinLens):
             *Unit: arcsec*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        th = (x**2 + y**2).sqrt() + self.s
-        ax = x / th**2 * th_ein**2
-        ay = y / th**2 * th_ein**2
-        return ax, ay
+        return func.reduced_deflection_angle_point(x0, y0, th_ein, x, y, self.s)
 
     @unpack
     def potential(
@@ -224,9 +219,7 @@ class Point(ThinLens):
             *Unit: arcsec^2*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        th = (x**2 + y**2).sqrt() + self.s
-        return th_ein**2 * th.log()
+        return func.potential_point(x0, y0, th_ein, x, y, self.s)
 
     @unpack
     def convergence(
@@ -273,5 +266,4 @@ class Point(ThinLens):
             *Unit: unitless*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        return torch.where((x == 0) & (y == 0), torch.inf, 0.0)
+        return func.convergence_point(x0, y0, x, y)

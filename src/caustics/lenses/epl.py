@@ -4,10 +4,10 @@ from typing import Optional, Union, Annotated
 import torch
 from torch import Tensor
 
-from ..utils import derotate, translate_rotate
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("EPL",)
 
@@ -243,19 +243,9 @@ class EPL(ThinLens):
             *Unit: arcsec*
 
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-
-        # follow Tessore et al 2015 (eq. 5)
-        z = q * x + y * 1j
-        r = torch.abs(z)
-
-        # Tessore et al 2015 (eq. 23)
-        r_omega = self._r_omega(z, t, q)
-        alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega  # fmt: skip
-
-        alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
-        alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
-        return derotate(alpha_real, alpha_imag, phi)
+        return func.reduced_deflection_angle_epl(
+            x0, y0, q, phi, b, t, x, y, self.n_iter
+        )
 
     def _r_omega(self, z, t, q):
         """
@@ -349,10 +339,7 @@ class EPL(ThinLens):
             *Unit: arcsec^2*
 
         """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        ax, ay = derotate(ax, ay, -phi)
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        return (x * ax + y * ay) / (2 - t)  # fmt: skip
+        return func.potential_epl(x0, y0, q, phi, b, t, x, y, self.n_iter)
 
     @unpack
     def convergence(
@@ -402,6 +389,4 @@ class EPL(ThinLens):
             *Unit: unitless*
 
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
-        return (2 - t) / 2 * (b / psi) ** t  # fmt: skip
+        return func.convergence_epl(x0, y0, q, phi, b, t, x, y, self.s)
