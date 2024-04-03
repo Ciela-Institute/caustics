@@ -10,12 +10,12 @@ def reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
@@ -62,12 +62,12 @@ def potential_mass_sheet(x0, y0, surface_density, x, y):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*

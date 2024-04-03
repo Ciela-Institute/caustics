@@ -9,27 +9,27 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Union[Tensor, float]]
+    x0: Tensor
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Tensor
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Tensor
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Tensor
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    b: Tensor
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -79,27 +79,27 @@ def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Union[Tensor, float]]
+    x0: Tensor
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Tensor
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Tensor
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Tensor
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    b: Tensor
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -140,27 +140,27 @@ def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Union[Tensor, float]]
+    x0: Tensor
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Tensor
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Tensor
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Tensor
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    b: Tensor
         The Einstein radius of the lens.
 
         *Unit: arcsec*

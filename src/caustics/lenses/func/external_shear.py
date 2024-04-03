@@ -8,22 +8,22 @@ def reduced_deflection_angle_external_shear(x0, y0, gamma_1, gamma_2, x, y):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    gamma_1: Optional[Tensor]
+    gamma_1: Tensor
         The shear component in the x-direction.
 
         *Unit: unitless*
 
-    gamma_2: Optional[Tensor]
+    gamma_2: Tensor
         The shear component in the y-direction.
 
         *Unit: unitless*
@@ -65,22 +65,22 @@ def potential_external_shear(x0, y0, gamma_1, gamma_2, x, y):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    gamma_1: Optional[Tensor]
+    gamma_1: Tensor
         The shear component in the x-direction.
 
         *Unit: unitless*
 
-    gamma_2: Optional[Tensor]
+    gamma_2: Tensor
         The shear component in the y-direction.
 
         *Unit: unitless*

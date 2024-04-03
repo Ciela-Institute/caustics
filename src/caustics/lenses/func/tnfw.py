@@ -52,17 +52,6 @@ def _F_batchable_tnfw(x):
     Compute the function F(x) for a TNFW profile.
 
     Helper method from Baltz et al. 2009 equation A.5
-
-    Parameters
-    ----------
-    x: Tensor
-        The input tensor.
-
-    Returns
-    -------
-    Tensor
-        The function F(x) for a TNFW profile.
-
     """
     return torch.where(
         x == 1,
@@ -79,17 +68,6 @@ def _F_differentiable(x):
     Compute the function F(x) for a TNFW profile.
 
     Helper method from Baltz et al. 2009 equation A.5
-
-    Parameters
-    ----------
-    x: Tensor
-        The input tensor.
-
-    Returns
-    -------
-    Tensor
-        The function F(x) for a TNFW profile.
-
     """
     f = torch.ones_like(x)
     f[x < 1] = torch.arctanh((1.0 - x[x < 1] ** 2).sqrt()) / (1.0 - x[x < 1] ** 2).sqrt()  # fmt: skip
@@ -116,6 +94,35 @@ def M0_totmass_tnfw(mass, tau):
 
 
 def M0_scalemass_tnfw(scale_radius, c, critical_density, d_l, DELTA=200.0):
+    """What M0 would be for an NFW
+
+    Parameters
+    ----------
+    scale_radius: Tensor
+        The scale radius of the TNFW lens.
+
+        *Unit: arcsec*
+
+    c: Tensor
+        The concentration parameter of an NFW lens with the same parameters.
+
+        *Unit: unitless*
+
+    critical_density: Tensor
+        The critical density of the universe.
+
+        *Unit: Msun / Mpc^3*
+
+    d_l: Tensor
+        The angular diameter distance to the lens.
+
+        *Unit: Mpc*
+
+    DELTA: float
+        The overdensity parameter.
+
+        *Unit: unitless*
+    """
     return 4 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 3 * scale_density_tnfw(c, critical_density, DELTA)  # fmt: skip
 
 
@@ -137,23 +144,20 @@ def mass_enclosed_2d_tnfw(
 
         *Unit: arcsec*
 
-    mass: Optional[Tensor]
+    mass: Tensor
         Mass of the lens.
 
         *Unit: Msun*
 
-    scale_radius: Optional[Tensor]
+    scale_radius: Tensor
         Scale radius of the TNFW lens.
 
         *Unit: arcsec*
 
-    tau: Optional[Tensor]
+    tau: Tensor
         Truncation scale. Ratio of truncation radius to scale radius.
 
         *Unit: unitless*
-
-    params: dict
-        Dynamic parameter container.
 
     Returns
     -------
@@ -195,6 +199,58 @@ def physical_deflection_angle_tnfw(
     """
     Compute the physical deflection angle for a TNFW profile. Converted from
     Baltz et al. 2009 equation A.18
+
+    Parameters
+    ----------
+    x0: Tensor
+        The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    y0: Tensor
+        The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        The scale radius of the TNFW lens.
+
+        *Unit: arcsec*
+
+    tau: Tensor
+        The truncation scale. Ratio of truncation radius to scale radius.
+
+        *Unit: unitless*
+
+    x: Tensor
+        The x-coordinate in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate in the lens plane.
+
+        *Unit: arcsec*
+
+    M0: Tensor
+        The mass normalization constant. See `M0_totmass_tnfw` and
+        `M0_scalemass_tnfw`.
+
+        *Unit: Msun*
+
+    d_l: Tensor
+        The angular diameter distance to the lens.
+
+        *Unit: Mpc*
+
+    _F_mode: str
+        The mode to use for computing the function F(x). Either "differentiable"
+        or "batchable".
+
+    s: float
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
     """
 
     x, y = translate_rotate(x, y, x0, y0)
@@ -225,6 +281,58 @@ def convergence_tnfw(
     """
     Compute the dimensionless convergence for the TNFW. See Baltz et al. 2009
     equation A.8
+
+        Parameters
+    ----------
+    x0: Tensor
+        The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    y0: Tensor
+        The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        The scale radius of the TNFW lens.
+
+        *Unit: arcsec*
+
+    tau: Tensor
+        The truncation scale. Ratio of truncation radius to scale radius.
+
+        *Unit: unitless*
+
+    x: Tensor
+        The x-coordinate in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate in the lens plane.
+
+        *Unit: arcsec*
+
+    M0: Tensor
+        The mass normalization constant. See `M0_totmass_tnfw` and
+        `M0_scalemass_tnfw`.
+
+        *Unit: Msun*
+
+    d_l: Tensor
+        The angular diameter distance to the lens.
+
+        *Unit: Mpc*
+
+    _F_mode: str
+        The mode to use for computing the function F(x). Either "differentiable"
+        or "batchable".
+
+    s: float
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
     """
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
@@ -265,6 +373,68 @@ def potential_tnfw(
     """
     Compute the lensing potential for a TNFW profile. See Baltz et al. 2009
     equation A.14
+
+        Parameters
+    ----------
+    x0: Tensor
+        The x-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    y0: Tensor
+        The y-coordinate of the lens center.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        The scale radius of the TNFW lens.
+
+        *Unit: arcsec*
+
+    tau: Tensor
+        The truncation scale. Ratio of truncation radius to scale radius.
+
+        *Unit: unitless*
+
+    x: Tensor
+        The x-coordinate in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate in the lens plane.
+
+        *Unit: arcsec*
+
+    M0: Tensor
+        The mass normalization constant. See `M0_totmass_tnfw` and
+        `M0_scalemass_tnfw`.
+
+        *Unit: Msun*
+
+    d_l: Tensor
+        The angular diameter distance to the lens.
+
+        *Unit: Mpc*
+
+    d_s: Tensor
+        The angular diameter distance to the source.
+
+        *Unit: Mpc*
+
+    d_ls: Tensor
+        The angular diameter distance between the lens and the source.
+
+        *Unit: Mpc*
+
+    _F_mode: str
+        The mode to use for computing the function F(x). Either "differentiable"
+        or "batchable".
+
+    s: float
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
     """
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s

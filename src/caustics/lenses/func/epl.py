@@ -32,32 +32,32 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter):
 
     Parameters
     ----------
-    x0: Optional[Union[Tensor, float]]
+    x0: Tensor
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Tensor
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Tensor
         The axis ratio of the lens. Semi-minor over semi-major axis lengths.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Tensor
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    b: Tensor
         Scale length of the lens.
 
         *Unit: arcsec*
 
-    t: Optional[Union[Tensor, float]]
+    t: Tensor
         Power law slope (`gamma-1`) of the lens.
         If not provided, it is considered as a free parameter.
 
@@ -113,32 +113,32 @@ def potential_epl(x0, y0, q, phi, b, t, x, y, n_iter):
 
     Parameters
     ----------
-    x0: Optional[Union[Tensor, float]]
+    x0: Tensor
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Tensor
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Tensor
         The axis ratio of the lens. Semi-minor over semi-major axis lengths.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Tensor
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    b: Tensor
         Scale length of the lens.
 
         *Unit: arcsec*
 
-    t: Optional[Union[Tensor, float]]
+    t: Tensor
         Power law slope (`gamma-1`) of the lens.
         If not provided, it is considered as a free parameter.
 
@@ -186,32 +186,32 @@ def convergence_epl(x0, y0, q, phi, b, t, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Union[Tensor, float]]
+    x0: Tensor
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Tensor
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Tensor
         The axis ratio of the lens. Semi-minor over semi-major axis lengths.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Tensor
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    b: Tensor
         Scale length of the lens.
 
         *Unit: arcsec*
 
-    t: Optional[Union[Tensor, float]]
+    t: Tensor
         Power law slope (`gamma-1`) of the lens.
         If not provided, it is considered as a free parameter.
 

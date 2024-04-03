@@ -125,6 +125,64 @@ def reduced_deflection_angle_pixelated_convergence(
     follows from the basic formulas for deflection angle, namely that it is the
     convolution of the convergence with a unit vector pointing towards the
     origin. For more details see the Meneghetti lecture notes equation 2.32
+
+    Parameters
+    ----------
+    x0: float
+        The x-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    y0: float
+        The y-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    convergence_map: Tensor
+        The pixelated convergence map.
+
+        *Unit: unitless*
+
+    x: Tensor
+        The x-coordinate in the lens plane at which to compute the deflection.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate in the lens plane at which to compute the deflection.
+
+        *Unit: arcsec*
+
+    ax_kernel: Tensor
+        The x-component of the kernel for convolution.
+
+        *Unit: unitless*
+
+    ay_kernel: Tensor
+        The y-component of the kernel for convolution.
+
+        *Unit: unitless*
+
+    pixelscale: float
+        The pixel scale of the convergence map.
+
+        *Unit: arcsec/pixel*
+
+    fov: float
+        The field of view of the convergence map.
+
+        *Unit: arcsec*
+
+    n_pix: int
+        The number of pixels in the convergence map.
+
+        *Unit: number*
+
+    padding: str
+        The type of padding to use. Either "zero", "reflect", "circular", or "tile".
+
+    convolution_mode: str
+        The mode of convolution to use. Either "fft" or "conv2d".
     """
     _s = _fft_size(n_pix)
     if convolution_mode == "fft":
@@ -179,6 +237,59 @@ def potential_pixelated_convergence(
     from the basic formulas for potential, namely that it is the convolution of
     the convergence with the logarithm of a vector pointing towards the origin.
     For more details see the Meneghetti lecture notes equation 2.31
+
+    Parameters
+    ----------
+    x0: float
+        The x-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    y0: float
+        The y-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    convergence_map: Tensor
+        The pixelated convergence map.
+
+        *Unit: unitless*
+
+    x: Tensor
+        The x-coordinate in the lens plane at which to compute the deflection.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        The y-coordinate in the lens plane at which to compute the deflection.
+
+        *Unit: arcsec*
+
+    potential_kernel: Tensor
+        The kernel for convolution.
+
+        *Unit: unitless*
+
+    pixelscale: float
+        The pixel scale of the convergence map.
+
+        *Unit: arcsec/pixel*
+
+    fov: float
+        The field of view of the convergence map.
+
+        *Unit: arcsec*
+
+    n_pix: int
+        The number of pixels in the convergence map.
+
+        *Unit: number*
+
+    padding: str
+        The type of padding to use. Either "zero", "reflect", "circular", or "tile".
+
+    convolution_mode: str
+        The mode of convolution to use. Either "fft" or "conv2d".
     """
     _s = _fft_size(n_pix)
     if convolution_mode == "fft":

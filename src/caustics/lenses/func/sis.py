@@ -7,17 +7,17 @@ def reduced_deflection_angle_sis(x0, y0, th_ein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    th_ein: Optional[Tensor]
+    th_ein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -63,17 +63,17 @@ def potential_sis(x0, y0, th_ein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    th_ein: Optional[Tensor]
+    th_ein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -112,17 +112,17 @@ def convergence_sis(x0, y0, th_ein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Optional[Tensor]
+    x0: Tensor
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Tensor
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    th_ein: Optional[Tensor]
+    th_ein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*

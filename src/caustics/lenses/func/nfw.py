@@ -10,17 +10,17 @@ def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
 
     Parameters
     ----------
-    critical_density: Union[Tensor, float]
+    critical_density: Tensor
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    m: Union[Tensor, float]
+    m: Tensor
         The mass of the halo.
 
         *Unit: Msun*
 
-    c: Union[Tensor, float]
+    c: Tensor
         The concentration parameter of the halo.
 
         *Unit: unitless*
@@ -32,7 +32,7 @@ def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The scale radius of the NFW profile.
 
         *Unit: Mpc*
@@ -48,12 +48,12 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
 
     Parameters
     ----------
-    critical_density: Union[Tensor, float]
+    critical_density: Tensor
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    c: Union[Tensor, float]
+    c: Tensor
         The concentration parameter of the halo.
 
         *Unit: unitless*
@@ -65,7 +65,7 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The scale density of the NFW profile.
 
         *Unit: solar mass per square kiloparsec*
@@ -78,22 +78,22 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
     """
     Compute the dimensionaless surface mass density of the lens.
 
-    critical_surface_density: Union[Tensor, float]
+    critical_surface_density: Tensor
         The critical surface density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^2*
 
-    critical_density: Union[Tensor, float]
+    critical_density: Tensor
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    m: Union[Tensor, float]
+    m: Tensor
         The mass of the halo.
 
         *Unit: Msun*
 
-    c: Union[Tensor, float]
+    c: Tensor
         The concentration parameter of the halo.
 
         *Unit: unitless*
@@ -122,12 +122,12 @@ def _f_differentiable_nfw(x):
 
     Parameters
     ----------
-    x: Union[Tensor, float]
+    x: Tensor
         The input to the function.
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The value of the function f(x).
 
     """
@@ -145,12 +145,12 @@ def _f_batchable_nfw(x):
 
     Parameters
     ----------
-    x: Union[Tensor, float]
+    x: Tensor
         The input to the function.
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The value of the function f(x).
 
     """
@@ -175,12 +175,12 @@ def _g_differentiable_nfw(x):
 
     Parameters
     ----------
-    x: Union[Tensor, float]
+    x: Tensor
         The input to the function.
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The value of the function g(x).
 
     """
@@ -199,12 +199,12 @@ def _g_batchable_nfw(x):
 
     Parameters
     ----------
-    x: Union[Tensor, float]
+    x: Tensor
         The input to the function.
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The value of the function g(x).
 
     """
@@ -229,12 +229,12 @@ def _h_differentiable_nfw(x):
 
     Parameters
     ----------
-    x: Union[Tensor, float]
+    x: Tensor
         The input to the function.
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The value of the function h(x).
 
     """
@@ -252,12 +252,12 @@ def _h_batchable_nfw(x):
 
     Parameters
     ----------
-    x: Union[Tensor, float]
+    x: Tensor
         The input to the function.
 
     Returns
     -------
-    Union[Tensor, float]
+    Tensor
         The value of the function h(x).
 
     """
@@ -360,17 +360,17 @@ def convergence_nfw(
 
     Parameters
     ----------
-    critical_surface_density: Union[Tensor, float]
+    critical_surface_density: Tensor
         The critical surface density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^2*
 
-    critical_density: Union[Tensor, float]
+    critical_density: Tensor
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    m: Union[Tensor, float]
+    m: Tensor
         The mass of the halo
 
     c: Optional[Tensor]
@@ -424,17 +424,17 @@ def potential_nfw(
 
     Parameters
     ----------
-    critical_surface_density: Union[Tensor, float]
+    critical_surface_density: Tensor
         The critical surface density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^2*
 
-    critical_density: Union[Tensor, float]
+    critical_density: Tensor
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    m: Union[Tensor, float]
+    m: Tensor
         The mass of the halo
 
     c: Optional[Tensor]

@@ -13,20 +13,30 @@ def convergence_0_pseudo_jaffe(
 
     Parameters
     ----------
-    mass: Optional[Tensor]
+    mass: Tensor
         Total mass of the lens (Msun).
 
         *Unit: Msun*
 
-    core_radius: Optional[Tensor]
+    core_radius: Tensor
         Core radius of the lens.
 
         *Unit: arcsec*
 
-    scale_radius: Optional[Tensor]
+    scale_radius: Tensor
         Scaling radius of the lens.
 
         *Unit: arcsec*
+
+    d_l: Tensor
+        Distance to the lens.
+
+        *Unit: Mpc*
+
+    critical_surface_density: Tensor
+        Critical surface density of the universe at the lens redshift.
+
+        *Unit: Msun / Mpc^2*
 
     Returns
     --------
@@ -50,6 +60,22 @@ def mass_enclosed_2d_pseudo_jaffe(radius, mass, core_radius, scale_radius, s=0.0
         Radius at which to calculate enclosed mass (arcsec).
 
             *Unit: arcsec*
+
+    mass: Tensor
+        Total mass of the lens
+
+        *Unit: Msun*
+
+    core_radius: Tensor
+        Core radius of the lens.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        Scaling radius of the lens.
+
+        *Unit: arcsec*
+
     """
     theta = radius + s
     frac_enclosed_num = (
@@ -70,10 +96,56 @@ def reduced_deflection_angle_pseudo_jaffe(
 
     Parameters
     ----------
-    radius: Optional[Tensor]
-        Radius at which to calculate the reduced deflection angle (arcsec).
+    x0: Tensor
+        x-coordinate of the center of the lens.
 
-            *Unit: arcsec*
+        *Unit: arcsec*
+
+    y0: Tensor
+        y-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    mass: Tensor
+        Total mass of the lens
+
+        *Unit: Msun*
+
+    core_radius: Tensor
+        Core radius of the lens.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        Scaling radius of the lens.
+
+        *Unit: arcsec*
+
+    x: Tensor
+        x-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        y-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    d_l: Tensor
+        Distance to the lens.
+
+        *Unit: Mpc*
+
+    critical_surface_density: Tensor
+        Critical surface density of the universe at the lens redshift.
+
+        *Unit: Msun / Mpc^2*
+
+    s: float
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
+
     """
     x, y = translate_rotate(x, y, x0, y0)
     R = (x**2 + y**2).sqrt() + s
@@ -88,7 +160,65 @@ def potential_pseudo_jaffe(
     x0, y0, mass, core_radius, scale_radius, x, y, d_l, d_s, d_ls, s=0.0
 ):
     """
-    Compute the lensing potential for the pseudo jaffe lens. See Eliasdottir et al 2007 equation A18.
+    Compute the lensing potential for the pseudo jaffe lens. See Eliasdottir et
+    al 2007 equation A18.
+
+    Parameters
+    ----------
+    x0: Tensor
+        x-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    y0: Tensor
+        y-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    mass: Tensor
+        Total mass of the lens
+
+        *Unit: Msun*
+
+    core_radius: Tensor
+        Core radius of the lens.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        Scaling radius of the lens.
+
+        *Unit: arcsec*
+
+    x: Tensor
+        x-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        y-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    d_l: Tensor
+        Distance to the lens.
+
+        *Unit: Mpc*
+
+    d_s: Tensor
+        Distance to the source.
+
+        *Unit: Mpc*
+
+    d_ls: Tensor
+        Distance from the lens to the source.
+
+        *Unit: Mpc*
+
+    s: float
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
     """
     x, y = translate_rotate(x, y, x0, y0)
 
@@ -128,8 +258,55 @@ def convergence_pseudo_jaffe(
 
     Parameters
     ----------
-    mass: Optional[Tensor]
+    x0: Tensor
+        x-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    y0: Tensor
+        y-coordinate of the center of the lens.
+
+        *Unit: arcsec*
+
+    mass: Tensor
         Total mass of the lens
+
+        *Unit: Msun*
+
+    core_radius: Tensor
+        Core radius of the lens.
+
+        *Unit: arcsec*
+
+    scale_radius: Tensor
+        Scaling radius of the lens.
+
+        *Unit: arcsec*
+
+    x: Tensor
+        x-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    y: Tensor
+        y-coordinates in the lens plane.
+
+        *Unit: arcsec*
+
+    d_l: Tensor
+        Distance to the lens.
+
+        *Unit: Mpc*
+
+    critical_surface_density: Tensor
+        Critical surface density of the universe at the lens redshift.
+
+        *Unit: Msun / Mpc^2*
+
+    s: float
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
     """
 
     x, y = translate_rotate(x, y, x0, y0)
