@@ -192,7 +192,7 @@ class Lens(Parametrized):
         return func.forward_raytrace(
             bx,
             by,
-            partial(self.raytrace, params=params),
+            partial(self.raytrace, params=params, z_s=z_s),
             epsilon,
             n_init,
             fov,
