@@ -239,4 +239,4 @@ class ExternalShear(ThinLens):
             This method is not implemented as the convergence is not defined
             for an external shear.
         """
-        raise torch.zeros_like(x)
+        return torch.zeros_like(x)
