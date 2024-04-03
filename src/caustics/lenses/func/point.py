@@ -5,7 +5,8 @@ from ...utils import translate_rotate
 
 def reduced_deflection_angle_point(x0, y0, th_ein, x, y, s=0.0):
     """
-    Compute the reduced deflection angles.
+    Compute the reduced deflection angles. See the Meneghetti lecture notes
+    equation 3.1 for more detail.
 
     Parameters
     ----------
@@ -61,7 +62,8 @@ def reduced_deflection_angle_point(x0, y0, th_ein, x, y, s=0.0):
 
 def potential_point(x0, y0, th_ein, x, y, s=0.0):
     """
-    Compute the lensing potential.
+    Compute the lensing potential. See the Meneghetti lecture notes
+    equation 3.3 for more detail.
 
     Parameters
     ----------
@@ -110,7 +112,8 @@ def potential_point(x0, y0, th_ein, x, y, s=0.0):
 
 def convergence_point(x0, y0, x, y):
     """
-    Compute the convergence (dimensionless surface mass density).
+    Compute the convergence (dimensionless surface mass density). This follows
+    essenitally by definition.
 
     Parameters
     ----------

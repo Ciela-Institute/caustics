@@ -5,7 +5,8 @@ from ...utils import translate_rotate
 
 def reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y):
     """
-    Compute the reduced deflection angles.
+    Compute the reduced deflection angles. Here we use the Meneeghetti lecture
+    notes equation 3.84.
 
     Parameters
     ----------
@@ -56,7 +57,8 @@ def reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y):
 
 def potential_mass_sheet(x0, y0, surface_density, x, y):
     """
-    Compute the lensing potential.
+    Compute the lensing potential. Here we use the Meneghetti lecture notes
+    equation 3.81.
 
     Parameters
     ----------

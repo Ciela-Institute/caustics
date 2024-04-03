@@ -2,6 +2,7 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+import torch
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
@@ -238,4 +239,4 @@ class ExternalShear(ThinLens):
             This method is not implemented as the convergence is not defined
             for an external shear.
         """
-        raise NotImplementedError("convergence undefined for external shear")
+        raise torch.zeros_like(x)

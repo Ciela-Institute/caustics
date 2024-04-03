@@ -3,7 +3,7 @@ from ...utils import translate_rotate
 
 def reduced_deflection_angle_sis(x0, y0, th_ein, x, y, s=0.0):
     """
-    Compute the reduced deflection angles.
+    Compute the reduced deflection angles. See the Meneghetti lecture notes equation 3.46.
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def reduced_deflection_angle_sis(x0, y0, th_ein, x, y, s=0.0):
 
 def potential_sis(x0, y0, th_ein, x, y, s=0.0):
     """
-    Compute the lensing potential.
+    Compute the lensing potential. See the Meneghetti lecture notes equation 3.45.
 
     Parameters
     ----------
@@ -108,7 +108,7 @@ def potential_sis(x0, y0, th_ein, x, y, s=0.0):
 
 def convergence_sis(x0, y0, th_ein, x, y, s=0.0):
     """
-    Compute the lensing convergence.
+    Compute the lensing convergence. See the Meneghetti lecture notes equation 3.44.
 
     Parameters
     ----------

@@ -217,11 +217,9 @@ class PseudoJaffe(ThinLens):
             *Unit: Msun*
 
         """
-        # fmt: off
-        d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
-        return func.mass_enclosed_2d_pseudo_jaffe(theta, mass, core_radius, scale_radius, d_l)
-
-    # fmt: on
+        return func.mass_enclosed_2d_pseudo_jaffe(
+            theta, mass, core_radius, scale_radius
+        )
 
     @staticmethod
     def central_convergence(

@@ -3,7 +3,8 @@ from ...utils import translate_rotate
 
 def reduced_deflection_angle_external_shear(x0, y0, gamma_1, gamma_2, x, y):
     """
-    Compute the reduced deflection angles.
+    Compute the reduced deflection angles for an external shear field. Here we
+    use the Meneghetti lecture notes and take derivatives of equation 3.80
 
     Parameters
     ----------
@@ -50,11 +51,7 @@ def reduced_deflection_angle_external_shear(x0, y0, gamma_1, gamma_2, x, y):
         *Unit: arcsec*
 
     """
-    # Meneghetti eq 3.83
-    # TODO, why is it not:
-    # th = (x**2 + y**2).sqrt() + self.s
-    # a1 = x/th + x * gamma_1 + y * gamma_2
-    # a2 = y/th + x * gamma_2 - y * gamma_1
+    # Derivatives of Meneghetti eq 3.80
     x, y = translate_rotate(x, y, x0, y0)
     ax = gamma_1 * x + gamma_2 * y
     ay = gamma_2 * x - gamma_1 * y
@@ -63,7 +60,8 @@ def reduced_deflection_angle_external_shear(x0, y0, gamma_1, gamma_2, x, y):
 
 def potential_external_shear(x0, y0, gamma_1, gamma_2, x, y):
     """
-    Compute the lensing potential.
+    Compute the lensing potential for an external shear field. Here we use the
+    Meneghetti lecture notes equation 3.80
 
     Parameters
     ----------
@@ -105,6 +103,5 @@ def potential_external_shear(x0, y0, gamma_1, gamma_2, x, y):
         *Unit: arcsec^2*
 
     """
-    ax, ay = reduced_deflection_angle_external_shear(x0, y0, gamma_1, gamma_2, x, y)
     x, y = translate_rotate(x, y, x0, y0)
-    return 0.5 * (x * ax + y * ay)
+    return 0.5 * gamma_1 * (x**2 - y**2) + gamma_2 * x * y

@@ -4,6 +4,12 @@ from ...utils import translate_rotate, derotate
 
 
 def _r_omega(z, t, q, n_iter):
+    """
+    Iteratively compute the omega term given in Tessore et al. 2015 equation 23.
+    This is done using the approximation given in Tessore et al. 2015 equation
+    29. Note that in Tessore et al. 2015 the omega term is independent of
+    radius, our "r_omega" term includes an r-factor for numerical reasons.
+    """
     # constants
     f = (1.0 - q) / (1.0 + q)
     phi = z / torch.conj(z)
@@ -22,7 +28,7 @@ def _r_omega(z, t, q, n_iter):
 
 def reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter):
     """
-    Calculate the reduced deflection angle.
+    Calculate the reduced deflection angle. Given in Tessore et al. 2015 equation 13.
 
     Parameters
     ----------
@@ -93,6 +99,7 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter):
 
     # Tessore et al 2015 (eq. 23)
     r_omega = _r_omega(z, t, q, n_iter)
+    # Tessore et al 2015 (eq. 13)
     alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega  # fmt: skip
 
     alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
@@ -102,7 +109,7 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter):
 
 def potential_epl(x0, y0, q, phi, b, t, x, y, n_iter):
     """
-    Calculate the reduced deflection angle.
+    Calculate the potential for the EPL as defined in Tessore et al. 2015 equation 15.
 
     Parameters
     ----------
@@ -174,6 +181,8 @@ def potential_epl(x0, y0, q, phi, b, t, x, y, n_iter):
 def convergence_epl(x0, y0, q, phi, b, t, x, y, s=0.0):
     """
     Calculate the reduced deflection angle.
+
+    See Tessore et al. 2015 equation 2.
 
     Parameters
     ----------

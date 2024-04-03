@@ -120,6 +120,12 @@ def reduced_deflection_angle_pixelated_convergence(
     padding,
     convolution_mode="fft",
 ):
+    """
+    Compute the reduced deflection angle for a pixelated convergence map. This
+    follows from the basic formulas for deflection angle, namely that it is the
+    convolution of the convergence with a unit vector pointing towards the
+    origin. For more details see the Meneghetti lecture notes equation 2.32
+    """
     _s = _fft_size(n_pix)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
@@ -168,6 +174,12 @@ def potential_pixelated_convergence(
     padding,
     convolution_mode="fft",
 ):
+    """
+    Compute the lensing potential for a pixelated convergence map. This follows
+    from the basic formulas for potential, namely that it is the convolution of
+    the convergence with the logarithm of a vector pointing towards the origin.
+    For more details see the Meneghetti lecture notes equation 2.31
+    """
     _s = _fft_size(n_pix)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)

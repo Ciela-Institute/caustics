@@ -8,7 +8,8 @@ def convergence_0_pseudo_jaffe(
     mass, core_radius, scale_radius, d_l, critical_surface_density
 ):
     """
-    Compute the convergence (dimensionless surface mass density).
+    Compute the convergence (dimensionless surface mass density). This is
+    rearranged from Eliasdottir et al 2007 equation A11.
 
     Parameters
     ----------
@@ -30,7 +31,8 @@ def convergence_0_pseudo_jaffe(
     Returns
     --------
     Tensor
-        The convergence (dimensionless surface mass density) at the center of the pseudo jaffe.
+        The convergence (dimensionless surface mass density) at the center of
+        the pseudo jaffe.
 
         *Unit: unitless*
 
@@ -38,9 +40,9 @@ def convergence_0_pseudo_jaffe(
     return mass / (2 * torch.pi * critical_surface_density * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2)  # fmt: skip
 
 
-def mass_enclosed_2d_pseudo_jaffe(radius, mass, core_radius, scale_radius, d_l, s=0.0):
+def mass_enclosed_2d_pseudo_jaffe(radius, mass, core_radius, scale_radius, s=0.0):
     """
-    Compute the mass enclosed within a given radius.
+    Compute the mass enclosed within a given radius. See Eliasdottir et al 2007 equation A10.
 
     Parameters
     ----------
@@ -50,17 +52,6 @@ def mass_enclosed_2d_pseudo_jaffe(radius, mass, core_radius, scale_radius, d_l, 
             *Unit: arcsec*
     """
     theta = radius + s
-    surface_density_0 = convergence_0_pseudo_jaffe(
-        mass, core_radius, scale_radius, d_l, 1.0
-    )  # Msun / Mpc^2
-    total_mass = (
-        2
-        * torch.pi
-        * surface_density_0
-        * core_radius
-        * scale_radius
-        * (d_l * arcsec_to_rad) ** 2
-    )  # Msun
     frac_enclosed_num = (
         (core_radius**2 + theta**2).sqrt()
         - core_radius
@@ -68,14 +59,14 @@ def mass_enclosed_2d_pseudo_jaffe(radius, mass, core_radius, scale_radius, d_l, 
         + scale_radius
     )  # arcsec
     frac_enclosed_denom = scale_radius - core_radius  # arcsec
-    return total_mass * frac_enclosed_num / frac_enclosed_denom
+    return mass * frac_enclosed_num / frac_enclosed_denom
 
 
 def reduced_deflection_angle_pseudo_jaffe(
     x0, y0, mass, core_radius, scale_radius, x, y, d_l, critical_surface_density, s=0.0
 ):
     """
-    Compute the reduced deflection angle.
+    Compute the reduced deflection angle. See Eliasdottir et al 2007 equation A19.
 
     Parameters
     ----------
@@ -96,6 +87,9 @@ def reduced_deflection_angle_pseudo_jaffe(
 def potential_pseudo_jaffe(
     x0, y0, mass, core_radius, scale_radius, x, y, d_l, d_s, d_ls, s=0.0
 ):
+    """
+    Compute the lensing potential for the pseudo jaffe lens. See Eliasdottir et al 2007 equation A18.
+    """
     x, y = translate_rotate(x, y, x0, y0)
 
     R_squared = x**2 + y**2 + s  # arcsec^2
@@ -130,7 +124,7 @@ def convergence_pseudo_jaffe(
     x0, y0, mass, core_radius, scale_radius, x, y, d_l, critical_surface_density, s=0.0
 ):
     """
-    Compute the convergence (dimensionless surface mass density).
+    Compute the convergence (dimensionless surface mass density). See Eliasdottir et al 2007 Equation A3.
 
     Parameters
     ----------

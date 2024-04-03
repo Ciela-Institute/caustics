@@ -117,7 +117,8 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
 
 def _f_differentiable_nfw(x):
     """
-    Helper method for computing convergence.
+    Helper method for computing convergence. This can be found in the Meneghetti
+    Lecture notes equation 3.69.
 
     Parameters
     ----------
@@ -139,7 +140,8 @@ def _f_differentiable_nfw(x):
 
 def _f_batchable_nfw(x):
     """
-    Helper method for computing convergence.
+    Helper method for computing convergence. This can be found in the Meneghetti
+    Lecture notes equation 3.69.
 
     Parameters
     ----------
@@ -168,7 +170,8 @@ def _f_batchable_nfw(x):
 
 def _g_differentiable_nfw(x):
     """
-    Helper method for computing potential.
+    Helper method for computing potential. This can be found in the Meneghetti
+    Lecture notes equation 3.71.
 
     Parameters
     ----------
@@ -191,7 +194,8 @@ def _g_differentiable_nfw(x):
 
 def _g_batchable_nfw(x):
     """
-    Helper method for computing potential.
+    Helper method for computing potential. This can be found in the Meneghetti
+    Lecture notes equation 3.71.
 
     Parameters
     ----------
@@ -220,7 +224,8 @@ def _g_batchable_nfw(x):
 
 def _h_differentiable_nfw(x):
     """
-    Helper method for computing deflection angles.
+    Helper method for computing deflection angles. This can be found in the Meneghetti
+    Lecture notes equation 3.73.
 
     Parameters
     ----------
@@ -242,7 +247,8 @@ def _h_differentiable_nfw(x):
 
 def _h_batchable_nfw(x):
     """
-    Helper method for computing deflection angles.
+    Helper method for computing deflection angles. This can be found in the Meneghetti
+    Lecture notes equation 3.73.
 
     Parameters
     ----------
@@ -280,7 +286,8 @@ def physical_deflection_angle_nfw(
     s=0.0,
 ):
     """
-    Compute the physical deflection angles.
+    Compute the physical deflection angles. This is an expanded form of the
+    Meneghetti notes equation 3.72
 
     Parameters
     ----------
@@ -315,7 +322,8 @@ def physical_deflection_angle_nfw(
         *Unit: arcsec*
 
     s: float
-        Softening parameter to avoid singularities at the center of the lens. Default is 0.0.
+        Softening parameter to avoid singularities at the center of the lens.
+        Default is 0.0.
 
         *Unit: arcsec*
     """
@@ -347,7 +355,8 @@ def convergence_nfw(
     s=0.0,
 ):
     """
-    Compute the convergence.
+    Compute the convergence. This can be found in the Meneghetti
+    Lecture notes equation 3.74.
 
     Parameters
     ----------
@@ -410,7 +419,8 @@ def potential_nfw(
     s=0.0,
 ):
     """
-    Compute the convergence.
+    Compute the convergence. This can be found in the Meneghetti
+    Lecture notes equation 3.70.
 
     Parameters
     ----------
