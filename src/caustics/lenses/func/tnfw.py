@@ -109,6 +109,9 @@ def scale_density_tnfw(c, critical_density, DELTA=200.0):
 
 
 def M0_totmass_tnfw(mass, tau):
+    """
+    Rearranged from Baltz et al. 2009 equation A.4
+    """
     return mass * (tau**2 + 1) ** 2 / (tau**2 * ((tau**2 - 1) * tau.log() + torch.pi * tau - (tau**2 + 1)))  # fmt: skip
 
 
@@ -124,7 +127,8 @@ def mass_enclosed_2d_tnfw(
     _F_mode="differentiable",
 ):
     """
-    Total projected mass (Msun) within a radius r (arcsec).
+    Total projected mass (Msun) within a radius r (arcsec). Given in Baltz et
+    al. 2009 equation A.11
 
     Parameters
     ----------
@@ -188,6 +192,10 @@ def physical_deflection_angle_tnfw(
     _F_mode="differentiable",
     s=0.0,
 ):
+    """
+    Compute the physical deflection angle for a TNFW profile. Converted from
+    Baltz et al. 2009 equation A.18
+    """
 
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
@@ -214,6 +222,10 @@ def convergence_tnfw(
     _F_mode="differentiable",
     s=0.0,
 ):
+    """
+    Compute the dimensionless convergence for the TNFW. See Baltz et al. 2009
+    equation A.8
+    """
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
     g = r / scale_radius
@@ -250,6 +262,10 @@ def potential_tnfw(
     _F_mode="differentiable",
     s=0.0,
 ):
+    """
+    Compute the lensing potential for a TNFW profile. See Baltz et al. 2009
+    equation A.14
+    """
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
     g = r / scale_radius

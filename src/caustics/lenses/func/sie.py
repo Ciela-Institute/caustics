@@ -3,7 +3,9 @@ from ...utils import translate_rotate, derotate
 
 def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
     """
-    Calculate the physical deflection angle.
+    Calculate the physical deflection angle. For more detail see Keeton 2002
+    equations 34 and 35, although our ``b`` is defined as :math:`\\sqrt(q)b` in
+    Keeton's notation.
 
     Parameters
     ----------
@@ -71,7 +73,9 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
 def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
     """
-    Compute the lensing potential.
+    Compute the lensing potential. For more detail see Keeton 2002
+    equation 33, although our ``b`` is defined as :math:`\\sqrt(q)b` in
+    Keeton's notation. Also we use the :math:`s \\approx 0` limit here.
 
     Parameters
     ----------
@@ -131,7 +135,8 @@ def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
 def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
     """
-    Calculate the projected mass density.
+    Calculate the projected mass density. This is converted from the SIS
+    convergence definition.
 
     Parameters
     ----------
