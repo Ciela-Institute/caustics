@@ -602,11 +602,6 @@ class PixelatedConvergence(ThinLens):
 
             *Unit: unitless*
 
-        Raises
-        ------
-        NotImplementedError
-            This method is not implemented.
-
         """
         return interp2d(
             convergence_map,
