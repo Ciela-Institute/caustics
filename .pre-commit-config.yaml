@@ -9,7 +9,7 @@ ci:
 
 repos:
   - repo: https://github.com/psf/black
-    rev: "24.2.0"
+    rev: "24.4.0"
     hooks:
       - id: black-jupyter
 
@@ -20,7 +20,7 @@ repos:
         additional_dependencies: [black==23.7.0]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.5.0"
+    rev: "v4.6.0"
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -50,7 +50,7 @@ repos:
         args: [--prose-wrap=always]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.3.2"
+    rev: "v0.3.7"
     hooks:
       - id: ruff
         args: ["--fix", "--show-fixes"]
