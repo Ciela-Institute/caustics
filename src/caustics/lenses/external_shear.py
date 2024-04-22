@@ -1,17 +1,21 @@
-# mypy: disable-error-code="dict-item"
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+import torch
 
-from ..utils import translate_rotate
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
+from ..parametrization import convert_params
 from ..packed import Packed
 
 __all__ = ("ExternalShear",)
 
 
 class ExternalShear(ThinLens):
+    _null_params = {
+        "gamma_1": 0.01,
+        "gamma_2": 0.0,
+    }
     """
     Represents an external shear effect in a gravitational lensing system.
 
@@ -28,15 +32,20 @@ class ExternalShear(ThinLens):
 
         *Unit: unitless*
 
-    x0, y0: Optional[Union[Tensor, float]]
-        Coordinates of the shear center in the lens plane.
-
-        *Unit: arcsec*
-
     gamma_1, gamma_2: Optional[Union[Tensor, float]]
-        Shear components.
+        Shear components (cartesian parametrization).
 
         *Unit: unitless*
+
+    gamma: Optional[Union[Tensor, float]]
+        Shear magnitude (polar parametrization).
+
+        *Unit: unitless*
+
+    phi: Optional[Union[Tensor, float]]
+        Shear angle (polar parametrization).
+
+        *Unit: radians*
 
     Notes
     ------
@@ -44,47 +53,125 @@ class ExternalShear(ThinLens):
     distortion that can be caused by nearby structures outside of the main lens galaxy.
     """
 
-    _null_params = {
-        "x0": 0.0,
-        "y0": 0.0,
-        "gamma_1": 0.1,
-        "gamma_2": 0.1,
-    }
-
     def __init__(
         self,
         cosmology: CosmologyType,
         z_l: ZLType = None,
-        x0: Annotated[
-            Optional[Union[Tensor, float]],
-            "x-coordinate of the shear center in the lens plane",
-            True,
-        ] = None,
-        y0: Annotated[
-            Optional[Union[Tensor, float]],
-            "y-coordinate of the shear center in the lens plane",
-            True,
-        ] = None,
         gamma_1: Annotated[
-            Optional[Union[Tensor, float]], "Shear component in the x-direction", True
+            Optional[Union[Tensor, float]],
+            "Shear component in the vertical direction",
+            True,
         ] = None,
         gamma_2: Annotated[
-            Optional[Union[Tensor, float]], "Shear component in the y-direction", True
+            Optional[Union[Tensor, float]],
+            "Shear component in the y=-x direction",
+            True,
         ] = None,
+        gamma: Annotated[
+            Optional[Union[Tensor, float]], "Shear magnitude", True
+        ] = None,
+        phi: Annotated[Optional[Union[Tensor, float]], "Shear angle", True] = None,
+        parametrization: Annotated[
+            str, "Parametrization of the shear field", {"cartesian", "polar"}
+        ] = "cartesian",
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
-
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("gamma_1", gamma_1)
-        self.add_param("gamma_2", gamma_2)
+        if parametrization.lower() == "cartesian":
+            self.add_param("gamma_1", gamma_1)
+            self.add_param("gamma_2", gamma_2)
+        elif parametrization.lower() == "polar":
+            self.add_param("gamma", gamma)
+            self.add_param("phi", phi)
+        else:
+            raise ValueError(
+                f"parametrization must be either 'cartesian' or 'polar', got {parametrization}"
+            )
         self.s = s
+        # We take cartesian as the fiducial parametrization
+        if parametrization.lower() == "cartesian":
+            self._convert_params_to_fiducial = (
+                lambda self, *args, **kwargs: kwargs
+            )  # do nothing
+        elif parametrization.lower() == "polar":
+            self._convert_params_to_fiducial = self._convert_polar_to_cartesian
+
+    def _convert_polar_to_cartesian(self, *args, **kwargs):
+        gamma = kwargs.get("gamma")
+        phi = kwargs.get("phi")
+        # This breaks if gamma or phi are not provided (or are None)
+        gamma_1, gamma_2 = self._polar_to_cartesian(gamma, phi)
+        kwargs["gamma_1"] = gamma_1
+        kwargs["gamma_2"] = gamma_2
+        return kwargs
+
+    @staticmethod
+    def _polar_to_cartesian(gamma: Tensor, phi: Tensor) -> tuple[Tensor, Tensor]:
+        gamma_1 = gamma * torch.cos(2 * phi)
+        gamma_2 = gamma * torch.sin(2 * phi)
+        return gamma_1, gamma_2
+
+    @staticmethod
+    def _cartesian_to_polar(gamma_1: Tensor, gamma_2: Tensor) -> tuple[Tensor, Tensor]:
+        gamma = torch.sqrt(gamma_1**2 + gamma_2**2)
+        phi = 0.5 * torch.atan2(gamma_2, gamma_1)
+        return gamma, phi
 
     @unpack
+    @convert_params
+    def potential(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        z_l: Optional[Tensor] = None,
+        gamma_1: Optional[Tensor] = None,
+        gamma_2: Optional[Tensor] = None,
+        gamma: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
+        **kwargs,
+    ) -> Tensor:
+        """
+        Calculates the lensing potential.
+
+        Parameters
+        ----------
+        x: Tensor
+            x-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        y: Tensor
+            y-coordinates in the lens plane.
+
+            *Unit: arcsec*
+
+        z_s: Tensor
+            Redshifts of the sources.
+
+            *Unit: unitless*
+
+        params: (Packed, optional)
+            Dynamic parameter container.
+
+        Returns
+        -------
+        Tensor
+            The lensing potential.
+
+            *Unit: arcsec^2*
+
+        """
+        # Equation 5.127 of Meneghetti et al. 2019
+        return 0.5 * gamma_1 * (x**2 - y**2) + gamma_2 * x * y
+
+    @unpack
+    @convert_params
     def reduced_deflection_angle(
         self,
         x: Tensor,
@@ -93,10 +180,10 @@ class ExternalShear(ThinLens):
         *args,
         params: Optional["Packed"] = None,
         z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
         gamma_1: Optional[Tensor] = None,
         gamma_2: Optional[Tensor] = None,
+        gamma: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -135,68 +222,13 @@ class ExternalShear(ThinLens):
             *Unit: arcsec*
 
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        # Meneghetti eq 3.83
-        # TODO, why is it not:
-        # th = (x**2 + y**2).sqrt() + self.s
-        # a1 = x/th + x * gamma_1 + y * gamma_2
-        # a2 = y/th + x * gamma_2 - y * gamma_1
+        # Derivative of the potential
         a1 = x * gamma_1 + y * gamma_2
         a2 = x * gamma_2 - y * gamma_1
-
-        return a1, a2  # I'm not sure but I think no derotation necessary
-
-    @unpack
-    def potential(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
-        **kwargs,
-    ) -> Tensor:
-        """
-        Calculates the lensing potential.
-
-        Parameters
-        ----------
-        x: Tensor
-            x-coordinates in the lens plane.
-
-            *Unit: arcsec*
-
-        y: Tensor
-            y-coordinates in the lens plane.
-
-            *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
-
-        Returns
-        -------
-        Tensor
-            The lensing potential.
-
-            *Unit: arcsec^2*
-
-        """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        x, y = translate_rotate(x, y, x0, y0)
-        return 0.5 * (x * ax + y * ay)
+        return a1, a2
 
     @unpack
+    @convert_params
     def convergence(
         self,
         x: Tensor,
@@ -205,14 +237,14 @@ class ExternalShear(ThinLens):
         *args,
         params: Optional["Packed"] = None,
         z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
         gamma_1: Optional[Tensor] = None,
         gamma_2: Optional[Tensor] = None,
+        gamma: Optional[Tensor] = None,
+        phi: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
-        The convergence is undefined for an external shear.
+        The convergence is zero by definition for an external shear.
 
         Parameters
         ----------
@@ -241,10 +273,5 @@ class ExternalShear(ThinLens):
 
             *Unit: unitless*
 
-        Raises
-        ------
-        NotImplementedError
-            This method is not implemented as the convergence is not defined
-            for an external shear.
         """
-        raise NotImplementedError("convergence undefined for external shear")
+        return torch.zeros_like(x)

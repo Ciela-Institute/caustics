@@ -43,6 +43,7 @@ __all__ = [
     "ThickLens",
     "EPL",
     "ExternalShear",
+    "ExternalShear_angle",
     "PixelatedConvergence",
     "Multiplane",
     "NFW",
