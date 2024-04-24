@@ -751,7 +751,9 @@ def interp_bicubic(
 
     # Compute interpolated values
     return_interp = []
-    t = torch.where((x < 0), (x % 1) - 1, torch.where(x >= w - 1, x % 1 + 1, x % 1))
+    t = torch.where(
+        (x < 0), (x % 1) - 1, torch.where(x >= w - 1, x % 1 + 1, x % 1)
+    )  # TODO: change to x - x0
     u = torch.where((y < 0), (y % 1) - 1, torch.where(y >= h - 1, y % 1 + 1, y % 1))
     if get_Y:
         Y = torch.zeros_like(x)
