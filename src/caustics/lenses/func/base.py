@@ -117,7 +117,7 @@ def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
 
     """
 
-    return ((d_s / d_ls) * ax, (d_s / d_ls) * ay)
+    return (d_s / d_ls) * ax, (d_s / d_ls) * ay
 
 
 def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
@@ -160,4 +160,4 @@ def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
 
     """
 
-    return ((d_ls / d_s) * ax, (d_ls / d_s) * ay)
+    return (d_ls / d_s) * ax, (d_ls / d_s) * ay
