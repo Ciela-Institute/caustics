@@ -14,6 +14,7 @@ def build_simulator(config_path: Union[str, Path]) -> Simulator:
     # Imports using Pydantic are placed here to make Pydantic a weak dependency
     from caustics.models.utils import setup_simulator_models, create_model, Field
     from caustics.models.base_models import StateConfig
+
     simulators = setup_simulator_models()
     Config = create_model(
         "Config", __base__=StateConfig, simulator=(simulators, Field(...))
