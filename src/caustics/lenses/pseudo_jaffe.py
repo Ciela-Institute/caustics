@@ -1,16 +1,15 @@
-# mypy: disable-error-code="operator"
+# mypy: disable-error-code="operator,dict-item"
 from math import pi
-from typing import Optional, Union
+from typing import Optional, Union, Annotated
 
 import torch
 from torch import Tensor
 
-from ..cosmology import Cosmology
-from ..constants import arcsec_to_rad, G_over_c2
-from ..utils import translate_rotate
-from .base import ThinLens
+from ..constants import arcsec_to_rad
+from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("PseudoJaffe",)
 
@@ -29,18 +28,39 @@ class PseudoJaffe(ThinLens):
         The cosmology used for calculations.
     z_l: Optional[Union[Tensor, float]]
         Redshift of the lens.
+
+        *Unit: unitless*
+
     x0: Optional[Union[Tensor, float]]
         x-coordinate of the center of the lens (arcsec).
+
+        *Unit: arcsec*
+
     y0: Optional[Union[Tensor, float]]
         y-coordinate of the center of the lens (arcsec).
+
+        *Unit: arcsec*
+
     mass: Optional[Union[Tensor, float]]
-        Total mass of the lens (Msol).
+        Total mass of the lens (Msun).
+
+        *Unit: Msun*
+
     core_radius: Optional[Union[Tensor, float]]
         Core radius of the lens (arcsec).
+
+        *Unit: arcsec*
+
     scale_radius: Optional[Union[Tensor, float]]
         Scaling radius of the lens (arcsec).
+
+        *Unit: arcsec*
+
     s: float
         Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
+
     """
 
     _null_params = {
@@ -53,15 +73,34 @@ class PseudoJaffe(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        mass: Optional[Union[Tensor, float]] = None,
-        core_radius: Optional[Union[Tensor, float]] = None,
-        scale_radius: Optional[Union[Tensor, float]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        cosmology: CosmologyType,
+        z_l: ZLType = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "X coordinate of the center of the lens",
+            True,
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "Y coordinate of the center of the lens",
+            True,
+        ] = None,
+        mass: Annotated[
+            Optional[Union[Tensor, float]], "Total mass of the lens", True, "Msol"
+        ] = None,
+        core_radius: Annotated[
+            Optional[Union[Tensor, float]], "Core radius of the lens", True, "arcsec"
+        ] = None,
+        scale_radius: Annotated[
+            Optional[Union[Tensor, float]],
+            "Scaling radius of the lens",
+            True,
+            "arcsec",
+        ] = None,
+        s: Annotated[
+            float, "Softening parameter to prevent numerical instabilities"
+        ] = 0.0,
+        name: NameType = None,
     ):
         """
         Initialize the PseudoJaffe class.
@@ -70,22 +109,45 @@ class PseudoJaffe(ThinLens):
         ----------
         name: string
             The name of the Pseudo Jaffe lens.
+
         cosmology: Cosmology
             The cosmology used for calculations.
+
         z_l: Optional[Tensor]
             Redshift of the lens.
+
+            *Unit: unitless*
+
         x0: Optional[Tensor]
             x-coordinate of the center of the lens.
+
+            *Unit: arcsec*
+
         y0: Optional[Tensor]
             y-coordinate of the center of the lens.
+
+            *Unit: arcsec*
+
         mass: Optional[Tensor]
-            Total mass of the lens (Msol).
+            Total mass of the lens (Msun).
+
+            *Unit: Msun*
+
         core_radius: Optional[Tensor]
             Core radius of the lens.
+
+            *Unit: arcsec*
+
         scale_radius: Optional[Tensor]
             Scaling radius of the lens.
+
+            *Unit: arcsec*
+
         s: float
             Softening parameter to prevent numerical instabilities.
+
+            *Unit: arcsec*
+
         """
         super().__init__(cosmology, z_l, name=name)
 
@@ -136,27 +198,28 @@ class PseudoJaffe(ThinLens):
         ----------
         theta: Tensor
             Radius at which to calculate enclosed mass (arcsec).
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The mass enclosed within the given radius.
-        """
-        # fmt: off
-        theta = theta + self.s
-        d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
-        sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params) # Msun / Mpc^2
-        surface_density_0 = self.get_convergence_0(z_s, params) * sigma_crit # Msun / Mpc^2
-        total_mass = 2 * pi * surface_density_0 * core_radius * scale_radius * (d_l * arcsec_to_rad) ** 2 # Msun
-        frac_enclosed_num = ((core_radius**2 + theta**2).sqrt() - core_radius - (scale_radius**2 + theta**2).sqrt() + scale_radius) # arcsec
-        frac_enclosed_denom = (scale_radius - core_radius) # arcsec
-        return total_mass * frac_enclosed_num / frac_enclosed_denom
 
-    # fmt: on
+            *Unit: Msun*
+
+        """
+        return func.mass_enclosed_2d_pseudo_jaffe(
+            theta, mass, core_radius, scale_radius
+        )
 
     @staticmethod
     def central_convergence(
@@ -174,14 +237,29 @@ class PseudoJaffe(ThinLens):
         -----------
         z_l: Tensor
             Lens redshift.
+
+            *Unit: unitless*
+
         z_s: Tensor
             Source redshift.
+
+            *Unit: unitless*
+
         rho_0: Tensor
             Central mass density.
+
+            *Unit: Msun/Mpc^3*
+
         core_radius: Tensor
             Core radius of the lens (must be in Mpc).
+
+            *Unit: Mpc*
+
         scale_radius: Tensor
             Scaling radius of the lens (must be in Mpc).
+
+            *Unit: Mpc*
+
         cosmology: Cosmology
             The cosmology used for calculations.
 
@@ -189,6 +267,9 @@ class PseudoJaffe(ThinLens):
         --------
         Tensor
             The central convergence.
+
+            *Unit: unitless*
+
         """
         return pi * rho_0 * core_radius * scale_radius / ((core_radius + scale_radius) * critical_surface_density)  # fmt: skip
 
@@ -214,25 +295,40 @@ class PseudoJaffe(ThinLens):
         ----------
         x: Tensor
             x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         --------
-        Tuple[Tensor, Tensor]
-            The deflection angle in the x and y directions.
+        x_component: Tensor
+            x-component of the deflection angle.
+
+            *Unit: arcsec*
+
+        y_component: Tensor
+            y-component of the deflection angle.
+
+            *Unit: arcsec*
+
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        R = (x**2 + y**2).sqrt() + self.s
-        f = R / core_radius / (1 + (1 + (R / core_radius) ** 2).sqrt()) - R / (scale_radius * (1 + (1 + (R / scale_radius) ** 2).sqrt()))  # fmt: skip
-        alpha = 2 * self.get_convergence_0(z_s, params) * core_radius * scale_radius / (scale_radius - core_radius) * f  # fmt: skip
-        ax = alpha * x / R
-        ay = alpha * y / R
-        return ax, ay
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        critical_surface_density = self.cosmology.critical_surface_density(
+            z_l, z_s, params
+        )
+        return func.reduced_deflection_angle_pseudo_jaffe(x0, y0, mass, core_radius, scale_radius, x, y, d_l, critical_surface_density)  # fmt: skip
 
     @unpack
     def potential(
@@ -257,39 +353,36 @@ class PseudoJaffe(ThinLens):
         --------
         x: Tensor
             x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         --------
         Tensor
             The lensing potential (arcsec^2).
+
+            *Unit: arcsec^2*
+
         """
 
-        # fmt: off
-        x, y = translate_rotate(x, y, x0, y0)
-        d_l = self.cosmology.angular_diameter_distance(z_l, params) # Mpc
-        d_s = self.cosmology.angular_diameter_distance(z_s, params) # Mpc
-        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params) # Mpc
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)  # Mpc
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)  # Mpc
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)  # Mpc
 
-        R_squared = x**2 + y**2 + self.s # arcsec^2
-        sigma_crit = self.cosmology.critical_surface_density(z_l, z_s, params) # Msun / Mpc^2
-        surface_density_0 = self.get_convergence_0(z_s, params) * sigma_crit # Msun / Mpc^2
-
-        coeff = -8 * pi * G_over_c2 * surface_density_0 * (d_l * d_ls / d_s) * core_radius * scale_radius / (scale_radius - core_radius) # arcsec
-
-        scale_a = (scale_radius**2 + R_squared).sqrt() # arcsec
-        scale_b = (core_radius**2 + R_squared).sqrt() # arcsec
-        scale_c = core_radius * (core_radius + (core_radius**2 + R_squared).sqrt()).log() # arcsec
-        scale_d = scale_radius * (scale_radius + (scale_radius**2 + R_squared).sqrt()).log() # arcsec
-        scale_factor = (scale_a - scale_b + scale_c - scale_d) # arcsec
-        return coeff * scale_factor
-
-    # fmt: on
+        return func.potential_pseudo_jaffe(x0, y0, mass, core_radius, scale_radius, x, y, d_l, d_s, d_ls)  # fmt: skip
 
     @unpack
     def convergence(
@@ -314,19 +407,34 @@ class PseudoJaffe(ThinLens):
         -----------
         x: Tensor
             x-coordinate of the lens.
+
+            *Unit: arcsec*
+
         y: Tensor
             y-coordinate of the lens.
+
+            *Unit: arcsec*
+
         z_s: Tensor
             Source redshift.
-        params: (Packed, optional)
+
+            *Unit: unitless*
+
+        params: Packed, optional
             Dynamic parameter container.
 
         Returns
         -------
         Tensor
             The projected mass density.
+
+            *Unit: unitless*
+
         """
-        x, y = translate_rotate(x, y, x0, y0)
-        R_squared = x**2 + y**2 + self.s
-        coeff = self.get_convergence_0(z_s, params) * core_radius * scale_radius / (scale_radius - core_radius)  # fmt: skip
-        return coeff * (1 / (core_radius**2 + R_squared).sqrt() - 1 / (scale_radius**2 + R_squared).sqrt())  # fmt: skip
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        critical_surface_density = self.cosmology.critical_surface_density(
+            z_l, z_s, params
+        )
+        return func.convergence_pseudo_jaffe(
+            x0, y0, mass, core_radius, scale_radius, x, y, d_l, critical_surface_density
+        )

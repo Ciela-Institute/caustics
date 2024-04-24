@@ -6,6 +6,7 @@ root: intro
 chapters:
   - file: getting_started
   - file: install
+  - file: websim
   - file: tutorials/index
     sections:
       - file: tutorials/BasicIntroduction
@@ -16,8 +17,15 @@ chapters:
       - file: tutorials/Parameters
       - file: tutorials/Simulators
       - file: tutorials/Playground
+  - file: examples/index
+    sections:
+      - file: examples/Example_ImageFit_LM
+      - file: examples/Example_ImageFit_NUTS
+      - file: examples/Example_QSOLensFit
   - file: contributing
   - file: frequently_asked_questions
   - file: citation
   - file: license
   - file: modules
+  - file: glossary
+  - file: genindex

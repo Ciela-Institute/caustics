@@ -1,5 +1,6 @@
 import lenstronomy.Util.param_util as param_util
 import numpy as np
+import yaml
 import torch
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
@@ -8,13 +9,26 @@ from caustics.light import Sersic
 from caustics.utils import get_meshgrid
 
 
-def test(device):
+def test(sim_source, device, light_models):
     # Caustics setup
     res = 0.05
     nx = 200
     ny = 200
     thx, thy = get_meshgrid(res, nx, ny, device=device)
-    sersic = Sersic(name="sersic", use_lenstronomy_k=True)
+
+    if sim_source == "yaml":
+        yaml_str = """\
+        light:
+            name: sersic
+            kind: Sersic
+            init_kwargs:
+                use_lenstronomy_k: true
+        """
+        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
+        mod = light_models.get("Sersic")
+        sersic = mod(**yaml_dict["light"]).model_obj()
+    else:
+        sersic = Sersic(name="sersic", use_lenstronomy_k=True)
     sersic.to(device=device)
     # Lenstronomy setup
     ra_at_xy_0, dec_at_xy_0 = (-5 + res / 2, -5 + res / 2)

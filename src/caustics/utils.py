@@ -1,6 +1,7 @@
 # mypy: disable-error-code="misc"
 from math import pi
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union, Any
+from importlib import import_module
 from functools import partial, lru_cache
 
 import torch
@@ -8,6 +9,58 @@ from torch import Tensor
 from torch.func import jacfwd
 import numpy as np
 from scipy.special import roots_legendre
+
+
+def _import_func_or_class(module_path: str) -> Any:
+    """
+    Import a function or class from a module path
+
+    Parameters
+    ----------
+    module_path : str
+        The module path to import from
+
+    Returns
+    -------
+    Callable
+        The imported function or class
+    """
+    module_name, name = module_path.rsplit(".", 1)
+    mod = import_module(module_name)
+    return getattr(mod, name)  # type: ignore
+
+
+def _eval_expression(input_string: str) -> Union[int, float]:
+    """
+    Evaluates a string expression to create an integer or float
+
+    Parameters
+    ----------
+    input_string : str
+        The string expression to evaluate
+
+    Returns
+    -------
+    Union[int, float]
+        The result of the evaluation
+
+    Raises
+    ------
+    NameError
+        If a disallowed constant is used
+    """
+    # Allowed modules to use string evaluation
+    allowed_names = {"pi": pi}
+    # Compile the input string
+    code = compile(input_string, "<string>", "eval")
+    # Check for disallowed names
+    for name in code.co_names:
+        if name not in allowed_names:
+            # Throw an error if a disallowed name is used
+            raise NameError(f"Use of {name} not allowed")
+    # Evaluate the input string without using builtins
+    # for security
+    return eval(code, {"__builtins__": {}}, allowed_names)
 
 
 def flip_axis_ratio(q, phi):
@@ -585,16 +638,23 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     # Jacobian
     J = jacfwd(f)(X)
     J = J.to(dtype=X.dtype)
-    chi2 = (dY @ Cinv @ dY).sum(-1)
+    if Cinv.ndim == 1:
+        chi2 = (dY**2 * Cinv).sum(-1)
+    else:
+        chi2 = (dY @ Cinv @ dY).sum(-1)
 
     # Gradient
-    grad = J.T @ Cinv @ dY
+    if Cinv.ndim == 1:
+        grad = J.T @ (dY * Cinv)
+    else:
+        grad = J.T @ Cinv @ dY
 
     # Hessian
-    hess = J.T @ Cinv @ J
-    hess_perturb = L * (
-        torch.diag(hess) + 0.1 * torch.eye(hess.shape[0], device=hess.device)
-    )
+    if Cinv.ndim == 1:
+        hess = J.T @ (J * Cinv.reshape(-1, 1))
+    else:
+        hess = J.T @ Cinv @ J
+    hess_perturb = L * torch.eye(hess.shape[0], device=hess.device)
     hess = hess + hess_perturb
 
     # Step
@@ -603,7 +663,10 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     # New chi^2
     fYnew = f(X + h)
     dYnew = Y - fYnew
-    chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
+    if Cinv.ndim == 1:
+        chi2_new = (dYnew**2 * Cinv).sum(-1)
+    else:
+        chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
     # Test
     rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))  # fmt: skip
@@ -620,7 +683,7 @@ def batch_lm(
     X,  # B, Din
     Y,  # B, Dout
     f,  # Din -> Dout
-    C=None,  # B, Dout, Dout
+    C=None,  # B, Dout, Dout !or! B, Dout
     epsilon=1e-1,
     L=1e0,
     L_dn=11.0,
@@ -639,8 +702,11 @@ def batch_lm(
         raise ValueError("x and y must having matching batch dimension")
 
     if C is None:
-        C = torch.eye(Dout, device=X.device).repeat(B, 1, 1)
-    Cinv = torch.linalg.inv(C)
+        C = torch.ones_like(Y)
+    if C.ndim == 2:
+        Cinv = 1 / C
+    else:
+        Cinv = torch.linalg.inv(C)
 
     v_lm_step = torch.vmap(
         partial(
@@ -660,6 +726,8 @@ def batch_lm(
             torch.all((Xnew - X).abs() < stopping)
             and torch.sum(L < 1e-2).item() > B / 3
         ):
+            break
+        if torch.all(L >= L_max):
             break
         X = Xnew
 

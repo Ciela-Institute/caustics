@@ -1,0 +1,28 @@
+cosmology: &cosmo
+  name: cosmo
+  kind: FlatLambdaCDM
+
+lens: &lens
+  name: lens
+  kind: SIE
+  init_kwargs:
+    cosmology: *cosmo
+
+src: &src
+  name: source
+  kind: Sersic
+
+lnslt: &lnslt
+  name: lenslight
+  kind: Sersic
+
+simulator:
+  name: minisim
+  kind: Lens_Source
+  init_kwargs:
+    # Single lense
+    lens: *lens
+    source: *src
+    lens_light: *lnslt
+    pixelscale: 0.05
+    pixels_x: 100

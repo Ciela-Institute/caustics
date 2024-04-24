@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, Annotated
 
 from torch import Tensor
 
@@ -7,6 +7,8 @@ from ..parametrized import Parametrized, unpack
 from ..packed import Packed
 
 __all__ = ("Source",)
+
+NameType = Annotated[Optional[str], "Name of the source"]
 
 
 class Source(Parametrized):
@@ -41,10 +43,14 @@ class Source(Parametrized):
             the source brightness.
             This could be a single value or a tensor of values.
 
+            *Unit: arcsec*
+
         y: Tensor
             The y-coordinate(s) at which to calculate
             the source brightness.
             This could be a single value or a tensor of values.
+
+            *Unit: arcsec*
 
         params: Packed, optional
             Dynamic parameter container that might be required
