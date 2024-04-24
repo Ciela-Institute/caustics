@@ -4,6 +4,7 @@ import yaml
 
 import pytest
 import torch
+
 try:
     from pydantic import create_model
 except ImportError:

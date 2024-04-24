@@ -3,6 +3,7 @@ import typing
 import inspect
 import torch
 from typing import List, Literal, Dict, Annotated, Union, Any, Tuple
+
 try:
     from pydantic import Field, create_model, field_validator, ValidationInfo
 except ImportError:
@@ -282,4 +283,3 @@ def setup_simulator_models() -> type[Annotated]:
         for sim in _registry.simulators
     ]
     return Annotated[Union[tuple(simulators_models)], Field(discriminator="kind")]
-
