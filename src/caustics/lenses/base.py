@@ -11,8 +11,8 @@ from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
 from ..parametrized import Parametrized, unpack
 from .utils import get_magnification
-from ..utils import batch_lm
 from ..packed import Packed
+from . import func
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -185,39 +185,18 @@ class Lens(Parametrized):
             *Unit: arcsec*
         """
 
-        bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Dout:2)
-
         # TODO make FOV more general so that it doesn't have to be centered on zero,zero
         if fov is None:
             raise ValueError("fov must be given to generate initial guesses")
 
-        # Random starting points in image plane
-        guesses = (torch.as_tensor(fov) * (torch.rand(n_init, 2) - 0.5)).to(
-            device=bxy.device
-        )  # Has shape (n_init, Din:2)
-
-        # Optimize guesses in image plane
-        x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
-            guesses,
-            bxy,
-            lambda *a, **k: torch.stack(
-                self.raytrace(a[0][..., 0], a[0][..., 1], *a[1:], **k), dim=-1
-            ),
-            f_args=(z_s, params),
+        return func.forward_raytrace(
+            bx,
+            by,
+            partial(self.raytrace, params=params, z_s=z_s),
+            epsilon,
+            n_init,
+            fov,
         )
-
-        # Clip points that didn't converge
-        x = x[c < 1e-2 * epsilon**2]
-
-        # Cluster results into n-images
-        res = []
-        while len(x) > 0:
-            res.append(x[0])
-            d = torch.linalg.norm(x - x[0], dim=-1)
-            x = x[d > epsilon]
-
-        res = torch.stack(res, dim=0)
-        return res[..., 0], res[..., 1]
 
 
 class ThickLens(Lens):
@@ -782,9 +761,8 @@ class ThinLens(Lens):
         deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(
             x, y, z_s, params
         )
-        return (
-            (d_ls / d_s) * deflection_angle_x,
-            (d_ls / d_s) * deflection_angle_y,
+        return func.reduced_from_physical_deflection_angle(
+            deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
 
     @unpack
@@ -839,9 +817,8 @@ class ThinLens(Lens):
         deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(
             x, y, z_s, params
         )
-        return (
-            (d_s / d_ls) * deflection_angle_x,
-            (d_s / d_ls) * deflection_angle_y,
+        return func.physical_from_reduced_deflection_angle(
+            deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
 
     @abstractmethod
