@@ -5,14 +5,15 @@ from typing import Union
 
 from ..sims.simulator import Simulator
 from ..io import from_file
-from .utils import setup_simulator_models, create_model, Field
-from .base_models import StateConfig
 
 
 def build_simulator(config_path: Union[str, Path]) -> Simulator:
     """
     Build a simulator from the configuration
     """
+    # Imports using Pydantic are placed here to make Pydantic a weak dependency
+    from caustics.models.utils import setup_simulator_models, create_model, Field
+    from caustics.models.base_models import StateConfig
     simulators = setup_simulator_models()
     Config = create_model(
         "Config", __base__=StateConfig, simulator=(simulators, Field(...))
