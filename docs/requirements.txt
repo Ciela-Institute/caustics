@@ -1,6 +1,7 @@
 ipywidgets
 jupyter-book
 matplotlib
+pydantic>=2.6.1,<3
 pyro-ppl
 sphinx
 sphinx_rtd_theme
