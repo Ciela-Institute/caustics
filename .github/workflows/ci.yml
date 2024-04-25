@@ -52,7 +52,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov torch wheel
+          pip install pytest pytest-cov torch wheel pydantic
 
       # We only want to install this on one run, because otherwise we'll have
       # duplicate annotations.
