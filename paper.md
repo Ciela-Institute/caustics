@@ -24,6 +24,12 @@ authors:
   - name: Andreas Filipp
     orcid: 0000-0003-4701-3469
     affiliation: "1, 2"
+  - name: Landung Setiawan
+    orcid: 0000-0002-1624-2667
+    affiliation: "5"
+  - name: Cordero Core
+    orcid: 0000-0002-3531-3221
+    affiliation: "5"
   - name: Ronan Legin
     orcid: 0000-0001-9459-6316
     affiliation: "1, 2"
@@ -53,6 +59,8 @@ affiliations:
       Center for Computational Astrophysics, Flatiron Institute, 162 5th Avenue,
       10010, New York, NY, USA
     index: 4
+  - name: SSEC, 1410 NE Campus Pkwy, Seattle, WA 98195, USA
+    index: 5
 date: 19 March 2024
 bibliography: paper.bib
 ---
@@ -126,7 +134,7 @@ see that performance can vary considerably depending on the setup and conclude
 that one can expect comparable performance between `caustics` and `lenstronomy`
 with naive implementations on CPU.
 
-![Mock data generated using caustics](media/runtime_comparison_img.png)
+![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sersic model is lensed by an SIE mass distribution. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.](media/runtime_comparison_img.png)
 
 ![Sampling the posterior using caustics combined with NUTS (Pyro implementation)](media/runtime_comparison_psfupsample.png)
 
