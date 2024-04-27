@@ -3,10 +3,10 @@ from typing import Optional, Union, Annotated
 
 from torch import Tensor
 
-from ..utils import derotate, translate_rotate
 from .base import ThinLens, CosmologyType, NameType, ZLType
 from ..parametrized import unpack
 from ..packed import Packed
+from . import func
 
 __all__ = ("SIE",)
 
@@ -188,13 +188,7 @@ class SIE(ThinLens):
             *Unit: arcsec*
 
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = self._get_potential(x, y, q)
-        f = (1 - q**2).sqrt()
-        ax = b * q.sqrt() / f * (f * x / (psi + self.s)).atan()  # fmt: skip
-        ay = b * q.sqrt() / f * (f * y / (psi + q**2 * self.s)).atanh()  # fmt: skip
-
-        return derotate(ax, ay, phi)
+        return func.reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, self.s)
 
     @unpack
     def potential(
@@ -243,10 +237,7 @@ class SIE(ThinLens):
             *Unit: arcsec^2*
 
         """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, params)
-        ax, ay = derotate(ax, ay, -phi)
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        return x * ax + y * ay
+        return func.potential_sie(x0, y0, q, phi, b, x, y, self.s)
 
     @unpack
     def convergence(
@@ -295,6 +286,4 @@ class SIE(ThinLens):
             *Unit: unitless*
 
         """
-        x, y = translate_rotate(x, y, x0, y0, phi)
-        psi = self._get_potential(x, y, q)
-        return 0.5 * q.sqrt() * b / psi
+        return func.convergence_sie(x0, y0, q, phi, b, x, y, self.s)

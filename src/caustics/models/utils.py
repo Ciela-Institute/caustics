@@ -1,9 +1,17 @@
 # mypy: disable-error-code="union-attr, valid-type, has-type, assignment, arg-type, dict-item, return-value, misc"
 import typing
-from typing import List, Literal, Dict, Annotated, Union, Any, Tuple
 import inspect
-from pydantic import Field, create_model, field_validator, ValidationInfo
 import torch
+from typing import List, Literal, Dict, Annotated, Union, Any, Tuple
+
+try:
+    from pydantic import Field, create_model, field_validator, ValidationInfo
+except ImportError:
+    raise ImportError(
+        "The `pydantic` package is required to use this feature. "
+        "You can install it using `pip install pydantic==2.7`. This package requires rust. Make sure you have the permissions to install the dependencies.\n "
+        "Otherwise, the maintainer can install the package for you, you can then use `pip install --no-index pydantic`"
+    )
 
 from ..parametrized import Parametrized
 from .base_models import Base, Parameters, InitKwargs
