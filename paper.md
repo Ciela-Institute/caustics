@@ -57,7 +57,9 @@ affiliations:
       Center for Computational Astrophysics, Flatiron Institute, 162 5th Avenue,
       10010, New York, NY, USA
     index: 4
-  - name: SSEC, 1410 NE Campus Pkwy, Seattle, WA 98195, USA
+  - name:
+      eScience Institute Scientific Software Engineering Center, 1410 NE Campus
+      Pkwy, Seattle, WA 98195, USA
     index: 5
 date: 19 March 2024
 bibliography: paper.bib
