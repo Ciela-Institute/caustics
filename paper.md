@@ -44,16 +44,14 @@ authors:
     affiliation: "1, 2"
 affiliations:
   - name:
-      Department of Physics, Universit{\'e} de Montr{\'e}al, Montr{\'e}al,
-      Qu{\'e}bec, Canada
+      Department of Physics, Université de Montréal, Montréal, Québec, Canada
     index: 1
   - name:
-      Ciela - Montr{\'e}al Institute for Astrophysical Data Analysis and Machine
-      Learning, Montr{\'e}al, Qu{\'e}bec, Canada
+      Ciela - Montréal Institute for Astrophysical Data Analysis and Machine
+      Learning, Montréal, Québec, Canada
     index: 2
   - name:
-      Mila - Qu{\'e}bec Artificial Intelligence Institute, Montr{\'e}al,
-      Qu{\'e}bec, Canada
+      Mila - Québec Artificial Intelligence Institute, Montréal, Québec, Canada
     index: 3
   - name:
       Center for Computational Astrophysics, Flatiron Institute, 162 5th Avenue,
@@ -116,7 +114,7 @@ functionality of `caustics`.
 Here we discuss the performance enhancements available in `caustics`. The code
 allows operations to be batched and multi-threaded or sent to GPU, which can
 provide substantial performance enhancements. In Fig. 1 we demonstrate this by
-sampling images of a S\'ersic with an SIE model lensing the image. In the two
+sampling images of a Sérsic with an SIE model lensing the image. In the two
 subfigures we show performance for simply sampling a "direct" 128x128 image, and
 sampling a "realistic" image which is upsampled by a factor of 4 and convolved
 with a PSF. This demonstrates a number of interesting facts about numerical
@@ -134,7 +132,7 @@ see that performance can vary considerably depending on the setup and conclude
 that one can expect comparable performance between `caustics` and `lenstronomy`
 with naive implementations on CPU.
 
-![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sersic model is lensed by an SIE mass distribution. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.](media/runtime_comparison_img.png)
+![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.](media/runtime_comparison_img.png)
 
 ![Sampling the posterior using caustics combined with NUTS (Pyro implementation)](media/runtime_comparison_psfupsample.png)
 
@@ -170,11 +168,11 @@ realizations (training ML), or sampling large numbers of subhalos.
 Here we briefly discuss the user experience, via our three levels of interface.
 The simplest interface is through configuration files. A configuration file is a
 `.yaml` file which specifies the qualities of a gravitational lensing simulator.
-Thus one may specify that a S\'ersic will be lensed with an SIE model and an
+Thus one may specify that a Sérsic will be lensed with an SIE model and an
 external shear to produce an image of a given size, including PSF convolution
 and gaussian quadrature sub-pixel integration. The user may then load such a
 simulator in a single line of Python and carry on using that simulator as a pure
-function `f(x)` which takes in parameters such as the sersic index, position,
+function `f(x)` which takes in parameters such as the Sérsic index, position,
 SIE einstein radius, etc. and returns an image. This interface is
 straightforward for new users and for simplifying the passing of codes between
 users.
