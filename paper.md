@@ -136,16 +136,11 @@ with naive implementations on CPU.
 
 ![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.](media/runtime_comparison_img.png)
 
-![Sampling the posterior using caustics combined with NUTS (Pyro implementation)](media/runtime_comparison_psfupsample.png)
-
 Comparing the "caustics unbatched cpu" and "caustics batched cpu" lines we see
-that in some scenarios (the direct sampling) batching can provide more efficient
-use of a CPU and improve performance. However, in the realistic scenario the
-batching actually reduces performance, it is not entirely clear why this is the
-case given that batching should behave merely as a compiled for-loop instead of
-a Python for-loop which is slow. We hypothesize that this is due to the extra
-memory allocation requirements to collect all operations into a single large
-tensor.
+that batching can provide more efficient use of a CPU and improve performance.
+However, in the realistic scenario the batching has minimal performance
+enhancement, likely because the python overhead of a for-loop is minimal
+compared to the large number of operations being performed.
 
 Comparing "caustics batched cpu" and "caustics batched 4cpu" we see that
 PyTorch's automatic multi-threading capabilities can indeed provide performance
