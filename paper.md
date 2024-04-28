@@ -115,12 +115,12 @@ functionality of `caustics`.
 
 Here we discuss the performance enhancements available in `caustics`. The code
 allows operations to be batched and multi-threaded or sent to GPU, which can
-provide substantial performance enhancements. In Fig. 1 we demonstrate this by
-sampling images of a Sérsic with an SIE model lensing the image. In the two
-subfigures we show performance for simply sampling a "direct" 128x128 image, and
-sampling a "realistic" image which is upsampled by a factor of 4 and convolved
-with a PSF. This demonstrates a number of interesting facts about numerical
-performance in such scenarios.
+provide substantial performance enhancements. In \autoref{fig:runtime} we
+demonstrate this by sampling images of a Sérsic with an SIE model lensing the
+image. In the two subfigures we show performance for simply sampling a "direct"
+128x128 image, and sampling a "realistic" image which is upsampled by a factor
+of 4 and convolved with a PSF. This demonstrates a number of interesting facts
+about numerical performance in such scenarios.
 
 First, we observe the relative performance of Lenstronomy and `caustics`, where
 the most direct comparison is with the "caustics unbatched cpu" line.
@@ -134,7 +134,7 @@ see that performance can vary considerably depending on the setup and conclude
 that one can expect comparable performance between `caustics` and `lenstronomy`
 with naive implementations on CPU.
 
-![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.](media/runtime_comparison_img.png)
+![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.\label{fig:runtime}](media/runtime_comparison_img.png)
 
 Comparing the "caustics unbatched cpu" and "caustics batched cpu" lines we see
 that batching can provide more efficient use of a CPU and improve performance.
@@ -225,6 +225,23 @@ though with the detailed "layed out" for the user so they may simply copy and
 modify to suit their particular analysis task. Thus, we achieve flexability both
 by allowing many analysis paradigms, and by facilitating the easy development of
 such paradigms.
+
+# Machine Learning
+
+One of the core purposes of developing `caustics` has been the acceleration of
+the application of machine learning to strong gravitational lensing. THis is
+accomplished through two avenues. First, as demonstrated in
+\autoref{fig:runtime}, `caustics` is well suited to generate large samples of
+simulated mock lensing images. By leveraging GPUs it can generate orders of
+magnitude more lenses in the same amount of time. Since many machine learning
+algorithms are "data hungry", this translates to better performance with more
+exmaples to learn from. Second, as a differentiable lensing simulator,
+`caustics` can be integrated directly into machine learning workflows. This
+could mean using `caustics` as part of a loss function. Alternatively, it could
+be through a statistical paradigm like diffusion modelling. It has already been
+shown that differentiable lensing simulators, coupled with machine learning and
+diffusion modelling, can massively improve source reconstruction in strong
+gravitational lenses [@Adam2022].
 
 # Conclusions
 
