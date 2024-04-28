@@ -83,10 +83,10 @@ the detailed modelling of such lensing systems.
 # Statement of need
 
 Unlocking the exciting potential of graviational lensing will require processing
-hundreds of thousands of lenses [@rubinlenses] expected to be discovered in the
+hundreds of thousands of lenses [@Collett2015] expected to be discovered in the
 next generation of surveys (Rubin, Euclid, Roman, and more). The current state
-of lensing analysis, however, requires many days to solve even a single system
-[@], so computational advancements like GPU acceleration and algorithmic
+of lensing analysis, however, requires many days/weeks to solve even a single
+system, so computational advancements like GPU acceleration and algorithmic
 advances like automatic differentiation are needed to make the computational
 timescales realistic for such large samples. `caustics` is built with the future
 of lensing in mind, using `PyTorch` [@pytorch] to accelerate the low level
@@ -197,7 +197,11 @@ to the other a matter of following documentation and code references. This makes
 the transition easy since one may very clearly observe how their current
 analysis can be reproduced in the lower level. From there one may experiment
 with the new flexibility. `Caustics` thus provides a straightforward pipeline
-for users to move from beginner to power user.
+for users to move from beginner to power user. Users at all levels are
+encouraged to investigate the documentation as the code includes extensive
+docstrings for all functions, including especially units for most functions.
+Having units for the expected inputs and outputs of each function makes the code
+more transparent to its users.
 
 # Flexibility
 
@@ -213,14 +217,14 @@ The user is not locked into any single analysis paradigm.
 
 Further, it is possible to probe the lensing objects in a number of useful ways.
 Each lensing object has (where meaningful) a well defined convergence,
-potential, and deflection field and we provide examples to visualize all of
-these. Since `caustics` is differentiable, it is trivial to extract critical
-curves and we provide examples of these visualizations. Our Jupyter notebook
-tutorials also include examples of many typical analysis routines, though with
-the detailed "layed out" for the user so they may simply copy and modify to suit
-their particular analysis task. Thus, we achieve flexability both by allowing
-many analysis paradigms, and by facilitating the easy development of such
-paradigms.
+potential, time delay, and deflection field and we provide examples to visualize
+all of these. Since `caustics` is differentiable, it is trivial to extract
+critical curves and we provide examples of these visualizations. Our Jupyter
+notebook tutorials also include examples of many typical analysis routines,
+though with the detailed "layed out" for the user so they may simply copy and
+modify to suit their particular analysis task. Thus, we achieve flexability both
+by allowing many analysis paradigms, and by facilitating the easy development of
+such paradigms.
 
 # Conclusions
 
