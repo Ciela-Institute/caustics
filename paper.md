@@ -144,7 +144,7 @@ PSF for extra realism. All of these operations are collected into a single
 simulator which users may access and use simply as an `f(x)` function of the
 relevant lensing and light source parameters.
 
-![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled directly at the center of each pixel. Middle, the pixel map is supersampled using gaussian quadrature integration for faster convergence. Right, the fractional difference between the two is shown. We can see that in this case the direct sampling is innacurate by up to 30% of the pixel value in some areas. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](median/showquad.png)
+![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled directly at the center of each pixel. Middle, the pixel map is supersampled using gaussian quadrature integration for faster convergence. Right, the fractional difference between the two is shown. We can see that in this case the direct sampling is innacurate by up to 30% of the pixel value in some areas. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
 
 Currently `caustics` does not include optimizations for weak lensing,
 microlensing, or cluster scale lensing. In principle the mathematics are the
