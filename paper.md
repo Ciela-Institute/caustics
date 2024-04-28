@@ -33,15 +33,15 @@ authors:
   - name: Ronan Legin
     orcid: 0000-0001-9459-6316
     affiliation: "1, 2"
+  - name: Charles Wilson
+    orcid: 0000-0001-7071-5528
+    affiliation: "1, 2"
   - name: Yashar Hezaveh
     orcid: 0000-0002-8669-5733
     affiliation: "1, 2, 3, 4"
   - name: Laurence Perreault-Levasseur
     orcid: 0000-0003-3544-3939
     affiliation: "1, 2, 3, 4"
-  - name: Charles Wilson
-    orcid: 0000-0001-7071-5528
-    affiliation: "1, 2"
 affiliations:
   - name:
       Department of Physics, Université de Montréal, Montréal, Québec, Canada
