@@ -14,16 +14,16 @@ authors:
   - name: Alexandre Adam
     orcid: 0000-0001-8806-7936
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affiliation: "1, 2"
+    affiliation: "1, 2, 3"
   - name: Adam Coogan
     orcid: 0000-0002-0055-1780
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-  - name: Michael Barth
+  - name: M. J. Yantovski-Barth
     orcid: 0000-0001-5200-4095
-    affiliation: "1, 2"
+    affiliation: "1, 2, 3"
   - name: Andreas Filipp
     orcid: 0000-0003-4701-3469
-    affiliation: "1, 2"
+    affiliation: "1, 2, 3"
   - name: Landung Setiawan
     orcid: 0000-0002-1624-2667
     affiliation: "5"
@@ -32,10 +32,10 @@ authors:
     affiliation: "5"
   - name: Ronan Legin
     orcid: 0000-0001-9459-6316
-    affiliation: "1, 2"
+    affiliation: "1, 2, 3"
   - name: Charles Wilson
     orcid: 0000-0001-7071-5528
-    affiliation: "1, 2"
+    affiliation: "1, 2, 3"
   - name: Yashar Hezaveh
     orcid: 0000-0002-8669-5733
     affiliation: "1, 2, 3, 4"
@@ -67,7 +67,7 @@ bibliography: paper.bib
 
 # Summary
 
-Gravitational lensing occurs when light passes by a massive body, the path of
+Gravitational lensing occurs when light passes by a massive body; the path of
 the light is then deflected from its original trajectory. In astronomy this
 phenomenon is observed in a variety of configurations, often involving galaxies
 and clusters of galaxies, which must align within a fraction of a degree on the
@@ -111,6 +111,52 @@ lensing experience can smoothly transition to power users of `caustics`.
 Flexibility is achieved by a determined focus on minimalism in the core
 functionality of `caustics`.
 
+# Scope
+
+`Caustics` is a gravitational lensing simulator, the purpose of the project is
+to streamline the representation of strong gravitational lensing effects on the
+light of a background source. This includes a variety of lensing profiles which
+are parametric: SIE, EPL, Pseudo-Jaffe, NFW, External Shear, and more as well as
+non-parametric representations such as a gridded/pixelized convergence or
+potential field. For the background source we also provide a Sérsic light
+profile, as well as a pixelized light image. Users may easily extend these lens
+and source lists and we provide examples on how to do this.
+
+Once a lensing system has been defined (lens, source light, lens light) one must
+then perform various mathematical operations on the system. We include
+functionality for raytracing through the lensing system, both forward and
+backward. Users may compute the lensing potential, convergence, deflection
+field, time delay field, and magnification. All of these operations need to be
+performed in a multi-plane lensing context in some scenarios, which `caustics`
+supports. Since the code is differentiable, one may trivially also compute the
+derivatives of these quantities, such as the Jacobian of the lens equation,
+which is used in computing other quantities.
+
+With the building blocks of the lensing systemm and the various lensing
+quantities, one may then construct simulators which perform real analysis tasks.
+For example, one may wish to simulate an image collected from a telescope of a
+strong lensing system. A demonstration of such a simulator is given in
+\autoref{fig:sample} which also demonstrates the importance of sub-pixel
+sampling. This would involve raytracing through the lensing mass and extracting
+the brightness of the background source, one should do this at higher resolution
+than the fiducial pixel scale. Further, the image then must be convolved with a
+PSF for extra realism. All of these operations are collected into a single
+simulator which users may access and use simply as an `f(x)` function of the
+relevant lensing and light source parameters.
+
+![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled directly at the center of each pixel. Middle, the pixel map is supersampled using gaussian quadrature integration for faster convergence. Right, the fractional difference between the two is shown. We can see that in this case the direct sampling is innacurate by up to 30% of the pixel value in some areas. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](median/showquad.png)
+
+Currently `caustics` does not include optimizations for weak lensing,
+microlensing, or cluster scale lensing. In principle the mathematics are the
+same and `caustics` could perform the relevant calculations, though in each of
+these domains there are widely used techniques which we have not implemented.
+These are planned avenues for future work.
+
+`Caustics`' defined scope ends at the lensing simulation, thus it does not
+include functionality to optimize or sample the resulting functions. Users are
+encouraged to use already existing optimization and sampling codes like
+`scipy.optimize` [@scipy], `emcee` [@emcee], and `Pyro` [@pyro].
+
 # Performance
 
 Here we discuss the performance enhancements available in `caustics`. The code
@@ -118,9 +164,9 @@ allows operations to be batched and multi-threaded or sent to GPU, which can
 provide substantial performance enhancements. In \autoref{fig:runtime} we
 demonstrate this by sampling images of a Sérsic with an SIE model lensing the
 image. In the two subfigures we show performance for simply sampling a "direct"
-128x128 image, and sampling a "realistic" image which is upsampled by a factor
-of 4 and convolved with a PSF. This demonstrates a number of interesting facts
-about numerical performance in such scenarios.
+128x128 image (left), and sampling a "realistic" image (right) which is
+upsampled by a factor of 4 and convolved with a PSF. This demonstrates a number
+of interesting facts about numerical performance in such scenarios.
 
 First, we observe the relative performance of Lenstronomy and `caustics`, where
 the most direct comparison is with the "caustics unbatched cpu" line.
@@ -260,11 +306,11 @@ resources.
 
 CS acknowledges the support of a NSERC Postdoctoral Fellowship and a CITA
 National Fellowship. This research was enabled in part by support provided by
-Calcul Qu\'ebec, the Digital Research Alliance of Canada, and a generous
-donation by Eric and Wendy Schmidt with the recommendation of the Schmidt
-Futures Foundation. Y.H. and L.P. acknowledge support from the National Sciences
-and Engineering Council of Canada grants RGPIN-2020-05073 and 05102, the Fonds
-de recherche du Québec grants 2022-NC-301305 and 300397, and the Canada Research
+Calcul Québec, the Digital Research Alliance of Canada, and a generous donation
+by Eric and Wendy Schmidt with the recommendation of the Schmidt Futures
+Foundation. Y.H. and L.P. acknowledge support from the National Sciences and
+Engineering Council of Canada grants RGPIN-2020-05073 and 05102, the Fonds de
+recherche du Québec grants 2022-NC-301305 and 300397, and the Canada Research
 Chairs Program.
 
 # References
