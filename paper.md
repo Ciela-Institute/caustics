@@ -15,10 +15,10 @@ authors:
     orcid: 0000-0001-8806-7936
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: "1, 2, 3"
-  - name: Adam Coogan
+  - name: Adam Coogan[^1]
     orcid: 0000-0002-0055-1780
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affitiation: "1, 2, 3"[^1]
+    affitiation: "1, 2, 3"
   - name: M. J. Yantovski-Barth
     orcid: 0000-0001-5200-4095
     affiliation: "1, 2, 3"
