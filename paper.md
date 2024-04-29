@@ -197,23 +197,23 @@ performance in such scenarios.
 
 We compare the performance with that of Lenstronomy as our baseline. The most
 direct comparison between the two codes can be observed by comparing the
-`Lenstronomy` line with the `caustics unbatched cpu` line. `Lenstronomy` is
+`Lenstronomy` line with the "caustics unbatched cpu" line. `Lenstronomy` is
 written using the `numba` [@numba] package which compiles python code. The left
 plot shows that `caustics` suffers from a significant overhead compared with
-Lenstronomy, which is nearly twice as fast as the `caustics unbatched cpu` line.
-This occurs because `caustics` has some Python logic to dispatch the parameters
-to their appropriate modules in its graph. Despite this, `caustics` showcases a
-strong performance when using the batched GPU setting, especially in the more
-realstic scenario with extra computations in the simulator including 4x
+`Lenstronomy`, which is nearly twice as fast as the "caustics unbatched cpu"
+line. This occurs because `caustics` has some Python logic to dispatch the
+parameters to their appropriate modules in its graph. Despite this, `caustics`
+showcases a strong performance when using the batched GPU setting, especially in
+the more realstic scenario with extra computations in the simulator including 4x
 oversampling of the raytracing and the PSF convolution.
 
 ![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. For CPU calculations we use `Intel Gold 6148 Skylake` and for the GPU we use a `NVIDIA V100`. On the left, the lensing system is sampled directly with 128 pixel resolution. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.\label{fig:runtime}](media/runtime_comparison_img.png)
 
 Comparing the "caustics unbatched cpu" and "caustics batched cpu" lines we see
-that batching can provide more efficient use of a CPU and improve performance.
-However, in the realistic scenario the batching has minimal performance
-enhancement, likely because the python overhead of a for-loop is minimal
-compared to the large number of operations being performed.
+that batching can provide more efficient use of the same, single CPU,
+computational resources. However, in the realistic scenario the batching has
+minimal performance enhancement, likely because the python overhead of a
+for-loop is minimal compared to the large number of operations being performed.
 
 Comparing "caustics batched cpu" and "caustics batched 4cpu" we see that
 PyTorch's automatic multi-threading capabilities can indeed provide performance
