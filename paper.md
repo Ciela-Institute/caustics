@@ -15,7 +15,7 @@ authors:
     orcid: 0000-0001-8806-7936
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: "1, 2, 3"
-  - name: Adam Coogan[^1]
+  - name: Adam Coogan[^2]
     orcid: 0000-0002-0055-1780
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: "1, 2, 3"
@@ -68,7 +68,7 @@ date: 19 March 2024
 bibliography: paper.bib
 ---
 
-[^1]: Work done while at UdeM, Ciela, Mila
+[^2]: Work done while at UdeM, Ciela, and Mila
 
 # Summary
 
