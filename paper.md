@@ -169,7 +169,7 @@ realism. All of these operations are collected into a single simulator which
 users may access and use simply as a function of the relevant lensing and light
 source parameters.
 
-![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled directly at the center of each pixel. Middle, the pixel map is supersampled and the integrated using gaussian quadrature integration for faster convergence. Right, the fractional difference between the two is shown. We can see that in this case the direct sampling is innacurate by up to 30% of the pixel value in areas of high contrast. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
+![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled only at the midpoint of each pixel. Middle, the pixel map is supersampled and then integrated using gaussian quadrature integration for greater accuracy. Right, the fractional difference between the two is shown. We can see that in this case the midpoint sampling is innacurate by up to 30% of the pixel value in areas of high contrast. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
 
 Currently `caustics` does not include modules for weak lensing, microlensing, or
 cluster scale lensing. In principle the mathematics are the same and `caustics`
@@ -189,11 +189,11 @@ allows operations to be batched and CPU multi-threaded or sent to GPU (all via
 PyTorch) to more efficiently use computational resources. In
 \autoref{fig:runtime} we demonstrate this by sampling images of a Sérsic with an
 SIE model lensing the image. In the two subfigures we show performance for
-simply sampling a "direct" 128x128 image (left), and sampling a "realistic"
-image (right) which is upsampled by a factor of 4 and convolved with a PSF. All
-parameters are randomly resampled for each mock system (to avoid caching). This
-demonstrates a number of interesting facts about numerical performance in such
-scenarios.
+simply sampling a 128x128 image using the pixel midpoint (left), and sampling a
+"realistic" image (right) which is upsampled by a factor of 4 and convolved with
+a PSF. All parameters are randomly resampled for each mock system (to avoid
+caching). This demonstrates a number of interesting facts about numerical
+performance in such scenarios.
 
 We compare the performance with that of Lenstronomy as our baseline. The most
 direct comparison between the two codes can be observed by comparing the
@@ -225,14 +225,14 @@ incur the overhead of thread level parallelism.
 Finally, comparing any of the lines with "caustics batched gpu" we see the real
 power of batched operations. Communication betweeen a CPU and GPU is slow, so
 condensing many calculations into a single command means that `caustics` is
-capable of fully exploiting a GPU (here we use a NVIDIA V100 GPU). In the direct
-sampling the GPU never "saturates" meaning that it runs equally fast for any
-number of samples. In the realistic scneario we hit the limit of the GPU memory
-and so had to break up the operations beyond 100 samples, which is when the GPU
-performance begins to slow down. Either way, it is possible to easily achieve
-over 100X speedup over CPU performance, making GPUs by far the most efficient
-method to perform large lensing computations such as running many MCMC chains or
-sampling many lensing realizations (e.g. for training machine learning models).
+capable of fully exploiting a GPU. In the midpoint sampling the GPU never
+"saturates" meaning that it runs equally fast for any number of samples. In the
+realistic scneario we hit the limit of the GPU memory and so had to break up the
+operations beyond 100 samples, which is when the GPU performance begins to slow
+down. Either way, it is possible to easily achieve over 100X speedup over CPU
+performance, making GPUs by far the most efficient method to perform large
+lensing computations such as running many MCMC chains or sampling many lensing
+realizations (e.g. for training machine learning models).
 
 # User experience
 
