@@ -1,5 +1,5 @@
 ---
-title: "Caustics: A Python package for accelerated strong gravitational lensing"
+title: "Caustics: A Python Package for Accelerated Strong Gravitational Lensing"
 tags:
   - Python
   - astronomy
@@ -76,14 +76,16 @@ Gravitational lensing occurs when light passes by a massive body; the path of
 the light is then deflected from its original trajectory. In astronomy this
 phenomenon is observed in a variety of configurations, often involving galaxies
 and clusters of galaxies, which must align within a fraction of a degree on the
-sky. As more lens systems have been discovered (hundreds), they have emerged as
-a key tool for making precision measurements and answering pressing questions in
-astrophysics. Notable among these is the measurement of the expansion rate of
-the Universe [@holycow], for which lensing has quickly become competitive in the
-state-of-the-art. Lensing also promises to unlock information about dark
-matter[@Hezaveh2016], supernovae [@Rodney2021], and the first stars [@Welch2022]
-among other topics. Here we present a code `caustics` to meet the massive
-computational requirements of modelling sso many lensing systems in detail.
+sky. As more lens systems have been discovered (low thousands), they have
+emerged as a key tool for making precision measurements and answering pressing
+questions in astrophysics. Notable among these is the measurement of the
+expansion rate of the Universe [@holycow], for which lensing has quickly become
+competitive in the state-of-the-art. Lensing also promises to unlock information
+about dark matter[@Hezaveh2016], supernovae [@Rodney2021], quasars, and the
+first stars [@Welch2022] among other topics. Future surveys will discover orders
+of magnitude more lens system (hundreds of thousands). Here we present a code
+`caustics` to meet the massive computational requirements of modelling so many
+lensing systems in detail.
 
 # Statement of need
 
@@ -140,7 +142,7 @@ lensing system.
 
 With the building blocks of the lensing system and the various lensing
 quantities, one may then construct simulators which perform real analysis tasks.
-For example, one may wish to simulate an image collected from a telescope of a
+For example, one may wish to simulate an image observed by a telescope of a
 strong lensing system. A demonstration of such a simulator is given in
 \autoref{fig:sample} which also demonstrates the importance of sub-pixel
 sampling. This involves raytracing through the lensing mass and extracting the
