@@ -118,6 +118,18 @@ capability. In this way, even users with no previous lensing experience can
 smoothly transition to power users of `caustics`. Flexibility is achieved by a
 determined focus on minimalism in the core functionality of `caustics`.
 
+`caustics` fills a timely need for a differentiable lensing simulator as
+differentiable codes are already advancing other fields. For example,
+gravitational wave analysis has explored the use of differentiable codes
+[@Coogan2022, @Edwards2023, @Wong2023]; astronomical image photometry extraction
+[@Stone2023] and light curves [@Millon2024]; even generic optimization for
+scientific problems [@Nikolic2018]. There is already a great deal of literature
+on the use of machine learning for strong lensing analyses, which of course
+benefit from differentialbe programing and GPUs [@Brehmer2019, @Chianese2020,
+@Coogan2020, @Mishra2022, @Karchev2022, @Karchev2022b]. `caustics` is built on
+the lessons form other differentiable codes, and built to accelerate machine
+learning in the field of strong lensing.
+
 # Scope
 
 `Caustics` is a gravitational lensing simulator. The purpose of the project is
