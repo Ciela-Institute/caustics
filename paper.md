@@ -245,7 +245,7 @@ investigate the structure of a simulator in the form of a directed acyclic graph
 of calculations. Note that one may also fix a subset of parameter values, making
 them "static" instead of the default which is "dynamic".
 
-![Example directed acyclic graph representation of the simulator from \autoref{fig:runtime}. Ellipses are objects and squares are parameters. Parameters are passed at the top level node (Lens_Source) and flow down the graph automatically to all other objects which require parameter values to complete a lensing simulation.](media/graph.png)
+![Example directed acyclic graph representation of the simulator from \autoref{fig:runtime}. Ellipses are objects and squares are parameters; open squares are dynamic parameters and greyed squares are static parameters. Parameters are passed at the top level node (Lens_Source) and flow down the graph automatically to all other objects which require parameter values to complete a lensing simulation.\label{fig:graph}](media/graph.png)
 
 Finally, there is the functional interface. The functional interface eschews the
 object oriented `caustics` code, instead giving the user access to individual
