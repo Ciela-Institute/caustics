@@ -81,11 +81,11 @@ sky. As more lens systems have been discovered (low thousands), they have
 emerged as a key tool for making precision measurements and answering pressing
 questions in astrophysics. Notable among these is the measurement of the
 expansion rate of the Universe [@holycow]. Lensing also promises to unlock
-information about dark matter[@Hezaveh2016], supernovae [@Rodney2021], quasars,
-and the first stars [@Welch2022] among other topics. Future surveys will
-discover orders of magnitude more lens system (hundreds of thousands). Here we
-present a code `caustics` to meet the massive computational requirements of
-modelling so many lensing systems in detail.
+information about dark matter [@Hezaveh2016; Vegetti2014], supernovae
+[@Rodney2021], quasars [@Peng2006], and the first stars [@Welch2022] among other
+topics. Future surveys will discover orders of magnitude more lens system
+(hundreds of thousands). Here we present a code `caustics` to meet the massive
+computational requirements of modelling so many lensing systems in detail.
 
 # Statement of need
 
