@@ -122,12 +122,9 @@ functionality of `caustics`.
 differentiable codes are already advancing other fields. For example,
 gravitational wave analysis [@Coogan2022; @Edwards2023; @Wong2023]; astronomical
 image photometry [@Stone2023]; light curves [@Millon2024]; even generic
-optimization for scientific problems [@Nikolic2018]. There is already a great
-deal of literature on the use of machine learning for strong lensing analyses,
-which of course benefit from differentialbe programing and GPUs [@Brehmer2019;
-@Chianese2020; @Coogan2020; @Mishra2022; @Karchev2022; @Karchev2022b].
-`caustics` is built on the lessons from other differentiable codes, and built to
-accelerate machine learning in the field of strong lensing.
+optimization for scientific problems [@Nikolic2018]. `caustics` is built on the
+lessons from other differentiable codes, and built to accelerate machine
+learning in the field of strong lensing.
 
 # Scope
 
@@ -148,9 +145,10 @@ field, time delay field, and magnification. All of these operations may need to
 be performed in a multi-plane setting to account for interlopers or multiple
 sources, which `caustics` readily supports. Since the code is differentiable
 (via PyTorch), one may easily also compute the derivatives of these quantities,
-such as the Jacobian of the lens equation. For example, one may readily project
-interlopers from multiple planes to the main lensing plane by computing the
-effective convergence, obtained with the trace of the Jacobian.
+such as when finding critical curves, or computing the Jacobian of the lens
+equation. For example, one may project interlopers from multiple lensing planes
+to a single plane by computing the effective convergence, obtained with the
+trace of the Jacobian.
 
 With these building blocks in place, one may construct fast and accurate
 simulators used to produce training sets for machine learning models or for
@@ -161,11 +159,10 @@ require large and accurate training sets which can be created quickly with
 `caustics`. A demonstration of such a simulator is given in \autoref{fig:sample}
 which also demonstrates the importance of sub-pixel sampling. This involves
 raytracing through the lensing mass and extracting the brightness of the
-background source, and should be done at higher resolution than the fiducial
-pixel scale. Further, the image then must be convolved with a PSF for extra
-realism. All of these operations are collected into a single simulator which
-users may access and use simply as a function of the relevant lensing and light
-source parameters.
+background source. Further, the image then must be convolved with a PSF for
+extra realism. All of these operations are collected into a single simulator
+which users may access and use simply as a function of the relevant lensing and
+light source parameters.
 
 ![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled only at the midpoint of each pixel. Middle, the pixel map is supersampled and then integrated using gaussian quadrature integration for greater accuracy. Right, the fractional difference between the two is shown. We can see that in this case the midpoint sampling is inaccurate by up to 30% of the pixel value in areas of high contrast. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
 
@@ -186,12 +183,12 @@ Here we discuss the performance enhancements available in `caustics`. The code
 allows operations to be batched and CPU multi-threaded or sent to GPU (all via
 PyTorch) to more efficiently use computational resources. In
 \autoref{fig:runtime} we demonstrate this by sampling images of a Sérsic with an
-SIE model lensing the image. In the two subfigures we show performance for
-simply sampling a 128x128 image using the pixel midpoint (left), and sampling a
-"realistic" image (right) which is upsampled by a factor of 4 and convolved with
-a PSF. All parameters are randomly resampled for each mock system (to avoid
-caching). This demonstrates a number of interesting facts about numerical
-performance in such scenarios.
+SIE model lensing the image (much like \autoref{fig:sample}). In the two
+subfigures we show performance for simply sampling a 128x128 image using the
+pixel midpoint (left), and sampling a "realistic" image (right) which is
+upsampled by a factor of 4 and convolved with a PSF. All parameters are randomly
+resampled for each mock system (to avoid caching). This demonstrates a number of
+interesting facts about numerical performance in such scenarios.
 
 We compare the performance with that of Lenstronomy as our baseline. The most
 direct comparison between the two codes can be observed by comparing the
@@ -212,7 +209,8 @@ Comparing the "caustics unbatched cpu" and "caustics batched cpu" lines we see
 that batching can provide more efficient use of the same, single CPU,
 computational resources. However, in the realistic scenario the batching has
 minimal performance enhancement, likely because the python overhead of a
-for-loop is minimal compared to the large number of operations being performed.
+for-loop is no longer significant compared to the large number of numerical
+operations being performed.
 
 Comparing "caustics batched cpu" and "caustics batched 4cpu" we see that
 PyTorch's automatic multi-threading capabilities can indeed provide performance
@@ -226,10 +224,10 @@ power of batched operations. Communication between a CPU and GPU is slow, so
 condensing many calculations into a single command means that `caustics` is
 capable of fully exploiting a GPU. In the midpoint sampling the GPU never
 "saturates" meaning that it runs equally fast for any number of samples. In the
-realistic scenario we hit the limit of the GPU memory and so had to break up the
-operations beyond 100 samples, which is when the GPU performance begins to slow
-down. Either way, it is possible to easily achieve over 100X speedup over CPU
-performance, making GPUs by far the most efficient method to perform large
+realistic scenario we reach the limit of the GPU memory and so had to break up
+the operations beyond 100 samples, which is when the GPU performance begins to
+slow down. Either way, it is possible to easily achieve over 100X speedup over
+CPU performance, making GPUs by far the most efficient method to perform large
 lensing computations such as running many MCMC chains or sampling many lensing
 realizations (e.g. for training machine learning models).
 
@@ -251,17 +249,19 @@ The second level of interface is the object oriented interface, which allows
 users to interact with light sources and lenses as objects. The user may build
 simulators just like the configuration file interface, or they may interact with
 the objects in a number of other ways accessing further details about each lens.
-Users may apply the full flexibility of Python with these lensing objects and
-may construct analysis code however they like, though there are many default
+Each lensing object has (where meaningful) a convergence, potential, time delay,
+and deflection field and we provide examples to visualize all of these. Users
+may apply the full flexibility of Python with these lensing objects and may
+construct analysis code however they like, though there are many default
 routines which enable one to quickly perform typical analysis tasks. For both
-the object oriented and YAML interfaces, the final simulator object products can
-be analyzed in a number of ways, \autoref{fig:graph} demonstrates how one can
+the object oriented and `.yaml` interfaces, the final simulator object can be
+analyzed in a number of ways, \autoref{fig:graph} demonstrates how one can
 investigate the structure of a simulator in the form of a directed acyclic graph
 of calculations. Note that one may also fix a subset of parameter values, making
 them "static" instead of the default which is "dynamic". Users can produce such
 a graph representation in a single line of Python for any `caustics` simulator.
 
-![Example directed acyclic graph representation of the simulator from \autoref{fig:runtime}. Ellipses are objects and squares are parameters; open squares are dynamic parameters and greyed squares are static parameters. Parameters are passed at the top level node (Lens_Source) and flow down the graph automatically to all other objects which require parameter values to complete a lensing simulation.\label{fig:graph}](media/graph.png)
+![Example directed acyclic graph representation of the simulator from \autoref{fig:runtime}. Ellipses are `caustics` objects and squares are parameters; open squares are dynamic parameters and greyed squares are static parameters. Parameters are passed at the top level node (`Lens_Source`) and flow down the graph automatically to all other objects which require parameter values to complete a lensing simulation.\label{fig:graph}](media/graph.png)
 
 Finally, there is the functional interface. The functional interface eschews the
 object oriented `caustics` code, instead giving the user access to individual
@@ -269,8 +269,8 @@ mathematical operations related to lensing, most of which are drawn directly
 from gravitational lensing literature. All such functions include references in
 their documentation to the relevant papers and equation numbers from which they
 are derived. These equations have been tested and implemented in a reasonably
-efficient manner. Thus the functional interface in `caustics` gives power users
-the ability to experiment with new lensing concepts while taking advantage of
+efficient manner. Thus the functional interface in `caustics` gives users the
+ability to experiment with new lensing concepts while taking advantage of
 already tested code for a broad range of lensing concepts.
 
 Each layer is in fact built on the one below it, making the transition from one
@@ -278,33 +278,30 @@ to the other a matter of following documentation and code references. This makes
 the transition easy since one may very clearly observe how their current
 analysis can be reproduced in the lower level. From there one may experiment
 with the new flexibility. `Caustics` thus provides a straightforward pipeline
-for users to move from beginner to power user. Users at all levels are
-encouraged to investigate the documentation as the code includes extensive
-docstrings for all functions, including units for most functions. Having units
-for the expected inputs and outputs of each function makes the code more
-transparent to its users.
+for users to move from beginner to expert. Users at all levels are encouraged to
+investigate the documentation as the code includes extensive docstrings for all
+functions, including units for most functions. Having units for the expected
+inputs and outputs of each function makes the code more transparent to its
+users.
 
 # Flexibility
 
 The way in which `caustics` achieves flexibility is perhaps already clear from
-the user experience section, though we elaborate here for completeness. A core
-feature in the development of `caustics` has been flexibility since we did not
-want users to be restricted to a single form of analysis. Development has
-focused solely on gravitational lensing in a simulator framework where the
-ultimate product is a function `f(x)` which can then naturally be passed to
-other optimization and/or sampling packages which have already been rigorously
-developed and tested, such as `scipy.optimize` [@scipy], `emcee` [@emcee], and
-`Pyro` [@pyro]. The user is not locked into any single analysis paradigm.
+the user experience section, though we elaborate here for completeness.
+Development has focused solely on gravitational lensing in a simulator framework
+where the ultimate product is a function `f(x)` which can then naturally be
+passed to other optimization and/or sampling packages. A focus on minimalism in
+the core functionality means that research-ready analysis routines must be built
+by the user. To facilitate this, our Jupyter notebook tutorials include examples
+of many typical analysis tasks, with the details laid out for the user so they
+may simply copy and modify to suit their particular analysis task. Thus, we
+achieve flexibility both by allowing many analysis paradigms, and by supporting
+the easy development of production code.
 
-Further, it is possible to probe the lensing objects in a number of useful ways.
-Each lensing object has (where meaningful) a convergence, potential, time delay,
-and deflection field and we provide examples to visualize all of these. Since
-`caustics` is differentiable, it is trivial to extract critical curves and we
-provide examples of these visualizations. Our Jupyter notebook tutorials also
-include examples of many typical analysis routines, with the detailed laid out
-for the user so they may simply copy and modify to suit their particular
-analysis task. Thus, we achieve flexibility both by allowing many analysis
-paradigms, and by facilitating the easy development of such paradigms.
+Research is an inherently dynamic process and gravitational lensing is an
+evolving field. Designing fixed code for such an environment would be a
+disservice. Though, leaving all development to the users would be similarly
+useless as it would provide no value.
 
 # Machine Learning
 
@@ -315,13 +312,16 @@ accomplished through two avenues. First, as demonstrated in
 simulated mock lensing images. By leveraging GPUs it can generate orders of
 magnitude more lenses in the same amount of time. Since many machine learning
 algorithms are "data hungry", this translates to better performance with more
-examples to learn from. Second, as a differentiable lensing simulator,
-`caustics` can be integrated directly into machine learning workflows. This
-could mean using `caustics` as part of a loss function. Alternatively, it could
-be through a statistical paradigm like diffusion modelling. It has already been
-shown that differentiable lensing simulators, coupled with machine learning and
-diffusion modelling, can massively improve source reconstruction in strong
-gravitational lenses [@Adam2022].
+examples to learn from. There is already a great deal of literature on the use
+of machine learning for strong lensing analyses, which of course benefit from
+differentiable programming and GPUs [@Brehmer2019; @Chianese2020; @Coogan2020;
+@Mishra2022; @Karchev2022; @Karchev2022b]. Second, as a differentiable lensing
+simulator, `caustics` can be integrated directly into machine learning
+workflows. This could mean using `caustics` as part of a loss function.
+Alternatively, it could be through a statistical paradigm like diffusion
+modelling. It has already been shown that differentiable lensing simulators,
+coupled with machine learning and diffusion modelling, can massively improve
+source reconstruction in strong gravitational lenses [@Adam2022; @Remy2023].
 
 # Conclusions
 
@@ -332,8 +332,8 @@ straightforwardly model any strong lensing system with state of the art
 techniques. The code and documentation facilitate users transition from beginner
 to expert by providing three interfaces which allow increasingly more
 flexibility in how one wishes to model a lensing system. `Caustics` is designed
-to be the gravitational lensing simulator of the future and to meet the massive
-number of lenses soon to be discovered with equally powerful computational
+to be the gravitational lensing simulator of the future and to meet the hundreds
+of thousands of lenses soon to be discovered with modern computational
 resources.
 
 # Acknowledgements
