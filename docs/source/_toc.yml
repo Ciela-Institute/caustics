@@ -25,6 +25,7 @@ chapters:
       - file: examples/Example_ImageFit_NUTS
       - file: examples/Example_QSOLensFit
   - file: contributing
+  - file: frequently_asked_questions
   - file: citation
   - file: license
   - file: modules
