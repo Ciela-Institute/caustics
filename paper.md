@@ -120,10 +120,10 @@ in the core functionality of `caustics`.
 `caustics` fulfills a timely need for a differentiable lensing simulator as
 differentiable codes are already advancing other fields. For example,
 gravitational wave analysis [@Coogan2022; @Edwards2023; @Wong2023]; astronomical
-image photometry [@Stone2023]; light curves [@Millon2024]; even generic
-optimization for scientific problems [@Nikolic2018]. `caustics` is built on the
-lessons from other differentiable codes, and built to accelerate machine
-learning in the field of strong lensing.
+image photometry [@Stone2023]; point spread function modelling [@Desdoigts2022];
+light curves [@Millon2024]; even generic optimization for scientific problems
+[@Nikolic2018]. `caustics` is built on the lessons from other differentiable
+codes, and built to accelerate machine learning in the field of strong lensing.
 
 # Scope
 
