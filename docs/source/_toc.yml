@@ -9,9 +9,11 @@ chapters:
   - file: websim
   - file: tutorials/index
     sections:
-      - file: tutorials/BasicIntroduction_yaml
-      - file: tutorials/BasicIntroduction_oop
-      - file: tutorials/BasicIntroduction_func
+      - file: basicindex
+        sections:
+          - file: tutorials/BasicIntroduction_yaml
+          - file: tutorials/BasicIntroduction_oop
+          - file: tutorials/BasicIntroduction_func
       - file: tutorials/LensZoo
       - file: tutorials/VisualizeCaustics
       - file: tutorials/MultiplaneDemo
