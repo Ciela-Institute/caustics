@@ -39,7 +39,7 @@ def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
     ax = torch.cos(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) + torch.sin(phi) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
     ay = torch.sin(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) - torch.cos(phi) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
 
-    return derotate(ax, ay, phi)
+    return ax, ay #derotate(ax, ay, phi)
 
 
 def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
