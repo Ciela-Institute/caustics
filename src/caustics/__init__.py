@@ -22,6 +22,7 @@ from .lenses import (
     SinglePlane,
     MassSheet,
     TNFW,
+    Multipole,
 )
 from .light import Source, Pixelated, Sersic  # PROBESDataset conflicts with .data
 from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
@@ -53,6 +54,7 @@ __all__ = [
     "SinglePlane",
     "MassSheet",
     "TNFW",
+    "Multipole",
     "Source",
     "Pixelated",
     "Sersic",
