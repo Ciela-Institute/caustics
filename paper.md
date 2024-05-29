@@ -187,8 +187,8 @@ implemented, though they represent an avenue for future development.
 `Caustics`' defined scope ends at lensing simulation, thus it does not include
 functionality to optimize or sample the resulting functions. Users are
 encouraged to use already existing optimization and sampling codes like
-`scipy.optimize` [@scipy], `emcee` [@emcee], `Pyro` [@pyro], and `torch.optim`
-[@pytorch].
+`scipy.optimize` [@scipy], `emcee` [@emcee], `dynesty` [@dynesty], `Pyro`
+[@pyro], and `torch.optim` [@pytorch].
 
 # Performance
 
