@@ -209,12 +209,13 @@ direct comparison between the two codes can be observed by comparing the
 written using the `numba` [@numba] package which compiles python code into lower
 level C code. The left plot shows that `caustics` suffers from a significant
 overhead compared with `Lenstronomy`, which is nearly twice as fast as the
-"caustics unbatched cpu" line. This occurs because `caustics` is written in
-Python and has a certain amount of computational overhead due to being an
-interpreted language. Despite this overhead, `caustics` showcases a strong
-performance when using the batched GPU setting, especially in the more realistic
-scenario with extra computations in the simulator including 4x oversampling of
-the raytracing and the PSF convolution.
+"caustics unbatched cpu" line. This occurs because the pure Python (intepreted
+language) elements of `caustics` are much slower than the C/Cuda PyTorch
+backends (compiled language), this is most pronounced when fewer computations
+are needed to perform a simulation. Despite this overhead, `caustics` showcases
+a strong performance when using the batched GPU setting, especially in the more
+realistic scenario with extra computations in the simulator including 4x
+oversampling of the raytracing and the PSF convolution.
 
 ![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. For CPU calculations we use `Intel Gold 6148 Skylake` and for the GPU we use a `NVIDIA V100`, all tests were done at 64 bit precision. On the left, the lensing system is sampled 128 pixel resolution only at pixel midpoints. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.\label{fig:runtime}](media/runtime_comparison_img.png)
 
