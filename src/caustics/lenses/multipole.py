@@ -72,8 +72,8 @@ class Multipole(ThinLens):
         self.add_param("y0", y0)
         self.add_param("a_m", a_m)
         self.add_param("phi_m", phi_m)
-        if type(m) is not type(None) and m < 3:
-            raise ValueError("Multipole order must be greater than 2")
+        if type(m) is not type(None) and m < 2:
+            raise ValueError("Multipole order must be greater or equal to 2")
         self.add_param("m", m)
 
     @unpack
