@@ -32,7 +32,7 @@ def test(sim_source, device, lens_models):
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
         lens = Multipole(name="multipole", cosmology=cosmology, z_l=z_l)
-    lens_model_list = ["Multipole"]
+    lens_model_list = ["MULTIPOLE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters  m, a_m ,phi_m
