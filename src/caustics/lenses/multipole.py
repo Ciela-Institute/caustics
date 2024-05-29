@@ -44,7 +44,7 @@ class Multipole(ThinLens):
 
     def __init__(
         self,
-        cosmology: Cosmology,
+        cosmology: CosmologyType,
         z_l: Optional[Union[Tensor, float]] = None,
         x0: Optional[Union[Tensor, float]] = None,
         y0: Optional[Union[Tensor, float]] = None,
