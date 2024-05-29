@@ -45,13 +45,13 @@ def test(sim_source, device, lens_models):
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
     # Different tolerances for difference quantities
     alpha_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=6e-5, device=device
+        lens, lens_ls, z_s, x, kwargs_ls, rtol=rtol, atol=atol, device=device
     )
     kappa_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=6e-5, atol=1e-100, device=device
+        lens, lens_ls, z_s, x, kwargs_ls, rtol=rtol, atol=atol, device=device
     )
     Psi_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
+        lens, lens_ls, z_s, x, kwargs_ls, rtol=rtol, atol=atol, device=device
     )
 
 
