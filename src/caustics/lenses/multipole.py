@@ -45,14 +45,26 @@ class Multipole(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: Optional[Union[Tensor, float]] = None,
-        x0: Optional[Union[Tensor, float]] = None,
-        y0: Optional[Union[Tensor, float]] = None,
-        a_m: Optional[Union[Tensor, float]] = None,
-        phi_m: Optional[Union[Tensor, float]] = None,
-        m: Optional[Union[Tensor, int]] = None,
-        s: float = 0.0,
-        name: Optional[str] = None,
+        z_l: ZLType = None,
+
+        x0: Annotated[
+            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+        ] = None,
+        y0: Annotated[
+            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+        ] = None,
+        a_m: Annotated[
+            Optional[Union[Tensor, float]], "The amplitude of the multipole", True
+        ] = None,  # TODO change to true axis ratio
+        phi_m: Annotated[
+            Optional[Union[Tensor, float]],
+            "The orientation angle of the multipole",
+            True,
+        ] = None,
+        m: Annotated[
+            Optional[Union[Tensor, float]], "The Multiploe moment m", True
+        ] = None,
+        name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
@@ -63,7 +75,6 @@ class Multipole(ThinLens):
         if m < 3:
             raise ValueError("Multipole order must be greater than 2")
         self.add_param("m", m)
-        self.s = s
 
     @unpack
     def reduced_deflection_angle(

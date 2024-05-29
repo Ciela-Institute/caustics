@@ -48,7 +48,7 @@ def _get_kwargs_field_definitions(
         if k != "name":
             anno = v.annotation
             dtype = anno.__origin__
-            cls_param = ClassParam(*anno.__metadata__)
+            cls_param = ClassParam(*anno.__metadata__) # gooooo
             if cls_param.isParam:
                 kwargs_field_definitions[PARAMS][k] = (
                     dtype,
