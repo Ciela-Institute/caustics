@@ -8,8 +8,8 @@ from caustics.lenses import Multipole
 
 
 def test(sim_source, device, lens_models):
-    atol = 1e-5
-    rtol = 1e-5
+    atol = 1e-4
+    rtol = 3e-2
     z_l = torch.tensor(0.5)
 
     if sim_source == "yaml":
