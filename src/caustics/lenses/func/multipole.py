@@ -117,4 +117,4 @@ def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
     x, y = translate_rotate(x, y, x0, y0)
     r = torch.sqrt(x**2 + y**2)
     phi = torch.arctan2(y, x)
-    return 1/r * a_m * torch.cos(m * (phi - phi_m)) 
+    return 1/(2*r) * a_m * torch.cos(m * (phi - phi_m)) 
