@@ -114,7 +114,7 @@ publicly available. The well established `lenstronomy` package has been in use
 since 2018 [@lenstronomy]; `GLAMER` is a C++ based code for modelling complex
 and large dynamic range fields [@GLAMER]; `PyAutoLens` is also widely used
 [@PyAutoLens]; and GIGA-Lens is a specialized JAX [@JAX] based gravitational
-lensing package [@GIGALens]; among others [@Keeton2011; Kneib2011; Galan2021;
+lensing package [@GIGALens]; among others [@Keeton2011; @Kneib2011; @Galan2021;
 @Wagner2024]. There are also several "in house" codes developed for specialized
 analysis which are then not publicly released [e.g. @Suyu2010]. `Caustics`
 development has been primarily focused on three aspects: processing speed, user
