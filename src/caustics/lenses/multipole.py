@@ -31,22 +31,15 @@ class Multipole(ThinLens):
         Orientation of multiple.
     m: Optional[Union[Tensor, int]]
         Order of multipole.
-        
+
     """
 
-    _null_params = {
-        "x0": 0.0,
-        "y0": 0.0,
-        "a_m": 0.1,
-        "phi_m": 0.,
-        "m": 3
-    }
+    _null_params = {"x0": 0.0, "y0": 0.0, "a_m": 0.1, "phi_m": 0.0, "m": 3}
 
     def __init__(
         self,
         cosmology: CosmologyType,
         z_l: ZLType = None,
-
         x0: Annotated[
             Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
         ] = None,
@@ -228,7 +221,7 @@ class Multipole(ThinLens):
             The projected mass density.
 
             *Unit: unitless*
-        
+
         Equation (B10) and (B3) https://arxiv.org/pdf/1307.4220, Xu et al. 2014
 
         """

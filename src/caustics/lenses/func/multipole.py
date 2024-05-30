@@ -1,6 +1,6 @@
 import torch
 
-from ...utils import translate_rotate, derotate
+from ...utils import translate_rotate
 
 
 def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
@@ -34,17 +34,21 @@ def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
     Equation (B11) and (B12) https://arxiv.org/pdf/1307.4220, Xu et al. 2014
     """
     x, y = translate_rotate(x, y, x0, y0)
-    
-    phi = torch.arctan2(y, x)
-    ax = torch.cos(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) + torch.sin(phi) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
-    ay = torch.sin(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) - torch.cos(phi) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
 
-    return ax, ay #derotate(ax, ay, phi)
+    phi = torch.arctan2(y, x)
+    ax = torch.cos(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) + torch.sin(
+        phi
+    ) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
+    ay = torch.sin(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) - torch.cos(
+        phi
+    ) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
+
+    return ax, ay  # derotate(ax, ay, phi)
 
 
 def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
     """
-    Compute the lensing potential. 
+    Compute the lensing potential.
 
     Parameters
     ----------
@@ -78,12 +82,12 @@ def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
     x, y = translate_rotate(x, y, x0, y0)
     r = torch.sqrt(x**2 + y**2)
     phi = torch.arctan2(y, x)
-    return r * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) 
+    return r * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m))
 
 
 def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
     """
-    Compute the lensing convergence. 
+    Compute the lensing convergence.
 
     Parameters
     ----------
@@ -117,4 +121,4 @@ def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
     x, y = translate_rotate(x, y, x0, y0)
     r = torch.sqrt(x**2 + y**2)
     phi = torch.arctan2(y, x)
-    return 1/(2*r) * a_m * torch.cos(m * (phi - phi_m)) 
+    return 1 / (2 * r) * a_m * torch.cos(m * (phi - phi_m))

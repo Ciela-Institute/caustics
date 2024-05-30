@@ -53,7 +53,11 @@ from .tnfw import (
     concentration_tnfw,
 )
 
-from .multipole import reduced_deflection_angle_multipole, potential_multipole, convergence_multipole
+from .multipole import (
+    reduced_deflection_angle_multipole,
+    potential_multipole,
+    convergence_multipole,
+)
 
 __all__ = (
     "forward_raytrace",

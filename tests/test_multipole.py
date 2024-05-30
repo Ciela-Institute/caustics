@@ -1,6 +1,10 @@
 import torch
 from lenstronomy.LensModel.lens_model import LensModel
-from utils import lens_test_helper, alpha_test_helper, kappa_test_helper, Psi_test_helper
+from utils import (
+    alpha_test_helper,
+    kappa_test_helper,
+    Psi_test_helper,
+)
 import yaml
 
 from caustics.cosmology import FlatLambdaCDM
@@ -37,9 +41,15 @@ def test(sim_source, device, lens_models):
 
     # Parameters  m, a_m ,phi_m
     z_s = torch.tensor(1.2)
-    x = torch.tensor([-0.342, 0.51, 0.1, 3.14/4, 3])
+    x = torch.tensor([-0.342, 0.51, 0.1, 3.14 / 4, 3])
     kwargs_ls = [
-        {"center_x": x[0].item(), "center_y": x[1].item(), "a_m": x[2].item(), "phi_m": x[3].item(), "m": x[4].item()}
+        {
+            "center_x": x[0].item(),
+            "center_y": x[1].item(),
+            "a_m": x[2].item(),
+            "phi_m": x[3].item(),
+            "m": x[4].item(),
+        }
     ]
 
     # Different tolerances for difference quantities
