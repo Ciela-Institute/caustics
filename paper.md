@@ -114,19 +114,20 @@ publicly available. The well established `lenstronomy` package has been in use
 since 2018 [@lenstronomy]; `GLAMER` is a C++ based code for modelling complex
 and large dynamic range fields [@GLAMER]; `PyAutoLens` is also widely used
 [@PyAutoLens]; and GIGA-Lens is a specialized JAX [@JAX] based gravitational
-lensing package [@GIGALens]; among others [@Suyu2010; @Keeton2011; Kneib2011;
-Galan2021]. There are also several "in house" codes developed for specialized
-analysis which are then not publicly released. `Caustics` development has been
-primarily focused on three aspects: processing speed, user experience, and
-flexibility. The code is optimized to fully exploit PyTorch's capabilities,
-significantly enhancing processing speed. The user experience is streamlined by
-providing three interfaces to the code: configuration file, object-oriented, and
-functional, where each interface level requires more expertise but allows more
-capabilities. In this way, users with all levels of gravitational lensing
-simulation experience may effectively engage with the software. Flexibility is
-achieved by a determined focus on minimalism in the core functionality of
-`caustics`. All of these elements combine to make `Caustics` a capable lensing
-simulator to support machine learning applications, and classical analysis.
+lensing package [@GIGALens]; among others [@Keeton2011; Kneib2011; Galan2021;
+@Wagner2024]. There are also several "in house" codes developed for specialized
+analysis which are then not publicly released [e.g. @Suyu2010]. `Caustics`
+development has been primarily focused on three aspects: processing speed, user
+experience, and flexibility. The code is optimized to fully exploit PyTorch's
+capabilities, significantly enhancing processing speed. The user experience is
+streamlined by providing three interfaces to the code: configuration file,
+object-oriented, and functional, where each interface level requires more
+expertise but allows more capabilities. In this way, users with all levels of
+gravitational lensing simulation experience may effectively engage with the
+software. Flexibility is achieved by a determined focus on minimalism in the
+core functionality of `caustics`. All of these elements combine to make
+`Caustics` a capable lensing simulator to support machine learning applications,
+and classical analysis.
 
 `Caustics` fulfills a timely need for a differentiable lensing simulator.
 Several other fields have already benefitted from such simulators, for example:
@@ -211,7 +212,7 @@ level C code. The left plot shows that `caustics` suffers from a significant
 overhead compared with `Lenstronomy`, which is nearly twice as fast as the
 "caustics unbatched cpu" line. This occurs because the pure Python (intepreted
 language) elements of `caustics` are much slower than the C/Cuda PyTorch
-backends (compiled language), this is most pronounced when fewer computations
+backends (compiled language). This is most pronounced when fewer computations
 are needed to perform a simulation. Despite this overhead, `caustics` showcases
 a strong performance when using the batched GPU setting, especially in the more
 realistic scenario with extra computations in the simulator including 4x
