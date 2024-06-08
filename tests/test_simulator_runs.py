@@ -2,7 +2,7 @@ from math import pi
 
 import torch
 
-from caustics.sims import Lens_Source
+from caustics.sims import Lens_Source, Microlens
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.light import Sersic
@@ -166,3 +166,18 @@ def test_simulator_runs(sim_source, device, mocker):
     # Check quadrature integration is accurate
     assert torch.allclose(sim(), sim(quad_level=3), rtol=1e-1)
     assert torch.allclose(sim(quad_level=3), sim(quad_level=5), rtol=1e-2)
+
+
+def test_microlens_simulator_runs():
+    cosmology = FlatLambdaCDM()
+    sie = SIE(cosmology=cosmology, name="lens")
+    src = Sersic(name="source")
+
+    x = torch.tensor([
+    #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re   Ie
+        1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0, 5.0
+    ])  # fmt: skip
+    fov = torch.tensor((-1, -0.5, -0.25, 0.25))
+    sim = Microlens(lens=sie, source=src)
+    sim(x, fov=fov)
+    sim(x, fov=fov, method="grid")

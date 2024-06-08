@@ -26,12 +26,12 @@ from .lenses import (
 from .light import Source, Pixelated, Sersic  # PROBESDataset conflicts with .data
 from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
 from . import utils
-from .sims import Lens_Source, Simulator
+from .sims import Lens_Source, Microlens, Simulator
 from .tests import test
 from .models.api import build_simulator
 
 __version__ = VERSION
-__author__ = "Ciela"
+__author__ = "Ciela Institute"
 
 __all__ = [
     "Cosmology",
@@ -61,6 +61,7 @@ __all__ = [
     "PROBESDataset",
     "utils",
     "Lens_Source",
+    "Microlens",
     "Simulator",
     "test",
     "build_simulator",
