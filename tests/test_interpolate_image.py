@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from scipy.interpolate import RegularGridInterpolator
 
-from caustics.utils import get_meshgrid, interp2d
+from caustics.utils import get_meshgrid, interp2d, interp3d
 from caustics.light import Pixelated
 
 
@@ -53,6 +53,37 @@ def test_consistency(device):
         y = (thy.flatten() / scale_y).to(device=device)
         image_interpd = interp2d(image, x, y, method).reshape(ny, nx)
         assert torch.allclose(image_interpd, image, atol=1e-5)
+
+
+def test_consistency_3d(device):
+    """
+    Checks that interpolating at pixel positions gives back the original image.
+    """
+    torch.manual_seed(60)
+
+    # Interpolation grid aligned with pixel centers
+    nx = 50
+    ny = 79
+    nt = 20
+    res = 1.0
+    xs = torch.linspace(-1, 1, nx, device=device, dtype=torch.float32) * res * (nx - 1) / 2  # fmt: skip
+    ys = torch.linspace(-1, 1, ny, device=device, dtype=torch.float32) * res * (ny - 1) / 2  # fmt: skip
+    ts = torch.linspace(-1, 1, nt, device=device, dtype=torch.float32)  # fmt: skip
+    tht, thy, thx = torch.meshgrid((ts, ys, xs), indexing="ij")
+    thx = thx.double()
+    thy = thy.double()
+    tht = tht.double()
+    scale_x = res * nx / 2
+    scale_y = res * ny / 2
+
+    for method in ["nearest", "linear"]:
+        print(method)
+        cube = torch.randn(nt, ny, nx).double().to(device)
+        x = (thx.flatten() / scale_x).to(device=device)
+        y = (thy.flatten() / scale_y).to(device=device)
+        t = (tht.flatten() * (nt - 1) / nt).to(device=device)
+        image_interpd = interp3d(cube, x, y, t, method).reshape(nt, ny, nx)
+        assert torch.allclose(image_interpd, cube, atol=1e-5)
 
 
 def test_pixelated_source(device):
