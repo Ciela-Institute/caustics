@@ -3,7 +3,6 @@ from typing import Tuple
 import torch
 from torch import Tensor
 
-from ..utils import vmap_n
 
 __all__ = ("get_pix_jacobian", "get_pix_magnification", "get_magnification")
 
@@ -119,4 +118,6 @@ def get_magnification(raytrace, x, y, z_s) -> Tensor:
         *Unit: unitless*
 
     """
-    return vmap_n(get_pix_magnification, 2, (None, 0, 0, None))(raytrace, x, y, z_s)
+    return torch.func.vmap(get_pix_magnification, in_dims=(None, 0, 0, None))(
+        raytrace, x.reshape(-1), y.reshape(-1), z_s
+    ).reshape(*x.shape)
