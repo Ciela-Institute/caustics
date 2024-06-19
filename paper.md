@@ -77,18 +77,20 @@ bibliography: paper.bib
 
 Gravitational lensing is the deflection of light rays due to the gravity of
 intervening masses. This phenomenon is observed in a variety of scales and
-configurations, often involving galaxies and clusters of galaxies. The lensed
-object must align on the sky of order $\sim 1$ arcsecond for galaxy-galaxy
-lensing, or 10's of arcseonds for cluster-galaxy lensing. As the discovery of
-lens systems has grown to the low thousands, these systems have become pivotal
-for precision measurements and addressing critical questions in astrophysics.
-Notably, they facilitate the measurement of the Universe's expansion rate [e.g.
-@holycow], dark matter [e.g. @Hezaveh2016; @Vegetti2014], supernovae [e.g.
-@Rodney2021], quasars [e.g. @Peng2006], and the first stars [e.g. @Welch2022]
-among other topics. With future surveys expected to discover hundreds of
-thousands of lensing systems, the modelling and simulation of such systems must
-occur at orders of magnitude larger scale then ever before. Here we present
-`caustics`, a code designed to handle the extensive computational demands of
+configurations, involving any compact mass such as planets, stars, galaxies, and
+clusters of galaxies. Strong lensing occurs when the distortions are significant
+and multiple images of the background source are observed. The lens objects must
+align on the sky of order $\sim 1$ arcsecond for galaxy-galaxy lensing, or 10's
+of arcseonds for cluster-galaxy lensing. As the discovery of lens systems has
+grown to the low thousands, these systems have become pivotal for precision
+measurements and addressing critical questions in astrophysics. Notably, they
+facilitate the measurement of the Universe's expansion rate [e.g. @holycow],
+dark matter [e.g. @Hezaveh2016; @Vegetti2014], supernovae [e.g. @Rodney2021],
+quasars [e.g. @Peng2006], and the first stars [e.g. @Welch2022] among other
+topics. With future surveys expected to discover hundreds of thousands of
+lensing systems, the modelling and simulation of such systems must occur at
+orders of magnitude larger scale then ever before. Here we present `caustics`, a
+Python package designed to handle the extensive computational demands of
 modeling such a vast number of lensing systems.
 
 # Statement of need
