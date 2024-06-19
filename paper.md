@@ -77,21 +77,22 @@ bibliography: paper.bib
 
 Gravitational lensing is the deflection of light rays due to the gravity of
 intervening masses. This phenomenon is observed in a variety of scales and
-configurations, involving any compact mass such as planets, stars, galaxies, and
-clusters of galaxies. Strong lensing occurs when the distortions are significant
-and multiple images of the background source are observed. The lens objects must
-align on the sky of order $\sim 1$ arcsecond for galaxy-galaxy lensing, or 10's
-of arcseonds for cluster-galaxy lensing. As the discovery of lens systems has
-grown to the low thousands, these systems have become pivotal for precision
-measurements and addressing critical questions in astrophysics. Notably, they
-facilitate the measurement of the Universe's expansion rate [e.g. @holycow],
-dark matter [e.g. @Hezaveh2016; @Vegetti2014], supernovae [e.g. @Rodney2021],
-quasars [e.g. @Peng2006], and the first stars [e.g. @Welch2022] among other
-topics. With future surveys expected to discover hundreds of thousands of
-lensing systems, the modelling and simulation of such systems must occur at
-orders of magnitude larger scale then ever before. Here we present `caustics`, a
-Python package designed to handle the extensive computational demands of
-modeling such a vast number of lensing systems.
+configurations, involving any non-uniform mass such as planets, stars, galaxies,
+clusters of galaxies, and even the large scale structure of the universe. Strong
+lensing occurs when the distortions are significant and multiple images of the
+background source are observed. The lens objects must align on the sky of order
+$\sim 1$ arcsecond for galaxy-galaxy lensing, or 10's of arcseonds for
+cluster-galaxy lensing. As the discovery of lens systems has grown to the low
+thousands, these systems have become pivotal for precision measurements and
+addressing critical questions in astrophysics. Notably, they facilitate the
+measurement of the Universe's expansion rate [e.g. @holycow], dark matter [e.g.
+@Hezaveh2016; @Vegetti2014], supernovae [e.g. @Rodney2021], quasars [e.g.
+@Peng2006], and the first stars [e.g. @Welch2022] among other topics. With
+future surveys expected to discover hundreds of thousands of lensing systems,
+the modelling and simulation of such systems must occur at orders of magnitude
+larger scale then ever before. Here we present `caustics`, a Python package
+designed to handle the extensive computational demands of modeling such a vast
+number of lensing systems.
 
 # Statement of need
 
@@ -103,7 +104,9 @@ single lensing system can take several days or weeks, which will be infeasible
 as the number of known lenses increases by orders of magnitude. Thus,
 advancements such as computational acceleration via GPUs and/or algorithmic
 advances such as automatic differentiation are needed to reduce the analysis
-timescales. `caustics` is built with the future of lensing in mind, using
+timescales. Machine learning will be critical to achieve the necessary speed to
+process these lenses, it will also be needed to meet the complexity of strong
+lens modelling. `caustics` is built with the future of lensing in mind, using
 `PyTorch` [@pytorch] to accelerate the low level computation and enable deep
 learning algorithms which rely on automatic differentiation. Automatic
 differentiation also benefits classical algorithms such as Hamiltonian Monte
@@ -139,7 +142,7 @@ light curves [@Millon2024]; and even generic optimization for scientific
 problems [@Nikolic2018]. `Caustics` is built on lessons from other
 differentiable codes, with the goal of enabling machine learning techniques in
 the field of strong lensing. With `caustics` it will now be possible to analyze
-over 100,000 lenses in a timely manner.
+over 100,000 lenses in a timely manner [@Hezaveh2017; @Perreault2017].
 
 # Scope
 
@@ -178,7 +181,10 @@ raytracing through the lensing mass and extracting the brightness of the
 background source. Further, the image then must be convolved with a PSF for
 extra realism. All of these operations are collected into a single simulator
 which users may access and use simply as a function of the relevant lensing and
-light source parameters.
+light source parameters. Since `caustics` is written in `PyTorch`, its
+simulators are differentiable, thus one can compute gradients through the
+forward model. This enables machine learning algorithms such as recurrent
+inference machines [@Adam2023] and diffusion models [@Adam2023].
 
 ![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled only at the midpoint of each pixel. Middle, the pixel map is supersampled and then integrated using gaussian quadrature integration for greater accuracy. Right, the fractional difference between the two is shown. We can see that in this case the midpoint sampling is inaccurate by up to 30% of the pixel value in areas of high contrast. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
 
@@ -206,7 +212,7 @@ convolved with a PSF. All parameters are randomly resampled for each simulation
 to avoid caching effects. This demonstrates a number of interesting facts about
 numerical performance in such scenarios.
 
-We compare the performance with that of Lenstronomy as our baseline. The most
+We compare the performance with that of `Lenstronomy` as our baseline. The most
 direct comparison between the two codes can be observed by comparing the
 `Lenstronomy` line with the "caustics unbatched cpu" line. `Lenstronomy` is
 written using the `numba` [@numba] package which compiles python code into lower
