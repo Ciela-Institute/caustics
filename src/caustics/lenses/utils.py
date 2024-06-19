@@ -118,9 +118,9 @@ def get_magnification(raytrace, x, y, z_s) -> Tensor:
         *Unit: unitless*
 
     """
-    D = x.shape
-    if D == ():
-        return get_pix_magnification(raytrace, x, y, z_s)
-    return torch.func.vmap(get_pix_magnification, in_dims=(None, 0, 0, None))(
-        raytrace, x.reshape(-1), y.reshape(-1), z_s
-    ).reshape(*D)
+    return torch.reshape(
+        torch.func.vmap(get_pix_magnification, in_dims=(None, 0, 0, None))(
+            raytrace, x.reshape(-1), y.reshape(-1), z_s
+        ),
+        x.shape,
+    )
