@@ -371,7 +371,8 @@ Engineering Center (SSEC) at the eScience Institute, via matching through the
 Schmidt Futures Virtual Institute for Scientific Software (VISS). CS
 acknowledges the support of a NSERC Postdoctoral Fellowship and a CITA National
 Fellowship. This research was enabled in part by support provided by Calcul
-Québec and the Digital Research Alliance of Canada. Y.H. and L.P. acknowledge
+Québec and the Digital Research Alliance of Canada. The work of A.A. and R.L.
+were partially funded by NSERC CGS D scholarships. Y.H. and L.P. acknowledge
 support from the National Sciences and Engineering Council of Canada grants
 RGPIN-2020-05073 and 05102, the Fonds de recherche du Québec grants
 2022-NC-301305 and 300397, and the Canada Research Chairs Program. Thanks to
