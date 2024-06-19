@@ -184,7 +184,7 @@ which users may access and use simply as a function of the relevant lensing and
 light source parameters. Since `caustics` is written in `PyTorch`, its
 simulators are differentiable, thus one can compute gradients through the
 forward model. This enables machine learning algorithms such as recurrent
-inference machines [@Adam2023] and diffusion models [@Adam2023].
+inference machines [@Adam2023] and diffusion models [@Adam2022].
 
 ![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled only at the midpoint of each pixel. Middle, the pixel map is supersampled and then integrated using gaussian quadrature integration for greater accuracy. Right, the fractional difference between the two is shown. We can see that in this case the midpoint sampling is inaccurate by up to 30% of the pixel value in areas of high contrast. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
 
