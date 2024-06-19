@@ -29,6 +29,7 @@ from . import utils
 from .sims import Lens_Source, Simulator
 from .tests import test
 from .models.api import build_simulator
+from . import func
 
 __version__ = VERSION
 __author__ = "Ciela"
@@ -64,4 +65,5 @@ __all__ = [
     "Simulator",
     "test",
     "build_simulator",
+    "func",
 ]
