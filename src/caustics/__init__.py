@@ -23,12 +23,18 @@ from .lenses import (
     MassSheet,
     TNFW,
 )
-from .light import Source, Pixelated, Sersic  # PROBESDataset conflicts with .data
+from .light import (
+    Source,
+    Pixelated,
+    PixelatedTime,
+    Sersic,
+)  # PROBESDataset conflicts with .data
 from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
 from . import utils
 from .sims import Lens_Source, Microlens, Simulator
 from .tests import test
 from .models.api import build_simulator
+from . import func
 
 __version__ = VERSION
 __author__ = "Ciela Institute"
@@ -55,6 +61,7 @@ __all__ = [
     "TNFW",
     "Source",
     "Pixelated",
+    "PixelatedTime",
     "Sersic",
     "HDF5Dataset",
     "IllustrisKappaDataset",
@@ -65,4 +72,5 @@ __all__ = [
     "Simulator",
     "test",
     "build_simulator",
+    "func",
 ]
