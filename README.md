@@ -10,7 +10,9 @@
 [![Documentation Status](https://readthedocs.org/projects/caustics/badge/?version=latest)](https://caustics.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/caustics.svg)](https://pypi.org/project/caustics/)
 [![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustics)](https://app.codecov.io/gh/Ciela-Institute/caustics)
-[![DOI](https://zenodo.org/badge/521722463.svg)](https://zenodo.org/doi/10.5281/zenodo.10806382)
+[![status](https://joss.theoj.org/papers/995fa98462eb534a32952549ef2244f8/status.svg)](https://joss.theoj.org/papers/995fa98462eb534a32952549ef2244f8)
+[![Zenodo](https://zenodo.org/badge/521722463.svg)](https://zenodo.org/doi/10.5281/zenodo.10806382)
+[![arXiv](https://img.shields.io/badge/arXiv-2406.15542-b31b1b.svg)](https://arxiv.org/abs/2406.15542)
 
 # caustics
 
