@@ -63,7 +63,7 @@ def sim_yaml():
 
     simulator:
         name: minisim
-        kind: Lens_Source
+        kind: LensSource
         init_kwargs:
             # Single lense
             lens: *lens

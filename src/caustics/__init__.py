@@ -31,7 +31,7 @@ from .light import (
 )  # PROBESDataset conflicts with .data
 from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
 from . import utils
-from .sims import Lens_Source, Simulator
+from .sims import LensSource, Simulator
 from .tests import test
 from .models.api import build_simulator
 from . import func
