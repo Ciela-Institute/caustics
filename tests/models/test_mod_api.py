@@ -106,7 +106,7 @@ def sim_obj():
     sie = caustics.SIE(cosmology=cosmology, name="lens")
     src = caustics.Sersic(name="source")
     lnslt = caustics.Sersic(name="lenslight")
-    return caustics.Lens_Source(
+    return caustics.LensSource(
         lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
     )
 

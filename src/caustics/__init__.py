@@ -67,7 +67,7 @@ __all__ = [
     "IllustrisKappaDataset",
     "PROBESDataset",
     "utils",
-    "Lens_Source",
+    "LensSource",
     "Simulator",
     "test",
     "build_simulator",
