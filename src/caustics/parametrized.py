@@ -476,9 +476,8 @@ class Parametrized:
             The graph representation of the object.
         """
 
-        def add_component(p: Parametrized, dot):
-            dot.attr("node", style="solid", color="black", shape="ellipse")
-            dot.node(p.name, f"{p.__class__.__name__}('{p.name}')")
+        components = {}
+        params = []
 
         def add_params(p: Parametrized, dot):
             static = p.module_params.static.keys()
@@ -486,29 +485,37 @@ class Parametrized:
 
             dot.attr("node", style="solid", color="black", shape="box")
             for n in dynamic:
+                pname = f"{p.name}/{n}"
+                if pname in params:
+                    continue
+                params.append(pname)
                 if show_dynamic_params:
-                    dot.node(f"{p.name}/{n}", n)
-                    dot.edge(p.name, f"{p.name}/{n}")
+                    dot.node(pname, n)
+                    dot.edge(p.name, pname)
 
             dot.attr("node", style="filled", color="lightgrey", shape="box")
             for n in static:
+                pname = f"{p.name}/{n}"
+                if pname in params:
+                    continue
+                params.append(pname)
                 if show_static_params:
-                    dot.node(f"{p.name}/{n}", n)
-                    dot.edge(p.name, f"{p.name}/{n}")
+                    dot.node(pname, n)
+                    dot.edge(p.name, pname)
+
+        def add_component(p: Parametrized, dot):
+            if p.name in components:
+                return
+            dot.attr("node", style="solid", color="black", shape="ellipse")
+            dot.node(p.name, f"{p.__class__.__name__}('{p.name}')")
+            components[p.name] = p
+            add_params(p, dot)
+            for child in p._childs.values():
+                add_component(child, dot)
+                dot.edge(p.name, child.name)
 
         dot = graphviz.Digraph(strict=True)
         add_component(self, dot)
-        add_params(self, dot)
-
-        for child in self._childs.values():
-            add_component(child, dot)
-
-            for parent in child._parents.values():
-                if parent.name not in self._childs and parent.name != self.name:
-                    continue
-                add_component(parent, dot)
-                dot.edge(parent.name, child.name)
-                add_params(child, dot)
 
         return dot
 
