@@ -1,4 +1,4 @@
-from typing import Optional, Annotated, Union
+from typing import Optional, Annotated, Union, Literal
 import torch
 from torch import Tensor
 
@@ -62,7 +62,14 @@ class Microlens(Simulator):
 
         self.add_param("z_s", z_s)
 
-    def forward(self, params, fov, method="mcmc", N_mcmc=10000, N_grid=100):
+    def forward(
+        self,
+        params,
+        fov: Tensor,
+        method: Literal["mcmc", "grid"] = "mcmc",
+        N_mcmc: int = 10000,
+        N_grid: int = 100,
+    ):
         """Forward pass of the simulator.
 
         Parameters
