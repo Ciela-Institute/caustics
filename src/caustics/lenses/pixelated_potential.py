@@ -111,6 +111,7 @@ class PixelatedPotential(ThinLens):
 
         self.pixelscale = pixelscale
         self.n_pix = n_pix
+        self.fov = self.n_pix * self.pixelscale
 
     @unpack
     def reduced_deflection_angle(

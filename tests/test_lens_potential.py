@@ -48,6 +48,13 @@ def test_lens_potential_vs_deflection(device):
             pixelscale=0.1,
             n_pix=10,
         ),
+        caustics.lenses.PixelatedPotential(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.PixelatedPotential._null_params,
+            pixelscale=0.1,
+            n_pix=10,
+        ),
         caustics.lenses.Point(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
         ),
@@ -145,6 +152,13 @@ def test_lens_potential_vs_convergence(device):
         #     pixelscale=0.2,
         #     n_pix=10,
         # ),  # cannot compute Hessian of PixelatedConvergence potential, always returns zeros due to bilinear interpolation
+        caustics.lenses.PixelatedPotential(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.PixelatedPotential._null_params,
+            pixelscale=0.2,
+            n_pix=10,
+        ),
         # caustics.lenses.Point(cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params), # Point mass convergence is delta function
         caustics.lenses.PseudoJaffe(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
