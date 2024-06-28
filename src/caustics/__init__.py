@@ -13,6 +13,7 @@ from .lenses import (
     EPL,
     ExternalShear,
     PixelatedConvergence,
+    PixelatedPotential,
     Multiplane,
     NFW,
     Point,
@@ -22,6 +23,7 @@ from .lenses import (
     SinglePlane,
     MassSheet,
     TNFW,
+    EnclosedMass,
 )
 from .light import (
     Source,
@@ -50,6 +52,7 @@ __all__ = [
     "EPL",
     "ExternalShear",
     "PixelatedConvergence",
+    "PixelatedPotential",
     "Multiplane",
     "NFW",
     "Point",
@@ -59,6 +62,7 @@ __all__ = [
     "SinglePlane",
     "MassSheet",
     "TNFW",
+    "EnclosedMass",
     "Source",
     "Pixelated",
     "PixelatedTime",

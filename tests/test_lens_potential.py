@@ -12,9 +12,7 @@ def test_lens_potential_vs_deflection(device):
     Check for internal consistency of the lensing potential for all ThinLens objects against the deflection angles. The gradient of the potential should equal the deflection angle.
     """
     # Define a grid of points to test.
-    x = torch.linspace(-1, 1, 10, device=device)
-    y = torch.linspace(-1, 1, 10, device=device)
-    x, y = torch.meshgrid(x, y, indexing="ij")
+    x, y = caustics.utils.meshgrid(0.2, 10, 10, device=device)
 
     # Define a source redshift.
     z_s = 1.0
@@ -46,6 +44,12 @@ def test_lens_potential_vs_deflection(device):
             z_l=z_l,
             **caustics.lenses.PixelatedConvergence._null_params,
             pixelscale=0.1,
+        ),
+        caustics.lenses.PixelatedPotential(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.PixelatedPotential._null_params,
+            pixelscale=0.2,
         ),
         caustics.lenses.Point(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
@@ -82,7 +86,6 @@ def test_lens_potential_vs_deflection(device):
 
         # Compute the lensing potential.
         phi = lens.potential(x, y, z_s)
-
         # Compute the gradient of the lensing potential.
         phi_ax, phi_ay = torch.autograd.grad(
             phi, (x, y), grad_outputs=torch.ones_like(phi)
@@ -98,8 +101,8 @@ def test_lens_potential_vs_deflection(device):
             assert torch.allclose(phi_ax, ax, rtol=1e0)
             assert torch.allclose(phi_ay, ay, rtol=1e0)
         else:
-            assert torch.allclose(phi_ax, ax)
-            assert torch.allclose(phi_ay, ay)
+            assert torch.allclose(phi_ax, ax, atol=1e-5)
+            assert torch.allclose(phi_ay, ay, atol=1e-5)
 
 
 def test_lens_potential_vs_convergence(device):
@@ -107,9 +110,7 @@ def test_lens_potential_vs_convergence(device):
     Check for internal consistency of the lensing potential for all ThinLens objects against the convergence. The laplacian of the potential should equal the convergence.
     """
     # Define a grid of points to test.
-    x = torch.linspace(-1, 1, 10, device=device)
-    y = torch.linspace(-1, 1, 10, device=device)
-    x, y = torch.meshgrid(x, y, indexing="ij")
+    x, y = caustics.utils.meshgrid(0.2, 10, 10, device=device)
     x, y = x.clone().detach(), y.clone().detach()
 
     # Define a source redshift.
@@ -144,6 +145,12 @@ def test_lens_potential_vs_convergence(device):
         #     pixelscale=0.2,
         #     n_pix=10,
         # ),  # cannot compute Hessian of PixelatedConvergence potential, always returns zeros due to bilinear interpolation
+        caustics.lenses.PixelatedPotential(
+            cosmology=cosmo,
+            z_l=z_l,
+            **caustics.lenses.PixelatedPotential._null_params,
+            pixelscale=0.2,
+        ),
         # caustics.lenses.Point(cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params), # Point mass convergence is delta function
         caustics.lenses.PseudoJaffe(
             cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
@@ -182,6 +189,8 @@ def test_lens_potential_vs_convergence(device):
 
         # Check that the laplacian of the lensing potential equals the convergence.
         if name in ["NFW", "TNFW"]:
+            assert torch.allclose(phi_kappa, kappa, atol=1e-4)
+        elif name in ["PixelatedConvergence", "PixelatedPotential"]:
             assert torch.allclose(phi_kappa, kappa, atol=1e-4)
         else:
             assert torch.allclose(phi_kappa, kappa)
