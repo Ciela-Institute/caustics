@@ -44,7 +44,6 @@ def test_lens_potential_vs_deflection(device):
             z_l=z_l,
             **caustics.lenses.PixelatedConvergence._null_params,
             pixelscale=0.1,
-            n_pix=10,
         ),
         caustics.lenses.PixelatedPotential(
             cosmology=cosmo,

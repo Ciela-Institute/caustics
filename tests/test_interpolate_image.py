@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from scipy.interpolate import RegularGridInterpolator
 
-from caustics.utils import get_meshgrid, interp2d, interp3d
+from caustics.utils import meshgrid, interp2d, interp3d
 from caustics.light import Pixelated
 
 
@@ -41,7 +41,7 @@ def test_consistency(device):
     nx = 50
     ny = 79
     res = 1.0
-    thx, thy = get_meshgrid(res, nx, ny, device=device)
+    thx, thy = meshgrid(res, nx, ny, device=device)
     thx = thx.double()
     thy = thy.double()
     scale_x = res * nx / 2
@@ -90,7 +90,7 @@ def test_pixelated_source(device):
     # Make sure pixelscale works as expected
     res = 0.05
     n = 32
-    x, y = get_meshgrid(res, n, n, device=device)
+    x, y = meshgrid(res, n, device=device)
     image = torch.ones(n, n, device=device)
     source = Pixelated(image=image, x0=0.0, y0=0.0, pixelscale=res)
     source.to(device=device)

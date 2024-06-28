@@ -4,10 +4,10 @@ import torch
 from torch import Tensor
 
 
-__all__ = ("get_pix_jacobian", "get_pix_magnification", "get_magnification")
+__all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
 
 
-def get_pix_jacobian(
+def pixel_jacobian(
     raytrace, x, y, z_s
 ) -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor]]:
     """Computes the Jacobian matrix of the partial derivatives of the
@@ -46,7 +46,7 @@ def get_pix_jacobian(
     return jac
 
 
-def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
+def pixel_magnification(raytrace, x, y, z_s) -> Tensor:
     """
     Computes the magnification at a single point on the lensing plane.
     The magnification is derived from the determinant
@@ -80,14 +80,14 @@ def get_pix_magnification(raytrace, x, y, z_s) -> Tensor:
         *Unit: unitless*
 
     """
-    jac = get_pix_jacobian(raytrace, x, y, z_s)
+    jac = pixel_jacobian(raytrace, x, y, z_s)
     return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()  # fmt: skip
 
 
-def get_magnification(raytrace, x, y, z_s) -> Tensor:
+def magnification(raytrace, x, y, z_s) -> Tensor:
     """
     Computes the magnification over a grid on the lensing plane.
-    This is done by calling `get_pix_magnification`
+    This is done by calling `pixel_magnification`
     for each point on the grid.
 
     Parameters
@@ -119,7 +119,7 @@ def get_magnification(raytrace, x, y, z_s) -> Tensor:
 
     """
     return torch.reshape(
-        torch.func.vmap(get_pix_magnification, in_dims=(None, 0, 0, None))(
+        torch.func.vmap(pixel_magnification, in_dims=(None, 0, 0, None))(
             raytrace, x.reshape(-1), y.reshape(-1), z_s
         ),
         x.shape,
