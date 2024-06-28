@@ -16,10 +16,10 @@ from ..lenses.base import Lens
 from ..light.base import Source
 
 
-__all__ = ("Lens_Source",)
+__all__ = ("LensSource",)
 
 
-class Lens_Source(Simulator):
+class LensSource(Simulator):
     """Lens image of a source.
 
     Straightforward simulator to sample a lensed image of a source
@@ -37,7 +37,7 @@ class Lens_Source(Simulator):
        cosmo = caustics.FlatLambdaCDM()
        lens = caustics.lenses.SIS(cosmology = cosmo, x0 = 0., y0 = 0., th_ein = 1.)
        source = caustics.sources.Sersic(x0 = 0., y0 = 0., q = 0.5, phi = 0.4, n = 2., Re = 1., Ie = 1.)
-       sim = caustics.sims.Lens_Source(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
+       sim = caustics.sims.LensSource(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
 
        img = sim()
        plt.imshow(img, origin = "lower")

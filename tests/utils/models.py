@@ -163,7 +163,7 @@ def setup_complex_multiplane_yaml():
     sim_yaml = obj_to_yaml({
         "simulator": {
             "name": "sim",
-            "kind": "Lens_Source",
+            "kind": "LensSource",
             "init_kwargs": {
                 "lens": f"*{lens.name}",
                 "source": "*source",
