@@ -228,7 +228,7 @@ class PixelatedPotential(ThinLens):
             get_Y=True,
             get_dY=False,
             get_ddY=False,
-        ).reshape(x.shape)
+        )[0].reshape(x.shape)
 
     @unpack
     def convergence(

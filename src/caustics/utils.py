@@ -726,23 +726,24 @@ def interp_bicubic(
     y1 = y1.clamp(1, h - 1)
 
     # Build interpolation vector
-    v = torch.zeros((len(x), 16), dtype=Z.dtype, device=Z.device)
-    v[:, 0] = Z[y0, x0]
-    v[:, 1] = Z[y0, x1]
-    v[:, 2] = Z[y1, x1]
-    v[:, 3] = Z[y1, x0]
-    v[:, 4] = dZ1[y0, x0]
-    v[:, 5] = dZ1[y0, x1]
-    v[:, 6] = dZ1[y1, x1]
-    v[:, 7] = dZ1[y1, x0]
-    v[:, 8] = dZ2[y0, x0]
-    v[:, 9] = dZ2[y0, x1]
-    v[:, 10] = dZ2[y1, x1]
-    v[:, 11] = dZ2[y1, x0]
-    v[:, 12] = dZ12[y0, x0]
-    v[:, 13] = dZ12[y0, x1]
-    v[:, 14] = dZ12[y1, x1]
-    v[:, 15] = dZ12[y1, x0]
+    v = []
+    v.append(Z[y0, x0])
+    v.append(Z[y0, x1])
+    v.append(Z[y1, x1])
+    v.append(Z[y1, x0])
+    v.append(dZ1[y0, x0])
+    v.append(dZ1[y0, x1])
+    v.append(dZ1[y1, x1])
+    v.append(dZ1[y1, x0])
+    v.append(dZ2[y0, x0])
+    v.append(dZ2[y0, x1])
+    v.append(dZ2[y1, x1])
+    v.append(dZ2[y1, x0])
+    v.append(dZ12[y0, x0])
+    v.append(dZ12[y0, x1])
+    v.append(dZ12[y1, x1])
+    v.append(dZ12[y1, x0])
+    v = torch.stack(v, dim=-1)
 
     # Compute interpolation coefficients
     c = (torch.tensor(BC, dtype=v.dtype, device=v.device) @ v.unsqueeze(-1)).reshape(
@@ -759,7 +760,7 @@ def interp_bicubic(
         Y = torch.zeros_like(x)
         for i in range(4):
             for j in range(4):
-                Y += c[:, i, j] * t**i * u**j
+                Y = Y + c[:, i, j] * t**i * u**j
         return_interp.append(Y)
     if get_dY:
         dY1 = torch.zeros_like(x)
@@ -767,9 +768,9 @@ def interp_bicubic(
         for i in range(4):
             for j in range(4):
                 if i > 0:
-                    dY1 += i * c[:, i, j] * t ** (i - 1) * u**j
+                    dY1 = dY1 + i * c[:, i, j] * t ** (i - 1) * u**j
                 if j > 0:
-                    dY2 += j * c[:, i, j] * t**i * u ** (j - 1)
+                    dY2 = dY2 + j * c[:, i, j] * t**i * u ** (j - 1)
         return_interp.append(dY1)
         return_interp.append(dY2)
     if get_ddY:
@@ -779,11 +780,11 @@ def interp_bicubic(
         for i in range(4):
             for j in range(4):
                 if i > 0 and j > 0:
-                    dY12 += i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
+                    dY12 = dY12 + i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
                 if i > 1:
-                    dY11 += i * (i - 1) * c[:, i, j] * t ** (i - 2) * u**j
+                    dY11 = dY11 + i * (i - 1) * c[:, i, j] * t ** (i - 2) * u**j
                 if j > 1:
-                    dY22 += j * (j - 1) * c[:, i, j] * t**i * u ** (j - 2)
+                    dY22 = dY22 + j * (j - 1) * c[:, i, j] * t**i * u ** (j - 2)
         return_interp.append(dY12)
         return_interp.append(dY11)
         return_interp.append(dY22)
