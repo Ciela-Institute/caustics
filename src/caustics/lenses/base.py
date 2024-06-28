@@ -10,7 +10,7 @@ from torch import Tensor
 from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
 from ..parametrized import Parametrized, unpack
-from .utils import get_magnification
+from .utils import magnification
 from ..packed import Packed
 from . import func
 
@@ -121,7 +121,7 @@ class Lens(Parametrized):
             *Unit: unitless*
 
         """
-        return get_magnification(partial(self.raytrace, params=params), x, y, z_s)
+        return magnification(partial(self.raytrace, params=params), x, y, z_s)
 
     @unpack
     def forward_raytrace(

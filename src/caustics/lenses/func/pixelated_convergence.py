@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from scipy.fft import next_fast_len
 
-from ...utils import safe_divide, safe_log, get_meshgrid, interp2d
+from ...utils import safe_divide, safe_log, meshgrid, interp2d
 
 
 def build_kernels_pixelated_convergence(pixelscale, n_pix):
@@ -34,7 +34,7 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
         *Unit: unitless*
 
     """
-    x_mg, y_mg = get_meshgrid(pixelscale, 2 * n_pix, 2 * n_pix)
+    x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
     # Shift to center kernels within pixel at index n_pix
     x_mg = x_mg - pixelscale / 2
     y_mg = y_mg - pixelscale / 2

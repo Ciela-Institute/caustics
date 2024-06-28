@@ -176,7 +176,7 @@ class NFW(ThinLens):
     def get_scale_radius(
         self,
         *args,
-        params: Optional["Packed"] = None,
+        params: Optional[Packed] = None,
         z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
