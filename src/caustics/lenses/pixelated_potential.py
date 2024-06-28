@@ -23,7 +23,6 @@ class PixelatedPotential(ThinLens):
     def __init__(
         self,
         pixelscale: Annotated[float, "pixelscale"],
-        n_pix: Annotated[int, "The number of pixels on each side of the grid"],
         cosmology: CosmologyType,
         z_l: ZLType = None,
         x0: Annotated[
@@ -64,9 +63,6 @@ class PixelatedPotential(ThinLens):
             The field of view in arcseconds.
 
             *Unit: arcsec*
-
-        n_pix: int
-            The number of pixels on each side of the grid.
 
         cosmology: Cosmology
             An instance of the cosmological parameters.
@@ -110,7 +106,12 @@ class PixelatedPotential(ThinLens):
         self.add_param("potential_map", potential_map, shape)
 
         self.pixelscale = pixelscale
-        self.n_pix = n_pix
+        if potential_map is not None:
+            self.n_pix = potential_map.shape[0]
+        elif shape is not None:
+            self.n_pix = shape[0]
+        else:
+            raise ValueError("Either potential_map or shape must be provided")
         self.fov = self.n_pix * self.pixelscale
 
     @unpack
@@ -165,7 +166,7 @@ class PixelatedPotential(ThinLens):
         """
         # TODO: rescale from fov units to arcsec
         return tuple(
-            alpha.reshape(x.shape)
+            alpha.reshape(x.shape) / self.pixelscale
             for alpha in interp_bicubic(
                 (x - x0).view(-1) / self.fov * 2,
                 (y - y0).view(-1) / self.fov * 2,
@@ -284,4 +285,4 @@ class PixelatedPotential(ThinLens):
             get_dY=False,
             get_ddY=True,
         )
-        return (dY11 + dY22).reshape(x.shape)
+        return (dY11 + dY22).reshape(x.shape) / (2 * self.pixelscale**2)
