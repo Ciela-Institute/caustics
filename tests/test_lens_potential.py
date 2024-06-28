@@ -12,7 +12,7 @@ def test_lens_potential_vs_deflection(device):
     Check for internal consistency of the lensing potential for all ThinLens objects against the deflection angles. The gradient of the potential should equal the deflection angle.
     """
     # Define a grid of points to test.
-    x, y = caustics.utils.get_meshgrid(0.2, 10, 10, device=device)
+    x, y = caustics.utils.meshgrid(0.2, 10, 10, device=device)
 
     # Define a source redshift.
     z_s = 1.0
@@ -110,7 +110,7 @@ def test_lens_potential_vs_convergence(device):
     Check for internal consistency of the lensing potential for all ThinLens objects against the convergence. The laplacian of the potential should equal the convergence.
     """
     # Define a grid of points to test.
-    x, y = caustics.utils.get_meshgrid(0.2, 10, 10, device=device)
+    x, y = caustics.utils.meshgrid(0.2, 10, 10, device=device)
     x, y = x.clone().detach(), y.clone().detach()
 
     # Define a source redshift.

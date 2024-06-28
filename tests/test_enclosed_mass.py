@@ -7,7 +7,7 @@ def test_enclosed_mass_runs(device):
     Check that the enclosed mass profile runs without error.
     """
     # Define a grid of points to test.
-    x, y = caustics.utils.get_meshgrid(0.2, 10, 10, device=device)
+    x, y = caustics.utils.meshgrid(0.2, 10, 10, device=device)
 
     cosmo = caustics.FlatLambdaCDM(name="cosmo")
 
