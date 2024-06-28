@@ -11,6 +11,7 @@ from .singleplane import SinglePlane
 from .mass_sheet import MassSheet
 from .tnfw import TNFW
 from .multiplane import Multiplane
+from .multipole import Multipole
 
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "SinglePlane",
     "MassSheet",
     "TNFW",
+    "Multipole",
 ]
