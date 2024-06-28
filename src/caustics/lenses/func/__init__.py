@@ -52,6 +52,10 @@ from .tnfw import (
     M0_totmass_tnfw,
     concentration_tnfw,
 )
+from .enclosed_mass import (
+    physical_deflection_angle_enclosed_mass,
+    convergence_enclosed_mass,
+)
 
 __all__ = (
     "forward_raytrace",
@@ -102,4 +106,6 @@ __all__ = (
     "M0_scalemass_tnfw",
     "M0_totmass_tnfw",
     "concentration_tnfw",
+    "physical_deflection_angle_enclosed_mass",
+    "convergence_enclosed_mass",
 )
