@@ -1,4 +1,4 @@
-from .lens_source import Lens_Source
+from .lens_source import LensSource
 from .microlens import Microlens
 from .simulator import Simulator
 
