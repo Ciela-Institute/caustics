@@ -6,7 +6,7 @@ from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
 
 from caustics.light import Sersic
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 
 
 def test(sim_source, device, light_models):
@@ -14,7 +14,7 @@ def test(sim_source, device, light_models):
     res = 0.05
     nx = 200
     ny = 200
-    thx, thy = get_meshgrid(res, nx, ny, device=device)
+    thx, thy = meshgrid(res, nx, ny, device=device)
 
     if sim_source == "yaml":
         yaml_str = """\

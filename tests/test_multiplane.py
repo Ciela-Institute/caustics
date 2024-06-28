@@ -10,7 +10,7 @@ import numpy as np
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane, PixelatedConvergence
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 
 
 def test(sim_source, device, lens_models):
@@ -122,9 +122,8 @@ def test_multiplane_time_delay(device):
     n_pix = 10
     res = 0.05
     upsample_factor = 2
-    thx, thy = get_meshgrid(
+    thx, thy = meshgrid(
         res / upsample_factor,
-        upsample_factor * n_pix,
         upsample_factor * n_pix,
         dtype=torch.float32,
         device=device,
@@ -196,7 +195,7 @@ def test_params(device):
     multiplane_lens = Multiplane(cosmology=cosmology, lenses=planes)
     multiplane_lens.to(device=device)
     z_s = torch.tensor(z_s)
-    x, y = get_meshgrid(pixel_size, 32, 32, device=device)
+    x, y = meshgrid(pixel_size, 32, device=device)
     params = [torch.randn(pixels, pixels, device=device) for i in range(10)]
 
     # Test out the computation of a few quantities to make sure params are passed correctly

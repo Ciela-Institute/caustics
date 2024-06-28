@@ -8,7 +8,7 @@ from torch import Tensor
 
 from .simulator import Simulator, NameType
 from ..utils import (
-    get_meshgrid,
+    meshgrid,
     gaussian_quadrature_grid,
     gaussian_quadrature_integrator,
 )
@@ -137,7 +137,7 @@ class LensSource(Simulator):
             self.gridding[0] + self.psf_pad[0] * 2,
             self.gridding[1] + self.psf_pad[1] * 2,
         )
-        self.grid = get_meshgrid(
+        self.grid = meshgrid(
             pixelscale / self.upsample_factor,
             self.n_pix[0] * self.upsample_factor,
             self.n_pix[1] * self.upsample_factor,
