@@ -3,7 +3,6 @@ from typing import Tuple
 import torch
 from torch import Tensor
 
-from ..utils import vmap_n
 
 __all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
 
@@ -88,7 +87,7 @@ def pixel_magnification(raytrace, x, y, z_s) -> Tensor:
 def magnification(raytrace, x, y, z_s) -> Tensor:
     """
     Computes the magnification over a grid on the lensing plane.
-    This is done by calling `get_pix_magnification`
+    This is done by calling `pixel_magnification`
     for each point on the grid.
 
     Parameters
@@ -119,4 +118,9 @@ def magnification(raytrace, x, y, z_s) -> Tensor:
         *Unit: unitless*
 
     """
-    return vmap_n(pixel_magnification, 2, (None, 0, 0, None))(raytrace, x, y, z_s)
+    return torch.reshape(
+        torch.func.vmap(pixel_magnification, in_dims=(None, 0, 0, None))(
+            raytrace, x.reshape(-1), y.reshape(-1), z_s
+        ),
+        x.shape,
+    )

@@ -31,13 +31,13 @@ from .light import (
 )  # PROBESDataset conflicts with .data
 from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
 from . import utils
-from .sims import LensSource, Simulator
+from .sims import LensSource, Microlens, Simulator
 from .tests import test
 from .models.api import build_simulator
 from . import func
 
 __version__ = VERSION
-__author__ = "Ciela"
+__author__ = "Ciela Institute"
 
 __all__ = [
     "Cosmology",
@@ -68,6 +68,7 @@ __all__ = [
     "PROBESDataset",
     "utils",
     "LensSource",
+    "Microlens",
     "Simulator",
     "test",
     "build_simulator",
