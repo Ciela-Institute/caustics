@@ -4,7 +4,15 @@ import yaml
 
 import pytest
 import torch
-from pydantic import create_model
+
+try:
+    from pydantic import create_model
+except ImportError:
+    raise ImportError(
+        "The `pydantic` package is required to use this feature. "
+        "You can install it using `pip install pydantic==2.7`. This package requires rust. Make sure you have the permissions to install the dependencies.\n "
+        "Otherwise, the maintainer can install the package for you, you can then use `pip install --no-index pydantic`"
+    )
 
 import caustics
 from caustics.models.utils import setup_simulator_models
@@ -55,7 +63,7 @@ def sim_yaml():
 
     simulator:
         name: minisim
-        kind: Lens_Source
+        kind: LensSource
         init_kwargs:
             # Single lense
             lens: *lens
@@ -98,7 +106,7 @@ def sim_obj():
     sie = caustics.SIE(cosmology=cosmology, name="lens")
     src = caustics.Sersic(name="source")
     lnslt = caustics.Sersic(name="lenslight")
-    return caustics.Lens_Source(
+    return caustics.LensSource(
         lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
     )
 

@@ -2,7 +2,7 @@ from math import pi
 
 import torch
 
-from caustics.sims import Lens_Source
+from caustics.sims import LensSource
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.light import Sersic
@@ -67,7 +67,7 @@ def test_simulator_runs(sim_source, device, mocker):
 
         simulator:
             name: simulator
-            kind: Lens_Source
+            kind: LensSource
             params:
                 z_s: 2.0
             init_kwargs:
@@ -104,7 +104,7 @@ def test_simulator_runs(sim_source, device, mocker):
 
         psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
 
-        sim = Lens_Source(
+        sim = LensSource(
             name="simulator",
             lens=lensmass,
             source=source,

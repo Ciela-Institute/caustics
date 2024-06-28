@@ -1,6 +1,6 @@
-# mypy: disable-error-code="misc"
+# mypy: disable-error-code="misc", disable-error-code="attr-defined"
 from math import pi
-from typing import Callable, Optional, Tuple, Union, Any
+from typing import Callable, Optional, Tuple, Union, Any, Literal
 from importlib import import_module
 from functools import partial, lru_cache
 
@@ -316,7 +316,7 @@ def quad(
     pixelscale: float,
     X: Tensor,
     Y: Tensor,
-    args: Optional[Tuple] = None,
+    args: Tuple = (),
     quad_level: int = 3,
 ):
     """
@@ -415,7 +415,12 @@ def _h_poly(t):
     return A @ tt
 
 
-def interp1d(x: Tensor, y: Tensor, xs: Tensor, extend: str = "extrapolate") -> Tensor:
+def interp1d(
+    x: Tensor,
+    y: Tensor,
+    xs: Tensor,
+    extend: Literal["extrapolate", "const", "linear"] = "extrapolate",
+) -> Tensor:
     """Compute the 1D cubic spline interpolation for the given data points
     using PyTorch.
 
@@ -459,7 +464,7 @@ def interp2d(
     im: Tensor,
     x: Tensor,
     y: Tensor,
-    method: str = "linear",
+    method: Literal["linear", "nearest"] = "linear",
     padding_mode: str = "zeros",
 ) -> Tensor:
     """
@@ -545,6 +550,120 @@ def interp2d(
     return result
 
 
+def interp3d(
+    cu: Tensor,
+    x: Tensor,
+    y: Tensor,
+    t: Tensor,
+    method: Literal["linear", "nearest"] = "linear",
+    padding_mode: Literal["zeros", "extrapolate"] = "zeros",
+) -> Tensor:
+    """
+    Interpolates a 3D image at specified coordinates.
+    Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
+
+    Parameters
+    ----------
+    cu: Tensor
+        A 3D tensor representing the cube.
+    x: Tensor
+        A 0D or 1D tensor of x coordinates at which to interpolate.
+    y: Tensor
+        A 0D or 1D tensor of y coordinates at which to interpolate.
+    t: Tensor
+        A 0D or 1D tensor of t coordinates at which to interpolate.
+    method: (str, optional)
+        Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
+    padding_mode:  (str, optional)
+        Defines the padding mode when out-of-bound indices are encountered.
+        Either 'zeros' or 'extrapolate'. Defaults to 'zeros'.
+
+    Raises
+    ------
+    ValueError
+        If `cu` is not a 3D tensor.
+    ValueError
+        If `x` is not a 0D or 1D tensor.
+    ValueError
+        If `y` is not a 0D or 1D tensor.
+    ValueError
+        If `t` is not a 0D or 1D tensor.
+    ValueError
+        If `padding_mode` is not 'extrapolate' or 'zeros'.
+    ValueError
+        If `method` is not 'nearest' or 'linear'.
+
+    Returns
+    -------
+    Tensor
+        Tensor with the same shape as `x` and `y` containing the interpolated values.
+    """
+    if cu.ndim != 3:
+        raise ValueError(f"im must be 3D (received {cu.ndim}D tensor)")
+
+    if t.ndim > 1:
+        raise ValueError(f"t must be 0 or 1D (received {t.ndim}D tensor)")
+    if padding_mode not in ["extrapolate", "zeros"]:
+        raise ValueError(f"{padding_mode} is not a valid padding mode")
+
+    idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1) | (t < -1) | (t > 1)
+    # Convert coordinates to pixel indices
+    d, h, w = cu.shape
+    x = 0.5 * ((x + 1) * w - 1)
+    y = 0.5 * ((y + 1) * h - 1)
+    t = 0.5 * ((t + 1) * d - 1)
+
+    if method == "nearest":
+        result = cu[
+            t.round().long().clamp(0, d - 1),
+            y.round().long().clamp(0, h - 1),
+            x.round().long().clamp(0, w - 1),
+        ]
+    elif method == "linear":
+        x0 = x.floor().long()
+        y0 = y.floor().long()
+        t0 = t.floor().long()
+        x1 = x0 + 1
+        y1 = y0 + 1
+        t1 = t0 + 1
+        x0 = x0.clamp(0, w - 2)
+        x1 = x1.clamp(1, w - 1)
+        y0 = y0.clamp(0, h - 2)
+        y1 = y1.clamp(1, h - 1)
+        t0 = t0.clamp(0, d - 2)
+        t1 = t1.clamp(1, d - 1)
+
+        fa = cu[t0, y0, x0]
+        fb = cu[t0, y1, x0]
+        fc = cu[t0, y0, x1]
+        fd = cu[t0, y1, x1]
+        fe = cu[t1, y0, x0]
+        ff = cu[t1, y1, x0]
+        fg = cu[t1, y0, x1]
+        fh = cu[t1, y1, x1]
+
+        xd = x - x0
+        yd = y - y0
+        td = t - t0
+
+        c00 = fa * (1 - xd) + fc * xd
+        c01 = fe * (1 - xd) + fg * xd
+        c10 = fb * (1 - xd) + fd * xd
+        c11 = ff * (1 - xd) + fh * xd
+
+        c0 = c00 * (1 - yd) + c10 * yd
+        c1 = c01 * (1 - yd) + c11 * yd
+
+        result = c0 * (1 - td) + c1 * td
+    else:
+        raise ValueError(f"{method} is not a valid interpolation method")
+
+    if padding_mode == "zeros":  # else padding_mode == "extrapolate"
+        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
+
+    return result
+
+
 # Bicubic interpolation coefficients
 # These are the coefficients for the bicubic interpolation kernel.
 # To quote numerical recipes:
@@ -608,9 +727,9 @@ def interp_bicubic(
     dZ1=None,
     dZ2=None,
     dZ12=None,
-    get_Y=True,
-    get_dY=False,
-    get_ddY=False,
+    get_Y: bool = True,
+    get_dY: bool = False,
+    get_ddY: bool = False,
 ):
     """
     Compute bicubic interpolation of a 2D grid at arbitrary locations. This will
@@ -693,6 +812,7 @@ def interp_bicubic(
 
     if Z.ndim != 2:
         raise ValueError(f"Z must be 2D (received {Z.ndim}D tensor)")
+
     if x.ndim > 1:
         raise ValueError(f"x must be 0 or 1D (received {x.ndim}D tensor)")
     if y.ndim > 1:

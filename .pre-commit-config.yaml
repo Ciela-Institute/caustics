@@ -9,7 +9,7 @@ ci:
 
 repos:
   - repo: https://github.com/psf/black
-    rev: "24.3.0"
+    rev: "24.4.2"
     hooks:
       - id: black-jupyter
 
@@ -20,9 +20,10 @@ repos:
         additional_dependencies: [black==23.7.0]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.5.0"
+    rev: "v4.6.0"
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=1000"]
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-symlinks
@@ -50,13 +51,13 @@ repos:
         args: [--prose-wrap=always]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.3.4"
+    rev: "v0.4.10"
     hooks:
       - id: ruff
         args: ["--fix", "--show-fixes"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.9.0"
+    rev: "v1.10.0"
     hooks:
       - id: mypy
         files: src
@@ -65,16 +66,25 @@ repos:
           - pytest
 
   - repo: https://github.com/codespell-project/codespell
-    rev: "v2.2.6"
+    rev: "v2.3.0"
     hooks:
       - id: codespell
         args: ["--write-changes", "--ignore-words", ".codespell-whitelist"]
 
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.7.1
+  #- repo: https://github.com/kynan/nbstripout
+  #rev: 0.7.1
+  #hooks:
+  #- id: nbstripout
+  #args: [--extra-keys=metadata.kernelspec metadata.language_info.version]
+
+  - repo: local
     hooks:
-      - id: nbstripout
-        args: [--extra-keys=metadata.kernelspec metadata.language_info.version]
+      - id: strip-output-keep-html
+        name: Strip Jupyter Notebook output but keep HTML
+        entry: python strip_output_keep_html.py
+        language: python
+        additional_dependencies: [nbformat]
+        files: \.ipynb$
 
   - repo: local
     hooks:

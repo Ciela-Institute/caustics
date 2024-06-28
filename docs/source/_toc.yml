@@ -9,7 +9,12 @@ chapters:
   - file: websim
   - file: tutorials/index
     sections:
-      - file: tutorials/BasicIntroduction
+      - file: tutorials/Introduction
+      - file: interfaceindex
+        sections:
+          - file: tutorials/InterfaceIntroduction_yaml
+          - file: tutorials/InterfaceIntroduction_oop
+          - file: tutorials/InterfaceIntroduction_func
       - file: tutorials/LensZoo
       - file: tutorials/VisualizeCaustics
       - file: tutorials/MultiplaneDemo
@@ -23,6 +28,7 @@ chapters:
       - file: examples/Example_ImageFit_NUTS
       - file: examples/Example_QSOLensFit
   - file: contributing
+  - file: frequently_asked_questions
   - file: citation
   - file: license
   - file: modules
