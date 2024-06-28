@@ -4,7 +4,7 @@ import torch
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 
 
 def test_jacobian_autograd_vs_finitediff(device):
@@ -12,7 +12,7 @@ def test_jacobian_autograd_vs_finitediff(device):
     cosmology = FlatLambdaCDM(name="cosmo")
     lens = SIE(name="sie", cosmology=cosmology)
     lens.to(device=device)
-    thx, thy = get_meshgrid(0.01, 20, 20, device=device)
+    thx, thy = meshgrid(0.01, 20, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
@@ -55,7 +55,7 @@ def test_multiplane_jacobian(device):
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
     )
     lens.to(device=device)
-    thx, thy = get_meshgrid(0.1, 10, 10, device=device)
+    thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
@@ -84,7 +84,7 @@ def test_multiplane_jacobian_autograd_vs_finitediff(device):
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
     )
     lens.to(device=device)
-    thx, thy = get_meshgrid(0.01, 10, 10, device=device)
+    thx, thy = meshgrid(0.01, 10, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
@@ -122,7 +122,7 @@ def test_multiplane_effective_convergence(device):
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
     )
     lens.to(device=device)
-    thx, thy = get_meshgrid(0.1, 10, 10, device=device)
+    thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)

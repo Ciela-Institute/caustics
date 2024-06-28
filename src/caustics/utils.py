@@ -166,8 +166,8 @@ def to_elliptical(x, y, q: Tensor):
     return x, y / q
 
 
-def get_meshgrid(
-    pixelscale, nx, ny, device=None, dtype=torch.float32
+def meshgrid(
+    pixelscale, nx, ny=None, device=None, dtype=torch.float32
 ) -> Tuple[Tensor, Tensor]:
     """
     Generates a 2D meshgrid based on the provided pixelscale and dimensions.
@@ -190,6 +190,8 @@ def get_meshgrid(
     Tuple: [Tensor, Tensor]
         The generated meshgrid as a tuple of Tensors.
     """
+    if ny is None:
+        ny = nx
     xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2  # fmt: skip
     ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2  # fmt: skip
     return torch.meshgrid([xs, ys], indexing="xy")
@@ -257,7 +259,7 @@ def gaussian_quadrature_grid(
     -------
     Usage would look something like:: python
 
-        X, Y = get_meshgrid(pixelscale, nx, ny)
+        X, Y = meshgrid(pixelscale, nx, ny)
         Xs, Ys, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
         F = your_brightness_function(Xs, Ys, other, parameters)
         res = gaussian_quadrature_integrator(F, weight)
@@ -302,7 +304,7 @@ def gaussian_quadrature_integrator(
     -------
     Usage would look something like:: python
 
-        X, Y = get_meshgrid(pixelscale, nx, ny)
+        X, Y = meshgrid(pixelscale, nx, ny)
         Xs, Ys, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
         F = your_brightness_function(Xs, Ys, other, parameters)
         res = gaussian_quadrature_integrator(F, weight)
@@ -709,7 +711,7 @@ def vmap_n(
     return vmapd_func
 
 
-def get_cluster_means(xs: Tensor, k: int):
+def cluster_means(xs: Tensor, k: int):
     """
     Computes cluster means using the k-means++ initialization algorithm.
 

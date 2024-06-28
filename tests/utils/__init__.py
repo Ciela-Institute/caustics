@@ -11,7 +11,7 @@ from lenstronomy.LensModel.lens_model import LensModel
 
 from caustics.lenses import ThinLens, EPL, NFW, ThickLens, PixelatedConvergence
 from caustics.light import Sersic, Pixelated
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
 from .models import mock_from_file
@@ -39,7 +39,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
             else:
                 self.lens = EPL(self.cosmo, z_l=z_l, name="lens")
             self.sersic = Sersic(name="source")
-            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix, device=device)
+            self.thx, self.thy = meshgrid(0.04, n_pix, device=device)
             self.n_pix = n_pix
             self.to(device=device)
 
@@ -114,7 +114,6 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
             self.kappa = PixelatedConvergence(
                 pixel_scale,
-                n_pix,
                 self.cosmo,
                 z_l=z_l,
                 shape=(n_pix, n_pix),
@@ -127,7 +126,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
                 shape=(n_pix, n_pix),
                 name="source",
             )
-            self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix, device=device)
+            self.thx, self.thy = meshgrid(pixel_scale, n_pix, device=device)
             self.n_pix = n_pix
             self.to(device=device)
 
@@ -186,7 +185,7 @@ def get_default_cosmologies(device=None):
 
 def setup_grids(res=0.05, n_pix=100, device=None):
     # Caustics setup
-    thx, thy = get_meshgrid(res, n_pix, n_pix, device=device)
+    thx, thy = meshgrid(res, n_pix, device=device)
     if device is not None:
         thx = thx.to(device=device)
         thy = thy.to(device=device)

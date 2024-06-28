@@ -457,7 +457,7 @@ class Parametrized:
             f")"
         )
 
-    def get_graph(
+    def graph(
         self, show_dynamic_params: bool = False, show_static_params: bool = False
     ) -> "graphviz.Digraph":  # type: ignore
         """
