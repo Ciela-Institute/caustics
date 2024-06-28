@@ -272,7 +272,7 @@ def setup_simulator_models() -> type[Annotated]:
     # there's currently only one simulator
     # in the system.
     dependents = {
-        "Lens_Source": {
+        "LensSource": {
             "source": light_sources,
             "lens_light": light_sources,
             "lens": lenses,
