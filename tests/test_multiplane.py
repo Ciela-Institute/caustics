@@ -184,7 +184,6 @@ def test_params(device):
         lens = PixelatedConvergence(
             name=f"plane_{p}",
             pixelscale=pixel_size,
-            n_pix=pixels,
             cosmology=cosmology,
             z_l=z[p],
             x0=0.0,

@@ -114,7 +114,6 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
             self.kappa = PixelatedConvergence(
                 pixel_scale,
-                n_pix,
                 self.cosmo,
                 z_l=z_l,
                 shape=(n_pix, n_pix),

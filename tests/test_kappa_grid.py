@@ -47,7 +47,6 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     # Approximate calculations
     lens_kap = PixelatedConvergence(
         res,
-        n_pix,
         cosmology,
         z_l=z_l,
         shape=(n_pix, n_pix),
