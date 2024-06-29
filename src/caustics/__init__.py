@@ -30,8 +30,7 @@ from .light import (
     Pixelated,
     PixelatedTime,
     Sersic,
-)  # PROBESDataset conflicts with .data
-from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
+)
 from . import utils
 from .sims import LensSource, Microlens, Simulator
 from .tests import test
@@ -67,9 +66,6 @@ __all__ = [
     "Pixelated",
     "PixelatedTime",
     "Sersic",
-    "HDF5Dataset",
-    "IllustrisKappaDataset",
-    "PROBESDataset",
     "utils",
     "LensSource",
     "Microlens",
