@@ -1,6 +1,7 @@
 import torch
 
 from ...utils import batch_lm
+from ...constants import arcsec_to_rad, c_Mpc_s
 
 
 def forward_raytrace(bx, by, raytrace, epsilon, n_init, fov):
@@ -161,3 +162,7 @@ def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
     """
 
     return (d_ls / d_s) * ax, (d_ls / d_s) * ay
+
+
+def td_arcsec2_to_time(d_l, d_s, d_ls, z_l):
+    return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2
