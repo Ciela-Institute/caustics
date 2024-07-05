@@ -239,11 +239,11 @@ class LensSource(Simulator):
         if self.psf is None:
             psf_convolve = False
 
-        usegrid = (self.grid[0] + x0, self.grid[1] + y0)
+        grid = (self.grid[0] + x0, self.grid[1] + y0)
 
         if quad_level is not None and quad_level > 1:
             finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                self.pixelscale / self.upsample_factor, *usegrid, quad_level
+                self.pixelscale / self.upsample_factor, *grid, quad_level
             )
 
         # Sample the source light
@@ -255,7 +255,7 @@ class LensSource(Simulator):
                     mu_fine = self.source.brightness(bx, by, params)
                     mu = gaussian_quadrature_integrator(mu_fine, weights)
                 else:
-                    bx, by = self.lens.raytrace(*usegrid, z_s, params)
+                    bx, by = self.lens.raytrace(*grid, z_s, params)
                     mu = self.source.brightness(bx, by, params)
             else:
                 # Source is imaged without lensing
@@ -263,10 +263,10 @@ class LensSource(Simulator):
                     mu_fine = self.source.brightness(finegrid_x, finegrid_y, params)
                     mu = gaussian_quadrature_integrator(mu_fine, weights)
                 else:
-                    mu = self.source.brightness(*usegrid, params)
+                    mu = self.source.brightness(*grid, params)
         else:
             # Source is not added to the scene
-            mu = torch.zeros_like(usegrid[0])
+            mu = torch.zeros_like(grid[0])
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
@@ -274,7 +274,7 @@ class LensSource(Simulator):
                 mu_fine = self.lens_light.brightness(finegrid_x, finegrid_y, params)
                 mu += gaussian_quadrature_integrator(mu_fine, weights)
             else:
-                mu += self.lens_light.brightness(*usegrid, params)
+                mu += self.lens_light.brightness(*grid, params)
 
         # Convolve the PSF
         if psf_convolve and self.psf is not None:
