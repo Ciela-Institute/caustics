@@ -1008,12 +1008,12 @@ class ThinLens(Lens):
     def _arcsec2_to_time(self, z_l, z_s, params):
         """
         This method is used by :func:`caustics.lenses.ThinLens.time_delay` to
-        convert arcsec^2 to seconds in the context of gravitational time delays.
+        convert arcsec^2 to days in the context of gravitational time delays.
         """
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        return func.td_arcsec2_to_time(d_l, d_s, d_ls, z_l)
+        return func.time_delay_arcsec2_to_time(d_l, d_s, d_ls, z_l)
 
     @unpack
     def time_delay(
@@ -1031,13 +1031,15 @@ class ThinLens(Lens):
         """
         Computes the gravitational time delay for light passing through the lens at given coordinates.
 
-        This time delay is induced by the photons travelling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
-        The main equation involved here is the following::
+        This time delay is induced by the photons traveling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
+        The main equation involved here is the following:
 
-            \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \left[ \frac{1}{2}|\vec{\alpha}(\vec{\theta})|^2 - \psi(\vec{\theta}) \right]
+        .. math::
 
-        where :math:`\vec{\alpha}(\vec{\theta})` is the deflection angle,
-        :math:`\psi(\vec{\theta})` is the lensing potential,
+            \\Delta t = \\frac{1 + z_l}{c} \\frac{D_s}{D_l D_{ls}} \\left[ \\frac{1}{2}|\\vec{\\alpha}(\\vec{\\theta})|^2 - \psi(\\vec{\\theta}) \\right]
+
+        where :math:`\\vec{\\alpha}(\\vec{\\theta})` is the deflection angle,
+        :math:`\\psi(\\vec{\\theta})` is the lensing potential,
         :math:`D_l` is the comoving distance to the lens,
         :math:`D_s` is the comoving distance to the source,
         and :math:`D_{ls}` is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
@@ -1078,7 +1080,7 @@ class ThinLens(Lens):
         Tensor
             Time delay at the given coordinates.
 
-            *Unit: seconds*
+            *Unit: days*
 
         References
         ----------

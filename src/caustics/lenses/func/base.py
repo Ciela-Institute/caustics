@@ -1,7 +1,7 @@
 import torch
 
 from ...utils import batch_lm
-from ...constants import arcsec_to_rad, c_Mpc_s
+from ...constants import arcsec_to_rad, c_Mpc_s, days_to_seconds
 
 
 def forward_raytrace(bx, by, raytrace, epsilon, n_init, fov):
@@ -167,5 +167,10 @@ def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
     return (d_ls / d_s) * ax, (d_ls / d_s) * ay
 
 
-def td_arcsec2_to_time(d_l, d_s, d_ls, z_l):
-    return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2
+def time_delay_arcsec2_to_time(d_l, d_s, d_ls, z_l):
+    """
+    Computes a scaling factor to use in time delay calculations which converts
+    the time delay (i.e. potential and deflection angle squared terms) from
+    arcsec^2 to units of days.
+    """
+    return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2 / days_to_seconds
