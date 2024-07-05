@@ -167,7 +167,7 @@ def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
     return (d_ls / d_s) * ax, (d_ls / d_s) * ay
 
 
-def time_delay_arcsec2_to_time(d_l, d_s, d_ls, z_l):
+def time_delay_arcsec2_to_days(d_l, d_s, d_ls, z_l):
     """
     Computes a scaling factor to use in time delay calculations which converts
     the time delay (i.e. potential and deflection angle squared terms) from
