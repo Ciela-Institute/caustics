@@ -3,7 +3,7 @@
 Citation
 ========
 
-Paper is submitted to JOSS, in the meantime please cite the `arXiv version<https://arxiv.org/abs/2406.15542>`_`:
+Paper is submitted to JOSS, in the meantime please cite the `arXiv version <https://arxiv.org/abs/2406.15542>`_ of the paper:
 
 .. code-block:: bibtex
 
