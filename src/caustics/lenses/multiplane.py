@@ -4,11 +4,10 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from ..constants import arcsec_to_rad, rad_to_arcsec
+from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
 from .base import ThickLens, NameType, CosmologyType, LensesType
 from ..parametrized import unpack
 from ..packed import Packed
-from . import func
 
 __all__ = ("Multiplane",)
 
@@ -115,8 +114,7 @@ class Multiplane(ThickLens):
             theta_y = theta_y - alpha_y
 
             # Compute time delay
-            # old version (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s) / days_to_seconds
-            tau_ij = func.time_delay_arcsec2_to_days(D_l, D_next, D, z_ls[i])
+            tau_ij = (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s) / days_to_seconds
             if shapiro_time_delay:
                 beta_ij = D * D_s / (D_next * D_is)
                 potential = self.lenses[i].potential(
