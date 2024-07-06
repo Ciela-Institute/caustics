@@ -1087,7 +1087,7 @@ def batch_lm(
             L_max=L_max,
         )
     )
-    L = L * torch.ones(B, device=X.device)
+    L = L * torch.ones(B, device=X.device, dtype=X.dtype)
     for _ in range(max_iter):
         Xnew, L, C = v_lm_step(X, Y, Cinv, L)
         if (
