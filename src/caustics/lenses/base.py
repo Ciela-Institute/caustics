@@ -7,7 +7,6 @@ import warnings
 import torch
 from torch import Tensor
 
-from ..constants import arcsec_to_rad, c_Mpc_s
 from ..cosmology import Cosmology
 from ..parametrized import Parametrized, unpack
 from .utils import magnification
@@ -1006,15 +1005,15 @@ class ThinLens(Lens):
         ax, ay = self.reduced_deflection_angle(x, y, z_s, params, **kwargs)
         return x - ax, y - ay
 
-    @staticmethod
-    def _arcsec2_to_time(z_l, z_s, cosmology, params):
+    def _arcsec2_to_days(self, z_l, z_s, params):
         """
-        This method is used by :func:`caustics.lenses.ThinLens.time_delay` to convert arcsec^2 to seconds in the context of gravitational time delays.
+        This method is used by :func:`caustics.lenses.ThinLens.time_delay` to
+        convert arcsec^2 to days in the context of gravitational time delays.
         """
-        d_l = cosmology.angular_diameter_distance(z_l, params)
-        d_s = cosmology.angular_diameter_distance(z_s, params)
-        d_ls = cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
-        return (1 + z_l) / c_Mpc_s * d_s * d_l / d_ls * arcsec_to_rad**2
+        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        d_s = self.cosmology.angular_diameter_distance(z_s, params)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
+        return func.time_delay_arcsec2_to_days(d_l, d_s, d_ls, z_l)
 
     @unpack
     def time_delay(
@@ -1032,13 +1031,15 @@ class ThinLens(Lens):
         """
         Computes the gravitational time delay for light passing through the lens at given coordinates.
 
-        This time delay is induced by the photons travelling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
-        The main equation involved here is the following::
+        This time delay is induced by the photons traveling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
+        The main equation involved here is the following:
 
-            \Delta t = \frac{1 + z_l}{c} \frac{D_s}{D_l D_{ls}} \left[ \frac{1}{2}|\vec{\alpha}(\vec{\theta})|^2 - \psi(\vec{\theta}) \right]
+        .. math::
 
-        where :math:`\vec{\alpha}(\vec{\theta})` is the deflection angle,
-        :math:`\psi(\vec{\theta})` is the lensing potential,
+            \\Delta t = \\frac{1 + z_l}{c} \\frac{D_s}{D_l D_{ls}} \\left[ \\frac{1}{2}|\\vec{\\alpha}(\\vec{\\theta})|^2 - \psi(\\vec{\\theta}) \\right]
+
+        where :math:`\\vec{\\alpha}(\\vec{\\theta})` is the deflection angle,
+        :math:`\\psi(\\vec{\\theta})` is the lensing potential,
         :math:`D_l` is the comoving distance to the lens,
         :math:`D_s` is the comoving distance to the source,
         and :math:`D_{ls}` is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
@@ -1079,7 +1080,7 @@ class ThinLens(Lens):
         Tensor
             Time delay at the given coordinates.
 
-            *Unit: seconds*
+            *Unit: days*
 
         References
         ----------
@@ -1090,13 +1091,13 @@ class ThinLens(Lens):
 
         if shapiro_time_delay:
             potential = self.potential(x, y, z_s, params)
-            TD -= potential
+            TD = TD - potential
         if geometric_time_delay:
             ax, ay = self.physical_deflection_angle(x, y, z_s, params)
             fp = 0.5 * (ax**2 + ay**2)
-            TD += fp
+            TD = TD + fp
 
-        factor = self._arcsec2_to_time(z_l, z_s, self.cosmology, params)
+        factor = self._arcsec2_to_days(z_l, z_s, params)
 
         return factor * TD
 
