@@ -7,6 +7,10 @@ Pro tip: check out the "Pixelated" source to lens any image you want!
 
 `Launch the simulator! <https://ciela-institute-caustics-webapp-guistreamlit-app-yanhhm.streamlit.app/>`_
 
+.. raw:: html
+
+   <iframe src="https://ciela-institute-caustics-webapp-guistreamlit-app-yanhhm.streamlit.app/" width="100%" height="800"></iframe>
+
 For frequent simulator users (e.g., if you plan on exploring the parameter space of a lens), we recommend installing the simulator locally and running it in your browser. Follow the steps below:
 
 1. Install Caustics. Please follow the instructions on the `install page <https://caustics.readthedocs.io/en/latest/install.html>`_.
