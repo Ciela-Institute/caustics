@@ -6,7 +6,11 @@ having to install anything.
 
 Pro tip: check out the "Pixelated" source to lens any image you want!
 
-<iframe src="https://ciela-institute-caustics-webapp-guistreamlit-app-yanhhm.streamlit.app/?embed=true" width="100%" height="80vh"></iframe>
+<div style="position: relative; width: 100%; padding-top: 56.25%;">
+    <iframe src="https://ciela-institute-caustics-webapp-guistreamlit-app-yanhhm.streamlit.app/?embed=true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+</div>
+
+<!-- <iframe src="https://ciela-institute-caustics-webapp-guistreamlit-app-yanhhm.streamlit.app/?embed=true" width="100%" height="80vh"></iframe> -->
 
 For frequent simulator users (e.g., if you plan on exploring the parameter space
 of a lens), we recommend installing the simulator locally and running it in your
