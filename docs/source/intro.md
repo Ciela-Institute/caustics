@@ -1,5 +1,7 @@
 # Welcome to Caustics’ documentation!
 
+[Logo GIF](../../media/caustics_logo.gif)
+
 The lensing pipeline of the future: GPU-accelerated,
 automatically-differentiable, highly modular and extensible.
 
