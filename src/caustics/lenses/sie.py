@@ -131,7 +131,7 @@ class SIE(ThinLens):
         Tensor
             The radial coordinate in the lens plane.
 
-            *Unit: arcsec*
+            *Unit: arcsec^2*
 
         """
         return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip

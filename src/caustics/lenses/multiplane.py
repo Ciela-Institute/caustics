@@ -1,10 +1,9 @@
-from operator import itemgetter
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 from torch import Tensor
 
-from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
+from ..constants import arcsec_to_rad, c_Mpc_s, seconds_to_days
 from .base import ThickLens, NameType, CosmologyType, LensesType
 from ..parametrized import unpack
 from ..packed import Packed
@@ -70,75 +69,70 @@ class Multiplane(ThickLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        shapiro_time_delay: bool = True,
-        geometric_time_delay: bool = True,
-        ray_coords: bool = True,
+        return_shapiro_time_delay: bool = False,
+        return_geometric_time_delay: bool = False,
+        return_time_delay: bool = False,
+        return_coordinates: bool = True,
         **kwargs,
-    ):
-        # Collect lens redshifts and ensure proper order
+    ) -> Union[tuple[Tensor], Tensor]:
+        # Order resdhift
         z_ls = self.get_z_ls(params)
-        lens_planes = [i for i, _ in sorted(enumerate(z_ls), key=itemgetter(1))]
-        D_s = self.cosmology.transverse_comoving_distance(z_s, params)
+        planes = torch.argsort(torch.stack(z_ls))
 
-        # Compute physical position on first lens plane
-        D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]], params)
-        X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
+        theta_x = x
+        theta_y = y
 
-        # Initial angles are observation angles
-        theta_x, theta_y = x, y
+        shapiro_tau = torch.zeros_like(x)
+        geometric_tau = torch.zeros_like(x)
 
-        # Store the time delays
-        if shapiro_time_delay or geometric_time_delay:
-            TD = torch.zeros_like(x)
-
-        for i in lens_planes:
-            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
-            # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance(z_ls[i], params)
-            D = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_next, params
-            )
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(
-                z_ls[i], z_s, params
-            )
-            D_next = self.cosmology.transverse_comoving_distance(z_next, params)
-            alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
-                X * rad_to_arcsec / D_l,
-                Y * rad_to_arcsec / D_l,
-                z_s,
-                params,
+        for plane in planes:
+            z_l = z_ls[plane]
+            z_next = z_ls[plane + 1] if plane != len(planes) - 1 else z_s
+            alpha_x, alpha_y = self.lenses[plane].reduced_deflection_angle(
+                theta_x, theta_y, z_next, params
             )
 
-            # Update angle of rays after passing through lens (sum in eq 18)
+            # Time delay
+            if any(
+                [
+                    return_shapiro_time_delay,
+                    return_geometric_time_delay,
+                    return_time_delay,
+                ]
+            ):
+                D_l = self.cosmology.angular_diameter_distance(z_l)
+                D_next = self.cosmology.angular_diameter_distance(z_next)
+                D_l_next = self.cosmology.angular_diameter_distance_z1z2(z_l, z_next)
+                time_delay_distance = (1 + z_l) * D_l * D_next / D_l_next  # Mpc
+                dt = time_delay_distance / c_Mpc_s * seconds_to_days  # days
+                if return_shapiro_time_delay or return_time_delay:
+                    phi = self.lenses[plane].potential(  # arcsec^2
+                        theta_x, theta_y, z_next, params
+                    )
+                    shapiro_tau += -dt * phi * arcsec_to_rad**2
+                if return_geometric_time_delay or return_time_delay:
+                    geometric_tau += (
+                        dt * 0.5 * (alpha_x**2 + alpha_y**2) * arcsec_to_rad**2
+                    )
+
+            # Recurrent lens equation
             theta_x = theta_x - alpha_x
             theta_y = theta_y - alpha_y
 
-            # Compute time delay
-            tau_ij = (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s) / days_to_seconds
-            if shapiro_time_delay:
-                beta_ij = D * D_s / (D_next * D_is)
-                potential = self.lenses[i].potential(
-                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l, z_s, params
-                )
-                TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
-            if geometric_time_delay:
-                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (alpha_x**2 + alpha_y**2)
-
-            # Propagate rays to next plane (basically eq 18)
-            X = X + D * theta_x * arcsec_to_rad
-            Y = Y + D * theta_y * arcsec_to_rad
-
-        # Convert from physical position to angular position on the source plane
-        D_end = self.cosmology.transverse_comoving_distance(z_s, params)
-        if ray_coords and not (shapiro_time_delay or geometric_time_delay):
-            return X * rad_to_arcsec / D_end, Y * rad_to_arcsec / D_end
-        elif ray_coords and (shapiro_time_delay or geometric_time_delay):
-            return X * rad_to_arcsec / D_end, Y * rad_to_arcsec / D_end, TD
-        elif shapiro_time_delay or geometric_time_delay:
-            return TD
-        raise ValueError(
-            "No return value specified. Must choose one or more of: ray_coords, shapiro_time_delay, or geometric_time_delay to be True."
-        )
+        _out = []
+        if return_coordinates:
+            _out.append(theta_x)
+            _out.append(theta_y)
+        if return_time_delay:
+            _out.append(shapiro_tau + geometric_tau)
+        elif return_shapiro_time_delay:
+            _out.append(shapiro_tau)
+        elif return_geometric_time_delay:
+            _out.append(geometric_tau)
+        out = tuple(_out)
+        if len(out) == 1:
+            return out[0]
+        return out
 
     @unpack
     def raytrace(
@@ -148,68 +142,63 @@ class Multiplane(ThickLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
+        return_time_delay: bool = False,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor]:
         """Calculate the angular source positions corresponding to the
-        observer positions x,y. See Margarita et al. 2013 for the
-        formalism from the GLAMER -II code:
-        https://ui.adsabs.harvard.edu/abs/2014MNRAS.445.1954P/abstract
+         observer positions x,y. See Margarita et al. 2013 for the
+         formalism from the GLAMER -II code:
+         https://ui.adsabs.harvard.edu/abs/2014MNRAS.445.1954P/abstract
 
-        The primary equation used here is equation 18. With a slight correction it reads:
+         The primary equation used for multiplane is the following recursive formula
 
-        .. math::
+         .. math::
+             \boldsymbol{\theta}^{\ell + 1} = \boldsymbol{\theta}^{\ell} - \boldsymbol{\alpha}^{(\ell)}(\boldsymbol{\theta}^{(\ell)})\, .
 
-          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]
+        for :math:`\ell \in \{0, L-1\}`, where :math:`L` is the number of planes.
+        :math:`\boldsymbol{\theta}^{(\ell)}` are angular coordinates of the rays angular coordinate at each plane. The equation is initialized at
+        :math:`\boldsymbol{\theta}^{(0)}`, which are the initial coordinates (x, y).
+        :math:`\boldsymbol{\alpha}^{(\ell)}` are the reduced deflection angles of the lens at plane :math:`(\ell)`.
 
-        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propagation through regular space to the first plane.
-        Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
+        This method returns the angular coordinates at the source plane :math:`\boldsymbol{\beta} = \boldsymbol{\theta}^{(L)}`.
+        This implementation is equivalent to equation (2.14) and (2.15) of Fleury et al. (2022).
 
-        .. math::
+         Parameters
+         ----------
+         x: Tensor
+             angular x-coordinates in the image plane.
 
-          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\vec{\theta}^{i}
-          \vec{\theta}^{i+1} = \vec{\theta}^{i} -  \alpha^i(\vec{x}^{i+1})
+             *Unit: arcsec*
 
-        Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer).
-        The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`,
-        and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied),
-        and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0`
-        and begin at the second step in the recursion formula.
+         y: Tensor
+             angular y-coordinates in the image plane.
 
-        Parameters
-        ----------
-        x: Tensor
-            angular x-coordinates in the image plane.
+             *Unit: arcsec*
 
-            *Unit: arcsec*
+         z_s: Tensor
+             Redshifts of the sources.
 
-        y: Tensor
-            angular y-coordinates in the image plane.
+             *Unit: unitless*
 
-            *Unit: arcsec*
+         params: Packed, optional
+             Dynamic parameter container.
 
-        z_s: Tensor
-            Redshifts of the sources.
+         Returns
+         -------
+         x_component: Tensor
+             Reduced deflection angle in the x-direction.
 
-            *Unit: unitless*
+             *Unit: arcsec*
 
-        params: Packed, optional
-            Dynamic parameter container.
+         y_component: Tensor
+             Reduced deflection angle in the y-direction.
 
-        Returns
-        -------
-        x_component: Tensor
-            Reduced deflection angle in the x-direction.
+             *Unit: arcsec*
 
-            *Unit: arcsec*
-
-        y_component: Tensor
-            Reduced deflection angle in the y-direction.
-
-            *Unit: arcsec*
-
-        References
-        ----------
-        1. Margarita Petkova, R. Benton Metcalf, and Carlo Giocoli. 2014. GLAMER II: multiple-plane lensing. MNRAS 445, 1954-1966. DOI:https://doi.org/10.1093/mnras/stu1860
+         References
+         ----------
+         1. Pierre Fleury, Julien Larena and Jean-Philippe Uzan. 2021. Line-of-sight effects in strong gravitational lensing. JCAP 08, 2021. DOI:https://doi.org/10.1088/1475-7516/2021/08/024
+         2. Margarita Petkova, R. Benton Metcalf, and Carlo Giocoli. 2014. GLAMER II: multiple-plane lensing. MNRAS 445, 1954-1966. DOI:https://doi.org/10.1093/mnras/stu1860
 
         """  # noqa: E501
         return self._raytrace_helper(
@@ -219,7 +208,8 @@ class Multiplane(ThickLens):
             params,
             shapiro_time_delay=False,
             geometric_time_delay=False,
-            ray_coords=True,
+            return_time_delay=return_time_delay,
+            return_coordinates=True,
             **kwargs,
         )
 
@@ -285,6 +275,48 @@ class Multiplane(ThickLens):
         raise NotImplementedError()
 
     @unpack
+    def shapiro_time_delay(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        return_coordinates: bool = False,
+        **kwargs,
+    ) -> Tensor:
+        return self._raytrace_helper(
+            x,
+            y,
+            z_s,
+            params,
+            return_shapiro_time_delay=True,
+            return_coordinates=return_coordinates,
+            **kwargs,
+        )
+
+    @unpack
+    def geometric_time_delay(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        return_coordinates: bool = False,
+        **kwargs,
+    ) -> Tensor:
+        return self._raytrace_helper(
+            x,
+            y,
+            z_s,
+            params,
+            return_geometric_time_delay=True,
+            return_coordinates=return_coordinates,
+            **kwargs,
+        )
+
+    @unpack
     def time_delay(
         self,
         x: Tensor,
@@ -292,27 +324,23 @@ class Multiplane(ThickLens):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        shapiro_time_delay: bool = True,
-        geometric_time_delay: bool = True,
+        return_coordinates: bool = False,
         **kwargs,
     ) -> Tensor:
         """
-        Compute the time delay of light caused by the lensing.
-        This is based on equation 6.22 in Petters et al. 2001.
-        For the time delay of a light path from the observer to the source, the following equation is used::
+        Our implementation is based on equation 6.22 in Petters et al. 2001.
 
-            \Delta t = \sum_{i=1}^{N-1} \tau_{i,i+1} \left[ \frac{1}{2} \left( \vec{\alpha}^i \right)^2 - \beta_{i,i+1} \psi^i \right] \\
-            \tau_{i,j} = (1 + z_i) \frac{D_i D_{j}}{D_{i,j} c} \\
-            \beta_{i,j} = \frac{D_{i,j} D_s}{D_{j} D_{i,s}} \\
+            \tau(\boldsymbol{\theta}^{(0)}) = \sum_{\ell=0}^{L-1} \frac{D_{\Delta t}^{(\ell)}}{c}
+                \left[
+                    \frac{1}{2} \lVert\boldsymbol{\alpha}^{(\ell)}(\boldsymbol{\theta}^{(\ell)}) \rVert^2
+                    - \phi^{(\ell)}(\boldsymbol{\theta}^{(\ell)})
+                \right] \\
+            D_{\Delta t}^{(\ell)} = (1 + z_\ell) \frac{D_\ell D_{\ell + 1}}{D_{\ell, \ell + 1}} \\
 
-        where :math:`\vec{\alpha}^i` is the deflection angle at the i-th lens plane,
-        :math:`\psi^i` is the lensing potential at the i-th lens plane,
-        :math:`D_i` is the comoving distance to the i-th lens plane,
-        :math:`D_{i,j}` is the comoving distance between the i-th and j-th lens plane,
-        :math:`D_s` is the comoving distance to the source,
-        and :math:`D_{i,s}` is the comoving distance between the i-th lens plane and the source.
-
-        This performs the same ray tracing as the :func:`raytrace` method, but computes the time delay along the way.
+        where :math:`\boldsymbol{\alpha}^{(\ell)}` is the deflection angle at the :math:`\ell`-th lens plane,
+        :math:`\phi^{(\ell)}` is the lensing potential at the :math:`\ell`-th lens plane,
+        :math:`D_\ell` is the angular diameter distance to the :math:`\ell`-th lens plane,
+        :math:`D_{\ell, \ell+1}` is the angular diameter distance between the :math:`\ell`-th and the next lens plane,
 
         Parameters
         ----------
@@ -349,8 +377,9 @@ class Multiplane(ThickLens):
 
         References
         ----------
-        1. Petters A. O., Levine H., Wambsganss J., 2001, Singularity Theory and Gravitational Lensing. Birkhauser, Boston
-        2. McCully et al. 2014, A new hybrid framework to efficiently model lines of sight to gravitational lenses
+        1. Pierre Fleury, Julien Larena and Jean-Philippe Uzan. 2021. Line-of-sight effects in strong gravitational lensing. JCAP 08, 2021. DOI:https://doi.org/10.1088/1475-7516/2021/08/024
+        2. Petters A. O., Levine H., Wambsganss J., 2001, Singularity Theory and Gravitational Lensing. Birkhauser, Boston
+        3. McCully et al. 2014, A new hybrid framework to efficiently model lines of sight to gravitational lenses
 
         """
         return self._raytrace_helper(
@@ -358,8 +387,7 @@ class Multiplane(ThickLens):
             y,
             z_s,
             params,
-            shapiro_time_delay=shapiro_time_delay,
-            geometric_time_delay=geometric_time_delay,
-            ray_coords=False,
+            return_coordinates=return_coordinates,
+            return_time_delay=True,
             **kwargs,
         )

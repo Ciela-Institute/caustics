@@ -22,4 +22,5 @@ G_over_c2 = float((_G_astropy / _c_astropy**2).to("Mpc/solMass").value)  # type:
 c_Mpc_s = float(_c_astropy.to("Mpc/s").value)
 km_to_Mpc = 3.2407792896664e-20  # TODO: use astropy
 days_to_seconds = 24.0 * 60.0 * 60.0
+seconds_to_days = 1/days_to_seconds
 # fmt: on
