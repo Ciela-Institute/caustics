@@ -76,13 +76,14 @@ def test_simulator_runs(sim_source, device, mocker):
                 source: *source
                 lens_light: *lenslight
                 pixelscale: 0.05
-                pixels_x: 50
-                quad_level: {quad_level}
+                pixels_x: 50{quad_level}
                 psf: *psf
         """
-        mock_from_file(mocker, yaml_str.format(quad_level="null"))
+        mock_from_file(
+            mocker, yaml_str.format(quad_level="")
+        )  # fixme, yaml should be able to accept None
         sim = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
-        mock_from_file(mocker, yaml_str.format(quad_level=3))
+        mock_from_file(mocker, yaml_str.format(quad_level="\n        quad_level: 3"))
         sim_q3 = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
     else:
         # Model
