@@ -74,12 +74,6 @@ class LensSource(Simulator):
         sample the image at a higher resolution, then integrate the image back
         to the original resolution. This is useful for high accuracy integration
         of the image, but may increase memory usage and runtime.
-    psf_pad: Boolean(default True)
-        If convolving the PSF it is important to sample the model in a larger
-        FOV equal to half the PSF size in order to account for light that
-        scatters from outside the requested FOV inwards. Internally this padding
-        will be added before sampling, then cropped off before returning the
-        final image to the user.
     z_s: optional
         redshift of the source
     name: string (default "sim")
@@ -126,19 +120,21 @@ class LensSource(Simulator):
             Optional[Source],
             "caustics light object which defines the lensing object's light",
         ] = None,
-        psf: Annotated[Optional[Tensor], "An image to convolve with the scene"] = None,
         pixels_y: Annotated[
             Optional[int], "number of pixels on the y-axis for the sampling grid"
         ] = None,
         upsample_factor: Annotated[int, "Amount of upsampling to model the image"] = 1,
         quad_level: Annotated[Optional[int], "sub pixel integration resolution"] = None,
-        psf_pad: Annotated[bool, "Flag to apply padding to psf"] = True,
         psf_mode: Annotated[
-            Literal["fft", "conv2d"], "Mode for convolving psf"
+            Literal["off", "fft", "conv2d"], "Mode for convolving psf"
         ] = "fft",
+        psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
         z_s: Annotated[
             Optional[Union[Tensor, float]], "Redshift of the source", True
         ] = None,
+        psf: Annotated[
+            Optional[Union[Tensor, list]], "An image to convolve with the scene", True
+        ] = [[1.0]],
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "center of the fov for the lens source image",
@@ -157,12 +153,19 @@ class LensSource(Simulator):
         self.lens = lens
         self.source = source
         self.lens_light = lens_light
-        if psf is None:
-            self.psf = None
+
+        # Configure PSF
+        if psf == [[1.0]]:
+            self._psf_mode = "off"
         else:
-            self.psf = torch.as_tensor(psf)
-            self.psf /= psf.sum()  # ensure normalized
+            self._psf_mode = psf_mode
+        if psf is not None:
+            psf = torch.as_tensor(psf)
+        self._psf_shape = psf.shape if psf is not None else psf_shape
+
+        # Build parameters
         self.add_param("z_s", z_s)
+        self.add_param("psf", psf, self.psf_shape)
         self.add_param("x0", x0)
         self.add_param("y0", y0)
         self._pixelscale = pixelscale
@@ -170,30 +173,18 @@ class LensSource(Simulator):
         # Image grid
         self._pixels_x = pixels_x
         self._pixels_y = pixels_x if pixels_y is None else pixels_y
-
-        # PSF padding if needed
-        self.psf_mode = psf_mode
-        if psf_pad and self.psf is not None:
-            self.psf_pad = (self.psf.shape[1] // 2 + 1, self.psf.shape[0] // 2 + 1)
-        else:
-            self.psf_pad = (0, 0)
-
-        # Build the imaging grid
         self._upsample_factor = upsample_factor
         self._quad_level = quad_level
-        self._build_grid()
 
-        if self.psf is not None:
-            self.psf_fft = self._fft2_padded(self.psf)
+        # Build the imaging grid
+        self._build_grid()
 
     def to(
         self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
         super().to(device, dtype)
-        if self.psf is not None:
-            self.psf = self.psf.to(device, dtype)
-            self.psf_fft = self.psf_fft.to(device, dtype)
         self._grid = tuple(x.to(device, dtype) for x in self._grid)  # type: ignore[has-type]
+        self._weights = self._weights.to(device, dtype)  # type: ignore[has-type]
 
         return self
 
@@ -242,15 +233,38 @@ class LensSource(Simulator):
         self._pixelscale = value
         self._build_grid()
 
+    @property
+    def psf_shape(self):
+        return self._psf_shape
+
+    @psf_shape.setter
+    def psf_shape(self, value):
+        self._psf_shape = value
+        self._build_grid()
+
+    @property
+    def psf_mode(self):
+        return self._psf_mode
+
+    @psf_mode.setter
+    def psf_mode(self, value):
+        self._psf_mode = value
+        self._build_grid()
+
     def _build_grid(self):
-        self.n_pix = (
-            self.pixels_x + self.psf_pad[0] * 2,
-            self.pixels_y + self.psf_pad[1] * 2,
+        if self.psf_mode != "off":
+            self._psf_pad = (self.psf_shape[1] // 2 + 1, self.psf_shape[0] // 2 + 1)
+        else:
+            self._psf_pad = (0, 0)
+
+        self._n_pix = (
+            self.pixels_x + self._psf_pad[0] * 2,
+            self.pixels_y + self._psf_pad[1] * 2,
         )
         self._grid = meshgrid(
             self.pixelscale / self.upsample_factor,
-            self.n_pix[0] * self.upsample_factor,
-            self.n_pix[1] * self.upsample_factor,
+            self._n_pix[0] * self.upsample_factor,
+            self._n_pix[1] * self.upsample_factor,
         )
         self._weights = torch.ones(
             (1, 1), dtype=self._grid[0].dtype, device=self._grid[0].device
@@ -274,7 +288,7 @@ class LensSource(Simulator):
         Returns:
             Tensor: The 2D FFT of the input tensor with zero-padding.
         """
-        npix = copy(self.n_pix)
+        npix = copy(self._n_pix)
         npix = (next_fast_len(npix[0]), next_fast_len(npix[1]))
         self._s = npix
 
@@ -294,8 +308,8 @@ class LensSource(Simulator):
         Tensor
             The input tensor without padding.
         """
-        return torch.roll(x, (-self.psf_pad[0], -self.psf_pad[1]), dims=(-2, -1))[
-            ..., : self.n_pix[0], : self.n_pix[1]
+        return torch.roll(x, (-self._psf_pad[0], -self._psf_pad[1]), dims=(-2, -1))[
+            ..., : self._s[0], : self._s[1]
         ]
 
     def forward(
@@ -322,14 +336,14 @@ class LensSource(Simulator):
         psf_convolve: boolean
             when true the image will be convolved with the psf
         """
-        z_s, x0, y0 = self.unpack(params)
+        z_s, psf, x0, y0 = self.unpack(params)
 
         # Automatically turn off light for missing objects
         if self.source is None:
             source_light = False
         if self.lens_light is None:
             lens_light = False
-        if self.psf is None:
+        if psf.shape == (1, 1):
             psf_convolve = False
 
         grid = (self._grid[0] + x0, self._grid[1] + y0)
@@ -355,16 +369,13 @@ class LensSource(Simulator):
             mu += gaussian_quadrature_integrator(mu_fine, self._weights)
 
         # Convolve the PSF
-        if psf_convolve and self.psf is not None:
+        if psf_convolve:
             if self.psf_mode == "fft":
                 mu_fft = self._fft2_padded(mu)
-                mu = self._unpad_fft(
-                    torch.fft.irfft2(mu_fft * self.psf_fft, self._s).real
-                )
+                psf_fft = self._fft2_padded(psf / psf.sum())
+                mu = self._unpad_fft(torch.fft.irfft2(mu_fft * psf_fft, self._s).real)
             elif self.psf_mode == "conv2d":
-                mu = conv2d(
-                    mu[None, None], self.psf[None, None], padding="same"
-                ).squeeze()
+                mu = conv2d(mu[None, None], psf[None, None], padding="same").squeeze()
             else:
                 raise ValueError(
                     f"psf_mode should be one of 'fft' or 'conv2d', not {self.psf_mode}"
@@ -375,7 +386,7 @@ class LensSource(Simulator):
             mu[None, None], self.upsample_factor, divisor_override=1
         ).squeeze()
         mu_clipped = mu_native_resolution[
-            self.psf_pad[1] : self.pixels_y + self.psf_pad[1],
-            self.psf_pad[0] : self.pixels_x + self.psf_pad[0],
+            self._psf_pad[1] : self.pixels_y + self._psf_pad[1],
+            self._psf_pad[0] : self.pixels_x + self._psf_pad[0],
         ]
         return mu_clipped
