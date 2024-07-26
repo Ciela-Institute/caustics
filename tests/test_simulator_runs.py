@@ -80,7 +80,7 @@ def test_simulator_runs(sim_source, device, mocker):
                 quad_level: {quad_level}
                 psf: *psf
         """
-        mock_from_file(mocker, yaml_str.format(quad_level="none"))
+        mock_from_file(mocker, yaml_str.format(quad_level="null"))
         sim = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
         mock_from_file(mocker, yaml_str.format(quad_level=3))
         sim_q3 = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
