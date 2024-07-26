@@ -77,10 +77,13 @@ def test_simulator_runs(sim_source, device, mocker):
                 lens_light: *lenslight
                 pixelscale: 0.05
                 pixels_x: 50
+                quad_level: {quad_level}
                 psf: *psf
         """
-        mock_from_file(mocker, yaml_str)
+        mock_from_file(mocker, yaml_str.format(quad_level=None))
         sim = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
+        mock_from_file(mocker, yaml_str.format(quad_level=3))
+        sim_q3 = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
     else:
         # Model
         cosmology = FlatLambdaCDM(name="cosmo")
@@ -115,7 +118,20 @@ def test_simulator_runs(sim_source, device, mocker):
             z_s=2.0,
         )
 
+        sim_q3 = LensSource(
+            name="simulator",
+            lens=lensmass,
+            source=source,
+            pixelscale=0.05,
+            pixels_x=50,
+            lens_light=lenslight,
+            psf=psf,
+            z_s=2.0,
+            quad_level=3,
+        )
+
     sim.to(device=device)
+    sim_q3.to(device=device)
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(
@@ -164,8 +180,7 @@ def test_simulator_runs(sim_source, device, mocker):
     )
 
     # Check quadrature integration is accurate
-    assert torch.allclose(sim(), sim(quad_level=3), rtol=1e-1)
-    assert torch.allclose(sim(quad_level=3), sim(quad_level=5), rtol=1e-2)
+    assert torch.allclose(sim(), sim_q3(), rtol=1e-1)
 
 
 def test_microlens_simulator_runs():

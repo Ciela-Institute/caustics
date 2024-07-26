@@ -241,7 +241,6 @@ class LensSource(Simulator):
         lens_light=True,
         lens_source=True,
         psf_convolve=True,
-        **kwargs,
     ):
         """
         forward function
