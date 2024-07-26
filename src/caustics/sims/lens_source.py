@@ -308,9 +308,9 @@ class LensSource(Simulator):
         Tensor
             The input tensor without padding.
         """
-        return torch.roll(x, (-self._psf_pad[0], -self._psf_pad[1]), dims=(-2, -1))[
-            ..., : self._s[0], : self._s[1]
-        ]
+        return torch.roll(
+            x, (1 - self._psf_pad[0], 1 - self._psf_pad[1]), dims=(-2, -1)
+        )[..., : self._s[0], : self._s[1]]
 
     def forward(
         self,
@@ -377,7 +377,7 @@ class LensSource(Simulator):
             elif self.psf_mode == "conv2d":
                 mu = (
                     conv2d(
-                        mu[None, None], (psf / psf.sum())[None, None], padding="same"
+                        mu[None, None], (psf.T / psf.sum())[None, None], padding="same"
                     )
                     .squeeze(0)
                     .squeeze(0)

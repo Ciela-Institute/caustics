@@ -61,7 +61,7 @@ def test_simulator_runs(sim_source, device, mocker):
             kwargs:
                 pixelscale: 0.05
                 nx: 11
-                ny: 12
+                ny: 11
                 sigma: 0.2
                 upsample: 2
 
