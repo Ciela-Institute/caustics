@@ -28,17 +28,23 @@ class LensSource(Simulator):
     the most straightforward simulator to view the image if you already have a
     lens and source chosen.
 
-    Example usage::
+    Example usage:
 
-       import matplotlib.pyplot as plt import caustics
+    .. code:: python
 
-       cosmo = caustics.FlatLambdaCDM() lens = caustics.lenses.SIS(cosmology =
-       cosmo, x0 = 0., y0 = 0., th_ein = 1.) source = caustics.sources.Sersic(x0
-       = 0., y0 = 0., q = 0.5, phi = 0.4, n = 2., Re = 1., Ie = 1.) sim =
-       caustics.sims.LensSource(lens, source, pixelscale = 0.05, gridx = 100,
-       gridy = 100, upsample_factor = 2, z_s = 1.)
+       import matplotlib.pyplot as plt
+       import caustics
 
-       img = sim() plt.imshow(img, origin = "lower") plt.show()
+       cosmo = caustics.FlatLambdaCDM()
+       lens = caustics.lenses.SIS(cosmology=cosmo, x0=0.0, y0=0.0, th_ein=1.0)
+       source = caustics.sources.Sersic(x0=0.0, y0=0.0, q=0.5, phi=0.4, n=2.0, Re=1.0, Ie=1.0)
+       sim = caustics.sims.LensSource(
+           lens, source, pixelscale=0.05, pixels_x=100, upsample_factor=2, z_s=1.0
+       )
+
+       img = sim()
+       plt.imshow(img, origin="lower")
+       plt.show()
 
     Attributes
     ----------
