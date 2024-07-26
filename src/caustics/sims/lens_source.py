@@ -341,7 +341,7 @@ class LensSource(Simulator):
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
-            mu = torch.zeros_like(grid[0])
+            mu = torch.zeros_like(grid[0].squeeze(-1))
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
