@@ -138,7 +138,7 @@ def test_simulator_runs(sim_source, device, mocker):
     sim.pixelscale = 0.05
     sim.pixels_x = 50
     sim.pixels_y = 50
-    sim.quad_level = 3
+    sim_q3.quad_level = 3
     sim.upsample_factor = 1
 
     assert torch.all(torch.isfinite(sim()))
