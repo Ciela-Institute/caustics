@@ -140,6 +140,8 @@ def test_simulator_runs(sim_source, device, mocker):
     sim.pixels_y = 50
     sim_q3.quad_level = 3
     sim.upsample_factor = 1
+    sim.psf_shape = (11, 11)
+    sim.psf_mode = "conv2d"
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(
