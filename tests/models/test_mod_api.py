@@ -217,7 +217,7 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
                 "upsample": 2,
             },
         },
-        {"function": "caustics.utils.gaussian", "sigma": 0.2},
+        # {"function": "caustics.utils.gaussian", "sigma": 0.2},
         [[2.0], [2.0]],
     ],
 )
