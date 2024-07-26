@@ -126,7 +126,7 @@ class LensSource(Simulator):
         upsample_factor: Annotated[int, "Amount of upsampling to model the image"] = 1,
         quad_level: Annotated[Optional[int], "sub pixel integration resolution"] = None,
         psf_mode: Annotated[
-            Literal["off", "fft", "conv2d"], "Mode for convolving psf"
+            Literal["fft", "conv2d"], "Mode for convolving psf"
         ] = "fft",
         psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
         z_s: Annotated[
@@ -155,10 +155,7 @@ class LensSource(Simulator):
         self.lens_light = lens_light
 
         # Configure PSF
-        if psf == [[1.0]]:
-            self._psf_mode = "off"
-        else:
-            self._psf_mode = psf_mode
+        self._psf_mode = psf_mode
         if psf is not None:
             psf = torch.as_tensor(psf)
         self._psf_shape = psf.shape if psf is not None else psf_shape
@@ -252,10 +249,7 @@ class LensSource(Simulator):
         self._build_grid()
 
     def _build_grid(self):
-        if self.psf_mode != "off":
-            self._psf_pad = (self.psf_shape[1] // 2 + 1, self.psf_shape[0] // 2 + 1)
-        else:
-            self._psf_pad = (0, 0)
+        self._psf_pad = (self.psf_shape[1] // 2, self.psf_shape[0] // 2)
 
         self._n_pix = (
             self.pixels_x + self._psf_pad[0] * 2,
@@ -308,9 +302,9 @@ class LensSource(Simulator):
         Tensor
             The input tensor without padding.
         """
-        return torch.roll(
-            x, (1 - self._psf_pad[0], 1 - self._psf_pad[1]), dims=(-2, -1)
-        )[..., : self._s[0], : self._s[1]]
+        return torch.roll(x, (-self._psf_pad[0], -self._psf_pad[1]), dims=(-2, -1))[
+            ..., : self._s[0], : self._s[1]
+        ]
 
     def forward(
         self,
