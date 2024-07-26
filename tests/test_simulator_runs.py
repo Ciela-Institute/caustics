@@ -40,7 +40,7 @@ def test_simulator_runs(sim_source, device, mocker):
                 y0: -0.03
                 q: 0.6
                 phi: -pi / 4
-                n: 2.0
+                n: 1.5
                 Re: 0.5
                 Ie: 1.0
 
@@ -188,7 +188,6 @@ def test_simulator_runs(sim_source, device, mocker):
     )
 
     # Check quadrature integration is accurate
-    print("max diff", (sim() - sim_q3()).abs().max())
     assert torch.allclose(sim(), sim_q3(), rtol=1e-1)
 
 

@@ -375,16 +375,22 @@ class LensSource(Simulator):
                 psf_fft = self._fft2_padded(psf / psf.sum())
                 mu = self._unpad_fft(torch.fft.irfft2(mu_fft * psf_fft, self._s).real)
             elif self.psf_mode == "conv2d":
-                mu = conv2d(mu[None, None], psf[None, None], padding="same").squeeze()
+                mu = (
+                    conv2d(
+                        mu[None, None], (psf / psf.sum())[None, None], padding="same"
+                    )
+                    .squeeze(0)
+                    .squeeze(0)
+                )
             else:
                 raise ValueError(
                     f"psf_mode should be one of 'fft' or 'conv2d', not {self.psf_mode}"
                 )
 
         # Return to the desired image
-        mu_native_resolution = avg_pool2d(
-            mu[None, None], self.upsample_factor, divisor_override=1
-        ).squeeze()
+        mu_native_resolution = (
+            avg_pool2d(mu[None, None], self.upsample_factor).squeeze(0).squeeze(0)
+        )
         mu_clipped = mu_native_resolution[
             self._psf_pad[1] : self.pixels_y + self._psf_pad[1],
             self._psf_pad[0] : self.pixels_x + self._psf_pad[0],
