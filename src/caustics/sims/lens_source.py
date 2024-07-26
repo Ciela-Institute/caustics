@@ -159,12 +159,11 @@ class LensSource(Simulator):
         self.add_param("z_s", z_s)
         self.add_param("x0", x0)
         self.add_param("y0", y0)
-        self.pixelscale = pixelscale
+        self._pixelscale = pixelscale
 
         # Image grid
-        if pixels_y is None:
-            pixels_y = pixels_x
-        self.gridding = (pixels_x, pixels_y)
+        self._pixels_x = pixels_x
+        self._pixels_y = pixels_x if pixels_y is None else pixels_y
 
         # PSF padding if needed
         self.psf_mode = psf_mode
@@ -174,17 +173,9 @@ class LensSource(Simulator):
             self.psf_pad = (0, 0)
 
         # Build the imaging grid
-        self.upsample_factor = upsample_factor
-        self.quad_level = quad_level
-        self.n_pix = (
-            self.gridding[0] + self.psf_pad[0] * 2,
-            self.gridding[1] + self.psf_pad[1] * 2,
-        )
-        self.grid = meshgrid(
-            pixelscale / self.upsample_factor,
-            self.n_pix[0] * self.upsample_factor,
-            self.n_pix[1] * self.upsample_factor,
-        )
+        self._upsample_factor = upsample_factor
+        self._quad_level = quad_level
+        self._build_grid()
 
         if self.psf is not None:
             self.psf_fft = self._fft2_padded(self.psf)
@@ -196,9 +187,76 @@ class LensSource(Simulator):
         if self.psf is not None:
             self.psf = self.psf.to(device, dtype)
             self.psf_fft = self.psf_fft.to(device, dtype)
-        self.grid = tuple(x.to(device, dtype) for x in self.grid)
+        self._grid = tuple(x.to(device, dtype) for x in self._grid)  # type: ignore[has-type]
 
         return self
+
+    @property
+    def upsample_factor(self):
+        return self._upsample_factor
+
+    @upsample_factor.setter
+    def upsample_factor(self, value):
+        self._upsample_factor = value
+        self._build_grid()
+
+    @property
+    def pixels_x(self):
+        return self._pixels_x
+
+    @pixels_x.setter
+    def pixels_x(self, value):
+        self._pixels_x = value
+        self._build_grid()
+
+    @property
+    def pixels_y(self):
+        return self._pixels_y
+
+    @pixels_y.setter
+    def pixels_y(self, value):
+        self._pixels_y = value
+        self._build_grid()
+
+    @property
+    def quad_level(self):
+        return self._quad_level
+
+    @quad_level.setter
+    def quad_level(self, value):
+        self._quad_level = value
+        self._build_grid()
+
+    @property
+    def pixelscale(self):
+        return self._pixelscale
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+        self._pixelscale = value
+        self._build_grid()
+
+    def _build_grid(self):
+        self.n_pix = (
+            self.pixels_x + self.psf_pad[0] * 2,
+            self.pixels_y + self.psf_pad[1] * 2,
+        )
+        self._grid = meshgrid(
+            self.pixelscale / self.upsample_factor,
+            self.n_pix[0] * self.upsample_factor,
+            self.n_pix[1] * self.upsample_factor,
+        )
+        self._weights = torch.ones(
+            (1, 1), dtype=self._grid[0].dtype, device=self._grid[0].device
+        )
+        if self.quad_level is not None and self.quad_level > 1:
+            finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
+                self.pixelscale / self.upsample_factor, *self._grid, self.quad_level
+            )
+            self._grid = (finegrid_x, finegrid_y)
+            self._weights = weights
+        else:
+            self._grid = (self._grid[0].unsqueeze(-1), self._grid[1].unsqueeze(-1))
 
     def _fft2_padded(self, x):
         """
@@ -268,42 +326,27 @@ class LensSource(Simulator):
         if self.psf is None:
             psf_convolve = False
 
-        grid = (self.grid[0] + x0, self.grid[1] + y0)
-
-        if self.quad_level is not None and self.quad_level > 1:
-            finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                self.pixelscale / self.upsample_factor, *grid, self.quad_level
-            )
+        grid = (self._grid[0] + x0, self._grid[1] + y0)
 
         # Sample the source light
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                if self.quad_level is not None and self.quad_level > 1:
-                    bx, by = self.lens.raytrace(finegrid_x, finegrid_y, z_s, params)
-                    mu_fine = self.source.brightness(bx, by, params)
-                    mu = gaussian_quadrature_integrator(mu_fine, weights)
-                else:
-                    bx, by = self.lens.raytrace(*grid, z_s, params)
-                    mu = self.source.brightness(bx, by, params)
+                bx, by = self.lens.raytrace(*grid, z_s, params)
+                mu_fine = self.source.brightness(bx, by, params)
+                mu = gaussian_quadrature_integrator(mu_fine, self._weights)
             else:
                 # Source is imaged without lensing
-                if self.quad_level is not None and self.quad_level > 1:
-                    mu_fine = self.source.brightness(finegrid_x, finegrid_y, params)
-                    mu = gaussian_quadrature_integrator(mu_fine, weights)
-                else:
-                    mu = self.source.brightness(*grid, params)
+                mu_fine = self.source.brightness(*grid, params)
+                mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
             mu = torch.zeros_like(grid[0])
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            if self.quad_level is not None and self.quad_level > 1:
-                mu_fine = self.lens_light.brightness(finegrid_x, finegrid_y, params)
-                mu += gaussian_quadrature_integrator(mu_fine, weights)
-            else:
-                mu += self.lens_light.brightness(*grid, params)
+            mu_fine = self.lens_light.brightness(*grid, params)
+            mu += gaussian_quadrature_integrator(mu_fine, self._weights)
 
         # Convolve the PSF
         if psf_convolve and self.psf is not None:
@@ -326,7 +369,7 @@ class LensSource(Simulator):
             mu[None, None], self.upsample_factor, divisor_override=1
         ).squeeze()
         mu_clipped = mu_native_resolution[
-            self.psf_pad[1] : self.gridding[1] + self.psf_pad[1],
-            self.psf_pad[0] : self.gridding[0] + self.psf_pad[0],
+            self.psf_pad[1] : self.pixels_y + self.psf_pad[1],
+            self.psf_pad[0] : self.pixels_x + self.psf_pad[0],
         ]
         return mu_clipped

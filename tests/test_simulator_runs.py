@@ -71,13 +71,13 @@ def test_simulator_runs(sim_source, device, mocker):
             params:
                 z_s: 2.0
             init_kwargs:
-                # Single lense
+                # Single lens
                 lens: *lensmass
                 source: *source
                 lens_light: *lenslight
                 pixelscale: 0.05
-                pixels_x: 50{quad_level}
-                psf: *psf
+                pixels_x: 50
+                psf: *psf{quad_level}
         """
         mock_from_file(
             mocker, yaml_str.format(quad_level="")
@@ -133,6 +133,13 @@ def test_simulator_runs(sim_source, device, mocker):
 
     sim.to(device=device)
     sim_q3.to(device=device)
+
+    # Test setters
+    sim.pixelscale = 0.05
+    sim.pixels_x = 50
+    sim.pixels_y = 50
+    sim.quad_level = 3
+    sim.upsample_factor = 1
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(
