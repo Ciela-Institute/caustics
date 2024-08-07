@@ -33,9 +33,8 @@ def setup_complex_multiplane_yaml():
     res = 0.05
     upsample_factor = 2
     fov = res * n_pix
-    thx, thy = caustics.utils.get_meshgrid(
+    thx, thy = caustics.utils.meshgrid(
         res / upsample_factor,
-        upsample_factor * n_pix,
         upsample_factor * n_pix,
         dtype=torch.float32,
     )
@@ -163,7 +162,7 @@ def setup_complex_multiplane_yaml():
     sim_yaml = obj_to_yaml({
         "simulator": {
             "name": "sim",
-            "kind": "Lens_Source",
+            "kind": "LensSource",
             "init_kwargs": {
                 "lens": f"*{lens.name}",
                 "source": "*source",

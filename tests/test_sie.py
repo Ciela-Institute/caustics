@@ -8,7 +8,7 @@ from utils import lens_test_helper
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 
 
 def test(sim_source, device, lens_models):
@@ -65,7 +65,7 @@ def test_sie_time_delay():
     n_pix = 10
     res = 0.05
     upsample_factor = 2
-    thx, thy = get_meshgrid(
+    thx, thy = meshgrid(
         res / upsample_factor,
         upsample_factor * n_pix,
         upsample_factor * n_pix,

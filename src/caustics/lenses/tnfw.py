@@ -290,7 +290,7 @@ class TNFW(ThinLens):
         return tau * scale_radius
 
     @unpack
-    def get_M0(
+    def M0(
         self,
         *args,
         params: Optional[Packed] = None,
@@ -490,7 +490,7 @@ class TNFW(ThinLens):
 
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
         critical_density = self.cosmology.critical_surface_density(z_l, z_s, params)
-        M0 = self.get_M0(params)
+        M0 = self.M0(params)
         return func.convergence_tnfw(
             x0,
             y0,
@@ -567,7 +567,7 @@ class TNFW(ThinLens):
 
         """
 
-        M0 = self.get_M0(params)
+        M0 = self.M0(params)
         return func.mass_enclosed_2d_tnfw(r, scale_radius, tau, M0, self._F_mode)
 
     @unpack
@@ -640,7 +640,7 @@ class TNFW(ThinLens):
 
         """
         d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        M0 = self.get_M0(params)
+        M0 = self.M0(params)
         return func.physical_deflection_angle_tnfw(
             x0, y0, scale_radius, tau, x, y, M0, d_l, self._F_mode, self.s
         )
@@ -716,7 +716,7 @@ class TNFW(ThinLens):
         d_s = self.cosmology.angular_diameter_distance(z_s, params)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s, params)
 
-        M0 = self.get_M0(params)
+        M0 = self.M0(params)
         return func.potential_tnfw(
             x0, y0, scale_radius, tau, x, y, M0, d_l, d_s, d_ls, self._F_mode, self.s
         )

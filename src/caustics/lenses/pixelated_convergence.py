@@ -24,7 +24,6 @@ class PixelatedConvergence(ThinLens):
     def __init__(
         self,
         pixelscale: Annotated[float, "pixelscale"],
-        n_pix: Annotated[int, "The number of pixels on each side of the grid"],
         cosmology: CosmologyType,
         z_l: ZLType = None,
         x0: Annotated[
@@ -77,10 +76,6 @@ class PixelatedConvergence(ThinLens):
             The field of view in arcseconds.
 
             *Unit: arcsec*
-
-        n_pix: int
-            The number of pixels on each side of the grid.
-
 
         cosmology: Cosmology
             An instance of the cosmological parameters.
@@ -145,7 +140,10 @@ class PixelatedConvergence(ThinLens):
         self.add_param("y0", y0)
         self.add_param("convergence_map", convergence_map, shape)
 
-        self.n_pix = n_pix
+        if convergence_map is not None:
+            self.n_pix = convergence_map.shape[0]
+        elif shape is not None:
+            self.n_pix = shape[0]
         self.pixelscale = pixelscale
         self.fov = self.n_pix * self.pixelscale
         self.use_next_fast_len = use_next_fast_len
@@ -402,11 +400,6 @@ class PixelatedConvergence(ThinLens):
             The convergence at the specified positions.
 
             *Unit: unitless*
-
-        Raises
-        ------
-        NotImplementedError
-            This method is not implemented.
 
         """
         return interp2d(

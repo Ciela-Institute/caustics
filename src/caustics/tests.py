@@ -2,11 +2,11 @@ from math import pi
 
 import torch
 
-from caustics.sims import Lens_Source
+from caustics.sims import LensSource
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane
 from caustics.light import Sersic
-from caustics.utils import gaussian, get_meshgrid
+from caustics.utils import gaussian, meshgrid
 
 __all__ = ["test"]
 
@@ -41,7 +41,7 @@ def _test_simulator_runs(device=DEVICE):
 
     psf = gaussian(0.05, 11, 11, 0.2, upsample=2, device=device)
 
-    sim = Lens_Source(
+    sim = LensSource(
         lens=lensmass,
         source=source,
         pixelscale=0.05,
@@ -105,7 +105,7 @@ def _test_jacobian_autograd_vs_finitediff(device=DEVICE):
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
     lens = SIE(name="sie", cosmology=cosmology)
-    thx, thy = get_meshgrid(0.01, 20, 20, device=device)
+    thx, thy = meshgrid(0.01, 20, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
@@ -149,7 +149,7 @@ def _test_multiplane_jacobian(device=DEVICE):
     # Send to device
     lens = lens.to(device=device)
 
-    thx, thy = get_meshgrid(0.1, 10, 10, device=device)
+    thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
@@ -181,7 +181,7 @@ def _test_multiplane_jacobian_autograd_vs_finitediff(device=DEVICE):
     # Send to device
     lens = lens.to(device=device)
 
-    thx, thy = get_meshgrid(0.01, 10, 10, device=device)
+    thx, thy = meshgrid(0.01, 10, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
@@ -222,7 +222,7 @@ def _test_multiplane_effective_convergence(device=DEVICE):
     # Send to device
     lens = lens.to(device=device)
 
-    thx, thy = get_meshgrid(0.1, 10, 10, device=device)
+    thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
     z_s = torch.tensor(1.2, device=device)
