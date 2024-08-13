@@ -33,6 +33,7 @@ from .pixelated_convergence import (
     reduced_deflection_angle_pixelated_convergence,
     potential_pixelated_convergence,
     _fft2_padded,
+    _fft_size,
     build_kernels_pixelated_convergence,
 )
 from .pseudo_jaffe import (
@@ -91,6 +92,7 @@ __all__ = (
     "reduced_deflection_angle_pixelated_convergence",
     "potential_pixelated_convergence",
     "_fft2_padded",
+    "_fft_size",
     "build_kernels_pixelated_convergence",
     "convergence_0_pseudo_jaffe",
     "potential_pseudo_jaffe",

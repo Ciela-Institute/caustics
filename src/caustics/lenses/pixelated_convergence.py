@@ -214,14 +214,14 @@ class PixelatedConvergence(ThinLens):
         """
         if convolution_mode == "fft":
             # Create FFTs of kernels
-            self.potential_kernel_tilde = func._fft2_padded(
-                self.potential_kernel, self.n_pix, self.padding
+            self.potential_kernel_tilde = torch.fft.rfft2(
+                self.potential_kernel, func._fft_size(self.n_pix)
             )
-            self.ax_kernel_tilde = func._fft2_padded(
-                self.ax_kernel, self.n_pix, self.padding
+            self.ax_kernel_tilde = torch.fft.rfft2(
+                self.ax_kernel, func._fft_size(self.n_pix)
             )
-            self.ay_kernel_tilde = func._fft2_padded(
-                self.ay_kernel, self.n_pix, self.padding
+            self.ay_kernel_tilde = torch.fft.rfft2(
+                self.ay_kernel, func._fft_size(self.n_pix)
             )
         elif convolution_mode == "conv2d":
             # Drop FFTs of kernels

@@ -34,24 +34,47 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
         *Unit: unitless*
 
     """
-    x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
+    x_mg, y_mg = meshgrid(pixelscale, 3 * n_pix)
     # Shift to center kernels within pixel at index n_pix
-    x_mg = x_mg - pixelscale / 2
-    y_mg = y_mg - pixelscale / 2
+    # x_mg = x_mg - pixelscale / 2
+    # y_mg = y_mg - pixelscale / 2
     d2 = x_mg**2 + y_mg**2
+    print(torch.any(d2 == 0), n_pix, d2.shape)
     potential_kernel = safe_log(d2.sqrt())
     ax_kernel = safe_divide(x_mg, d2)
     ay_kernel = safe_divide(y_mg, d2)
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    print(np.unravel_index(torch.argmax(torch.abs(ax_kernel)), ax_kernel.shape))
+    print(ax_kernel[63, 0], ax_kernel[63, -1], ax_kernel[0, 63], ax_kernel[-1, 63])
     # Set centers of kernels to zero
-    potential_kernel[..., n_pix, n_pix] = 0
-    ax_kernel[..., n_pix, n_pix] = 0
-    ay_kernel[..., n_pix, n_pix] = 0
+    plt.imshow(
+        torch.clip(3 * (x_mg.max() - x_mg.abs()) / x_mg.max(), 0, 1).detach().numpy()
+    )
+    plt.colorbar()
+    plt.show()
+    ax_kernel = ax_kernel * torch.clip(3 * (x_mg.max() - x_mg.abs()) / x_mg.max(), 0, 1)
+    ay_kernel = ay_kernel * torch.clip(3 * (y_mg.max() - y_mg.abs()) / y_mg.max(), 0, 1)
+    # ax_kernel[: n_pix // 2] = 0
+    # ax_kernel[-n_pix // 2 :] = 0
+    # ax_kernel[:, : n_pix // 2] = 0
+    # ax_kernel[:, -n_pix // 2 :] = 0
+    # ay_kernel[:, : n_pix // 2] = 0
+    # ay_kernel[:, -n_pix // 2 :] = 0
+    # ay_kernel[: n_pix // 2] = 0
+    # ay_kernel[-n_pix // 2 :] = 0
+    plt.imshow(torch.log(torch.abs(ax_kernel)).detach().numpy())
+    plt.show()
+    # potential_kernel[..., n_pix, n_pix] = 0
+    # ax_kernel[..., n_pix, n_pix] = 0
+    # ay_kernel[..., n_pix, n_pix] = 0
 
     return ax_kernel, ay_kernel, potential_kernel
 
 
 def _fft_size(n_pix):
-    pad = 2 * n_pix
+    pad = 3 * n_pix
     pad = next_fast_len(pad)
     return pad, pad
 
@@ -77,13 +100,21 @@ def _fft2_padded(x, n_pix, padding: str):
 
     if padding == "zero":
         pass
-    elif padding in ["reflect", "circular"]:
+    elif padding in ["reflect"]:
+        print(x.shape, n_pix)
+        x = F.pad(
+            x[None, None], (n_pix - 1, n_pix - 1, n_pix - 1, n_pix - 1), mode=padding
+        ).squeeze()
+    elif padding in ["circular"]:
         x = F.pad(x[None, None], (0, n_pix - 1, 0, n_pix - 1), mode=padding).squeeze()
     elif padding == "tile":
         x = torch.tile(x, (2, 2))
     else:
         raise ValueError(f"Invalid padding type: {padding}")
+    import matplotlib.pyplot as plt
 
+    plt.imshow(x.detach().numpy())
+    plt.show()
     return torch.fft.rfft2(x, _fft_size(n_pix))
 
 
