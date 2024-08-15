@@ -36,17 +36,18 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
     """
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
     # Shift to center kernels within pixel at index n_pix
-    x_mg = x_mg - pixelscale / 2
-    y_mg = y_mg - pixelscale / 2
+    # x_mg = x_mg - pixelscale / 2
+    # y_mg = y_mg - pixelscale / 2
+
     d2 = x_mg**2 + y_mg**2
     potential_kernel = safe_log(d2.sqrt())
     ax_kernel = safe_divide(x_mg, d2)
     ay_kernel = safe_divide(y_mg, d2)
 
     # Set centers of kernels to zero
-    potential_kernel[..., n_pix, n_pix] = 0
-    ax_kernel[..., n_pix, n_pix] = 0
-    ay_kernel[..., n_pix, n_pix] = 0
+    # potential_kernel[..., n_pix, n_pix] = 0
+    # ax_kernel[..., n_pix, n_pix] = 0
+    # ay_kernel[..., n_pix, n_pix] = 0
 
     # Window the deflection angle kernels for stable FFT
     ax_kernel = ax_kernel * torch.clip(8 * (x_mg.max() - x_mg.abs()) / x_mg.max(), 0, 1)
