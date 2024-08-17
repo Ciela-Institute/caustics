@@ -50,8 +50,8 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
     # ay_kernel[..., n_pix, n_pix] = 0
 
     # Window the deflection angle kernels for stable FFT
-    ax_kernel = ax_kernel * torch.clip(8 * (x_mg.max() - x_mg.abs()) / x_mg.max(), 0, 1)
-    ay_kernel = ay_kernel * torch.clip(8 * (y_mg.max() - y_mg.abs()) / y_mg.max(), 0, 1)
+    ax_kernel = ax_kernel * torch.clip(8 * (x_mg.max() - d2.sqrt()) / x_mg.max(), 0, 1)
+    ay_kernel = ay_kernel * torch.clip(8 * (y_mg.max() - d2.sqrt()) / y_mg.max(), 0, 1)
 
     return ax_kernel, ay_kernel, potential_kernel
 
