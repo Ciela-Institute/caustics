@@ -5,7 +5,7 @@ from scipy.fft import next_fast_len
 from ...utils import safe_divide, safe_log, meshgrid, interp2d
 
 
-def build_kernels_pixelated_convergence(pixelscale, n_pix):
+def build_kernels_pixelated_convergence(pixelscale, n_pix, window=0):
     """
     Build the kernels for the pixelated convergence.
 
@@ -36,8 +36,8 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
     """
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
     # Shift to center kernels within pixel at index n_pix
-    # x_mg = x_mg - pixelscale / 2
-    # y_mg = y_mg - pixelscale / 2
+    x_mg = x_mg - pixelscale / 2
+    y_mg = y_mg - pixelscale / 2
 
     d2 = x_mg**2 + y_mg**2
     potential_kernel = safe_log(d2.sqrt())
@@ -45,13 +45,18 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
     ay_kernel = safe_divide(y_mg, d2)
 
     # Set centers of kernels to zero
-    # potential_kernel[..., n_pix, n_pix] = 0
-    # ax_kernel[..., n_pix, n_pix] = 0
-    # ay_kernel[..., n_pix, n_pix] = 0
+    potential_kernel[..., n_pix, n_pix] = 0
+    ax_kernel[..., n_pix, n_pix] = 0
+    ay_kernel[..., n_pix, n_pix] = 0
 
     # Window the deflection angle kernels for stable FFT
-    ax_kernel = ax_kernel * torch.clip(8 * (x_mg.max() - d2.sqrt()) / x_mg.max(), 0, 1)
-    ay_kernel = ay_kernel * torch.clip(8 * (y_mg.max() - d2.sqrt()) / y_mg.max(), 0, 1)
+    if window > 0:
+        ax_kernel = ax_kernel * torch.clip(
+            window * (x_mg.max() - d2.sqrt()) / x_mg.max(), 0, 1
+        )
+        ay_kernel = ay_kernel * torch.clip(
+            window * (y_mg.max() - d2.sqrt()) / y_mg.max(), 0, 1
+        )
 
     return ax_kernel, ay_kernel, potential_kernel
 

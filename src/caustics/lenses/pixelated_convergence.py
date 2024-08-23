@@ -61,11 +61,10 @@ class PixelatedConvergence(ThinLens):
         """Strong lensing with user provided kappa map
 
         PixelatedConvergence is a class for strong gravitational lensing with a
-        user-provided kappa map. It inherits from the ThinLens class.
-        This class enables the computation of deflection angles and
-        lensing potential by applying the user-provided kappa map to a
-        grid using either Fast Fourier Transform (FFT) or a 2D
-        convolution.
+        user-provided kappa map. It inherits from the ThinLens class. This class
+        enables the computation of deflection angles and lensing potential by
+        applying the user-provided kappa map to a grid using either Fast Fourier
+        Transform (FFT) or a 2D convolution.
 
         Attributes
         ----------
@@ -104,24 +103,23 @@ class PixelatedConvergence(ThinLens):
             The shape of the convergence map.
 
         convolution_mode: str, optional
-            The convolution mode for calculating deflection angles and lensing potential.
-            It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution).
-            Default is "fft".
+            The convolution mode for calculating deflection angles and lensing
+            potential. It can be either "fft" (Fast Fourier Transform) or
+            "conv2d" (2D convolution). Default is "fft".
 
         use_next_fast_len: bool, optional
             If True, adds additional padding to speed up the FFT by calling
-            `scipy.fft.next_fast_len`.
-            The speed boost can be substantial when `n_pix` is a multiple of a
-            small prime number. Default is True.
+            `scipy.fft.next_fast_len`. The speed boost can be substantial when
+            `n_pix` is a multiple of a small prime number. Default is True.
 
         padding: { "zero", "circular", "reflect", "tile" }
 
-            Specifies the type of padding to use:
-            "zero" will do zero padding,
-            "circular" will do cyclic boundaries.
-            "reflect" will do reflection padding.
-            "tile" will tile the image at 2x2 which
-            basically identical to circular padding, but is easier.
+            Specifies the type of padding to use: "zero" will do zero padding,
+            "circular" will do cyclic boundaries. "reflect" will do reflection
+            padding. "tile" will tile the image at 2x2 which basically identical
+            to circular padding, but is easier. Use zero padding to represent an
+            overdensity, the other padding schemes represent a mass distribution
+            embedded in a field of similar mass distributions.
 
             Generally you should use either "zero" or "tile".
 
@@ -151,7 +149,9 @@ class PixelatedConvergence(ThinLens):
 
         # Construct kernels
         self.ax_kernel, self.ay_kernel, self.potential_kernel = (
-            func.build_kernels_pixelated_convergence(self.pixelscale, self.n_pix)
+            func.build_kernels_pixelated_convergence(
+                self.pixelscale, self.n_pix, 0 if padding == "zero" else 8
+            )
         )
 
         self.potential_kernel_tilde = None
