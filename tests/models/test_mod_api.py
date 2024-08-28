@@ -63,7 +63,7 @@ def sim_yaml():
 
     simulator:
         name: minisim
-        kind: Lens_Source
+        kind: LensSource
         init_kwargs:
             # Single lense
             lens: *lens
@@ -106,7 +106,7 @@ def sim_obj():
     sie = caustics.SIE(cosmology=cosmology, name="lens")
     src = caustics.Sersic(name="source")
     lnslt = caustics.Sersic(name="lenslight")
-    return caustics.Lens_Source(
+    return caustics.LensSource(
         lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
     )
 
@@ -116,7 +116,7 @@ def test_build_simulator(sim_yaml_file, sim_obj, x_input):
 
     result = sim(x_input, quad_level=3)
     expected_result = sim_obj(x_input, quad_level=3)
-    assert sim.get_graph(True, True)
+    assert sim.graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
 
@@ -199,7 +199,7 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
     newsim = caustics.build_simulator(sim_yaml_file)
     result = newsim(quad_level=3)
     expected_result = sim_obj(x_input, quad_level=3)
-    assert newsim.get_graph(True, True)
+    assert newsim.graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
 

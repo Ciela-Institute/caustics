@@ -19,16 +19,15 @@ def test_shape_error_messages():
     # module = Pixelated(shape=(8,))
 
     fov = 7.8
-    n_pix = 20
     cosmo = FlatLambdaCDM()
     with pytest.raises(TypeError):
         # User cannot enter a list, only a tuple
         # (because of type checking and consistency with torch)
-        PixelatedConvergence(fov, n_pix, cosmo, shape=[8, 8])
+        PixelatedConvergence(fov, cosmo, shape=[8, 8])
 
     with pytest.raises(ValueError):
         # wrong number of dimensions
-        PixelatedConvergence(fov, n_pix, cosmo, shape=(8,))
+        PixelatedConvergence(fov, cosmo, shape=(8,))
 
 
 def test_repr():

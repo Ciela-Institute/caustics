@@ -1,14 +1,14 @@
 import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
 
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 
 
-def test_get_meshgrid(device):
+def test_meshgrid(device):
     res = 0.05
     nx = 200
     ny = 200
-    thx, thy = get_meshgrid(res, nx, ny, device=device)
+    thx, thy = meshgrid(res, nx, ny, device=device)
 
     res = 0.05  # size of pixel in angular coordinates #
     ra_at_xy_0, dec_at_xy_0 = (

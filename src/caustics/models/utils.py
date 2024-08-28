@@ -150,7 +150,7 @@ def create_pydantic_model(
             field_name = info.field_name
             field = cls.model_fields[field_name]
             anno_args = typing.get_args(field.annotation)
-            if len(anno_args) == 2 and anno_args[1] == type(None):
+            if len(anno_args) == 2 and anno_args[1] is type(None):
                 # This means that the anno is optional
                 expected_type = next(
                     filter(lambda x: x is not None, typing.get_args(field.annotation))
@@ -272,7 +272,7 @@ def setup_simulator_models() -> type[Annotated]:
     # there's currently only one simulator
     # in the system.
     dependents = {
-        "Lens_Source": {
+        "LensSource": {
             "source": light_sources,
             "lens_light": light_sources,
             "lens": lenses,

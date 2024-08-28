@@ -8,7 +8,7 @@ from torch import Tensor
 
 from .simulator import Simulator, NameType
 from ..utils import (
-    get_meshgrid,
+    meshgrid,
     gaussian_quadrature_grid,
     gaussian_quadrature_integrator,
 )
@@ -16,10 +16,10 @@ from ..lenses.base import Lens
 from ..light.base import Source
 
 
-__all__ = ("Lens_Source",)
+__all__ = ("LensSource",)
 
 
-class Lens_Source(Simulator):
+class LensSource(Simulator):
     """Lens image of a source.
 
     Straightforward simulator to sample a lensed image of a source
@@ -37,7 +37,7 @@ class Lens_Source(Simulator):
        cosmo = caustics.FlatLambdaCDM()
        lens = caustics.lenses.SIS(cosmology = cosmo, x0 = 0., y0 = 0., th_ein = 1.)
        source = caustics.sources.Sersic(x0 = 0., y0 = 0., q = 0.5, phi = 0.4, n = 2., Re = 1., Ie = 1.)
-       sim = caustics.sims.Lens_Source(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
+       sim = caustics.sims.LensSource(lens, source, pixelscale = 0.05, gridx = 100, gridy = 100, upsample_factor = 2, z_s = 1.)
 
        img = sim()
        plt.imshow(img, origin = "lower")
@@ -103,6 +103,16 @@ class Lens_Source(Simulator):
         z_s: Annotated[
             Optional[Union[Tensor, float]], "Redshift of the source", True
         ] = None,
+        x0: Annotated[
+            Optional[Union[Tensor, float]],
+            "center of the fov for the lens source image",
+            True,
+        ] = 0.0,
+        y0: Annotated[
+            Optional[Union[Tensor, float]],
+            "center of the fov for the lens source image",
+            True,
+        ] = 0.0,
         name: NameType = "sim",
     ):
         super().__init__(name)
@@ -117,6 +127,8 @@ class Lens_Source(Simulator):
             self.psf = torch.as_tensor(psf)
             self.psf /= psf.sum()  # ensure normalized
         self.add_param("z_s", z_s)
+        self.add_param("x0", x0)
+        self.add_param("y0", y0)
         self.pixelscale = pixelscale
 
         # Image grid
@@ -137,7 +149,7 @@ class Lens_Source(Simulator):
             self.gridding[0] + self.psf_pad[0] * 2,
             self.gridding[1] + self.psf_pad[1] * 2,
         )
-        self.grid = get_meshgrid(
+        self.grid = meshgrid(
             pixelscale / self.upsample_factor,
             self.n_pix[0] * self.upsample_factor,
             self.n_pix[1] * self.upsample_factor,
@@ -217,7 +229,7 @@ class Lens_Source(Simulator):
         psf_convolve: boolean
             when true the image will be convolved with the psf
         """
-        (z_s,) = self.unpack(params)
+        z_s, x0, y0 = self.unpack(params)
 
         # Automatically turn off light for missing objects
         if self.source is None:
@@ -227,9 +239,11 @@ class Lens_Source(Simulator):
         if self.psf is None:
             psf_convolve = False
 
+        grid = (self.grid[0] + x0, self.grid[1] + y0)
+
         if quad_level is not None and quad_level > 1:
             finegrid_x, finegrid_y, weights = gaussian_quadrature_grid(
-                self.pixelscale / self.upsample_factor, *self.grid, quad_level
+                self.pixelscale / self.upsample_factor, *grid, quad_level
             )
 
         # Sample the source light
@@ -241,7 +255,7 @@ class Lens_Source(Simulator):
                     mu_fine = self.source.brightness(bx, by, params)
                     mu = gaussian_quadrature_integrator(mu_fine, weights)
                 else:
-                    bx, by = self.lens.raytrace(*self.grid, z_s, params)
+                    bx, by = self.lens.raytrace(*grid, z_s, params)
                     mu = self.source.brightness(bx, by, params)
             else:
                 # Source is imaged without lensing
@@ -249,10 +263,10 @@ class Lens_Source(Simulator):
                     mu_fine = self.source.brightness(finegrid_x, finegrid_y, params)
                     mu = gaussian_quadrature_integrator(mu_fine, weights)
                 else:
-                    mu = self.source.brightness(*self.grid, params)
+                    mu = self.source.brightness(*grid, params)
         else:
             # Source is not added to the scene
-            mu = torch.zeros_like(self.grid[0])
+            mu = torch.zeros_like(grid[0])
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
@@ -260,7 +274,7 @@ class Lens_Source(Simulator):
                 mu_fine = self.lens_light.brightness(finegrid_x, finegrid_y, params)
                 mu += gaussian_quadrature_integrator(mu_fine, weights)
             else:
-                mu += self.lens_light.brightness(*self.grid, params)
+                mu += self.lens_light.brightness(*grid, params)
 
         # Convolve the PSF
         if psf_convolve and self.psf is not None:

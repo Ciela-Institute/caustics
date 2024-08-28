@@ -2,13 +2,13 @@ import torch
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PixelatedConvergence, PseudoJaffe
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 
 
 def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     # TODO understand why this test fails for resolutions != 0.025
     res = 0.025
-    thx, thy = get_meshgrid(res, n_pix, n_pix, device=device)
+    thx, thy = meshgrid(res, n_pix, device=device)
 
     z_l = torch.tensor(0.5, device=device)
     z_s = torch.tensor(2.1, device=device)
@@ -47,7 +47,6 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     # Approximate calculations
     lens_kap = PixelatedConvergence(
         res,
-        n_pix,
         cosmology,
         z_l=z_l,
         shape=(n_pix, n_pix),
