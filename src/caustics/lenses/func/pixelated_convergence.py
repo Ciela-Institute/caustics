@@ -36,8 +36,8 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix, window=0):
     """
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
     # Shift to center kernels within pixel at index n_pix
-    x_mg = x_mg - pixelscale / 2
-    y_mg = y_mg - pixelscale / 2
+    # x_mg = x_mg - pixelscale / 2
+    # y_mg = y_mg - pixelscale / 2
 
     d2 = x_mg**2 + y_mg**2
     potential_kernel = safe_log(d2.sqrt())
@@ -45,9 +45,9 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix, window=0):
     ay_kernel = safe_divide(y_mg, d2)
 
     # Set centers of kernels to zero
-    potential_kernel[..., n_pix, n_pix] = 0
-    ax_kernel[..., n_pix, n_pix] = 0
-    ay_kernel[..., n_pix, n_pix] = 0
+    # potential_kernel[..., n_pix, n_pix] = 0
+    # ax_kernel[..., n_pix, n_pix] = 0
+    # ay_kernel[..., n_pix, n_pix] = 0
 
     # Window the deflection angle kernels for stable FFT
     if window > 0:
