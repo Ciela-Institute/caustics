@@ -265,9 +265,11 @@ most efficient method to perform large lensing computations such as running many
 MCMC chains or sampling many lensing realizations (e.g. for training machine
 learning models).
 
-[^1] "kernlizing" operations by packing multiple mathematical operations into a
-single call to the GPU can both reduce the memory load and increase the speed of
-such calculations. This is an avenue for further growth for caustics.
+[^1]:
+    "kernlizing" operations by packing multiple mathematical operations into a
+    single call to the GPU can both reduce the memory load and increase the
+    speed of such calculations. This is an avenue for further growth for
+    caustics.
 
 # User experience
 
