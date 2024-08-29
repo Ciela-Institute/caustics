@@ -205,12 +205,14 @@ Here we discuss the performance enhancements enabled by `caustics`. Via
 `PyTorch`, the code allows operations to be batched, multi-threaded on CPUs, or
 offloaded to GPUs to optimize computational efficiency. In \autoref{fig:runtime}
 we demonstrate this by sampling images of a Sérsic with an SIE model lensing the
-image (much like \autoref{fig:sample}). In the two subfigures we show
-performance for simply sampling a 128x128 image using the pixel midpoint (left),
-and sampling a "realistic" image (right) which is upsampled by a factor of 4 and
-convolved with a PSF. All parameters are randomly resampled for each simulation
-to avoid caching effects. This demonstrates a number of interesting facts about
-numerical performance in such scenarios.
+image (much like \autoref{fig:sample}). For CPU calculations we use
+`Intel Gold 6148 Skylake` and for the GPU we use a `NVIDIA V100`, all tests were
+done at 64 bit precision. In the two subfigures we show performance for simply
+sampling a 128x128 image using the pixel midpoint (left), and sampling a
+"realistic" image (right) which is upsampled by a factor of 4 and convolved with
+a PSF. All parameters are randomly resampled for each simulation to avoid
+caching effects. This demonstrates a number of interesting facts about numerical
+performance in such scenarios.
 
 We compare the performance with that of `Lenstronomy` as our baseline. The most
 direct comparison between the two codes can be observed by comparing the
@@ -218,7 +220,7 @@ direct comparison between the two codes can be observed by comparing the
 written using the `numba` [@numba] package which compiles python code into lower
 level C code. The left plot shows that `caustics` suffers from a significant
 overhead compared with `Lenstronomy`, which is nearly twice as fast as the
-"caustics unbatched cpu" line. This occurs because the pure Python (intepreted
+"caustics unbatched cpu" line. This occurs because the pure Python (interpreted
 language) elements of `caustics` are much slower than the C/Cuda PyTorch
 backends (compiled language). This is most pronounced when fewer computations
 are needed to perform a simulation. Despite this overhead, `caustics` showcases
@@ -250,10 +252,22 @@ to fully exploit GPU capabilities. In the midpoint sampling, the GPU never
 realistic scenario we reach the saturation limit of the GPU memory at 100
 samples and could no longer simultaneously model all the systems, we thus
 entered a linear regime in runtime just like the CPU sampling does for any
-number of simulations. Nonetheless, it is possible to easily achieve over 100X
-speedup over CPU performance, making GPUs by far the most efficient method to
-perform large lensing computations such as running many MCMC chains or sampling
-many lensing realizations (e.g. for training machine learning models).
+number of simulations. The V100 GPUs have 16 GB of memory, with 100 images at
+128x128 resolution, upsampled on each axis by 4 times (16 times the memory), and
+64bit precision each operation requires approximately 200MB of storage. Since
+gravitational lensing requires a number of intermediate calculations[^1] such as
+computing FFTs for convolution, plus PyTorch overhead, this will fill the GPU.
+An A100 GPU with 80GB of memory would be able to go much further before
+saturating, staying in the flat scaling region longer and giving even further
+performance improvements over CPU computations. Nonetheless, it is possible to
+easily achieve over 100X speedup over CPU performance, making GPUs by far the
+most efficient method to perform large lensing computations such as running many
+MCMC chains or sampling many lensing realizations (e.g. for training machine
+learning models).
+
+[^1] "kernlizing" operations by packing multiple mathematical operations into a
+single call to the GPU can both reduce the memory load and increase the speed of
+such calculations. This is an avenue for further growth for caustics.
 
 # User experience
 
