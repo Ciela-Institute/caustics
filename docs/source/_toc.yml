@@ -24,7 +24,7 @@ chapters:
   - file: examples/index
     sections:
       - file: examples/Example_ImageFit_LM
-      - file: examples/Example_ImageFit_NUTS
+      - file: examples/Example_ImageFit_MCMC
       - file: examples/Example_QSOLensFit
   - file: contributing
   - file: frequently_asked_questions
