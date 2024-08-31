@@ -1,3 +1,4 @@
+emcee
 ipywidgets
 jupyter-book
 matplotlib
