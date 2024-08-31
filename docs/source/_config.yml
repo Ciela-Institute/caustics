@@ -34,7 +34,13 @@ html:
   favicon: ../../media/caustics_favicon.ico
   use_issues_button: true
   use_repository_button: true
+  use_edit_page_button: true
   baseurl: https://caustics.readthedocs.io/
+
+launch_buttons:
+  notebook_interface: "jupyterlab" # The interface interactive links will activate ["classic", "jupyterlab"]
+  colab_url: "https://colab.research.google.com"
+  thebe: true
 
 sphinx:
   extra_extensions:
