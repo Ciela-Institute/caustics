@@ -39,10 +39,10 @@ x = torch.tensor([
     5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
 ])  # fmt: skip
 
-minisim = caustics.LensSource(
-    lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
+sim = caustics.LensSource(
+    lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100, quad_level=3
 )
-plt.imshow(minisim(x, quad_level=3), origin="lower")
+plt.imshow(sim(x), origin="lower")
 plt.show()
 ```
 
@@ -54,7 +54,7 @@ plt.show()
 newx = x.repeat(20, 1)
 newx += torch.normal(mean=0, std=0.1 * torch.ones_like(newx))
 
-images = torch.vmap(minisim)(newx)
+images = torch.vmap(sim)(newx)
 
 fig, axarr = plt.subplots(4, 5, figsize=(20, 16))
 for ax, im in zip(axarr.flatten(), images):
@@ -67,7 +67,7 @@ plt.show()
 ### Automatic Differentiation
 
 ```python
-J = torch.func.jacfwd(minisim)(x)
+J = torch.func.jacfwd(sim)(x)
 
 # Plot the new images
 fig, axarr = plt.subplots(3, 7, figsize=(20, 9))

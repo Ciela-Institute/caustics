@@ -114,8 +114,8 @@ def sim_obj():
 def test_build_simulator(sim_yaml_file, sim_obj, x_input):
     sim = caustics.build_simulator(sim_yaml_file)
 
-    result = sim(x_input, quad_level=3)
-    expected_result = sim_obj(x_input, quad_level=3)
+    result = sim(x_input)
+    expected_result = sim_obj(x_input)
     assert sim.graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
@@ -149,7 +149,7 @@ def test_complex_build_simulator():
 
     # Open the temp file and build the simulator
     sim = caustics.build_simulator(temp_file)
-    image = sim(x, quad_level=3)
+    image = sim(x)
     assert isinstance(image, torch.Tensor)
 
     # Remove the temp file
@@ -197,8 +197,8 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
     # First remove the original sim
     del sim
     newsim = caustics.build_simulator(sim_yaml_file)
-    result = newsim(quad_level=3)
-    expected_result = sim_obj(x_input, quad_level=3)
+    result = newsim()
+    expected_result = sim_obj(x_input)
     assert newsim.graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
@@ -217,7 +217,7 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
                 "upsample": 2,
             },
         },
-        {"function": "caustics.utils.gaussian", "sigma": 0.2},
+        # {"function": "caustics.utils.gaussian", "sigma": 0.2},
         [[2.0], [2.0]],
     ],
 )

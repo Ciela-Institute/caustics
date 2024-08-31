@@ -26,3 +26,4 @@ simulator:
     lens_light: *lnslt
     pixelscale: 0.05
     pixels_x: 100
+    quad_level: 3
