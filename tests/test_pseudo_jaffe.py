@@ -6,8 +6,12 @@ from utils import lens_test_helper
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PseudoJaffe
 
+import pytest
 
-def test(sim_source, device, lens_models):
+
+@pytest.mark.parametrize("mass", [1e8, 1e10, 1e12])
+@pytest.mark.parametrize("Rc,Rs", [[1.0, 10.0], [1e-2, 1.0], [0.5, 1.0]])
+def test_pseudo_jaffe(sim_source, device, lens_models, mass, Rc, Rs):
     atol = 1e-5
     rtol = 1e-5
 
@@ -35,26 +39,9 @@ def test(sim_source, device, lens_models):
 
     # Parameters, computing kappa_0 with a helper function
     z_s = torch.tensor(2.1)
-    x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
-    d_l = cosmology.angular_diameter_distance(x[0])
-    arcsec_to_rad = 1 / (180 / torch.pi * 60**2)
-    kappa_0 = lens.central_convergence(
-        x[0],
-        z_s,
-        torch.tensor(2e11),
-        x[4] * d_l * arcsec_to_rad,
-        x[5] * d_l * arcsec_to_rad,
-        cosmology.critical_surface_density(x[0], z_s),
-    )
-    x[3] = (
-        2
-        * torch.pi
-        * kappa_0
-        * cosmology.critical_surface_density(x[0], z_s)
-        * x[4]
-        * x[5]
-        * (d_l * arcsec_to_rad) ** 2
-    )
+    x = torch.tensor([0.5, 0.071, 0.023, mass, Rc, Rs])
+    kappa_0 = lens.get_convergence_0(z_s, x)
+
     kwargs_ls = [
         {
             "sigma0": kappa_0.item(),
@@ -97,7 +84,3 @@ def test_massenclosed(device):
     masses = lens.mass_enclosed_2d(xx, z_s, x)
 
     assert torch.all(masses < x[3])
-
-
-if __name__ == "__main__":
-    test(None)

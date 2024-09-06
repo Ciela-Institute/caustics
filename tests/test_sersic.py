@@ -8,8 +8,13 @@ from lenstronomy.LightModel.light_model import LightModel
 from caustics.light import Sersic
 from caustics.utils import meshgrid
 
+import pytest
 
-def test(sim_source, device, light_models):
+
+@pytest.mark.parametrize("q", [0.2, 0.7])
+@pytest.mark.parametrize("n", [1.0, 2.0, 3.0])
+@pytest.mark.parametrize("th_e", [1.0, 10.0])
+def test_sersic(sim_source, device, light_models, q, n, th_e):
     # Caustics setup
     res = 0.05
     nx = 200
@@ -48,9 +53,9 @@ def test(sim_source, device, light_models):
     thx0_src = 0.05
     thy0_src = 0.01
     phi_src = 0.0
-    q_src = 0.5
-    index_src = 1.5
-    th_e_src = 0.1
+    q_src = q
+    index_src = n
+    th_e_src = th_e
     I_e_src = 100
     # NOTE: in several places we use np.sqrt(q_src) in order to match
     # the definition used by lenstronomy. This only works when phi = 0.
@@ -86,7 +91,3 @@ def test(sim_source, device, light_models):
     brightness_ls = sersic_ls.surface_brightness(x_ls, y_ls, kwargs_light_source)
 
     assert np.allclose(brightness.cpu().numpy(), brightness_ls)
-
-
-if __name__ == "__main__":
-    test(None)
