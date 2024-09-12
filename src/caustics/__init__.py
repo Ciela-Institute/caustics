@@ -30,6 +30,7 @@ from .light import (
     Pixelated,
     PixelatedTime,
     Sersic,
+    PointSource,
 )
 from . import utils
 from .sims import LensSource, Microlens, Simulator
