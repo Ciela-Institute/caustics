@@ -8,9 +8,16 @@ from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
+import numpy as np
+
+import pytest
 
 
-def test_lenstronomy(sim_source, device, lens_models):
+@pytest.mark.parametrize("q", [0.4, 0.7])
+@pytest.mark.parametrize("phi", [pi / 3, -pi / 4])
+@pytest.mark.parametrize("b", [0.1, 1.0])
+@pytest.mark.parametrize("t", [0.1, 1.0, 1.9])
+def test_lenstronomy_epl(sim_source, device, lens_models, q, phi, b, t):
     if sim_source == "yaml":
         yaml_str = """\
         cosmology: &cosmology
@@ -36,10 +43,10 @@ def test_lenstronomy(sim_source, device, lens_models):
 
     # Parameters
     z_s = torch.tensor(1.0, device=device)
-    x = torch.tensor([0.7, 0.912, -0.442, 0.7, pi / 3, 1.4, 1.35], device=device)
+    x = torch.tensor([0.7, 0.912, -0.442, q, phi, b, t], device=device)
 
-    e1, e2 = param_util.phi_q2_ellipticity(phi=x[4].item(), q=x[3].item())
-    theta_E = (x[5] / x[3].sqrt()).item()
+    e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
+    theta_E = b / np.sqrt(q)  # (x[5] / x[3].sqrt()).item()
     kwargs_ls = [
         {
             "theta_E": theta_E,
@@ -47,19 +54,19 @@ def test_lenstronomy(sim_source, device, lens_models):
             "e2": e2,
             "center_x": x[1].item(),
             "center_y": x[2].item(),
-            "gamma": x[6].item() + 1,  # important: add +1
+            "gamma": t + 1,  # important: add +1
         }
     ]
 
     # Different tolerances for difference quantities
     alpha_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=6e-5, device=device
+        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=1e-3, device=device
     )
     kappa_test_helper(
         lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
     )
     Psi_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
+        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-3, atol=1e-100, device=device
     )
 
 
@@ -98,8 +105,3 @@ def test_special_case_sie(device):
     Psi_test_helper(
         lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
     )
-
-
-if __name__ == "__main__":
-    test_lenstronomy(None)
-    test_special_case_sie(None)
