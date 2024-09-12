@@ -11,4 +11,4 @@ def brightness_point(x0, y0, theta_s, Ie, x, y, s=0.0):
     mask = (x**2 + y**2)**(1/2) <= theta_s #Uniform surface brightness inside source
     
     # Return Ie where the mask is True, otherwise return 0
-    return where(mask, Ie, tensor(0.0))
+    return Ie * mask.float()
