@@ -67,6 +67,7 @@ __all__ = [
     "Pixelated",
     "PixelatedTime",
     "Sersic",
+    "PointSource",
     "utils",
     "LensSource",
     "Microlens",
