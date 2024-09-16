@@ -67,6 +67,11 @@ class PointSource(Source):
             "The intensity at the effective radius",
             True,
         ] = None,
+        gamma: Annotated[
+            Optional[Union[Tensor, float]],
+            "The linear limb darkening coefficient",
+            True,
+        ] = 1.0,
         s: Annotated[float, "A small constant for numerical stability"] = 0.0,
         name: NameType = None,
     ):
@@ -90,7 +95,7 @@ class PointSource(Source):
 
 
         Ie: Optional[Tensor]
-            The intensity at the Point.
+            The intensity at the center of the source.
 
             *Unit: flux*
 
@@ -106,6 +111,7 @@ class PointSource(Source):
         self.add_param("y0", y0)
         self.add_param("theta_s", theta_s)
         self.add_param("Ie", Ie)
+        self.add_param("gamma", gamma)
         self.s = s
 
     @unpack
@@ -119,6 +125,7 @@ class PointSource(Source):
         y0: Optional[Tensor] = None,
         theta_s: Optional[Tensor] = None,
         Ie: Optional[Tensor] = None,
+        gamma: Optional[Tensor] = None,
         **kwargs,
     ):
         """
@@ -153,5 +160,5 @@ class PointSource(Source):
         """
 
         # return func.brightness_sersic(x0, y0, q, phi, n, Re, Ie, x, y, k, self.s)
-        return func.brightness_point(x0, y0, theta_s, Ie, x, y, self.s)
+        return func.brightness_point(x0, y0, theta_s, Ie, x, y, gamma, self.s)
 
