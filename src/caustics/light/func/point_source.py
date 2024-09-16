@@ -13,13 +13,5 @@ def brightness_point(x0, y0, theta_s, Ie, x, y, gamma=1.0, s=0.0):
     impact_parameter = (x**2 + y**2)**(1/2) / theta_s
     #linear limb darkening
     mu = (1 - impact_parameter**2)**(1/2)
-    intensity = Ie * (1 - gamma * (1 - mu))
+    intensity = where(impact_parameter <= 1, Ie * (1 - gamma * (1 - mu)), 0)
     return intensity
-    
-    # mask = (x**2 + y**2)**(1/2) <= theta_s #Uniform surface brightness inside source
-    
-    # # Return Ie where the mask is True, otherwise return 0
-    # return Ie * mask.float()
-
-
-#

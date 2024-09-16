@@ -71,7 +71,7 @@ class PointSource(Source):
             Optional[Union[Tensor, float]],
             "The linear limb darkening coefficient",
             True,
-        ] = 1.0,
+        ] = None,
         s: Annotated[float, "A small constant for numerical stability"] = 0.0,
         name: NameType = None,
     ):
