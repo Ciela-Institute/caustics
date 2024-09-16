@@ -161,4 +161,3 @@ class PointSource(Source):
 
         # return func.brightness_sersic(x0, y0, q, phi, n, Re, Ie, x, y, k, self.s)
         return func.brightness_point(x0, y0, theta_s, Ie, x, y, gamma, self.s)
-
