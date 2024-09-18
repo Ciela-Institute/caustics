@@ -10,8 +10,8 @@ def brightness_point(x0, y0, theta_s, Ie, x, y, gamma=1.0, s=0.0):
     )  # phi=None because a point source is spherically symmetric
 
     # Calculate the radial distance from the center in units of the stellar radius
-    impact_parameter = (x**2 + y**2) ** (1 / 2) / theta_s
+    impact_parameter = (x**2 + y**2) ** (1 / 2)
     # linear limb darkening
     mu = (1 - impact_parameter**2) ** (1 / 2)
-    intensity = where(impact_parameter <= 1, Ie * (1 - gamma * (1 - mu)), 0)
+    intensity = where(impact_parameter <= theta_s, Ie * (1 - gamma * (1 - mu)), 0)
     return intensity
