@@ -5,9 +5,7 @@ from ...utils import translate_rotate
 
 def brightness_star(x0, y0, theta_s, Ie, x, y, gamma=0.0):
 
-    x, y = translate_rotate(
-        x, y, x0, y0
-    ) 
+    x, y = translate_rotate(x, y, x0, y0)
 
     # Calculate the radial distance from the center
     impact_parameter = (x**2 + y**2) ** (1 / 2)
