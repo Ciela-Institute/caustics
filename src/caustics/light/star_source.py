@@ -8,40 +8,42 @@ from ..parametrized import unpack
 from ..packed import Packed
 from . import func
 
-__all__ = ("PointSource",)
+__all__ = ("StarSource",)
 
 
-class PointSource(Source):
+class StarSource(Source):
     """
-    `Point` is a subclass of the abstract class `Source`.
-    It represents a point source in a gravitational lensing system.
+    `Star` is a subclass of the abstract class `Source`.
+    It represents a star source in a gravitational lensing system.
 
-    The Point profile is meant to describe individual light sources
-    whose angular extent is much less than the Einstein radius of the lens.
+    The Star profile is meant to describe individual light sources.
 
     Attributes
     -----------
     x0: Optional[Tensor]
-        The x-coordinate of the Point source's center.
+        The x-coordinate of the Star source's center.
 
         *Unit: arcsec*
 
     y0: Optional[Tensor]
-        The y-coordinate of the Point source's center.
+        The y-coordinate of the Star source's center.
+
+        *Unit: arcsec*
+
+    theta_s: Optional[Tensor]
+        The radius of the star.
 
         *Unit: arcsec*
 
     Ie: Optional[Tensor]
-        The intensity at the point.
+        The intensity at the center of the star.
 
         *Unit: flux*
 
-    s: float
-        A small constant for numerical stability.
+    gamma: Optional[Tensor]
+        The linear limb darkening coefficient.
 
-        *Unit: arcsec*
-
-
+        *Unit: unitless*
 
     """
 
@@ -49,17 +51,17 @@ class PointSource(Source):
         self,
         x0: Annotated[
             Optional[Union[Tensor, float]],
-            "The x-coordinate of the Sersic source's center",
+            "The x-coordinate of the star source's center",
             True,
         ] = None,
         y0: Annotated[
             Optional[Union[Tensor, float]],
-            "The y-coordinate of the Sersic source's center",
+            "The y-coordinate of the star source's center",
             True,
         ] = None,
         theta_s: Annotated[
             Optional[Union[Tensor, float]],
-            "The radius of the point source",
+            "The radius of the star source",
             True,
         ] = None,
         Ie: Annotated[
@@ -72,11 +74,10 @@ class PointSource(Source):
             "The linear limb darkening coefficient",
             True,
         ] = None,
-        s: Annotated[float, "A small constant for numerical stability"] = 0.0,
         name: NameType = None,
     ):
         """
-        Constructs the `Point` object with the given parameters.
+        Constructs the `Star` object with the given parameters.
 
         Parameters
         ----------
@@ -84,26 +85,29 @@ class PointSource(Source):
             The name of the source.
 
         x0: Optional[Tensor]
-            The x-coordinate of the Point source's center.
+            The x-coordinate of the star source's center.
 
             *Unit: arcsec*
 
         y0: Optional[Tensor]
-            The y-coordinate of the Point source's center.
+            The y-coordinate of the star source's center.
 
             *Unit: arcsec*
 
+        theta_s: Optional[Tensor]
+            The radius of the star.
+
+            *Unit: arcsec*
 
         Ie: Optional[Tensor]
             The intensity at the center of the source.
 
             *Unit: flux*
 
-        s: float
-            A small constant for numerical stability.
+        gamma: Optional[Tensor]
+            The linear limb darkening coefficient.
 
-            *Unit: arcsec*
-
+            *Unit: unitless*
 
         """
         super().__init__(name=name)
@@ -112,7 +116,6 @@ class PointSource(Source):
         self.add_param("theta_s", theta_s)
         self.add_param("Ie", Ie)
         self.add_param("gamma", gamma)
-        self.s = s
 
     @unpack
     def brightness(
@@ -129,8 +132,8 @@ class PointSource(Source):
         **kwargs,
     ):
         """
-        Implements the `brightness` method for `Point`. The brightness at a given point is
-        determined by the value at the Source's location.
+        Implements the `brightness` method for `star`. This method calculates the
+        brightness of the source at the given point(s).
 
         Parameters
         ----------
@@ -159,5 +162,4 @@ class PointSource(Source):
 
         """
 
-        # return func.brightness_sersic(x0, y0, q, phi, n, Re, Ie, x, y, k, self.s)
-        return func.brightness_point(x0, y0, theta_s, Ie, x, y, gamma, self.s)
+        return func.brightness_star(x0, y0, theta_s, Ie, x, y, gamma)

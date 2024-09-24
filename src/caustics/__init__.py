@@ -30,7 +30,7 @@ from .light import (
     Pixelated,
     PixelatedTime,
     Sersic,
-    PointSource,
+    StarSource,
 )
 from . import utils
 from .sims import LensSource, Microlens, Simulator
@@ -67,7 +67,7 @@ __all__ = [
     "Pixelated",
     "PixelatedTime",
     "Sersic",
-    "PointSource",
+    "StarSource",
     "utils",
     "LensSource",
     "Microlens",
