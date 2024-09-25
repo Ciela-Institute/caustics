@@ -4,7 +4,74 @@ from ...utils import batch_lm
 from ...constants import arcsec_to_rad, c_Mpc_s, days_to_seconds
 
 
-def forward_raytrace(bx, by, raytrace, epsilon, n_init, fov):
+def inside_triangle(p, v):
+    dp1p2 = p[1][0] * p[2][1] - p[1][1] * p[2][0]
+    dp0p1 = p[0][0] * p[1][1] - p[0][1] * p[1][0]
+    dp0p2 = p[0][0] * p[2][1] - p[0][1] * p[2][0]
+    dpp2 = v[0] * p[2][1] - v[1] * p[2][0]
+    dpp1 = v[0] * p[1][1] - v[1] * p[1][0]
+    a = (dpp2 - dp0p2) / dp1p2
+    b = -(dpp1 - dp0p1) / dp1p2
+    if a < 0 or b < 0 or a + b > 1:
+        return False
+    return True
+
+
+def triangle_area(p):
+    dp1p2 = p[1][0] * p[2][1] - p[1][1] * p[2][0]
+    dp0p2 = p[0][0] * p[2][1] - p[0][1] * p[2][0]
+    dp0p1 = p[0][0] * p[1][1] - p[0][1] * p[1][0]
+    return 0.5 * torch.abs(dp1p2 + dp0p2 + dp0p1)
+
+
+def triangle_search(s, pimg, psrc, raytrace, epsilon):
+    """
+        Perform a triangle search to find the image plane points that map to the source plane point.
+
+        Parameters
+        ----------
+        s: Tensor
+            Tensor of x and y coordinates in the source plane.
+        pimg: Tensor
+    `       Tensor of x and y coordinates in the image plane for the three triangle points. Shape (3,2) for the three vertices of the triangle in the 2D image plane.
+        psrc: Tensor
+    `       Tensor of x and y coordinates in the source plane for the three triangle points. Shape (3,2) for the three vertices of the triangle in the 2D source plane.
+        raytrace: function
+            function that takes in the x and y coordinates in the image plane and returns the x and y coordinates in the source plane.
+        epsilon: Tensor
+            maximum distance between two images (arcsec) before they are considered the same image.
+    """
+    # Case 1: the point is outside the triangle
+    if not inside_triangle(psrc, s):
+        return torch.zeros((0, 2))  # end search, point is not in triangle
+
+    pmid_img = pimg.sum(dim=0) / 3  # new point at the center of the triangle
+    pmid_src = raytrace(pmid_img)
+
+    # Case 2: size of triangle is within epsilon, optimize image plane position
+    if triangle_area(pimg) < epsilon**2:
+        res = forward_raytrace(
+            s[0], s[1], pmid_img[0], pmid_img[1], raytrace, epsilon
+        )  # fixme, optimize position
+        if inside_triangle(pimg, res):
+            return res.unsqueeze(0)
+
+    # Case 3: divide triangle for recursive exploration
+    pnew_img = pimg.repeat(3, 1, 1)
+    pnew_img[0][0] = pmid_img
+    pnew_img[1][1] = pmid_img
+    pnew_img[2][2] = pmid_img
+    pnew_src = psrc.repeat(3, 1, 1)
+    pnew_src[0][0] = pmid_src
+    pnew_src[1][1] = pmid_src
+    pnew_src[2][2] = pmid_src
+    res1 = triangle_search(s, pnew_img[0], pnew_src[0], raytrace, epsilon)
+    res2 = triangle_search(s, pnew_img[1], pnew_src[1], raytrace, epsilon)
+    res3 = triangle_search(s, pnew_img[2], pnew_src[2], raytrace, epsilon)
+    return torch.cat((res1, res2, res3), dim=0)
+
+
+def forward_raytrace(bx, by, raytrace, n_init, epsilon, fov):
     """
     Perform a forward ray-tracing operation which maps from the source plane to the image plane.
 
