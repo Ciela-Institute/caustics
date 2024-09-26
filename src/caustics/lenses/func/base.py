@@ -105,22 +105,34 @@ def remove_triangle_duplicates(p):
 
 def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
     """
-    Perform a forward ray-tracing operation which maps from the source plane to the image plane.
+    Perform a forward ray-tracing operation which maps from the source plane to
+    the image plane.
 
     Parameters
     ----------
+    ix: Tensor
+        Tensor of x coordinate in the image plane. This initializes the
+        ray-tracing optimization. Should have shape (B, 2).
+
+        *Unit: arcsec*
+
+    iy: Tensor
+        Tensor of y coordinate in the image plane. This initializes the
+        ray-tracing optimization. Should have shape (B, 2).
+
     bx: Tensor
-        Tensor of x coordinate in the source plane.
+        Tensor of x coordinate in the source plane. Should be a scalar.
 
         *Unit: arcsec*
 
     by: Tensor
-        Tensor of y coordinate in the source plane.
+        Tensor of y coordinate in the source plane. Should be a scalar.
 
         *Unit: arcsec*
 
     raytrace: function
-        function that takes in the x and y coordinates in the image plane and returns the x and y coordinates in the source plane.
+        function that takes in the x and y coordinates in the image plane and
+        returns the x and y coordinates in the source plane.
 
     Returns
     -------
@@ -166,7 +178,7 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
     ).reshape(-1, 3, 2)
 
     i = 0
-    while triangle_area(E[0]) > epsilon**2:
+    while True:
 
         # Expand the search to neighboring triangles
         if i > 0:  # no need for neighbors in the first iteration
@@ -185,10 +197,15 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
         E = E[locate]
         i += 1
 
-    # Rootfind the source plane point in the triangle
-    E = E.sum(dim=1) / 3
-    E = forward_raytrace_rootfind(E[..., 0], E[..., 1], s[0], s[1], raytrace)
-    return E[..., 0], E[..., 1]
+        if triangle_area(E[0]) > epsilon**2:
+            # Rootfind the source plane point in the triangle
+            Emid = E.sum(dim=1) / 3
+            Emid = forward_raytrace_rootfind(
+                Emid[..., 0], Emid[..., 1], s[0], s[1], raytrace
+            )
+            if torch.all(torch.vmap(triangle_contains)(E, Emid)):
+                break
+    return Emid[..., 0], Emid[..., 1]
 
 
 def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
