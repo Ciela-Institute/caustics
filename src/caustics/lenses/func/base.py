@@ -203,7 +203,11 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
             Emid = forward_raytrace_rootfind(
                 Emid[..., 0], Emid[..., 1], s[0], s[1], raytrace
             )
-            if torch.all(torch.vmap(triangle_contains)(E, Emid)):
+            Smid = raytrace(Emid[..., 0], Emid[..., 1])
+            Smid = torch.stack(Smid, dim=-1)
+            if torch.all(torch.vmap(triangle_contains)(E, Emid)) and torch.allclose(
+                Smid, s, atol=epsilon
+            ):
                 break
     return Emid[..., 0], Emid[..., 1]
 
