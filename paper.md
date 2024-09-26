@@ -118,8 +118,9 @@ Several other simulation packages for strong gravitational lensing are already
 publicly available. The well established `lenstronomy` package has been in use
 since 2018 [@lenstronomy]; `GLAMER` is a C++ based code for modelling complex
 and large dynamic range fields [@GLAMER]; `PyAutoLens` is also widely used
-[@PyAutoLens]; and GIGA-Lens is a specialized JAX [@JAX] based gravitational
-lensing package [@GIGALens]; among others [@Keeton2011; @Kneib2011; @Galan2021;
+[@PyAutoLens]; GIGA-Lens is a specialized JAX [@JAX] based gravitational lensing
+package [@GIGALens]; and Herculens is a more general JAX based lensing simulator
+package [@Herculens]; among others [@Keeton2011; @Kneib2011; @Galan2021;
 @Wagner2024]. There are also several "in house" codes developed for specialized
 analysis which are then not publicly released [e.g. @Suyu2010]. `Caustics`
 development has been primarily focused on three aspects: processing speed, user
@@ -273,10 +274,11 @@ learning models).
 
 # User experience
 
-Caustics offers a tiered interface system designed to cater to users with
-varying levels of expertise in gravitational lensing simulation. This section
-outlines the three levels of interfaces that enhance user experience by
-providing different degrees of complexity and flexibility.
+https://ui.adsabs.harvard.edu/abs/2022A&A...668A.155G Caustics offers a tiered
+interface system designed to cater to users with varying levels of expertise in
+gravitational lensing simulation. This section outlines the three levels of
+interfaces that enhance user experience by providing different degrees of
+complexity and flexibility.
 
 **Configuration file interface:** The most accessible level of interaction is
 through configuration files. Users can define simulators in `.yaml` format,
