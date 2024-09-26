@@ -6,8 +6,11 @@ import yaml
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIS
 
+import pytest
 
-def test(sim_source, device, lens_models):
+
+@pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.0])
+def test(sim_source, device, lens_models, th_ein):
     atol = 1e-5
     rtol = 1e-5
     z_l = torch.tensor(0.5)
@@ -37,7 +40,7 @@ def test(sim_source, device, lens_models):
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([-0.342, 0.51, 1.4])
+    x = torch.tensor([-0.342, 0.51, th_ein])
     kwargs_ls = [
         {"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": x[2].item()}
     ]
