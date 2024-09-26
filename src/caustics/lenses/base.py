@@ -130,15 +130,16 @@ class Lens(Parametrized):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        epsilon: float = 1e-2,
-        n_init: int = 100,
-        x0: float = 0.0,
-        y0: float = 0.0,
+        epsilon: float = 1e-3,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
         fov: float = 5.0,
+        divisions: int = 100,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
-        Perform a forward ray-tracing operation which maps from the source plane to the image plane.
+        Perform a forward ray-tracing operation which maps from the source plane
+        to the image plane.
 
         Parameters
         ----------
@@ -161,17 +162,19 @@ class Lens(Parametrized):
             Dynamic parameter container for the lens model. Defaults to None.
 
         epsilon: Tensor
-            maximum distance between two images (arcsec) before they are considered the same image.
+            maximum distance between two images (arcsec) before they are
+            considered the same image.
 
             *Unit: arcsec*
-
-        n_init: int
-            number of random initialization points used to try and find image plane points.
 
         fov: float
             the field of view in which the initial random samples are taken.
 
             *Unit: arcsec*
+
+        divisions: int
+            the number of divisions of the fov on each axis when constructing
+            the grid to perform in the triangle search.
 
         Returns
         -------
@@ -185,18 +188,41 @@ class Lens(Parametrized):
 
             *Unit: arcsec*
         """
+        raytrace = partial(self.raytrace, params=params, z_s=z_s)
+        if x0 is None:
+            x0 = torch.zeros((), device=bx.device, dtype=bx.dtype)
+        if y0 is None:
+            y0 = torch.zeros((), device=by.device, dtype=by.dtype)
+        # X = torch.stack((x0, y0)).repeat(4, 1)
+        # X[0] -= fov / 2
+        # X[1][0] -= fov / 2
+        # X[1][1] += fov / 2
+        # X[2][0] += fov / 2
+        # X[2][1] -= fov / 2
+        # X[3] += fov / 2
 
-        # TODO make FOV more general so that it doesn't have to be centered on zero,zero
-        if fov is None:
-            raise ValueError("fov must be given to generate initial guesses")
-
+        # Sx, Sy = raytrace(X[..., 0], X[..., 1])
+        # S = torch.stack((Sx, Sy)).T
+        # res1, ap1 = func.triangle_search(
+        #     torch.stack((bx, by)),
+        #     X[:3],
+        #     S[:3],
+        #     raytrace,
+        #     epsilon,
+        #     torch.zeros((0, 2)),
+        # )
+        # res2, ap2 = func.triangle_search(
+        #     torch.stack((bx, by)),
+        #     X[1:],
+        #     S[1:],
+        #     raytrace,
+        #     epsilon,
+        #     torch.zeros((0, 2)),
+        # )
+        # res = torch.cat((res1, res2), dim=0)
+        # return res[:, 0], res[:, 1], torch.cat((ap1, ap2), dim=0)
         return func.forward_raytrace(
-            bx,
-            by,
-            partial(self.raytrace, params=params, z_s=z_s),
-            epsilon,
-            n_init,
-            fov,
+            torch.stack((bx, by)), raytrace, x0, y0, fov, divisions, epsilon
         )
 
 

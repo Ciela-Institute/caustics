@@ -4,74 +4,106 @@ from ...utils import batch_lm
 from ...constants import arcsec_to_rad, c_Mpc_s, days_to_seconds
 
 
-def inside_triangle(p, v):
-    dp1p2 = p[1][0] * p[2][1] - p[1][1] * p[2][0]
-    dp0p1 = p[0][0] * p[1][1] - p[0][1] * p[1][0]
-    dp0p2 = p[0][0] * p[2][1] - p[0][1] * p[2][0]
-    dpp2 = v[0] * p[2][1] - v[1] * p[2][0]
-    dpp1 = v[0] * p[1][1] - v[1] * p[1][0]
-    a = (dpp2 - dp0p2) / dp1p2
-    b = -(dpp1 - dp0p1) / dp1p2
-    if a < 0 or b < 0 or a + b > 1:
-        return False
-    return True
+def triangle_contains(p, v):
+    """
+    determine if point v is inside triangle p. Where p is a (3,2) tensor, and v
+    is a (2,) tensor.
+    """
+    p01 = p[1] - p[0]
+    p02 = p[2] - p[0]
+    dp0p02 = p[0][0] * p02[1] - p[0][1] * p02[0]
+    dp0p01 = p[0][0] * p01[1] - p[0][1] * p01[0]
+    dp01p02 = p01[0] * p02[1] - p01[1] * p02[0]
+    dvp02 = v[0] * p02[1] - v[1] * p02[0]
+    dvp01 = v[0] * p01[1] - v[1] * p01[0]
+    a = (dvp02 - dp0p02) / dp01p02
+    b = -(dvp01 - dp0p01) / dp01p02
+    return (a >= 0) & (b >= 0) & (a + b <= 1)
 
 
 def triangle_area(p):
-    dp1p2 = p[1][0] * p[2][1] - p[1][1] * p[2][0]
-    dp0p2 = p[0][0] * p[2][1] - p[0][1] * p[2][0]
-    dp0p1 = p[0][0] * p[1][1] - p[0][1] * p[1][0]
-    return 0.5 * torch.abs(dp1p2 + dp0p2 + dp0p1)
-
-
-def triangle_search(s, pimg, psrc, raytrace, epsilon):
     """
-        Perform a triangle search to find the image plane points that map to the source plane point.
-
-        Parameters
-        ----------
-        s: Tensor
-            Tensor of x and y coordinates in the source plane.
-        pimg: Tensor
-    `       Tensor of x and y coordinates in the image plane for the three triangle points. Shape (3,2) for the three vertices of the triangle in the 2D image plane.
-        psrc: Tensor
-    `       Tensor of x and y coordinates in the source plane for the three triangle points. Shape (3,2) for the three vertices of the triangle in the 2D source plane.
-        raytrace: function
-            function that takes in the x and y coordinates in the image plane and returns the x and y coordinates in the source plane.
-        epsilon: Tensor
-            maximum distance between two images (arcsec) before they are considered the same image.
+    Determine the area of triangle p where p is a (3,2) tensor.
     """
-    # Case 1: the point is outside the triangle
-    if not inside_triangle(psrc, s):
-        return torch.zeros((0, 2))  # end search, point is not in triangle
-
-    pmid_img = pimg.sum(dim=0) / 3  # new point at the center of the triangle
-    pmid_src = raytrace(pmid_img)
-
-    # Case 2: size of triangle is within epsilon, optimize image plane position
-    if triangle_area(pimg) < epsilon**2:
-        res = forward_raytrace(
-            s[0], s[1], pmid_img[0], pmid_img[1], raytrace, epsilon
-        )  # fixme, optimize position
-        if inside_triangle(pimg, res):
-            return res.unsqueeze(0)
-
-    # Case 3: divide triangle for recursive exploration
-    pnew_img = pimg.repeat(3, 1, 1)
-    pnew_img[0][0] = pmid_img
-    pnew_img[1][1] = pmid_img
-    pnew_img[2][2] = pmid_img
-    pnew_src = psrc.repeat(3, 1, 1)
-    pnew_src[0][0] = pmid_src
-    pnew_src[1][1] = pmid_src
-    pnew_src[2][2] = pmid_src
-    res1 = triangle_search(s, pnew_img[0], pnew_src[0], raytrace, epsilon)
-    res2 = triangle_search(s, pnew_img[1], pnew_src[1], raytrace, epsilon)
-    res3 = triangle_search(s, pnew_img[2], pnew_src[2], raytrace, epsilon)
-    return torch.cat((res1, res2, res3), dim=0)
+    return (
+        0.5
+        * (
+            p[0][0] * (p[1][1] - p[2][1])
+            + p[1][0] * (p[2][1] - p[0][1])
+            + p[2][0] * (p[0][1] - p[1][1])
+        ).abs()
+    )
 
 
-def forward_raytrace(bx, by, raytrace, n_init, epsilon, fov):
+def triangle_neighbors(p):
+    """
+    Build a set of neighbors for triangle p where p is a (3,2) tensor. The
+    neighbors all have the same shape as p, but are various translations and
+    reflections of p that share a common edge or vertex.
+    """
+    p01 = p[1] - p[0]
+    p02 = p[2] - p[0]
+    p12 = p[2] - p[1]
+    pref = -(p - p[0]) + p[0]
+    return torch.stack(
+        (
+            p,
+            p + p01,
+            p - p01,
+            p + p02,
+            p - p02,
+            p + p12,
+            p - p12,
+            pref,
+            pref + p01,
+            pref + 2 * p01,
+            pref + p02,
+            pref + 2 * p02,
+            pref + p01 + p02,
+        ),
+        dim=0,
+    )
+
+
+def triangle_upsample(p):
+    """
+    Upsample triangle p where p is a (3,2) tensor. The upsampled triangles are
+    all triangles internal to p built by taking the midpoints of the edges of p.
+    """
+    p01 = (p[1] + p[0]) / 2
+    p02 = (p[2] + p[0]) / 2
+    p12 = (p[2] + p[1]) / 2
+    return torch.stack(
+        (
+            torch.stack((p[0], p01, p02), dim=0),
+            torch.stack((p01, p[1], p12), dim=0),
+            torch.stack((p02, p12, p[2]), dim=0),
+            torch.stack((p01, p12, p02), dim=0),
+        ),
+        dim=0,
+    )
+
+
+def triangle_equals(p1, p2):
+    """
+    Determine if two triangles are equal. Where p1 and p2 are (3,2) tensors.
+    """
+    return torch.all((p1 - p2).abs() < 1e-6)
+
+
+def remove_triangle_duplicates(p):
+    unique_triangles = torch.zeros((0, 3, 2))
+    B = p.shape[0]
+    batch_triangle_equals = torch.vmap(triangle_equals, in_dims=(None, 0))
+    for i in range(B):
+        # Compare current triangle with all triangles in the unique list
+        if i == 0 or not batch_triangle_equals(p[i], unique_triangles).any():
+            unique_triangles = torch.cat((unique_triangles, p[i].unsqueeze(0)), dim=0)
+
+    return unique_triangles
+
+
+def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
     """
     Perform a forward ray-tracing operation which maps from the source plane to the image plane.
 
@@ -90,19 +122,6 @@ def forward_raytrace(bx, by, raytrace, n_init, epsilon, fov):
     raytrace: function
         function that takes in the x and y coordinates in the image plane and returns the x and y coordinates in the source plane.
 
-    epsilon: Tensor
-        maximum distance between two images (arcsec) before they are considered the same image.
-
-        *Unit: arcsec*
-
-    n_init: int
-        number of random initialization points used to try and find image plane points.
-
-    fov: float
-        the field of view in which the initial random samples are taken.
-
-        *Unit: arcsec*
-
     Returns
     -------
     x_component: Tensor
@@ -115,37 +134,61 @@ def forward_raytrace(bx, by, raytrace, n_init, epsilon, fov):
 
         *Unit: arcsec*
     """
-    bxy = torch.stack((bx, by)).repeat(n_init, 1)  # has shape (n_init, Dout:2)
-
-    # Random starting points in image plane
-    guesses = (
-        torch.as_tensor(fov, dtype=bx.dtype)
-        * (torch.rand(n_init, 2, dtype=bx.dtype) - 0.5)
-    ).to(
-        device=bxy.device
-    )  # Has shape (n_init, Din:2)
-
+    ixy = torch.stack((ix, iy), dim=1)  # has shape (B, Din:2)
+    bxy = torch.stack((bx, by)).repeat(ix.shape[0], 1)  # has shape (B, Dout:2)
     # Optimize guesses in image plane
     x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
-        guesses,
+        ixy,
         bxy,
         lambda *a, **k: torch.stack(
             raytrace(a[0][..., 0], a[0][..., 1], *a[1:], **k), dim=-1
         ),
     )
+    return x
 
-    # Clip points that didn't converge
-    x = x[c < 1e-2 * epsilon**2]
 
-    # Cluster results into n-images
-    res = []
-    while len(x) > 0:
-        res.append(x[0])
-        d = torch.linalg.norm(x - x[0], dim=-1)
-        x = x[d > epsilon]
+def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
 
-    res = torch.stack(res, dim=0)
-    return res[..., 0], res[..., 1]
+    # Construct a tiling of the image plane (squares at this point)
+    X, Y = torch.meshgrid(
+        torch.linspace(x0 - fov / 2, x0 + fov / 2, n),
+        torch.linspace(y0 - fov / 2, y0 + fov / 2, n),
+        indexing="ij",
+    )
+    E = torch.stack((X, Y), dim=-1)
+    # build the upper and lower triangles within the squares of the grid
+    E = torch.cat(
+        (
+            torch.stack((E[:-1, :-1], E[:-1, 1:], E[1:, 1:]), dim=-2),
+            torch.stack((E[:-1, :-1], E[1:, :-1], E[1:, 1:]), dim=-2),
+        ),
+        dim=0,
+    ).reshape(-1, 3, 2)
+
+    i = 0
+    while triangle_area(E[0]) > epsilon**2:
+
+        # Expand the search to neighboring triangles
+        if i > 0:  # no need for neighbors in the first iteration
+            E = torch.vmap(triangle_neighbors)(E)
+            E = E.reshape(-1, 3, 2)
+            E = remove_triangle_duplicates(E)
+            # Upsample the triangles
+            E = torch.vmap(triangle_upsample)(E)
+            E = E.reshape(-1, 3, 2)
+
+        S = raytrace(E[..., 0], E[..., 1])
+        S = torch.stack(S, dim=-1)
+
+        # Identify triangles that contain the source plane point
+        locate = torch.vmap(triangle_contains, in_dims=(0, None))(S, s)
+        E = E[locate]
+        i += 1
+
+    # Rootfind the source plane point in the triangle
+    E = E.sum(dim=1) / 3
+    E = forward_raytrace_rootfind(E[..., 0], E[..., 1], s[0], s[1], raytrace)
+    return E[..., 0], E[..., 1]
 
 
 def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
