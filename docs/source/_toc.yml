@@ -21,7 +21,6 @@ chapters:
       - file: tutorials/InvertLensEquation
       - file: tutorials/Parameters
       - file: tutorials/Simulators
-      - file: tutorials/Playground
       - file: tutorials/Microlensing
   - file: examples/index
     sections:
