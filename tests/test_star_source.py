@@ -18,7 +18,6 @@ def test_star_source():
     )
     theta_x = torch.tensor([0.1])
     theta_y = torch.tensor([0.2])
-    z_s = torch.tensor([0.0])
     # Check if brightness is constant inside source with no limb darkening
     assert src.brightness(theta_x, theta_y, x) == 5.0
     # Check if brightness is zero outside source
