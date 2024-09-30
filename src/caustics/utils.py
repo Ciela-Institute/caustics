@@ -1037,7 +1037,8 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
         chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
     # Test
-    rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))  # fmt: skip
+    expected_improvement = torch.dot(h, hess @ h) + 2 * torch.dot(h, grad)
+    rho = (chi2 - chi2_new) / torch.abs(expected_improvement)  # fmt: skip
 
     # Update
     X = torch.where(rho >= epsilon, X + h, X)
