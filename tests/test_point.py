@@ -6,8 +6,11 @@ from utils import lens_test_helper
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Point
 
+import pytest
 
-def test(sim_source, device, lens_models):
+
+@pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.0])
+def test_point_lens(sim_source, device, lens_models, th_ein):
     atol = 1e-5
     rtol = 1e-5
     z_l = torch.tensor(0.9)
@@ -37,13 +40,7 @@ def test(sim_source, device, lens_models):
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([0.912, -0.442, 1.1])
-    kwargs_ls = [
-        {"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": x[2].item()}
-    ]
+    x = torch.tensor([0.912, -0.442, th_ein])
+    kwargs_ls = [{"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": th_ein}]
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
-
-
-if __name__ == "__main__":
-    test(None)

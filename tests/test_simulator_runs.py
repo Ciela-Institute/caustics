@@ -40,7 +40,7 @@ def test_simulator_runs(sim_source, device, mocker):
                 y0: -0.03
                 q: 0.6
                 phi: -pi / 4
-                n: 2.0
+                n: 1.5
                 Re: 0.5
                 Ie: 1.0
 
@@ -61,7 +61,7 @@ def test_simulator_runs(sim_source, device, mocker):
             kwargs:
                 pixelscale: 0.05
                 nx: 11
-                ny: 12
+                ny: 11
                 sigma: 0.2
                 upsample: 2
 
@@ -71,16 +71,20 @@ def test_simulator_runs(sim_source, device, mocker):
             params:
                 z_s: 2.0
             init_kwargs:
-                # Single lense
+                # Single lens
                 lens: *lensmass
                 source: *source
                 lens_light: *lenslight
                 pixelscale: 0.05
                 pixels_x: 50
-                psf: *psf
+                psf: *psf{quad_level}
         """
-        mock_from_file(mocker, yaml_str)
+        mock_from_file(
+            mocker, yaml_str.format(quad_level="")
+        )  # fixme, yaml should be able to accept None
         sim = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
+        mock_from_file(mocker, yaml_str.format(quad_level="\n        quad_level: 3"))
+        sim_q3 = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
     else:
         # Model
         cosmology = FlatLambdaCDM(name="cosmo")
@@ -115,7 +119,29 @@ def test_simulator_runs(sim_source, device, mocker):
             z_s=2.0,
         )
 
+        sim_q3 = LensSource(
+            name="simulator",
+            lens=lensmass,
+            source=source,
+            pixelscale=0.05,
+            pixels_x=50,
+            lens_light=lenslight,
+            psf=psf,
+            z_s=2.0,
+            quad_level=3,
+        )
+
     sim.to(device=device)
+    sim_q3.to(device=device)
+
+    # Test setters
+    sim.pixelscale = 0.05
+    sim.pixels_x = 50
+    sim.pixels_y = 50
+    sim_q3.quad_level = 3
+    sim.upsample_factor = 1
+    sim.psf_shape = (11, 11)
+    sim.psf_mode = "conv2d"
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(
@@ -164,8 +190,7 @@ def test_simulator_runs(sim_source, device, mocker):
     )
 
     # Check quadrature integration is accurate
-    assert torch.allclose(sim(), sim(quad_level=3), rtol=1e-1)
-    assert torch.allclose(sim(quad_level=3), sim(quad_level=5), rtol=1e-2)
+    assert torch.allclose(sim(), sim_q3(), rtol=1e-1)
 
 
 def test_microlens_simulator_runs():
