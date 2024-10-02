@@ -16,6 +16,7 @@ chapters:
           - file: tutorials/InterfaceIntroduction_oop
           - file: tutorials/InterfaceIntroduction_func
       - file: tutorials/LensZoo
+      - file: tutorials/Microlensing
       - file: tutorials/VisualizeCaustics
       - file: tutorials/MultiplaneDemo
       - file: tutorials/InvertLensEquation
