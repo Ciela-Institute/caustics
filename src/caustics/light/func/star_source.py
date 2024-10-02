@@ -12,4 +12,5 @@ def brightness_star(x0, y0, theta_s, Ie, x, y, gamma=0.0):
     # linear limb darkening
     mu = (1 - impact_parameter**2) ** (1 / 2)
     intensity = where(impact_parameter <= theta_s, Ie * (1 - gamma * (1 - mu)), 0)
+
     return intensity
