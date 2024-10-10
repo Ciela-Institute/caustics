@@ -3,10 +3,13 @@ import yaml
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import MassSheet
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
+
+import pytest
 
 
-def test(sim_source, device, lens_models):
+@pytest.mark.parametrize("convergence", [-1.0, 0.0, 1.0])
+def test_masssheet(sim_source, device, lens_models, convergence):
     if sim_source == "yaml":
         yaml_str = """\
         cosmology: &cosmology
@@ -30,12 +33,17 @@ def test(sim_source, device, lens_models):
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([0.5, 0.0, 0.0, 0.7])
+    x = torch.tensor([0.5, 0.0, 0.0, convergence])
 
-    thx, thy = get_meshgrid(0.01, 10, 10, device=device)
+    thx, thy = meshgrid(0.01, 10, device=device)
 
-    lens.reduced_deflection_angle(thx, thy, z_s, x)
+    ax, ay = lens.reduced_deflection_angle(thx, thy, z_s, x)
 
-    lens.potential(thx, thy, z_s, x)
+    p = lens.potential(thx, thy, z_s, x)
 
-    lens.convergence(thx, thy, z_s, x)
+    c = lens.convergence(thx, thy, z_s, x)
+
+    assert torch.all(torch.isfinite(ax))
+    assert torch.all(torch.isfinite(ay))
+    assert torch.all(torch.isfinite(p))
+    assert torch.all(torch.isfinite(c))

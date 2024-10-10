@@ -54,8 +54,8 @@ def test_params(Sim):
 
 def test_graph():
     sim, _ = setup_simulator()
-    sim.get_graph(True, True)
-    sim.get_graph()
+    sim.graph(True, True)
+    sim.graph()
 
 
 def test_unpack_all_modules_dynamic():

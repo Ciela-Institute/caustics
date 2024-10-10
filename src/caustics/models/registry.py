@@ -31,7 +31,7 @@ class _KindRegistry(MutableMapping[str, "Parametrized | str"]):
         "Pixelated": "caustics.light.pixelated.Pixelated",
         "Sersic": "caustics.light.sersic.Sersic",
     }
-    simulators = {"Lens_Source": "caustics.sims.lens_source.Lens_Source"}
+    simulators = {"LensSource": "caustics.sims.lens_source.LensSource"}
 
     known_kinds = {
         **cosmology,

@@ -4,7 +4,7 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s
+from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
 from .base import ThickLens, NameType, CosmologyType, LensesType
 from ..parametrized import unpack
 from ..packed import Packed
@@ -88,7 +88,8 @@ class Multiplane(ThickLens):
         theta_x, theta_y = x, y
 
         # Store the time delays
-        TD = torch.zeros_like(x)
+        if shapiro_time_delay or geometric_time_delay:
+            TD = torch.zeros_like(x)
 
         for i in lens_planes:
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
@@ -113,7 +114,7 @@ class Multiplane(ThickLens):
             theta_y = theta_y - alpha_y
 
             # Compute time delay
-            tau_ij = (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s)
+            tau_ij = (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s) / days_to_seconds
             if shapiro_time_delay:
                 beta_ij = D * D_s / (D_next * D_is)
                 potential = self.lenses[i].potential(
@@ -344,7 +345,7 @@ class Multiplane(ThickLens):
         Tensor
             Time delay caused by the lensing.
 
-            *Unit: seconds*
+            *Unit: days*
 
         References
         ----------

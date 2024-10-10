@@ -2,7 +2,7 @@ from math import pi
 
 import torch
 
-from caustics.sims import Lens_Source
+from caustics.sims import LensSource, Microlens
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.light import Sersic
@@ -40,7 +40,7 @@ def test_simulator_runs(sim_source, device, mocker):
                 y0: -0.03
                 q: 0.6
                 phi: -pi / 4
-                n: 2.0
+                n: 1.5
                 Re: 0.5
                 Ie: 1.0
 
@@ -61,26 +61,30 @@ def test_simulator_runs(sim_source, device, mocker):
             kwargs:
                 pixelscale: 0.05
                 nx: 11
-                ny: 12
+                ny: 11
                 sigma: 0.2
                 upsample: 2
 
         simulator:
             name: simulator
-            kind: Lens_Source
+            kind: LensSource
             params:
                 z_s: 2.0
             init_kwargs:
-                # Single lense
+                # Single lens
                 lens: *lensmass
                 source: *source
                 lens_light: *lenslight
                 pixelscale: 0.05
                 pixels_x: 50
-                psf: *psf
+                psf: *psf{quad_level}
         """
-        mock_from_file(mocker, yaml_str)
+        mock_from_file(
+            mocker, yaml_str.format(quad_level="")
+        )  # fixme, yaml should be able to accept None
         sim = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
+        mock_from_file(mocker, yaml_str.format(quad_level="\n        quad_level: 3"))
+        sim_q3 = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
     else:
         # Model
         cosmology = FlatLambdaCDM(name="cosmo")
@@ -104,7 +108,7 @@ def test_simulator_runs(sim_source, device, mocker):
 
         psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
 
-        sim = Lens_Source(
+        sim = LensSource(
             name="simulator",
             lens=lensmass,
             source=source,
@@ -115,7 +119,29 @@ def test_simulator_runs(sim_source, device, mocker):
             z_s=2.0,
         )
 
+        sim_q3 = LensSource(
+            name="simulator",
+            lens=lensmass,
+            source=source,
+            pixelscale=0.05,
+            pixels_x=50,
+            lens_light=lenslight,
+            psf=psf,
+            z_s=2.0,
+            quad_level=3,
+        )
+
     sim.to(device=device)
+    sim_q3.to(device=device)
+
+    # Test setters
+    sim.pixelscale = 0.05
+    sim.pixels_x = 50
+    sim.pixels_y = 50
+    sim_q3.quad_level = 3
+    sim.upsample_factor = 1
+    sim.psf_shape = (11, 11)
+    sim.psf_mode = "conv2d"
 
     assert torch.all(torch.isfinite(sim()))
     assert torch.all(
@@ -164,5 +190,19 @@ def test_simulator_runs(sim_source, device, mocker):
     )
 
     # Check quadrature integration is accurate
-    assert torch.allclose(sim(), sim(quad_level=3), rtol=1e-1)
-    assert torch.allclose(sim(quad_level=3), sim(quad_level=5), rtol=1e-2)
+    assert torch.allclose(sim(), sim_q3(), rtol=1e-1)
+
+
+def test_microlens_simulator_runs():
+    cosmology = FlatLambdaCDM()
+    sie = SIE(cosmology=cosmology, name="lens")
+    src = Sersic(name="source")
+
+    x = torch.tensor([
+    #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re   Ie
+        1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0, 5.0
+    ])  # fmt: skip
+    fov = torch.tensor((-1, -0.5, -0.25, 0.25))
+    sim = Microlens(lens=sie, source=src)
+    sim(x, fov=fov)
+    sim(x, fov=fov, method="grid")

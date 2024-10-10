@@ -1,7 +1,15 @@
 from .base import (
     forward_raytrace,
+    triangle_contains,
+    triangle_area,
+    triangle_neighbors,
+    triangle_upsample,
+    triangle_equals,
+    remove_triangle_duplicates,
+    forward_raytrace_rootfind,
     physical_from_reduced_deflection_angle,
     reduced_from_physical_deflection_angle,
+    time_delay_arcsec2_to_days,
 )
 from .sie import reduced_deflection_angle_sie, potential_sie, convergence_sie
 from .point import reduced_deflection_angle_point, potential_point, convergence_point
@@ -52,6 +60,10 @@ from .tnfw import (
     M0_totmass_tnfw,
     concentration_tnfw,
 )
+from .enclosed_mass import (
+    physical_deflection_angle_enclosed_mass,
+    convergence_enclosed_mass,
+)
 
 from .multipole import (
     reduced_deflection_angle_multipole,
@@ -61,8 +73,16 @@ from .multipole import (
 
 __all__ = (
     "forward_raytrace",
+    "triangle_contains",
+    "triangle_area",
+    "triangle_neighbors",
+    "triangle_upsample",
+    "triangle_equals",
+    "remove_triangle_duplicates",
+    "forward_raytrace_rootfind",
     "physical_from_reduced_deflection_angle",
     "reduced_from_physical_deflection_angle",
+    "time_delay_arcsec2_to_days",
     "reduced_deflection_angle_sie",
     "potential_sie",
     "convergence_sie",
@@ -111,4 +131,6 @@ __all__ = (
     "reduced_deflection_angle_multipole",
     "potential_multipole",
     "convergence_multipole",
+    "physical_deflection_angle_enclosed_mass",
+    "convergence_enclosed_mass",
 )

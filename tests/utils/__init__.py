@@ -1,6 +1,7 @@
 """
 Utilities for testing
 """
+
 from typing import Any, Dict, List, Union
 
 import torch
@@ -11,16 +12,17 @@ from lenstronomy.LensModel.lens_model import LensModel
 
 from caustics.lenses import ThinLens, EPL, NFW, ThickLens, PixelatedConvergence
 from caustics.light import Sersic, Pixelated
-from caustics.utils import get_meshgrid
+from caustics.utils import meshgrid
 from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
 from .models import mock_from_file
 
-__all__ = (
-    "mock_from_file",
-)
+__all__ = ("mock_from_file",)
 
-def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None):
+
+def setup_simulator(
+    cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None
+):
     n_pix = 20
 
     class Sim(Simulator):
@@ -39,7 +41,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
             else:
                 self.lens = EPL(self.cosmo, z_l=z_l, name="lens")
             self.sersic = Sersic(name="source")
-            self.thx, self.thy = get_meshgrid(0.04, n_pix, n_pix, device=device)
+            self.thx, self.thy = meshgrid(0.04, n_pix, device=device)
             self.n_pix = n_pix
             self.to(device=device)
 
@@ -88,7 +90,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
         cosmo_params = [_x[0] for _x in cosmo_params]
         lens_params = [_x[0] for _x in lens_params]
         source_params = [_x[0] for _x in source_params]
-    
+
     sim = Sim()
     # Set device when not None
     if device is not None:
@@ -97,7 +99,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
         cosmo_params = [_p.to(device=device) for _p in cosmo_params]
         lens_params = [_p.to(device=device) for _p in lens_params]
         source_params = [_p.to(device=device) for _p in source_params]
-    
+
     return sim, (sim_params, cosmo_params, lens_params, source_params)
 
 
@@ -114,7 +116,6 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
             self.epl = EPL(self.cosmo, z_l=z_l, name="lens")
             self.kappa = PixelatedConvergence(
                 pixel_scale,
-                n_pix,
                 self.cosmo,
                 z_l=z_l,
                 shape=(n_pix, n_pix),
@@ -127,7 +128,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
                 shape=(n_pix, n_pix),
                 name="source",
             )
-            self.thx, self.thy = get_meshgrid(pixel_scale, n_pix, n_pix, device=device)
+            self.thx, self.thy = meshgrid(pixel_scale, n_pix, device=device)
             self.n_pix = n_pix
             self.to(device=device)
 
@@ -162,7 +163,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
         lens_params = [_x[0] for _x in lens_params]
         kappa = kappa[0]
         source = source[0]
-    
+
     sim = Sim()
     # Set device when not None
     if device is not None:
@@ -178,7 +179,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
 def get_default_cosmologies(device=None):
     cosmology = FlatLambdaCDM("cosmo")
     cosmology_ap = FlatLambdaCDM_AP(100 * cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
-    
+
     if device is not None:
         cosmology = cosmology.to(device=device)
     return cosmology, cosmology_ap
@@ -186,7 +187,7 @@ def get_default_cosmologies(device=None):
 
 def setup_grids(res=0.05, n_pix=100, device=None):
     # Caustics setup
-    thx, thy = get_meshgrid(res, n_pix, n_pix, device=device)
+    thx, thy = meshgrid(res, n_pix, device=device)
     if device is not None:
         thx = thx.to(device=device)
         thy = thy.to(device=device)
@@ -211,6 +212,7 @@ def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None)
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
+    print(np.sum(np.abs(1 - alpha_x.cpu().numpy() / alpha_x_ls) > 1e-3))
     assert np.allclose(alpha_x.cpu().numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.cpu().numpy(), alpha_y_ls, rtol, atol)
 

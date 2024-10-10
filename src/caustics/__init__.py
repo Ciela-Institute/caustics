@@ -13,6 +13,7 @@ from .lenses import (
     EPL,
     ExternalShear,
     PixelatedConvergence,
+    PixelatedPotential,
     Multiplane,
     NFW,
     Point,
@@ -23,16 +24,23 @@ from .lenses import (
     MassSheet,
     TNFW,
     Multipole,
+    EnclosedMass,
 )
-from .light import Source, Pixelated, Sersic  # PROBESDataset conflicts with .data
-from .data import HDF5Dataset, IllustrisKappaDataset, PROBESDataset
+from .light import (
+    Source,
+    Pixelated,
+    PixelatedTime,
+    Sersic,
+    StarSource,
+)
 from . import utils
-from .sims import Lens_Source, Simulator
+from .sims import LensSource, Microlens, Simulator
 from .tests import test
 from .models.api import build_simulator
+from . import func
 
 __version__ = VERSION
-__author__ = "Ciela"
+__author__ = "Ciela Institute"
 
 __all__ = [
     "Cosmology",
@@ -45,6 +53,7 @@ __all__ = [
     "EPL",
     "ExternalShear",
     "PixelatedConvergence",
+    "PixelatedPotential",
     "Multiplane",
     "NFW",
     "Point",
@@ -55,15 +64,17 @@ __all__ = [
     "MassSheet",
     "TNFW",
     "Multipole",
+    "EnclosedMass",
     "Source",
     "Pixelated",
+    "PixelatedTime",
     "Sersic",
-    "HDF5Dataset",
-    "IllustrisKappaDataset",
-    "PROBESDataset",
+    "StarSource",
     "utils",
-    "Lens_Source",
+    "LensSource",
+    "Microlens",
     "Simulator",
     "test",
     "build_simulator",
+    "func",
 ]

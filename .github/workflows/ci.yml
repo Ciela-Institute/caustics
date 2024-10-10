@@ -71,4 +71,13 @@ jobs:
           pytest -vvv --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/
 
       - name: Upload coverage reports to Codecov with GitHub Action
+        if:
+          ${{ matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest'}}
         uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true

@@ -10,7 +10,9 @@
 [![Documentation Status](https://readthedocs.org/projects/caustics/badge/?version=latest)](https://caustics.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/caustics.svg)](https://pypi.org/project/caustics/)
 [![coverage](https://img.shields.io/codecov/c/github/Ciela-Institute/caustics)](https://app.codecov.io/gh/Ciela-Institute/caustics)
-[![DOI](https://zenodo.org/badge/521722463.svg)](https://zenodo.org/doi/10.5281/zenodo.10806382)
+[![status](https://joss.theoj.org/papers/995fa98462eb534a32952549ef2244f8/status.svg)](https://joss.theoj.org/papers/995fa98462eb534a32952549ef2244f8)
+[![Zenodo](https://zenodo.org/badge/521722463.svg)](https://zenodo.org/doi/10.5281/zenodo.10806382)
+[![arXiv](https://img.shields.io/badge/arXiv-2406.15542-b31b1b.svg)](https://arxiv.org/abs/2406.15542)
 
 # caustics
 
@@ -45,10 +47,10 @@ x = torch.tensor([
     5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
 ])  # fmt: skip
 
-minisim = caustics.Lens_Source(
+sim = caustics.LensSource(
     lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
 )
-plt.imshow(minisim(x, quad_level=3), origin="lower")
+plt.imshow(sim(x), origin="lower")
 plt.axis("off")
 plt.show()
 ```
@@ -61,7 +63,7 @@ plt.show()
 newx = x.repeat(20, 1)
 newx += torch.normal(mean=0, std=0.1 * torch.ones_like(newx))
 
-images = torch.vmap(minisim)(newx)
+images = torch.vmap(sim)(newx)
 
 fig, axarr = plt.subplots(4, 5, figsize=(20, 16))
 for ax, im in zip(axarr.flatten(), images):
@@ -74,7 +76,7 @@ plt.show()
 ### Automatic Differentiation
 
 ```python
-J = torch.func.jacfwd(minisim)(x)
+J = torch.func.jacfwd(sim)(x)
 
 # Plot the new images
 fig, axarr = plt.subplots(3, 7, figsize=(20, 9))

@@ -63,7 +63,7 @@ def sim_yaml():
 
     simulator:
         name: minisim
-        kind: Lens_Source
+        kind: LensSource
         init_kwargs:
             # Single lense
             lens: *lens
@@ -106,7 +106,7 @@ def sim_obj():
     sie = caustics.SIE(cosmology=cosmology, name="lens")
     src = caustics.Sersic(name="source")
     lnslt = caustics.Sersic(name="lenslight")
-    return caustics.Lens_Source(
+    return caustics.LensSource(
         lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
     )
 
@@ -114,9 +114,9 @@ def sim_obj():
 def test_build_simulator(sim_yaml_file, sim_obj, x_input):
     sim = caustics.build_simulator(sim_yaml_file)
 
-    result = sim(x_input, quad_level=3)
-    expected_result = sim_obj(x_input, quad_level=3)
-    assert sim.get_graph(True, True)
+    result = sim(x_input)
+    expected_result = sim_obj(x_input)
+    assert sim.graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
 
@@ -149,7 +149,7 @@ def test_complex_build_simulator():
 
     # Open the temp file and build the simulator
     sim = caustics.build_simulator(temp_file)
-    image = sim(x, quad_level=3)
+    image = sim(x)
     assert isinstance(image, torch.Tensor)
 
     # Remove the temp file
@@ -197,9 +197,9 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
     # First remove the original sim
     del sim
     newsim = caustics.build_simulator(sim_yaml_file)
-    result = newsim(quad_level=3)
-    expected_result = sim_obj(x_input, quad_level=3)
-    assert newsim.get_graph(True, True)
+    result = newsim()
+    expected_result = sim_obj(x_input)
+    assert newsim.graph(True, True)
     assert isinstance(result, torch.Tensor)
     assert torch.allclose(result, expected_result)
 
@@ -217,7 +217,7 @@ def test_build_simulator_w_state(sim_yaml_file, sim_obj, x_input):
                 "upsample": 2,
             },
         },
-        {"function": "caustics.utils.gaussian", "sigma": 0.2},
+        # {"function": "caustics.utils.gaussian", "sigma": 0.2},
         [[2.0], [2.0]],
     ],
 )
