@@ -19,12 +19,12 @@ def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
         x-coordinate of the center of the lens.
     y0: Tensor
         y-coordinate of the center of the lens.
-    m: Tensor, int
-        The multipole order.
+    m: Tensor
+        The multipole order(s).
     a_m: Tensor
-        The multipole amplitude.
+        The multipole amplitude(s).
     phi_m: Tensor
-        The multipole orientation.
+        The multipole orientation(s).
 
     Returns
     -------
@@ -35,15 +35,18 @@ def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
 
-    phi = torch.arctan2(y, x)
+    phi = torch.arctan2(y, x).reshape(1, -1)
+    m = m.reshape(-1, 1)
     ax = torch.cos(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) + torch.sin(
         phi
     ) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
+    ax = ax.sum(dim=0).reshape(x.shape)
     ay = torch.sin(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) - torch.cos(
         phi
     ) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
+    ay = ay.sum(dim=0).reshape(y.shape)
 
-    return ax, ay  # derotate(ax, ay, phi)
+    return ax, ay
 
 
 def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
@@ -62,12 +65,12 @@ def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
         x-coordinate of the center of the lens.
     y0: Tensor
         y-coordinate of the center of the lens.
-    m: Tensor, int
-        The multipole order.
+    m: Tensor
+        The multipole order(s).
     a_m: Tensor
-        The multipole amplitude.
+        The multipole amplitude(s).
     phi_m: Tensor
-        The multipole orientation.
+        The multipole orientation(s).
 
     Returns
     -------
@@ -81,8 +84,12 @@ def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
     r = torch.sqrt(x**2 + y**2)
-    phi = torch.arctan2(y, x)
-    return r * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m))
+    phi = torch.arctan2(y, x).reshape(1, -1)
+    m = m.reshape(-1, 1)
+
+    potential = r * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m))
+    potential = potential.sum(dim=0).reshape(x.shape)
+    return potential
 
 
 def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
@@ -101,12 +108,12 @@ def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
         x-coordinate of the center of the lens.
     y0: Tensor
         y-coordinate of the center of the lens.
-    m: Tensor, int
-        The multipole order.
+    m: Tensor
+        The multipole order(s).
     a_m: Tensor
-        The multipole amplitude.
+        The multipole amplitude(s).
     phi_m: Tensor
-        The multipole orientation.
+        The multipole orientation(s).
 
     Returns
     -------
@@ -120,5 +127,9 @@ def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
     r = torch.sqrt(x**2 + y**2)
-    phi = torch.arctan2(y, x)
-    return 1 / (2 * r) * a_m * torch.cos(m * (phi - phi_m))
+    phi = torch.arctan2(y, x).reshape(1, -1)
+    m = m.reshape(-1, 1)
+
+    convergence = 1 / (2 * r) * a_m * torch.cos(m * (phi - phi_m))
+    convergence = convergence.sum(dim=0).reshape(x.shape)
+    return convergence

@@ -1,6 +1,7 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
+import torch
 from torch import Tensor
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
@@ -21,6 +22,8 @@ class Multipole(ThinLens):
         Identifier for the lens instance.
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
+    m: Union[Tensor, int, tuple[int]]
+        Order of multipole(s).
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
     x0, y0: Optional[Union[Tensor, float]]
@@ -29,16 +32,15 @@ class Multipole(ThinLens):
         Strength of multipole.
     phi_m: Optional[Union[Tensor, float]]
         Orientation of multiple.
-    m: Optional[Union[Tensor, int]]
-        Order of multipole.
 
     """
 
-    _null_params = {"x0": 0.0, "y0": 0.0, "a_m": 0.1, "phi_m": 0.0, "m": 3}
+    _null_params = {"x0": 0.0, "y0": 0.0, "a_m": 1.0, "phi_m": 0.0, "m": 2}
 
     def __init__(
         self,
         cosmology: CosmologyType,
+        m: Annotated[Union[Tensor, int, tuple[int]], "The Multipole moment(s) m"],
         z_l: ZLType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
@@ -54,20 +56,38 @@ class Multipole(ThinLens):
             "The orientation angle of the multipole",
             True,
         ] = None,
-        m: Annotated[
-            Optional[Union[Tensor, int]], "The Multipole moment m", True
-        ] = None,
         name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
         self.add_param("x0", x0)
         self.add_param("y0", y0)
-        self.add_param("a_m", a_m)
-        self.add_param("phi_m", phi_m)
-        if type(m) is not type(None) and m < 2:
-            raise ValueError("Multipole order must be greater or equal to 2")
-        self.add_param("m", m)
+        self.m = torch.as_tensor(m, dtype=torch.int32)
+        assert torch.all(self.m >= 2).item(), "Multipole order must be >= 2"
+        self.add_param("a_m", a_m, self.m.shape)
+        self.add_param("phi_m", phi_m, self.m.shape)
+
+    def to(self, device: torch.device = None, dtype: torch.dtype = None):
+        """
+        Move the lens to the specified device.
+
+        Parameters
+        ----------
+        device: torch.device
+            The device to move the lens to.
+
+        dtype: torch.dtype
+            The data type to cast the lens to.
+
+        Returns
+        -------
+        Multipole
+            The lens object.
+
+        """
+        super().to(device, dtype)
+        self.m = self.m.to(device, torch.int32)
+        return self
 
     @unpack
     def reduced_deflection_angle(
@@ -82,7 +102,6 @@ class Multipole(ThinLens):
         y0: Optional[Tensor] = None,
         a_m: Optional[Tensor] = None,
         phi_m: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -123,7 +142,7 @@ class Multipole(ThinLens):
         Equation (B11) and (B12) https://arxiv.org/pdf/1307.4220, Xu et al. 2014
 
         """
-        return func.reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y)
+        return func.reduced_deflection_angle_multipole(x0, y0, self.m, a_m, phi_m, x, y)
 
     @unpack
     def potential(
@@ -138,7 +157,6 @@ class Multipole(ThinLens):
         y0: Optional[Tensor] = None,
         a_m: Optional[Tensor] = None,
         phi_m: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -174,7 +192,7 @@ class Multipole(ThinLens):
         Equation (B11) and (B3) https://arxiv.org/pdf/1307.4220, Xu et al. 2014
 
         """
-        return func.potential_multipole(x0, y0, m, a_m, phi_m, x, y)
+        return func.potential_multipole(x0, y0, self.m, a_m, phi_m, x, y)
 
     @unpack
     def convergence(
@@ -189,7 +207,6 @@ class Multipole(ThinLens):
         y0: Optional[Tensor] = None,
         a_m: Optional[Tensor] = None,
         phi_m: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         """
@@ -225,4 +242,4 @@ class Multipole(ThinLens):
         Equation (B10) and (B3) https://arxiv.org/pdf/1307.4220, Xu et al. 2014
 
         """
-        return func.convergence_multipole(x0, y0, m, a_m, phi_m, x, y)
+        return func.convergence_multipole(x0, y0, self.m, a_m, phi_m, x, y)
