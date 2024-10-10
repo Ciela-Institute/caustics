@@ -56,6 +56,7 @@ class PixelatedConvergence(ThinLens):
             Literal["zero", "circular", "reflect", "tile"],
             "Specifies the type of padding",
         ] = "zero",
+        window_kernel: Annotated[float, "Amount of kernel to be windowed"] = 1.0 / 8.0,
         name: NameType = None,
     ):
         """Strong lensing with user provided kappa map
@@ -123,6 +124,11 @@ class PixelatedConvergence(ThinLens):
 
             Generally you should use either "zero" or "tile".
 
+        window_kernel: float, optional
+            Amount of kernel to be windowed, specify the fraction of the kernel
+            size from which a linear window scaling will ensure the edges go to
+            zero for the purpose of FFT stability. Default is 1/8.
+
         """
 
         super().__init__(cosmology, z_l, name=name)
@@ -149,10 +155,15 @@ class PixelatedConvergence(ThinLens):
 
         # Construct kernels
         self.ax_kernel, self.ay_kernel, self.potential_kernel = (
-            func.build_kernels_pixelated_convergence(
-                self.pixelscale, self.n_pix, 0 if padding == "zero" else 8
-            )
+            func.build_kernels_pixelated_convergence(self.pixelscale, self.n_pix)
         )
+        # Window the kernels if needed
+        if padding != "zero" and convolution_mode == "fft":
+            window = func.build_window_pixelated_convergence(
+                window_kernel, self.ax_kernel.shape
+            )
+            self.ax_kernel = self.ax_kernel * window
+            self.ay_kernel = self.ay_kernel * window
 
         self.potential_kernel_tilde = None
         self.ax_kernel_tilde = None

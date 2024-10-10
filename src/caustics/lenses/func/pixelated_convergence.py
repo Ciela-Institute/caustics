@@ -5,7 +5,7 @@ from scipy.fft import next_fast_len
 from ...utils import safe_divide, safe_log, meshgrid, interp2d
 
 
-def build_kernels_pixelated_convergence(pixelscale, n_pix, window=0):
+def build_kernels_pixelated_convergence(pixelscale, n_pix):
     """
     Build the kernels for the pixelated convergence.
 
@@ -35,30 +35,42 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix, window=0):
 
     """
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
-    # Shift to center kernels within pixel at index n_pix
-    # x_mg = x_mg - pixelscale / 2
-    # y_mg = y_mg - pixelscale / 2
 
     d2 = x_mg**2 + y_mg**2
     potential_kernel = safe_log(d2.sqrt())
     ax_kernel = safe_divide(x_mg, d2)
     ay_kernel = safe_divide(y_mg, d2)
 
-    # Set centers of kernels to zero
-    # potential_kernel[..., n_pix, n_pix] = 0
-    # ax_kernel[..., n_pix, n_pix] = 0
-    # ay_kernel[..., n_pix, n_pix] = 0
-
-    # Window the deflection angle kernels for stable FFT
-    if window > 0:
-        ax_kernel = ax_kernel * torch.clip(
-            window * (x_mg.max() - d2.sqrt()) / x_mg.max(), 0, 1
-        )
-        ay_kernel = ay_kernel * torch.clip(
-            window * (y_mg.max() - d2.sqrt()) / y_mg.max(), 0, 1
-        )
-
     return ax_kernel, ay_kernel, potential_kernel
+
+
+def build_window_pixelated_convergence(window, kernel_shape):
+    """
+    Window the kernel for stable FFT.
+
+    Parameters
+    ----------
+    window: float
+        The window to apply as a fraction of the image width. For example a
+        window of 1/4 will set the kernel to start decreasing at 1/4 of the
+        image width, and then linearly go to zero.
+
+    kernel_shape: tuple
+        The shape of the kernel to be windowed.
+
+    Returns
+    -------
+    Tensor
+        The window to multiply with the kernel.
+
+    """
+    x, y = torch.meshgrid(
+        torch.linspace(-1, 1, kernel_shape[-1]),
+        torch.linspace(-1, 1, kernel_shape[-2]),
+        indexing="xy",
+    )
+    r = (x**2 + y**2).sqrt()
+    return torch.clip((1 - r) / window, 0, 1)
 
 
 def _fft_size(n_pix):
