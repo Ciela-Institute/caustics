@@ -127,7 +127,8 @@ class PixelatedConvergence(ThinLens):
         window_kernel: float, optional
             Amount of kernel to be windowed, specify the fraction of the kernel
             size from which a linear window scaling will ensure the edges go to
-            zero for the purpose of FFT stability. Default is 1/8.
+            zero for the purpose of FFT stability. Set to 0 for no windowing.
+            Default is 1/8.
 
         """
 
@@ -158,7 +159,7 @@ class PixelatedConvergence(ThinLens):
             func.build_kernels_pixelated_convergence(self.pixelscale, self.n_pix)
         )
         # Window the kernels if needed
-        if padding != "zero" and convolution_mode == "fft":
+        if padding != "zero" and convolution_mode == "fft" and window_kernel > 0:
             window = func.build_window_pixelated_convergence(
                 window_kernel, self.ax_kernel.shape
             )

@@ -100,7 +100,7 @@ def _fft2_padded(x, n_pix, padding: str):
 
     if padding == "zero":
         pass
-    elif padding in ["circular", "reflect"]:
+    elif padding in ["reflect", "circular"]:
         x = F.pad(x[None, None], (0, n_pix - 1, 0, n_pix - 1), mode=padding).squeeze()
     elif padding == "tile":
         x = torch.tile(x, (2, 2))
