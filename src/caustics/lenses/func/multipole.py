@@ -37,6 +37,8 @@ def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
 
     phi = torch.arctan2(y, x).reshape(1, -1)
     m = m.reshape(-1, 1)
+    a_m = a_m.reshape(-1, 1)
+    phi_m = phi_m.reshape(-1, 1)
     ax = torch.cos(phi) * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m)) + torch.sin(
         phi
     ) * m * a_m / (1 - m**2) * torch.sin(m * (phi - phi_m))
@@ -83,9 +85,11 @@ def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
 
     """
     x, y = translate_rotate(x, y, x0, y0)
-    r = torch.sqrt(x**2 + y**2)
+    r = torch.sqrt(x**2 + y**2).reshape(1, -1)
     phi = torch.arctan2(y, x).reshape(1, -1)
     m = m.reshape(-1, 1)
+    a_m = a_m.reshape(-1, 1)
+    phi_m = phi_m.reshape(-1, 1)
 
     potential = r * a_m / (1 - m**2) * torch.cos(m * (phi - phi_m))
     potential = potential.sum(dim=0).reshape(x.shape)
@@ -126,9 +130,11 @@ def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
 
     """
     x, y = translate_rotate(x, y, x0, y0)
-    r = torch.sqrt(x**2 + y**2)
+    r = torch.sqrt(x**2 + y**2).reshape(1, -1)
     phi = torch.arctan2(y, x).reshape(1, -1)
     m = m.reshape(-1, 1)
+    a_m = a_m.reshape(-1, 1)
+    phi_m = phi_m.reshape(-1, 1)
 
     convergence = 1 / (2 * r) * a_m * torch.cos(m * (phi - phi_m))
     convergence = convergence.sum(dim=0).reshape(x.shape)

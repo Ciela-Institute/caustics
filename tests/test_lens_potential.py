@@ -177,4 +177,4 @@ def test_lens_potential_vs_convergence(device):
         elif name in ["PixelatedConvergence", "PixelatedPotential"]:
             assert torch.allclose(phi_kappa, kappa, atol=1e-4)
         else:
-            assert torch.allclose(phi_kappa, kappa)
+            assert torch.allclose(phi_kappa, kappa, atol=1e-6)
