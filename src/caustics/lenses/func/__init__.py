@@ -65,6 +65,12 @@ from .enclosed_mass import (
     convergence_enclosed_mass,
 )
 
+from .multipole import (
+    reduced_deflection_angle_multipole,
+    potential_multipole,
+    convergence_multipole,
+)
+
 __all__ = (
     "forward_raytrace",
     "triangle_contains",
@@ -122,6 +128,9 @@ __all__ = (
     "M0_scalemass_tnfw",
     "M0_totmass_tnfw",
     "concentration_tnfw",
+    "reduced_deflection_angle_multipole",
+    "potential_multipole",
+    "convergence_multipole",
     "physical_deflection_angle_enclosed_mass",
     "convergence_enclosed_mass",
 )

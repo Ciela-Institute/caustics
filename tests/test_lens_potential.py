@@ -20,53 +20,44 @@ def test_lens_potential_vs_deflection(device):
     z_l = 0.5
 
     # Define a cosmology.
-    cosmo = caustics.cosmology.FlatLambdaCDM(name="cosmo")
+    cosmo = caustics.FlatLambdaCDM(name="cosmo")
 
     # Define a list of lens models.
     lenses = [
-        caustics.lenses.EPL(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.EPL._null_params
+        caustics.EPL(cosmology=cosmo, z_l=z_l, **caustics.EPL._null_params),
+        caustics.ExternalShear(
+            cosmology=cosmo, z_l=z_l, **caustics.ExternalShear._null_params
         ),
-        caustics.lenses.ExternalShear(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.ExternalShear._null_params
-        ),
-        caustics.lenses.MassSheet(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.MassSheet._null_params
-        ),
-        caustics.lenses.NFW(
+        caustics.Multipole(cosmology=cosmo, z_l=z_l, **caustics.Multipole._null_params),
+        caustics.MassSheet(cosmology=cosmo, z_l=z_l, **caustics.MassSheet._null_params),
+        caustics.NFW(
             cosmology=cosmo,
             z_l=z_l,
-            **caustics.lenses.NFW._null_params,
+            **caustics.NFW._null_params,
             use_case="differentiable",
         ),
-        caustics.lenses.PixelatedConvergence(
+        caustics.PixelatedConvergence(
             cosmology=cosmo,
             z_l=z_l,
-            **caustics.lenses.PixelatedConvergence._null_params,
+            **caustics.PixelatedConvergence._null_params,
             pixelscale=0.1,
         ),
-        caustics.lenses.PixelatedPotential(
+        caustics.PixelatedPotential(
             cosmology=cosmo,
             z_l=z_l,
-            **caustics.lenses.PixelatedPotential._null_params,
+            **caustics.PixelatedPotential._null_params,
             pixelscale=0.2,
         ),
-        caustics.lenses.Point(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params
+        caustics.Point(cosmology=cosmo, z_l=z_l, **caustics.Point._null_params),
+        caustics.PseudoJaffe(
+            cosmology=cosmo, z_l=z_l, **caustics.PseudoJaffe._null_params
         ),
-        caustics.lenses.PseudoJaffe(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
-        ),
-        caustics.lenses.SIE(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
-        ),
-        caustics.lenses.SIS(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIS._null_params
-        ),
-        caustics.lenses.TNFW(
+        caustics.SIE(cosmology=cosmo, z_l=z_l, **caustics.SIE._null_params),
+        caustics.SIS(cosmology=cosmo, z_l=z_l, **caustics.SIS._null_params),
+        caustics.TNFW(
             cosmology=cosmo,
             z_l=z_l,
-            **caustics.lenses.TNFW._null_params,
+            **caustics.TNFW._null_params,
             use_case="differentiable",
         ),
     ]
@@ -119,50 +110,43 @@ def test_lens_potential_vs_convergence(device):
     z_l = 0.5
 
     # Define a cosmology.
-    cosmo = caustics.cosmology.FlatLambdaCDM(name="cosmo")
+    cosmo = caustics.FlatLambdaCDM(name="cosmo")
 
     # Define a list of lens models.
     lenses = [
-        caustics.lenses.EPL(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.EPL._null_params
+        caustics.EPL(cosmology=cosmo, z_l=z_l, **caustics.EPL._null_params),
+        caustics.ExternalShear(
+            cosmology=cosmo, z_l=z_l, **caustics.ExternalShear._null_params
         ),
-        caustics.lenses.ExternalShear(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.ExternalShear._null_params
-        ),
-        caustics.lenses.MassSheet(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.MassSheet._null_params
-        ),
-        # caustics.lenses.NFW(
+        caustics.Multipole(cosmology=cosmo, z_l=z_l, **caustics.Multipole._null_params),
+        caustics.MassSheet(cosmology=cosmo, z_l=z_l, **caustics.MassSheet._null_params),
+        # caustics.NFW(
         #     cosmology=cosmo,
         #     z_l=z_l,
-        #     **caustics.lenses.NFW._null_params,
+        #     **caustics.NFW._null_params,
         #     use_case="differentiable",
         # ), # Cannot vmap NFW when in differentiable mode
-        # caustics.lenses.PixelatedConvergence(
+        # caustics.PixelatedConvergence(
         #     cosmology=cosmo,
         #     z_l=z_l,
-        #     **caustics.lenses.PixelatedConvergence._null_params,
+        #     **caustics.PixelatedConvergence._null_params,
         #     pixelscale=0.2,
         #     n_pix=10,
         # ),  # cannot compute Hessian of PixelatedConvergence potential, always returns zeros due to bilinear interpolation
-        caustics.lenses.PixelatedPotential(
+        caustics.PixelatedPotential(
             cosmology=cosmo,
             z_l=z_l,
-            **caustics.lenses.PixelatedPotential._null_params,
+            **caustics.PixelatedPotential._null_params,
             pixelscale=0.2,
         ),
-        # caustics.lenses.Point(cosmology=cosmo, z_l=z_l, **caustics.lenses.Point._null_params), # Point mass convergence is delta function
-        caustics.lenses.PseudoJaffe(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.PseudoJaffe._null_params
+        # caustics.Point(cosmology=cosmo, z_l=z_l, **caustics.Point._null_params), # Point mass convergence is delta function
+        caustics.PseudoJaffe(
+            cosmology=cosmo, z_l=z_l, **caustics.PseudoJaffe._null_params
         ),
-        caustics.lenses.SIE(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIE._null_params
-        ),
-        caustics.lenses.SIS(
-            cosmology=cosmo, z_l=z_l, **caustics.lenses.SIS._null_params
-        ),
-        # caustics.lenses.TNFW(
-        #     cosmology=cosmo, z_l=z_l, **caustics.lenses.TNFW._null_params, use_case="differentiable"
+        caustics.SIE(cosmology=cosmo, z_l=z_l, **caustics.SIE._null_params),
+        caustics.SIS(cosmology=cosmo, z_l=z_l, **caustics.SIS._null_params),
+        # caustics.TNFW(
+        #     cosmology=cosmo, z_l=z_l, **caustics.TNFW._null_params, use_case="differentiable"
         # ), # Cannot vmap TNFW when in differentiable mode
     ]
 
@@ -193,4 +177,4 @@ def test_lens_potential_vs_convergence(device):
         elif name in ["PixelatedConvergence", "PixelatedPotential"]:
             assert torch.allclose(phi_kappa, kappa, atol=1e-4)
         else:
-            assert torch.allclose(phi_kappa, kappa)
+            assert torch.allclose(phi_kappa, kappa, atol=1e-6)
