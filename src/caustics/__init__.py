@@ -23,6 +23,7 @@ from .lenses import (
     SinglePlane,
     MassSheet,
     TNFW,
+    Multipole,
     EnclosedMass,
 )
 from .light import (
@@ -62,6 +63,7 @@ __all__ = [
     "SinglePlane",
     "MassSheet",
     "TNFW",
+    "Multipole",
     "EnclosedMass",
     "Source",
     "Pixelated",
