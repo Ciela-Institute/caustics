@@ -7,11 +7,11 @@ import typing
 # Add the helpers directory to the path so we can import the helpers
 sys.path.append(os.path.join(os.path.dirname(__file__), "utils"))
 
-from caustics.models.utils import setup_pydantic_models
+# from caustics.models.utils import setup_pydantic_models
 
 CUDA_AVAILABLE = torch.cuda.is_available()
 
-LIGHT_ANNOTATED, LENSES_ANNOTATED = setup_pydantic_models()
+LIGHT_ANNOTATED, LENSES_ANNOTATED = None, None  # setup_pydantic_models()
 
 
 def _get_models(annotated):

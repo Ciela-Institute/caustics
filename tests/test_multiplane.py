@@ -216,7 +216,7 @@ def test_params(device):
 
     # Test that we can pass a dictionary
     params = {
-        f"plane_{p}": torch.randn(pixels, pixels, device=device)
+        f"plane_{p}": [torch.randn(pixels, pixels, device=device)]
         for p in range(n_planes)
     }
 

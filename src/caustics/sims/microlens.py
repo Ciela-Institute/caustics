@@ -1,7 +1,7 @@
 from typing import Optional, Annotated, Union, Literal
 import torch
 from torch import Tensor
-from caskade import Module, forward
+from caskade import Module, forward, Param
 
 from .simulator import NameType
 from ..lenses.base import Lens
@@ -61,7 +61,7 @@ class Microlens(Module):
         self.lens = lens
         self.source = source
 
-        self.add_param("z_s", z_s)
+        self.z_s = Param("z_s", z_s)
 
     @forward
     def __call__(

@@ -35,9 +35,8 @@ from .light import (
     StarSource,
 )
 from . import utils
-from .sims import LensSource, Microlens
+from .sims import LensSource, Microlens, build_simulator
 from .tests import test
-from .models.api import build_simulator
 from . import func
 
 __version__ = VERSION

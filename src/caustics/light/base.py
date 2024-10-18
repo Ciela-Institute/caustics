@@ -15,7 +15,7 @@ class Source(Module):
     in a strong gravitational lensing system.
     It provides the basic structure and required methods
     that any derived source class should implement.
-    The Source class inherits from the Parametrized class,
+    The Source class inherits from the Module class,
     implying that it contains parameters that can
     be optimized or manipulated.
 
