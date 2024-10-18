@@ -2,11 +2,10 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from ..utils import interp2d
 from .base import Source, NameType
-from ..parametrized import unpack
-from ..packed import Packed
 
 __all__ = ("Pixelated",)
 
@@ -116,23 +115,20 @@ class Pixelated(Source):
                 f"shape must be specify 2D or 3D tensors. Received shape={shape}"
             )
         super().__init__(name=name)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("image", image, shape)
-        self.add_param("pixelscale", pixelscale)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
+        self.image = Param("image", image, shape)
+        self.pixelscale = Param("pixelscale", pixelscale)
 
-    @unpack
+    @forward
     def brightness(
         self,
         x,
         y,
-        *args,
-        params: Optional["Packed"] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         image: Optional[Tensor] = None,
         pixelscale: Optional[Tensor] = None,
-        **kwargs,
     ):
         """
         Implements the `brightness` method for `Pixelated`.

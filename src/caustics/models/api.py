@@ -3,11 +3,11 @@ import yaml
 from pathlib import Path
 from typing import Union
 
-from ..sims.simulator import Simulator
+from caskade import Module
 from ..io import from_file
 
 
-def build_simulator(config_path: Union[str, Path]) -> Simulator:
+def build_simulator(config_path: Union[str, Path]) -> Module:
     """
     Build a simulator from the configuration
     """

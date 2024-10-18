@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated, Literal
 
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import ThinLens, NameType, CosmologyType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 DELTA = 200.0
@@ -156,10 +155,10 @@ class NFW(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("m", m)
-        self.add_param("c", c)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
+        self.m = Param("m", m)
+        self.c = Param("c", c)
         self.s = s
         if use_case == "batchable":
             self._f = func._f_batchable_nfw
@@ -172,17 +171,12 @@ class NFW(ThinLens):
         else:
             raise ValueError("use case should be one of: batchable, differentiable")
 
-    @unpack
+    @forward
     def get_scale_radius(
         self,
-        *args,
-        params: Optional[Packed] = None,
         z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
         m: Optional[Tensor] = None,
         c: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Calculate the scale radius of the lens.
@@ -217,20 +211,14 @@ class NFW(ThinLens):
             *Unit: Mpc*
 
         """
-        critical_density = self.cosmology.critical_density(z_l, params)
+        critical_density = self.cosmology.critical_density(z_l)
         return func.scale_radius_nfw(critical_density, m, c, DELTA)
 
-    @unpack
+    @forward
     def get_scale_density(
         self,
-        *args,
-        params: Optional["Packed"] = None,
         z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
         c: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Calculate the scale density of the lens.
@@ -258,23 +246,20 @@ class NFW(ThinLens):
             *Unit: Msun/Mpc^3*
 
         """
-        critical_density = self.cosmology.critical_density(z_l, params)
+        critical_density = self.cosmology.critical_density(z_l)
         return func.scale_density_nfw(critical_density, c, DELTA)
 
-    @unpack
+    @forward
     def physical_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
         z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         m: Optional[Tensor] = None,
         c: Optional[Tensor] = None,
-        **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the physical deflection angle.
@@ -312,26 +297,23 @@ class NFW(ThinLens):
             *Unit: arcsec*
 
         """
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
-        critical_density = self.cosmology.critical_density(z_l, params)
+        d_l = self.cosmology.angular_diameter_distance(z_l)
+        critical_density = self.cosmology.critical_density(z_l)
         return func.physical_deflection_angle_nfw(
             x0, y0, m, c, critical_density, d_l, x, y, _h=self._h, DELTA=DELTA, s=self.s
         )
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
         z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         m: Optional[Tensor] = None,
         c: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
@@ -364,11 +346,9 @@ class NFW(ThinLens):
             *Unit: unitless*
 
         """
-        critical_surface_density = self.cosmology.critical_surface_density(
-            z_l, z_s, params
-        )
-        critical_density = self.cosmology.critical_density(z_l, params)
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s)
+        critical_density = self.cosmology.critical_density(z_l)
+        d_l = self.cosmology.angular_diameter_distance(z_l)
         return func.convergence_nfw(
             critical_surface_density,
             critical_density,
@@ -384,20 +364,17 @@ class NFW(ThinLens):
             s=self.s,
         )
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
         z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         m: Optional[Tensor] = None,
         c: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -430,11 +407,9 @@ class NFW(ThinLens):
             *Unit: arcsec^2*
 
         """
-        critical_surface_density = self.cosmology.critical_surface_density(
-            z_l, z_s, params
-        )
-        critical_density = self.cosmology.critical_density(z_l, params)
-        d_l = self.cosmology.angular_diameter_distance(z_l, params)
+        critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s)
+        critical_density = self.cosmology.critical_density(z_l)
+        d_l = self.cosmology.angular_diameter_distance(z_l)
         return func.potential_nfw(
             critical_surface_density,
             critical_density,

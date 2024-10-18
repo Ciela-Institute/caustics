@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import Source, NameType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("Sersic",)
@@ -165,24 +164,22 @@ class Sersic(Source):
 
         """
         super().__init__(name=name)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("q", q)
-        self.add_param("phi", phi)
-        self.add_param("n", n)
-        self.add_param("Re", Re)
-        self.add_param("Ie", Ie)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
+        self.q = Param("q", q)
+        self.phi = Param("phi", phi)
+        self.n = Param("n", n)
+        self.Re = Param("Re", Re)
+        self.Ie = Param("Ie", Ie)
         self.s = s
 
         self.lenstronomy_k_mode = use_lenstronomy_k
 
-    @unpack
+    @forward
     def brightness(
         self,
         x,
         y,
-        *args,
-        params: Optional["Packed"] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         q: Optional[Tensor] = None,
@@ -190,7 +187,6 @@ class Sersic(Source):
         n: Optional[Tensor] = None,
         Re: Optional[Tensor] = None,
         Ie: Optional[Tensor] = None,
-        **kwargs,
     ):
         """
         Implements the `brightness` method for `Sersic`. The brightness at a given point is

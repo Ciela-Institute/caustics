@@ -3,10 +3,9 @@ from typing import Optional, Union, Annotated
 
 import torch
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("Multipole",)
@@ -60,12 +59,12 @@ class Multipole(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
         self.m = torch.as_tensor(m, dtype=torch.int32)
         assert torch.all(self.m >= 2).item(), "Multipole order must be >= 2"
-        self.add_param("a_m", a_m, self.m.shape)
-        self.add_param("phi_m", phi_m, self.m.shape)
+        self.a_m = Param("a_m", a_m, self.m.shape)
+        self.phi_m = Param("phi_m", phi_m, self.m.shape)
 
     def to(self, device: torch.device = None, dtype: torch.dtype = None):
         """
@@ -89,20 +88,16 @@ class Multipole(ThinLens):
         self.m = self.m.to(device, torch.int32)
         return self
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         a_m: Optional[Tensor] = None,
         phi_m: Optional[Tensor] = None,
-        **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the multipole.
@@ -144,20 +139,16 @@ class Multipole(ThinLens):
         """
         return func.reduced_deflection_angle_multipole(x0, y0, self.m, a_m, phi_m, x, y)
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         a_m: Optional[Tensor] = None,
         phi_m: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the lensing potential of the multiplane.
@@ -194,20 +185,16 @@ class Multipole(ThinLens):
         """
         return func.potential_multipole(x0, y0, self.m, a_m, phi_m, x, y)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         a_m: Optional[Tensor] = None,
         phi_m: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Calculate the projected mass density of the multipole.

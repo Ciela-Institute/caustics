@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("Point",)
@@ -117,24 +116,20 @@ class Point(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("th_ein", th_ein)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
+        self.th_ein = Param("th_ein", th_ein)
         self.s = s
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         th_ein: Optional[Tensor] = None,
-        **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -174,19 +169,15 @@ class Point(ThinLens):
         """
         return func.reduced_deflection_angle_point(x0, y0, th_ein, x, y, self.s)
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         th_ein: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -221,19 +212,15 @@ class Point(ThinLens):
         """
         return func.potential_point(x0, y0, th_ein, x, y, self.s)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         th_ein: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).

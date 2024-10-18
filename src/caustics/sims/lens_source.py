@@ -5,8 +5,9 @@ from torch.nn.functional import avg_pool2d, conv2d
 from typing import Optional, Annotated, Literal, Union
 import torch
 from torch import Tensor
+from caskade import Module, forward, Param
 
-from .simulator import Simulator, NameType
+from .simulator import NameType
 from ..utils import (
     meshgrid,
     gaussian_quadrature_grid,
@@ -19,7 +20,7 @@ from ..light.base import Source
 __all__ = ("LensSource",)
 
 
-class LensSource(Simulator):
+class LensSource(Module):
     """Lens image of a source.
 
     Straightforward simulator to sample a lensed image of a source object.
@@ -161,10 +162,10 @@ class LensSource(Simulator):
         self._psf_shape = psf.shape if psf is not None else psf_shape
 
         # Build parameters
-        self.add_param("z_s", z_s)
-        self.add_param("psf", psf, self.psf_shape)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
+        self.z_s = Param("z_s", z_s)
+        self.psf = Param("psf", psf, self.psf_shape)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
         self._pixelscale = pixelscale
 
         # Image grid
@@ -306,13 +307,17 @@ class LensSource(Simulator):
             ..., : self._s[0], : self._s[1]
         ]
 
-    def forward(
+    @forward
+    def __call__(
         self,
-        params,
         source_light=True,
         lens_light=True,
         lens_source=True,
         psf_convolve=True,
+        z_s=None,
+        psf=None,
+        x0=None,
+        y0=None,
     ):
         """
         forward function
@@ -330,7 +335,6 @@ class LensSource(Simulator):
         psf_convolve: boolean
             when true the image will be convolved with the psf
         """
-        z_s, psf, x0, y0 = self.unpack(params)
 
         # Automatically turn off light for missing objects
         if self.source is None:
@@ -346,12 +350,12 @@ class LensSource(Simulator):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = self.lens.raytrace(*grid, z_s, params)
-                mu_fine = self.source.brightness(bx, by, params)
+                bx, by = self.lens.raytrace(*grid, z_s)
+                mu_fine = self.source.brightness(bx, by)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
             else:
                 # Source is imaged without lensing
-                mu_fine = self.source.brightness(*grid, params)
+                mu_fine = self.source.brightness(*grid)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
@@ -359,7 +363,7 @@ class LensSource(Simulator):
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            mu_fine = self.lens_light.brightness(*grid, params)
+            mu_fine = self.lens_light.brightness(*grid)
             mu += gaussian_quadrature_integrator(mu_fine, self._weights)
 
         # Convolve the PSF

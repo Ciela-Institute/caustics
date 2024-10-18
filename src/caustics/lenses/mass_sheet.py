@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("MassSheet",)
@@ -38,7 +37,7 @@ class MassSheet(ThinLens):
 
         *Unit: arcsec*
 
-    surface_density: Optional[Union[Tensor, float]]
+    sd: Optional[Union[Tensor, float]]
         Surface density normalized by the critical surface density.
 
         *Unit: unitless*
@@ -47,7 +46,7 @@ class MassSheet(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "surface_density": 0.1,
+        "sd": 0.1,
     }
 
     def __init__(
@@ -64,30 +63,24 @@ class MassSheet(ThinLens):
             "y-coordinate of the shear center in the lens plane",
             True,
         ] = None,
-        surface_density: Annotated[
-            Optional[Union[Tensor, float]], "Surface density", True
-        ] = None,
+        sd: Annotated[Optional[Union[Tensor, float]], "Surface density", True] = None,
         name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("surface_density", surface_density)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
+        self.sd = Param("sd", sd)
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
-        surface_density: Optional[Tensor] = None,
-        **kwargs,
+        sd: Optional[Tensor] = None,
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -125,38 +118,28 @@ class MassSheet(ThinLens):
             *Unit: arcsec*
 
         """
-        return func.reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y)
+        return func.reduced_deflection_angle_mass_sheet(x0, y0, sd, x, y)
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
-        surface_density: Optional[Tensor] = None,
-        **kwargs,
+        sd: Optional[Tensor] = None,
     ) -> Tensor:
         # Meneghetti eq 3.81
-        return func.potential_mass_sheet(x0, y0, surface_density, x, y)
+        return func.potential_mass_sheet(x0, y0, sd, x, y)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        surface_density: Optional[Tensor] = None,
-        **kwargs,
+        sd: Optional[Tensor] = None,
     ) -> Tensor:
         # Essentially by definition
-        return func.convergence_mass_sheet(surface_density, x)
+        return func.convergence_mass_sheet(sd, x)

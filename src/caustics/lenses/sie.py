@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("SIE",)
@@ -98,11 +97,11 @@ class SIE(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("q", q)
-        self.add_param("phi", phi)
-        self.add_param("b", b)
+        self.x0 = Param("x0", x0)
+        self.y0 = Param("y0", y0)
+        self.q = Param("q", q)
+        self.phi = Param("phi", phi)
+        self.b = Param("b", b)
         self.s = s
 
     def _get_potential(self, x, y, q):
@@ -136,21 +135,17 @@ class SIE(ThinLens):
         """
         return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         q: Optional[Tensor] = None,
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
-        **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the physical deflection angle.
@@ -190,21 +185,17 @@ class SIE(ThinLens):
         """
         return func.reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, self.s)
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
         x0: Optional[Tensor] = None,
-        z_l: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         q: Optional[Tensor] = None,
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -239,21 +230,17 @@ class SIE(ThinLens):
         """
         return func.potential_sie(x0, y0, q, phi, b, x, y, self.s)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
         q: Optional[Tensor] = None,
         phi: Optional[Tensor] = None,
         b: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Calculate the projected mass density.
