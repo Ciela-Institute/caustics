@@ -12,6 +12,7 @@ from .singleplane import SinglePlane
 from .mass_sheet import MassSheet
 from .tnfw import TNFW
 from .multiplane import Multiplane
+from .multipole import Multipole
 from .enclosed_mass import EnclosedMass
 
 
@@ -31,5 +32,6 @@ __all__ = [
     "SinglePlane",
     "MassSheet",
     "TNFW",
+    "Multipole",
     "EnclosedMass",
 ]
