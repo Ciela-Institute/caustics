@@ -31,6 +31,7 @@ from .light import (
     Pixelated,
     PixelatedTime,
     Sersic,
+    LightStack,
     StarSource,
 )
 from . import utils
@@ -69,6 +70,7 @@ __all__ = [
     "Pixelated",
     "PixelatedTime",
     "Sersic",
+    "LightStack",
     "StarSource",
     "utils",
     "LensSource",
