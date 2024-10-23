@@ -162,10 +162,10 @@ class LensSource(Module):
         self._psf_shape = psf.shape if psf is not None else psf_shape
 
         # Build parameters
-        self.z_s = Param("z_s", z_s)
-        self.psf = Param("psf", psf, self.psf_shape)
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
+        self.z_s = Param("z_s", z_s, units="unitless", valid=(0, None))
+        self.psf = Param("psf", psf, self.psf_shape, units="unitless")
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
         self._pixelscale = pixelscale
 
         # Image grid

@@ -58,7 +58,7 @@ class Microlens(Module):
     ):
         super().__init__(name)
 
-        self.z_s = Param("z_s", z_s)
+        self.z_s = Param("z_s", z_s, units="unitless")
 
         self.lens = lens
         self.source = source

@@ -110,11 +110,11 @@ class StarSource(Source):
 
         """
         super().__init__(name=name)
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.theta_s = Param("theta_s", theta_s)
-        self.Ie = Param("Ie", Ie)
-        self.gamma = Param("gamma", gamma)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.theta_s = Param("theta_s", theta_s, units="arcsec", valid=(0, None))
+        self.Ie = Param("Ie", Ie, units="flux", valid=(0, None))
+        self.gamma = Param("gamma", gamma, units="unitless", valid=(0, 1))
 
     @forward
     def brightness(

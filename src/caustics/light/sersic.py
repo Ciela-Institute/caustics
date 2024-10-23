@@ -1,7 +1,7 @@
 # mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
+from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import Source, NameType
@@ -164,13 +164,13 @@ class Sersic(Source):
 
         """
         super().__init__(name=name)
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.q = Param("q", q)
-        self.phi = Param("phi", phi)
-        self.n = Param("n", n)
-        self.Re = Param("Re", Re)
-        self.Ie = Param("Ie", Ie)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.n = Param("n", n, units="unitless", valid=(0.36, 10))
+        self.Re = Param("Re", Re, units="arcsec", valid=(0, None))
+        self.Ie = Param("Ie", Ie, units="flux", valid=(0, None))
         self.s = s
 
         self.lenstronomy_k_mode = use_lenstronomy_k

@@ -78,10 +78,10 @@ class ExternalShear(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.gamma_1 = Param("gamma_1", gamma_1)
-        self.gamma_2 = Param("gamma_2", gamma_2)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.gamma_1 = Param("gamma_1", gamma_1, units="unitless")
+        self.gamma_2 = Param("gamma_2", gamma_2, units="unitless")
         self.s = s
 
     @forward

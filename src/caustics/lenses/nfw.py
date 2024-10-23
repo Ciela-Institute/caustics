@@ -155,10 +155,10 @@ class NFW(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.m = Param("m", m)
-        self.c = Param("c", c)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.m = Param("m", m, units="Msun")
+        self.c = Param("c", c, units="unitless")
         self.s = s
         if use_case == "batchable":
             self._f = func._f_batchable_nfw

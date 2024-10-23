@@ -1,7 +1,7 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
+from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
@@ -97,11 +97,11 @@ class SIE(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.q = Param("q", q)
-        self.phi = Param("phi", phi)
-        self.b = Param("b", b)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.b = Param("b", b, units="arcsec", valid=(0, None))
         self.s = s
 
     def _get_potential(self, x, y, q):

@@ -115,10 +115,12 @@ class Pixelated(Source):
                 f"shape must be specify 2D or 3D tensors. Received shape={shape}"
             )
         super().__init__(name=name)
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.image = Param("image", image, shape)
-        self.pixelscale = Param("pixelscale", pixelscale)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.image = Param("image", image, shape, units="flux")
+        self.pixelscale = Param(
+            "pixelscale", pixelscale, units="arcsec/pixel", valid=(0, None)
+        )
 
     @forward
     def brightness(

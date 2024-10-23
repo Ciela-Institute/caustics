@@ -671,7 +671,7 @@ class ThinLens(Lens):
         name: NameType = None,
     ):
         super().__init__(cosmology=cosmology, name=name)
-        self.z_l = Param("z_l", z_l)
+        self.z_l = Param("z_l", z_l, units="unitless", valid=(0, None))
 
     @forward
     def reduced_deflection_angle(

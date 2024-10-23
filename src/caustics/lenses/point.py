@@ -116,9 +116,9 @@ class Point(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.th_ein = Param("th_ein", th_ein)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.th_ein = Param("th_ein", th_ein, units="arcsec", valid=(0, None))
         self.s = s
 
     @forward

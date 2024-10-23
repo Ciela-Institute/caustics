@@ -2,7 +2,7 @@
 from typing import Optional, Union, Annotated
 
 import torch
-from torch import Tensor
+from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
@@ -179,12 +179,12 @@ class EPL(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.q = Param("q", q)
-        self.phi = Param("phi", phi)
-        self.b = Param("b", b)
-        self.t = Param("t", t)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.b = Param("b", b, units="arcsec", valid=(0, None))
+        self.t = Param("t", t, units="unitless", valid=(0, 2))
         self.s = s
 
         self.n_iter = n_iter

@@ -1,7 +1,7 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
 from typing import Optional, Union, Annotated, Callable
 
-from torch import Tensor
+from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
@@ -108,11 +108,11 @@ class EnclosedMass(ThinLens):
         super().__init__(cosmology, z_l, name=name, **kwargs)
         self.enclosed_mass = enclosed_mass
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.q = Param("q", q)
-        self.phi = Param("phi", phi)
-        self.p = Param("p", p)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.p = Param("p", p, units="user-defined")
 
         self.s = s
 

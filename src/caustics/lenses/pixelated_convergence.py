@@ -135,9 +135,11 @@ class PixelatedConvergence(ThinLens):
         elif shape is not None and len(shape) != 2:
             raise ValueError(f"shape must specify a 2D tensor. Received shape={shape}")
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.convergence_map = Param("convergence_map", convergence_map, shape)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.convergence_map = Param(
+            "convergence_map", convergence_map, shape, units="unitless"
+        )
 
         if convergence_map is not None:
             self.n_pix = convergence_map.shape[0]

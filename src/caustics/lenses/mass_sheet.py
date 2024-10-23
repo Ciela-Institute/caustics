@@ -68,9 +68,9 @@ class MassSheet(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.sd = Param("sd", sd)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.sd = Param("sd", sd, units="unitless")
 
     @forward
     def reduced_deflection_angle(

@@ -64,9 +64,14 @@ class FlatLambdaCDM(Cosmology):
         """
         super().__init__(name)
 
-        self.h0 = Param("h0", h0)
-        self.critical_density_0 = Param("critical_density_0", critical_density_0)
-        self.Om0 = Param("Om0", Om0)
+        self.h0 = Param("h0", h0, units="unitless", valid=(0, None))
+        self.critical_density_0 = Param(
+            "critical_density_0",
+            critical_density_0,
+            units="Msun/Mpc^3",
+            valid=(0, None),
+        )
+        self.Om0 = Param("Om0", Om0, units="unitless", valid=(0, 1))
 
         self._comoving_distance_helper_x_grid = _comoving_distance_helper_x_grid.to(
             dtype=torch.float32

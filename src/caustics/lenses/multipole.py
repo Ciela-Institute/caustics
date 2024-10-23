@@ -2,7 +2,7 @@
 from typing import Optional, Union, Annotated
 
 import torch
-from torch import Tensor
+from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
@@ -59,12 +59,19 @@ class Multipole(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name)
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
         self.m = torch.as_tensor(m, dtype=torch.int32)
         assert torch.all(self.m >= 2).item(), "Multipole order must be >= 2"
-        self.a_m = Param("a_m", a_m, self.m.shape)
-        self.phi_m = Param("phi_m", phi_m, self.m.shape)
+        self.a_m = Param("a_m", a_m, self.m.shape, units="unitless")
+        self.phi_m = Param(
+            "phi_m",
+            phi_m,
+            self.m.shape,
+            units="radians",
+            valid=(0, 2 * pi),
+            cyclic=True,
+        )
 
     def to(self, device: torch.device = None, dtype: torch.dtype = None):
         """

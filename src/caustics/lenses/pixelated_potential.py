@@ -100,9 +100,11 @@ class PixelatedPotential(ThinLens):
         elif shape is not None and len(shape) != 2:
             raise ValueError(f"shape must specify a 2D tensor. Received shape={shape}")
 
-        self.x0 = Param("x0", x0)
-        self.y0 = Param("y0", y0)
-        self.potential_map = Param("potential_map", potential_map, shape)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.potential_map = Param(
+            "potential_map", potential_map, shape, units="unitless"
+        )
 
         self.pixelscale = pixelscale
         if potential_map is not None:
