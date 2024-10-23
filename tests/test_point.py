@@ -1,16 +1,18 @@
+from io import StringIO
+
 import torch
-import yaml
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Point
+from caustics.sims import build_simulator
 
 import pytest
 
 
 @pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.0])
-def test_point_lens(sim_source, device, lens_models, th_ein):
+def test_point_lens(sim_source, device, th_ein):
     atol = 1e-5
     rtol = 1e-5
     z_l = torch.tensor(0.9)
@@ -23,14 +25,12 @@ def test_point_lens(sim_source, device, lens_models, th_ein):
         lens: &lens
             name: point
             kind: Point
-            params:
-                z_l: {float(z_l)}
             init_kwargs:
+                z_l: {float(z_l)}
                 cosmology: *cosmology
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("Point")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")

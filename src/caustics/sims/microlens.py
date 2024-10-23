@@ -58,10 +58,10 @@ class Microlens(Module):
     ):
         super().__init__(name)
 
+        self.z_s = Param("z_s", z_s)
+
         self.lens = lens
         self.source = source
-
-        self.z_s = Param("z_s", z_s)
 
     @forward
     def __call__(

@@ -1,3 +1,4 @@
+from io import StringIO
 from math import pi
 
 import torch
@@ -10,79 +11,74 @@ from caustics.utils import gaussian
 from caustics import build_simulator
 
 
-def test_simulator_runs(sim_source, device, mocker):
+def test_simulator_runs(sim_source, device):
     if sim_source == "yaml":
-        # yaml_str = """\
-        # cosmology: &cosmology
-        #     name: "cosmo"
-        #     kind: FlatLambdaCDM
+        yaml_str = """\
+        cosmology: &cosmology
+            name: "cosmo"
+            kind: FlatLambdaCDM
 
-        # lensmass: &lensmass
-        #     name: lens
-        #     kind: SIE
-        #     params:
-        #         z_l: 1.0
-        #         x0: 0.0
-        #         y0: 0.01
-        #         q: 0.5
-        #         phi: pi / 3.0
-        #         b: 1.0
-        #     init_kwargs:
-        #         cosmology: *cosmology
+        lensmass: &lensmass
+            name: lens
+            kind: SIE
+            init_kwargs:
+                z_l: 1.0
+                x0: 0.0
+                y0: 0.01
+                q: 0.5
+                phi: 1.05
+                b: 1.0
+                cosmology: *cosmology
 
-        # source: &source
-        #     name: source
-        #     kind: Sersic
-        #     params:
-        #         x0: 0.01
-        #         y0: -0.03
-        #         q: 0.6
-        #         phi: -pi / 4
-        #         n: 1.5
-        #         Re: 0.5
-        #         Ie: 1.0
+        source: &source
+            name: source
+            kind: Sersic
+            init_kwargs:
+                x0: 0.01
+                y0: -0.03
+                q: 0.6
+                phi: -0.785
+                n: 1.5
+                Re: 0.5
+                Ie: 1.0
 
-        # lenslight: &lenslight
-        #     name: lenslight
-        #     kind: Sersic
-        #     params:
-        #         x0: 0.0
-        #         y0: 0.01
-        #         q: 0.7
-        #         phi: pi / 4
-        #         n: 3.0
-        #         Re: 0.7
-        #         Ie: 1.0
+        lenslight: &lenslight
+            name: lenslight
+            kind: Sersic
+            init_kwargs:
+                x0: 0.0
+                y0: 0.01
+                q: 0.7
+                phi: 0.785
+                n: 3.0
+                Re: 0.7
+                Ie: 1.0
 
-        # psf: &psf
-        #     func: caustics.utils.gaussian
-        #     kwargs:
-        #         pixelscale: 0.05
-        #         nx: 11
-        #         ny: 11
-        #         sigma: 0.2
-        #         upsample: 2
+        psf: &psf
+            kind: utils.gaussian
+            init_kwargs:
+                pixelscale: 0.05
+                nx: 11
+                ny: 11
+                sigma: 0.2
+                upsample: 2
 
-        # simulator:
-        #     name: simulator
-        #     kind: LensSource
-        #     params:
-        #         z_s: 2.0
-        #     init_kwargs:
-        #         # Single lens
-        #         lens: *lensmass
-        #         source: *source
-        #         lens_light: *lenslight
-        #         pixelscale: 0.05
-        #         pixels_x: 50
-        #         psf: *psf{quad_level}
-        # """
-        # mock_from_file(
-        #     mocker, yaml_str.format(quad_level="")
-        # )  # fixme, yaml should be able to accept None
-        sim = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
-        # mock_from_file(mocker, yaml_str.format(quad_level="\n        quad_level: 3"))
-        sim_q3 = build_simulator("/path/to/sim.yaml")  # Path doesn't actually exists
+        simulator:
+            name: simulator
+            kind: LensSource
+            init_kwargs:
+                # Single lens
+                z_s: 2.0
+                lens: *lensmass
+                source: *source
+                lens_light: *lenslight
+                pixelscale: 0.05
+                pixels_x: 50{quad_level}
+        """
+        with StringIO(yaml_str.format(quad_level="")) as f:
+            sim = build_simulator(f)
+        with StringIO(yaml_str.format(quad_level="\n            quad_level: 3")) as f:
+            sim_q3 = build_simulator(f)
     else:
         # Model
         cosmology = FlatLambdaCDM(name="cosmo")

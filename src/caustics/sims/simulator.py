@@ -1,8 +1,9 @@
 # mypy: disable-error-code="import-untyped,var-annotated"
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional, Union, TextIO
+from inspect import signature
+
 from caskade import Module
 import yaml
-from pathlib import Path
 
 import caustics
 
@@ -11,10 +12,13 @@ __all__ = ("NameType", "build_simulator")
 NameType = Annotated[Optional[str], "Name of the simulator"]
 
 
-def build_simulator(config: Union[str, Path]) -> Module:
+def build_simulator(config: Union[str, TextIO]) -> Module:
 
-    with open(config, "r") as f:
-        config_dict = yaml.safe_load(f)
+    if isinstance(config, str):
+        with open(config, "r") as f:
+            config_dict = yaml.safe_load(f)
+    else:
+        config_dict = yaml.safe_load(config)
 
     modules = {}
     for name, obj in config_dict.items():
@@ -27,7 +31,14 @@ def build_simulator(config: Union[str, Path]) -> Module:
                     # fill already constructed object
                     kwargs[kwarg] = modules[subname]
 
-        modules[name] = getattr(caustics, obj["kind"])(name=name, **kwargs)
+        # Get the caustics object, using a "." path if given
+        base = caustics
+        for part in obj["kind"].split("."):
+            base = getattr(base, part)
+        if "name" in signature(base).parameters:  # type: ignore[arg-type]
+            kwargs["name"] = name
+        # Instantiate the caustics object
+        modules[name] = base(**kwargs)  # type: ignore[operator]
 
     # return the last object
     return modules[tuple(modules.keys())[-1]]

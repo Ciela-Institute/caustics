@@ -1,7 +1,5 @@
-# from math import pi
+from io import StringIO
 
-# import lenstronomy.Util.param_util as param_util
-import yaml
 import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from astropy.cosmology import default_cosmology
@@ -13,6 +11,7 @@ from utils import lens_test_helper, setup_grids
 
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustics.lenses import TNFW
+from caustics.sims import build_simulator
 import pytest
 
 
@@ -26,7 +25,7 @@ Ob0_default = float(default_cosmology.get().Ob0)
 )  # Note with m=1e14 the test fails, due to the Rs_angle becoming too large (pytorch is unstable)
 @pytest.mark.parametrize("c", [1.0, 8.0, 40.0])
 @pytest.mark.parametrize("t", [2.0, 5.0, 20.0])
-def test(sim_source, device, lens_models, m, c, t):
+def test(sim_source, device, m, c, t):
     atol = 1e-5
     rtol = 3e-2
     z_l = torch.tensor(0.1)
@@ -39,15 +38,13 @@ def test(sim_source, device, lens_models, m, c, t):
         lens: &lens
             name: tnfw
             kind: TNFW
-            params:
-                z_l: {float(z_l)}
             init_kwargs:
+                z_l: {float(z_l)}
                 cosmology: *cosmology
                 interpret_m_total_mass: false
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("TNFW")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
