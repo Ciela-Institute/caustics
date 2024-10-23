@@ -90,10 +90,10 @@ class ExternalShear(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        gamma_1: Annotated[Tensor, "Param"],
+        gamma_2: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -141,10 +141,10 @@ class ExternalShear(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        gamma_1: Annotated[Tensor, "Param"],
+        gamma_2: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculates the lensing potential.

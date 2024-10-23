@@ -78,9 +78,9 @@ class MassSheet(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        sd: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        sd: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -126,9 +126,9 @@ class MassSheet(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        sd: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        sd: Annotated[Tensor, "Param"],
     ) -> Tensor:
         # Meneghetti eq 3.81
         return func.potential_mass_sheet(x0, y0, sd, x, y)
@@ -139,7 +139,7 @@ class MassSheet(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        sd: Optional[Tensor] = None,
+        sd: Annotated[Tensor, "Param"],
     ) -> Tensor:
         # Essentially by definition
         return func.convergence_mass_sheet(sd, x)

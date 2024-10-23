@@ -88,7 +88,7 @@ class FlatLambdaCDM(Cosmology):
 
         return self
 
-    def hubble_distance(self, h0):
+    def hubble_distance(self, h0: Annotated[Tensor, "Param"]):
         """
         Calculate the Hubble distance.
 
@@ -107,9 +107,9 @@ class FlatLambdaCDM(Cosmology):
     @forward
     def critical_density(
         self,
-        z: Tensor,
-        critical_density_0: Optional[Tensor] = None,
-        Om0: Optional[Tensor] = None,
+        z: Annotated[Tensor, "Param"],
+        critical_density_0: Annotated[Tensor, "Param"],
+        Om0: Annotated[Tensor, "Param"],
     ) -> torch.Tensor:
         """
         Calculate the critical density at redshift z.
@@ -154,8 +154,8 @@ class FlatLambdaCDM(Cosmology):
     def comoving_distance(
         self,
         z: Tensor,
-        h0: Optional[Tensor] = None,
-        Om0: Optional[Tensor] = None,
+        h0: Annotated[Tensor, "Param"],
+        Om0: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the comoving distance to redshift z.

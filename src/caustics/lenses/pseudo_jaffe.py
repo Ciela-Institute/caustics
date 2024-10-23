@@ -161,10 +161,10 @@ class PseudoJaffe(ThinLens):
     def get_convergence_0(
         self,
         z_s,
-        z_l: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        core_radius: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        core_radius: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ):
         d_l = self.cosmology.angular_diameter_distance(z_l)
         sigma_crit = self.cosmology.critical_surface_density(z_l, z_s)
@@ -175,9 +175,9 @@ class PseudoJaffe(ThinLens):
         self,
         theta,
         z_s,
-        mass: Optional[Tensor] = None,
-        core_radius: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        mass: Annotated[Tensor, "Param"],
+        core_radius: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ):
         """
         Calculate the mass enclosed within a two-dimensional radius. Using equation A10 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_.
@@ -267,12 +267,12 @@ class PseudoJaffe(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        core_radius: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        core_radius: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """Calculate the deflection angle.
 
@@ -319,12 +319,12 @@ class PseudoJaffe(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        core_radius: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        core_radius: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential. This calculation is based on equation A18 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_.
@@ -370,12 +370,12 @@ class PseudoJaffe(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        core_radius: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        core_radius: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the projected mass density, based on equation A6.

@@ -174,9 +174,9 @@ class NFW(ThinLens):
     @forward
     def get_scale_radius(
         self,
-        z_l: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
-        c: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        m: Annotated[Tensor, "Param"],
+        c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the scale radius of the lens.
@@ -217,8 +217,8 @@ class NFW(ThinLens):
     @forward
     def get_scale_density(
         self,
-        z_l: Optional[Tensor] = None,
-        c: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the scale density of the lens.
@@ -255,11 +255,11 @@ class NFW(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
-        c: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        m: Annotated[Tensor, "Param"],
+        c: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the physical deflection angle.
@@ -309,11 +309,11 @@ class NFW(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
-        c: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        m: Annotated[Tensor, "Param"],
+        c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
@@ -370,11 +370,11 @@ class NFW(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        m: Optional[Tensor] = None,
-        c: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        m: Annotated[Tensor, "Param"],
+        c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.

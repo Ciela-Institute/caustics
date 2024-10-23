@@ -94,10 +94,10 @@ class Multipole(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        a_m: Optional[Tensor] = None,
-        phi_m: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        a_m: Annotated[Tensor, "Param"],
+        phi_m: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the multipole.
@@ -145,10 +145,10 @@ class Multipole(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        a_m: Optional[Tensor] = None,
-        phi_m: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        a_m: Annotated[Tensor, "Param"],
+        phi_m: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential of the multiplane.
@@ -191,10 +191,10 @@ class Multipole(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        a_m: Optional[Tensor] = None,
-        phi_m: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        a_m: Annotated[Tensor, "Param"],
+        phi_m: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the projected mass density of the multipole.

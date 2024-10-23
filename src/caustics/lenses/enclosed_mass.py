@@ -122,11 +122,11 @@ class EnclosedMass(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        p: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        p: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the physical deflection angle of the lens at a given position.
@@ -198,12 +198,12 @@ class EnclosedMass(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        p: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        p: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the dimensionless convergence of the lens at a given position.

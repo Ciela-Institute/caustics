@@ -127,9 +127,9 @@ class Point(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -175,9 +175,9 @@ class Point(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -218,9 +218,8 @@ class Point(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).

@@ -195,12 +195,12 @@ class EPL(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        b: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angles of the lens.
@@ -292,12 +292,12 @@ class EPL(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        b: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ):
         """
         Compute the lensing potential of the lens.
@@ -338,13 +338,12 @@ class EPL(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        b: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence of the lens, which describes the local density of the lens.

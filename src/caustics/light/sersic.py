@@ -180,13 +180,13 @@ class Sersic(Source):
         self,
         x,
         y,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        n: Optional[Tensor] = None,
-        Re: Optional[Tensor] = None,
-        Ie: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        n: Annotated[Tensor, "Param"],
+        Re: Annotated[Tensor, "Param"],
+        Ie: Annotated[Tensor, "Param"],
     ):
         """
         Implements the `brightness` method for `Sersic`. The brightness at a given point is

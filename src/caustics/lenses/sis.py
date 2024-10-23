@@ -86,9 +86,9 @@ class SIS(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the SIS lens.
@@ -134,9 +134,9 @@ class SIS(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential of the SIS lens.
@@ -177,9 +177,9 @@ class SIS(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the projected mass density of the SIS lens.

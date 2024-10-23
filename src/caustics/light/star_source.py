@@ -121,11 +121,11 @@ class StarSource(Source):
         self,
         x,
         y,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        theta_s: Optional[Tensor] = None,
-        Ie: Optional[Tensor] = None,
-        gamma: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        theta_s: Annotated[Tensor, "Param"],
+        Ie: Annotated[Tensor, "Param"],
+        gamma: Annotated[Tensor, "Param"],
     ):
         """
         Implements the `brightness` method for `star`. This method calculates the

@@ -167,9 +167,9 @@ class TNFW(ThinLens):
     @forward
     def get_concentration(
         self,
-        z_l: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the concentration parameter "c" for a TNFW profile.
@@ -224,8 +224,8 @@ class TNFW(ThinLens):
     @forward
     def get_truncation_radius(
         self,
-        scale_radius: Optional[Tensor] = None,
-        tau: Optional[Tensor] = None,
+        scale_radius: Annotated[Tensor, "Param"],
+        tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the truncation radius of the TNFW lens.
@@ -278,10 +278,10 @@ class TNFW(ThinLens):
     @forward
     def M0(
         self,
-        z_l: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
-        tau: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
+        tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the reference mass.
@@ -344,9 +344,9 @@ class TNFW(ThinLens):
     @forward
     def get_scale_density(
         self,
-        z_l: Optional[Tensor] = None,
-        mass: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the scale density of the lens.
@@ -405,11 +405,11 @@ class TNFW(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
-        tau: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
+        tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         TNFW convergence as given in Baltz et al. 2009.
@@ -481,8 +481,8 @@ class TNFW(ThinLens):
         self,
         r: Tensor,
         z_s: Tensor,
-        scale_radius: Optional[Tensor] = None,
-        tau: Optional[Tensor] = None,
+        scale_radius: Annotated[Tensor, "Param"],
+        tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Total projected mass (Msun) within a radius r (arcsec).
@@ -540,11 +540,11 @@ class TNFW(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
-        tau: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
+        tau: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """Compute the physical deflection angle (arcsec) for this lens at
         the requested position. Note that the NFW/TNFW profile is more
@@ -611,11 +611,11 @@ class TNFW(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        scale_radius: Optional[Tensor] = None,
-        tau: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        scale_radius: Annotated[Tensor, "Param"],
+        tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.

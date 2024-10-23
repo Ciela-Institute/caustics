@@ -310,14 +310,14 @@ class LensSource(Module):
     @forward
     def __call__(
         self,
+        z_s: Annotated[Tensor, "Param"],
+        psf: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
         source_light=True,
         lens_light=True,
         lens_source=True,
         psf_convolve=True,
-        z_s=None,
-        psf=None,
-        x0=None,
-        y0=None,
     ):
         """
         forward function

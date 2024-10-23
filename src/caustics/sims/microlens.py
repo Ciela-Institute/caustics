@@ -67,10 +67,10 @@ class Microlens(Module):
     def __call__(
         self,
         fov: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
         N_grid: int = 100,
-        z_s=None,
     ):
         """Forward pass of the simulator.
 

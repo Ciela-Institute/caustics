@@ -679,7 +679,7 @@ class ThinLens(Lens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -732,7 +732,7 @@ class ThinLens(Lens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
@@ -871,7 +871,7 @@ class ThinLens(Lens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
@@ -971,7 +971,7 @@ class ThinLens(Lens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        z_l: Optional[Tensor] = None,
+        z_l: Annotated[Tensor, "Param"],
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
     ) -> Tensor:

@@ -125,10 +125,10 @@ class Pixelated(Source):
         self,
         x,
         y,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        image: Optional[Tensor] = None,
-        pixelscale: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        image: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ):
         """
         Implements the `brightness` method for `Pixelated`.

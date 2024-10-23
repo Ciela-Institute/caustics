@@ -138,9 +138,9 @@ class PixelatedTime(Source):
         x,
         y,
         t,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        cube: Optional[Tensor] = None,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        cube: Annotated[Tensor, "Param"],
     ):
         """
         Implements the `brightness` method for `Pixelated`.
