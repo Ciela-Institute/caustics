@@ -2,11 +2,10 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from ..utils import interp3d
 from .base import Source, NameType
-from ..parametrized import unpack
-from ..packed import Packed
 
 __all__ = ("PixelatedTime",)
 
@@ -127,24 +126,21 @@ class PixelatedTime(Source):
                 f"shape must be specify 3D or 4D tensors. Received shape={shape}"
             )
         super().__init__(name=name)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("cube", cube, shape)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.cube = Param("cube", cube, shape, units="flux")
         self.pixelscale = pixelscale
         self.t_end = t_end
 
-    @unpack
+    @forward
     def brightness(
         self,
         x,
         y,
         t,
-        *args,
-        params: Optional["Packed"] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        cube: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        cube: Annotated[Tensor, "Param"],
     ):
         """
         Implements the `brightness` method for `Pixelated`.

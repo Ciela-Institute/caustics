@@ -172,9 +172,9 @@ def test_lens_potential_vs_convergence(device):
         phi_kappa = 0.5 * (phi_H[0][0] + phi_H[1][1])
 
         # Check that the laplacian of the lensing potential equals the convergence.
-        if name in ["NFW", "TNFW"]:
+        if name.strip("_0") in ["NFW", "TNFW"]:
             assert torch.allclose(phi_kappa, kappa, atol=1e-4)
-        elif name in ["PixelatedConvergence", "PixelatedPotential"]:
+        elif name.strip("_0") in ["PixelatedConvergence", "PixelatedPotential"]:
             assert torch.allclose(phi_kappa, kappa, atol=1e-4)
         else:
             assert torch.allclose(phi_kappa, kappa, atol=1e-6)

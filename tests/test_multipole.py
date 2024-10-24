@@ -1,3 +1,5 @@
+from io import StringIO
+
 import torch
 import numpy as np
 from lenstronomy.LensModel.lens_model import LensModel
@@ -6,16 +8,16 @@ from utils import (
     kappa_test_helper,
     Psi_test_helper,
 )
-import yaml
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Multipole
+from caustics.sims import build_simulator
 
 import pytest
 
 
 @pytest.mark.parametrize("m_order", [2, 3, 4, 5, 6])
-def test_multipole_lenstronomy(sim_source, device, lens_models, m_order):
+def test_multipole_lenstronomy(sim_source, device, m_order):
     atol = 1e-5
     rtol = 1e-5
     z_l = torch.tensor(0.5)
@@ -28,15 +30,13 @@ def test_multipole_lenstronomy(sim_source, device, lens_models, m_order):
         lens: &lens
             name: multipole
             kind: Multipole
-            params:
-                z_l: {float(z_l)}
             init_kwargs:
+                z_l: {float(z_l)}
                 cosmology: *cosmology
                 m: {m_order}
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("Multipole")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")

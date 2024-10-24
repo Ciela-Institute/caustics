@@ -1,11 +1,10 @@
 # mypy: disable-error-code="operator,union-attr"
-from typing import Optional, Annotated, List
+from typing import Annotated, List
 
 import torch
+from caskade import forward
 
 from .base import Source, NameType
-from ..parametrized import unpack
-from ..packed import Packed
 
 __all__ = ("LightStack",)
 
@@ -44,15 +43,13 @@ class LightStack(Source):
         super().__init__(name=name)
         self.light_models = light_models
         for model in light_models:
-            self.add_parametrized(model)
+            self.link(model.name, model)
 
-    @unpack
+    @forward
     def brightness(
         self,
         x,
         y,
-        *args,
-        params: Optional["Packed"] = None,
         **kwargs,
     ):
         """
@@ -88,5 +85,5 @@ class LightStack(Source):
 
         brightness = torch.zeros_like(x)
         for light_model in self.light_models:
-            brightness += light_model.brightness(x, y, params=params, **kwargs)
+            brightness += light_model.brightness(x, y, **kwargs)
         return brightness

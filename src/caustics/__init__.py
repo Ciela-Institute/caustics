@@ -21,6 +21,7 @@ from .lenses import (
     SIE,
     SIS,
     SinglePlane,
+    BatchedPlane,
     MassSheet,
     TNFW,
     Multipole,
@@ -35,9 +36,8 @@ from .light import (
     StarSource,
 )
 from . import utils
-from .sims import LensSource, Microlens, Simulator
+from .sims import LensSource, Microlens, build_simulator
 from .tests import test
-from .models.api import build_simulator
 from . import func
 
 __version__ = VERSION
@@ -62,6 +62,7 @@ __all__ = [
     "SIE",
     "SIS",
     "SinglePlane",
+    "BatchedPlane",
     "MassSheet",
     "TNFW",
     "Multipole",
@@ -75,7 +76,6 @@ __all__ = [
     "utils",
     "LensSource",
     "Microlens",
-    "Simulator",
     "test",
     "build_simulator",
     "func",

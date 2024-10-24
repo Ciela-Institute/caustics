@@ -9,6 +9,7 @@ from .pseudo_jaffe import PseudoJaffe
 from .sie import SIE
 from .sis import SIS
 from .singleplane import SinglePlane
+from .batchedplane import BatchedPlane
 from .mass_sheet import MassSheet
 from .tnfw import TNFW
 from .multiplane import Multiplane
@@ -30,6 +31,7 @@ __all__ = [
     "SIE",
     "SIS",
     "SinglePlane",
+    "BatchedPlane",
     "MassSheet",
     "TNFW",
     "Multipole",

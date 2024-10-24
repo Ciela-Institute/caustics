@@ -1,17 +1,19 @@
+from io import StringIO
+
 import torch
-import yaml
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PseudoJaffe
+from caustics.sims import build_simulator
 
 import pytest
 
 
 @pytest.mark.parametrize("mass", [1e8, 1e10, 1e12])
 @pytest.mark.parametrize("Rc,Rs", [[1.0, 10.0], [1e-2, 1.0], [0.5, 1.0]])
-def test_pseudo_jaffe(sim_source, device, lens_models, mass, Rc, Rs):
+def test_pseudo_jaffe(sim_source, device, mass, Rc, Rs):
     atol = 1e-5
     rtol = 1e-5
 
@@ -26,9 +28,8 @@ def test_pseudo_jaffe(sim_source, device, lens_models, mass, Rc, Rs):
             init_kwargs:
                 cosmology: *cosmology
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("PseudoJaffe")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
         cosmology = lens.cosmology
     else:
         # Models

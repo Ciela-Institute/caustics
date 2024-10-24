@@ -1,11 +1,10 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
 from typing import Optional, Union, Annotated, Callable
 
-from torch import Tensor
+from torch import Tensor, pi
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from .func import physical_deflection_angle_enclosed_mass, convergence_enclosed_mass
 
 __all__ = ("EnclosedMass",)
@@ -109,29 +108,25 @@ class EnclosedMass(ThinLens):
         super().__init__(cosmology, z_l, name=name, **kwargs)
         self.enclosed_mass = enclosed_mass
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("q", q)
-        self.add_param("phi", phi)
-        self.add_param("p", p)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.p = Param("p", p, units="user-defined")
 
         self.s = s
 
-    @unpack
+    @forward
     def physical_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional[Packed] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        p: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        p: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the physical deflection angle of the lens at a given position.
@@ -184,39 +179,31 @@ class EnclosedMass(ThinLens):
             x0, y0, q, phi, lambda r: self.enclosed_mass(r, p), x, y, self.s
         )
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
         *args,
-        params: Optional[Packed] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        p: Optional[Tensor] = None,
         **kwargs,
     ) -> Tensor:
         raise NotImplementedError(
             "Potential is not implemented for enclosed mass profiles."
         )
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional[Packed] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        p: Optional[Tensor] = None,
-        **kwargs,
+        z_l: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        p: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the dimensionless convergence of the lens at a given position.
@@ -266,7 +253,7 @@ class EnclosedMass(ThinLens):
             *Unit: unitless*
         """
 
-        csd = self.cosmology.critical_surface_density(z_l, z_s, params)
+        csd = self.cosmology.critical_surface_density(z_l, z_s)
         return convergence_enclosed_mass(
             x0,
             y0,

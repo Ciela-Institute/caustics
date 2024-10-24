@@ -4,15 +4,14 @@ from math import pi
 from typing import Optional, Annotated
 
 from torch import Tensor
+from caskade import Module, forward
 
 from ..constants import G_over_c2
-from ..parametrized import Parametrized, unpack
-from ..packed import Packed
 
 NameType = Annotated[Optional[str], "Name of the cosmology"]
 
 
-class Cosmology(Parametrized):
+class Cosmology(Module):
     """
     Abstract base class for cosmological models.
 
@@ -45,7 +44,8 @@ class Cosmology(Parametrized):
         super().__init__(name)
 
     @abstractmethod
-    def critical_density(self, z: Tensor, params: Optional["Packed"] = None) -> Tensor:
+    @forward
+    def critical_density(self, z: Tensor) -> Tensor:
         """
         Compute the critical density at redshift z.
 
@@ -70,10 +70,8 @@ class Cosmology(Parametrized):
         ...
 
     @abstractmethod
-    @unpack
-    def comoving_distance(
-        self, z: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def comoving_distance(self, z: Tensor, *args, **kwargs) -> Tensor:
         """
         Compute the comoving distance to redshift z.
 
@@ -98,10 +96,8 @@ class Cosmology(Parametrized):
         ...
 
     @abstractmethod
-    @unpack
-    def transverse_comoving_distance(
-        self, z: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def transverse_comoving_distance(self, z: Tensor, *args, **kwargs) -> Tensor:
         """
         Compute the transverse comoving distance to redshift z (Mpc).
 
@@ -125,10 +121,8 @@ class Cosmology(Parametrized):
         """
         ...
 
-    @unpack
-    def comoving_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def comoving_distance_z1z2(self, z1: Tensor, z2: Tensor) -> Tensor:
         """
         Compute the comoving distance between two redshifts.
 
@@ -155,12 +149,10 @@ class Cosmology(Parametrized):
             *Unit: Mpc*
 
         """
-        return self.comoving_distance(z2, params) - self.comoving_distance(z1, params)
+        return self.comoving_distance(z2) - self.comoving_distance(z1)
 
-    @unpack
-    def transverse_comoving_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def transverse_comoving_distance_z1z2(self, z1: Tensor, z2: Tensor) -> Tensor:
         """
         Compute the transverse comoving distance between two redshifts (Mpc).
 
@@ -188,13 +180,11 @@ class Cosmology(Parametrized):
 
         """
         return self.transverse_comoving_distance(
-            z2, params
-        ) - self.transverse_comoving_distance(z1, params)
+            z2
+        ) - self.transverse_comoving_distance(z1)
 
-    @unpack
-    def angular_diameter_distance(
-        self, z: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def angular_diameter_distance(self, z: Tensor) -> Tensor:
         """
         Compute the angular diameter distance to redshift z.
 
@@ -216,12 +206,10 @@ class Cosmology(Parametrized):
             *Unit: Mpc*
 
         """
-        return self.comoving_distance(z, params, **kwargs) / (1 + z)
+        return self.comoving_distance(z) / (1 + z)
 
-    @unpack
-    def angular_diameter_distance_z1z2(
-        self, z1: Tensor, z2: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def angular_diameter_distance_z1z2(self, z1: Tensor, z2: Tensor) -> Tensor:
         """
         Compute the angular diameter distance between two redshifts.
 
@@ -248,16 +236,13 @@ class Cosmology(Parametrized):
             *Unit: Mpc*
 
         """
-        return self.comoving_distance_z1z2(z1, z2, params, **kwargs) / (1 + z2)
+        return self.comoving_distance_z1z2(z1, z2) / (1 + z2)
 
-    @unpack
+    @forward
     def time_delay_distance(
         self,
         z_l: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the time delay distance between lens and source planes.
@@ -285,19 +270,16 @@ class Cosmology(Parametrized):
             *Unit: Mpc*
 
         """
-        d_l = self.angular_diameter_distance(z_l, params)
-        d_s = self.angular_diameter_distance(z_s, params)
-        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
+        d_l = self.angular_diameter_distance(z_l)
+        d_s = self.angular_diameter_distance(z_s)
+        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s)
         return (1 + z_l) * d_l * d_s / d_ls
 
-    @unpack
+    @forward
     def critical_surface_density(
         self,
         z_l: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        **kwargs,
     ) -> Tensor:
         """
         Compute the critical surface density between lens and source planes.
@@ -325,7 +307,7 @@ class Cosmology(Parametrized):
             *Unit: Msun/Mpc^2*
 
         """
-        d_l = self.angular_diameter_distance(z_l, params)
-        d_s = self.angular_diameter_distance(z_s, params)
-        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s, params)
+        d_l = self.angular_diameter_distance(z_l)
+        d_s = self.angular_diameter_distance(z_s)
+        d_ls = self.angular_diameter_distance_z1z2(z_l, z_s)
         return d_s / (4 * pi * G_over_c2 * d_l * d_ls)  # fmt: skip

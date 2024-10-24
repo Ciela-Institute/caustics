@@ -2,11 +2,10 @@
 from typing import Optional, Union, Annotated
 
 import torch
-from torch import Tensor
+from torch import Tensor, pi
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("EPL",)
@@ -180,32 +179,28 @@ class EPL(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("q", q)
-        self.add_param("phi", phi)
-        self.add_param("b", b)
-        self.add_param("t", t)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.b = Param("b", b, units="arcsec", valid=(0, None))
+        self.t = Param("t", t, units="unitless", valid=(0, 2))
         self.s = s
 
         self.n_iter = n_iter
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        b: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angles of the lens.
@@ -291,22 +286,18 @@ class EPL(ThinLens):
 
         return part_sum
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        b: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ):
         """
         Compute the lensing potential of the lens.
@@ -341,22 +332,18 @@ class EPL(ThinLens):
         """
         return func.potential_epl(x0, y0, q, phi, b, t, x, y, self.n_iter)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        b: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence of the lens, which describes the local density of the lens.

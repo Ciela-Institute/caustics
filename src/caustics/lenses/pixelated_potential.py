@@ -4,11 +4,10 @@ from typing import Optional, Annotated, Union
 import torch
 from torch import Tensor
 import numpy as np
+from caskade import forward, Param
 
 from ..utils import interp_bicubic
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 
 __all__ = ("PixelatedPotential",)
 
@@ -101,9 +100,11 @@ class PixelatedPotential(ThinLens):
         elif shape is not None and len(shape) != 2:
             raise ValueError(f"shape must specify a 2D tensor. Received shape={shape}")
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("potential_map", potential_map, shape)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.potential_map = Param(
+            "potential_map", potential_map, shape, units="unitless"
+        )
 
         self.pixelscale = pixelscale
         if potential_map is not None:
@@ -114,19 +115,15 @@ class PixelatedPotential(ThinLens):
             raise ValueError("Either potential_map or shape must be provided")
         self.fov = self.n_pix * self.pixelscale
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        potential_map: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        potential_map: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -177,19 +174,15 @@ class PixelatedPotential(ThinLens):
             )
         )
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        potential_map: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        potential_map: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -231,19 +224,15 @@ class PixelatedPotential(ThinLens):
             get_ddY=False,
         )[0].reshape(x.shape)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        potential_map: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        potential_map: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence at the specified positions. This method is not implemented.

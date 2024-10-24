@@ -1,5 +1,5 @@
 from math import pi
-import yaml
+from io import StringIO
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -8,6 +8,7 @@ from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
+from caustics.sims import build_simulator
 import numpy as np
 
 import pytest
@@ -17,7 +18,7 @@ import pytest
 @pytest.mark.parametrize("phi", [pi / 3, -pi / 4])
 @pytest.mark.parametrize("b", [0.1, 1.0])
 @pytest.mark.parametrize("t", [0.1, 1.0, 1.9])
-def test_lenstronomy_epl(sim_source, device, lens_models, q, phi, b, t):
+def test_lenstronomy_epl(sim_source, device, q, phi, b, t):
     if sim_source == "yaml":
         yaml_str = """\
         cosmology: &cosmology
@@ -29,9 +30,8 @@ def test_lenstronomy_epl(sim_source, device, lens_models, q, phi, b, t):
             init_kwargs:
                 cosmology: *cosmology
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("EPL")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
