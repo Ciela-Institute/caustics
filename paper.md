@@ -76,65 +76,66 @@ bibliography: paper.bib
 # Summary
 
 Gravitational lensing is the deflection of light rays due to the gravity of
-intervening masses. This phenomenon is observed in a variety of scales and
+intervening masses. This phenomenon is observed at a variety of scales and
 configurations, involving any non-uniform mass such as planets, stars, galaxies,
-clusters of galaxies, and even the large scale structure of the universe. Strong
+clusters of galaxies, and even the large-scale structure of the Universe. Strong
 lensing occurs when the distortions are significant and multiple images of the
-background source are observed. The lens objects must align on the sky of order
-$\sim 1$ arcsecond for galaxy-galaxy lensing, or 10's of arcseonds for
-cluster-galaxy lensing. As the discovery of lens systems has grown to the low
-thousands, these systems have become pivotal for precision measurements and
-addressing critical questions in astrophysics. Notably, they facilitate the
-measurement of the Universe's expansion rate [e.g. @holycow], dark matter [e.g.
-@Hezaveh2016; @Vegetti2014], supernovae [e.g. @Rodney2021], quasars [e.g.
-@Peng2006], and the first stars [e.g. @Welch2022] among other topics. With
-future surveys expected to discover hundreds of thousands of lensing systems,
-the modelling and simulation of such systems must occur at orders of magnitude
-larger scale then ever before. Here we present `caustics`, a Python package
-designed to facilitate machine learning and Bayesian methods to handle the
-extensive computational demands of modeling such a vast number of lensing
-systems.
+background source are observed. The lens and lensed object(s) must be aligned on
+the sky within $\sim 1$ arcsecond for galaxy-galaxy lensing, or tens of
+arcseconds for cluster-galaxy lensing. As the discovery of lens systems has
+grown to the low thousands, these systems have become pivotal for precision
+measurements and addressing critical questions in astrophysics. Notably, they
+are a tool for understanding a wide range of astrophysical phenomena including:
+dark matter [e.g. @Hezaveh2016; @Vegetti2014], supernovae [e.g. @Rodney2021], quasars
+[e.g. @Peng2006], the first stars [e.g. @Welch2022], and the Universe's expansion
+rate [e.g. @holycow]. With future surveys expected to discover hundreds of
+thousands of lensing systems, the modelling and simulation of such systems must
+be done at orders of magnitude larger scale than ever before. Here we present
+`caustics`, a Python package designed to facilitate machine learning and
+Bayesian methods to handle the extensive computational demands of modelling such
+a vast number of lensing systems.
 
 # Statement of need
 
-The next generation of astronomical surveys, such as the Large Synoptic Sky
-Telescope survey and Euclid wide survey, are expected to uncover hundreds of
-thousands of gravitational lenses [@Collett2015], dramatically increasing the
-scientific potential of gravitational lensing studies. Currently, analyzing a
-single lensing system can take several days or weeks, which will be infeasible
-as the number of known lenses increases by orders of magnitude. Thus,
-advancements such as computational acceleration via GPUs and/or algorithmic
-advances such as automatic differentiation are needed to reduce the analysis
-timescales. Machine learning will be critical to achieve the necessary speed to
-process these lenses, it will also be needed to meet the complexity of strong
-lens modelling. `caustics` is built with the future of lensing in mind, using
-`PyTorch` [@pytorch] to accelerate the low level computation and enable deep
-learning algorithms which rely on automatic differentiation. Automatic
-differentiation also benefits classical algorithms such as Hamiltonian Monte
-Carlo [@hmc]. With these tools available, `caustics` will provide greater than
-two orders of magnitude acceleration to most standard operations, enabling
-previously impractical analyses at scale.
+The next generation of astronomical surveys, such as the Legacy Survey of Space
+and Time, the Roman Core Community Surveys, and the Euclid wide survey, are
+expected to uncover hundreds of thousands of gravitational lenses
+[@Collett2015], dramatically increasing the scientific potential of
+gravitational lensing studies. Currently, analyzing a single lensing system can
+take several days or weeks, which will be infeasible as the number of known
+lenses increases by orders of magnitude. Thus, advancements such as
+computational acceleration via GPUs and/or algorithmic advances such as
+automatic differentiation are needed to reduce the analysis timescales. Machine
+learning will be critical to achieve the necessary speed to process these
+lenses, it will also be needed to meet the complexity of strong lens modelling.
+`caustics` is built with the future of lensing in mind, using `PyTorch`
+[@pytorch] to accelerate the low-level computation and enable deep learning
+algorithms which rely on automatic differentiation. Automatic differentiation
+also benefits classical algorithms such as Hamiltonian Monte Carlo [@hmc]. With
+these tools available, `caustics` provides greater than two orders of magnitude
+acceleration to most standard operations, enabling previously impractical
+analyses at scale.
 
 Several other simulation packages for strong gravitational lensing are already
-publicly available. The well established `lenstronomy` package has been in use
-since 2018 [@lenstronomy]; `GLAMER` is a C++ based code for modelling complex
+publicly available. The well-established `lenstronomy` package has been in use
+since 2018 [@lenstronomy]; `GLAMER` is a C++-based code for modelling complex
 and large dynamic range fields [@GLAMER]; `PyAutoLens` is also widely used
 [@PyAutoLens]; GIGA-Lens is a specialized JAX [@JAX] based gravitational lensing
 package [@GIGALens]; and Herculens is a more general JAX based lensing simulator
-package [@Herculens]; among others [@Keeton2011; @Kneib2011; @Galan2021;
-@Wagner2024]. There are also several "in house" codes developed for specialized
-analysis which are then not publicly released [e.g. @Suyu2010]. `Caustics`
-development has been primarily focused on three aspects: processing speed, user
-experience, and flexibility. The code is optimized to fully exploit PyTorch's
-capabilities, significantly enhancing processing speed. The user experience is
-streamlined by providing three interfaces to the code: configuration file,
-object-oriented, and functional, where each interface level requires more
-expertise but allows more capabilities. In this way, users with all levels of
-gravitational lensing simulation experience may effectively engage with the
-software. Flexibility is achieved by a determined focus on minimalism in the
-core functionality of `caustics`. All of these elements combine to make
-`caustics` a capable lensing simulator to support machine learning applications,
-and classical analysis.
+package [@Herculens]; among others [GRAVLENS @Keeton2011; LENSTOOL
+@Kneib2011; SLITRONOMY @Galan2021; paltax @Wagner2024]. There are also several "in
+house" codes developed for specialized analysis which are then not publicly released
+[e.g. @Suyu2010]. `Caustics` development has been primarily focused on three
+aspects: processing speed, user experience, and flexibility. The code is
+optimized to fully exploit PyTorch's capabilities, significantly enhancing
+processing speed. The user experience is streamlined by providing three
+interfaces to the code: configuration file, object-oriented, and functional,
+where each interface level requires more expertise but allows more capabilities.
+In this way, users with all levels of gravitational lensing simulation
+experience may effectively engage with the software. Flexibility is achieved by
+a determined focus on minimalism in the core functionality of `caustics`. All of
+these elements combine to make `caustics` a capable lensing simulator to support
+machine learning applications, and classical analysis.
 
 `Caustics` fulfills a timely need for a differentiable lensing simulator.
 Several other fields have already benefitted from such simulators, for example:
@@ -178,18 +179,17 @@ With these building blocks in place, one may construct fast and accurate
 simulators used to produce training sets for machine learning models or for
 inference on real-world systems. Neural networks have become a widespread tool
 for amortized inference of gravitational lensing parameter [@Hezaveh2017] or in
-the detection of gravitational lenses [@Petrillo2017; @Huang2021], but they
-require large and accurate training sets which can be created quickly with
-`caustics`. A demonstration of such a simulator is given in \autoref{fig:sample}
-which also demonstrates the importance of sub-pixel sampling. This involves
-raytracing through the lensing mass and extracting the brightness of the
-background source. Further, the image then must be convolved with a PSF for
-extra realism. All of these operations are collected into a single simulator
-which users may access and use simply as a function of the relevant lensing and
-light source parameters. Since `caustics` is written in `PyTorch`, its
-simulators are differentiable, thus one can compute gradients through the
-forward model. This enables machine learning algorithms such as recurrent
-inference machines [@Adam2023] and diffusion models [@Adam2022].
+the detection of gravitational lenses [@Petrillo2017; @Huang2021], but they require
+large and accurate training sets which can be created quickly with `caustics`. A
+demonstration of such a simulator is given in \autoref{fig:sample} which also demonstrates
+the importance of sub-pixel sampling. This involves raytracing through the lensing
+mass and extracting the brightness of the background source. Further, the image then
+must be convolved with a PSF for extra realism. All of these operations are collected
+into a single simulator which users may access and use simply as a function of the
+relevant lensing and light source parameters. Since `caustics` is written in `PyTorch`,
+its simulators are differentiable, thus one can compute gradients through the forward
+model. This enables machine learning algorithms such as recurrent inference machines
+[@Adam2023] and diffusion models [@Adam2022].
 
 ![Example simulated gravitational lens system defined by a Sérsic source, SIE lens mass, and Sérsic lens light. Left, the pixel map is sampled only at the midpoint of each pixel. Middle, the pixel map is supersampled and then integrated using gaussian quadrature integration for greater accuracy. Right, the fractional difference between the two is shown. We can see that in this case the midpoint sampling is inaccurate by up to 30% of the pixel value in areas of high contrast. The exact inaccuracy depends greatly on the exact configuration.\label{fig:sample}](media/showquad.png)
 
@@ -366,14 +366,14 @@ leveraging GPUs. Since many machine learning algorithms are "data hungry", this
 translates to better performance with more examples to learn from. Literature on
 machine learning applications in strong gravitational lensing underscores the
 benefits of this generation capacity [@Brehmer2019; @Chianese2020; @Coogan2020;
-@Mishra2022; @Karchev2022; @Karchev2022b]. Second, the differentiable nature of
-`caustics` allows it to be integrated directly into machine learning workflows.
-This could mean using `caustics` as part of a loss function. Alternatively, it
-could be through a statistical paradigm like diffusion modelling, in which
-`caustics` would be directly integrated in the sampling procedure. It has
-already been shown that differentiable lensing simulators, coupled with machine
-learning and diffusion modelling, can massively improve source reconstruction in
-strong gravitational lenses [@Adam2022] and in weak lensing [@Remy2023].
+@Mishra2022; @Karchev2022; @Karchev2022b]. Second, the differentiable nature of `caustics`
+allows it to be integrated directly into machine learning workflows. This could mean
+using `caustics` as part of a loss function. Alternatively, it could be through a
+statistical paradigm like diffusion modelling, in which `caustics` would be directly
+integrated in the sampling procedure. It has already been shown that differentiable
+lensing simulators, coupled with machine learning and diffusion modelling, can massively
+improve source reconstruction in strong gravitational lenses [@Adam2022] and in weak
+lensing [@Remy2023].
 
 # Conclusions
 
