@@ -410,6 +410,7 @@ class TNFW(ThinLens):
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         scale_radius: Annotated[Tensor, "Param"],
         tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
@@ -463,7 +464,7 @@ class TNFW(ThinLens):
 
         d_l = self.cosmology.angular_diameter_distance(z_l)
         critical_density = self.cosmology.critical_surface_density(z_l, z_s)
-        M0 = self.M0()
+        M0 = self.M0(z_l=z_l, mass=mass, scale_radius=scale_radius, tau=tau)
         return func.convergence_tnfw(
             x0,
             y0,
@@ -545,6 +546,7 @@ class TNFW(ThinLens):
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         scale_radius: Annotated[Tensor, "Param"],
         tau: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
@@ -602,7 +604,7 @@ class TNFW(ThinLens):
 
         """
         d_l = self.cosmology.angular_diameter_distance(z_l)
-        M0 = self.M0()
+        M0 = self.M0(z_l=z_l, mass=mass, scale_radius=scale_radius, tau=tau)
         return func.physical_deflection_angle_tnfw(
             x0, y0, scale_radius, tau, x, y, M0, d_l, self._F_mode, self.s
         )
@@ -616,6 +618,7 @@ class TNFW(ThinLens):
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         scale_radius: Annotated[Tensor, "Param"],
         tau: Annotated[Tensor, "Param"],
     ) -> Tensor:
@@ -674,7 +677,7 @@ class TNFW(ThinLens):
         d_s = self.cosmology.angular_diameter_distance(z_s)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
 
-        M0 = self.M0()
+        M0 = self.M0(z_l=z_l, mass=mass, scale_radius=scale_radius, tau=tau)
         return func.potential_tnfw(
             x0, y0, scale_radius, tau, x, y, M0, d_l, d_s, d_ls, self._F_mode, self.s
         )

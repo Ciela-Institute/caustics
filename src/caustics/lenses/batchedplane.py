@@ -1,6 +1,6 @@
 import torch
 from torch import Tensor
-from caskade import forward, ActiveContext
+from caskade import forward
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
 
@@ -86,14 +86,15 @@ class BatchedPlane(ThinLens):
 
         """
 
-        params = tuple(p.value for p in self.lens.dynamic_params)
-        batchdims = tuple(-(len(p.shape) + 1) for p in self.lens.dynamic_params)
-        # deactivate the active context, so that we can restart it with vmap
-        with ActiveContext(self.lens, False):
-            ax, ay = torch.vmap(
-                self.lens.reduced_deflection_angle,
-                in_dims=(None, None, None, batchdims),
-            )(x, y, z_s, params)
+        # Collect the dynamic parameters to vmap over
+        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        batchdims = dict(
+            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+        )
+        ax, ay = torch.vmap(
+            lambda p: self.lens.reduced_deflection_angle(x, y, z_s, **p),
+            in_dims=(batchdims,),
+        )(params)
         return ax.sum(dim=0), ay.sum(dim=0)
 
     @forward
@@ -135,13 +136,15 @@ class BatchedPlane(ThinLens):
             *Unit: unitless*
 
         """
-        params = tuple(p.value for p in self.lens.dynamic_params)
-        batchdims = tuple(-(len(p.shape) + 1) for p in self.lens.dynamic_params)
-        # deactivate the active context, so that we can restart it with vmap
-        with ActiveContext(self.lens, False):
-            convergence = torch.vmap(
-                self.lens.convergence, in_dims=(None, None, None, batchdims)
-            )(x, y, z_s, params)
+        # Collect the dynamic parameters to vmap over
+        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        batchdims = dict(
+            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+        )
+        convergence = torch.vmap(
+            lambda p: self.lens.convergence(x, y, z_s, **p),
+            in_dims=(batchdims,),
+        )(params)
         return convergence.sum(dim=0)
 
     @forward
@@ -183,11 +186,13 @@ class BatchedPlane(ThinLens):
             *Unit: arcsec^2*
 
         """
-        params = tuple(p.value for p in self.lens.dynamic_params)
-        batchdims = tuple(-(len(p.shape) + 1) for p in self.lens.dynamic_params)
-        # deactivate the active context, so that we can restart it with vmap
-        with ActiveContext(self.lens, False):
-            potential = torch.vmap(
-                self.lens.potential, in_dims=(None, None, None, batchdims)
-            )(x, y, z_s, params)
+        # Collect the dynamic parameters to vmap over
+        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        batchdims = dict(
+            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+        )
+        potential = torch.vmap(
+            lambda p: self.lens.potential(x, y, z_s, **p),
+            in_dims=(batchdims,),
+        )(params)
         return potential.sum(dim=0)
