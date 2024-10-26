@@ -983,7 +983,7 @@ class ThinLens(Lens):
 
         .. math::
 
-            \\Delta t = \\frac{1 + z_l}{c} \\frac{D_s}{D_l D_{ls}} \\left[ \\frac{1}{2}|\\vec{\\alpha}(\\vec{\\theta})|^2 - \psi(\\vec{\\theta}) \\right]
+            \\Delta t = \\frac{1 + z_l}{c} \\frac{D_s}{D_l D_{ls}} \\left[ \\frac{1}{2}|\\vec{\\alpha}(\\vec{\\theta})|^2 - \\psi(\\vec{\\theta}) \\right]
 
         where :math:`\\vec{\\alpha}(\\vec{\\theta})` is the deflection angle,
         :math:`\\psi(\\vec{\\theta})` is the lensing potential,

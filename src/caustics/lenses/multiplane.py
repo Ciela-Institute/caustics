@@ -144,20 +144,20 @@ class Multiplane(ThickLens):
 
         .. math::
 
-          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\left[\vec{\theta} - \sum_{j=1}^{i}\bf{\alpha}^j(\vec{x}^j)\right]
+          \\vec{x}^{i+1} = \\vec{x}^i + D_{i+1,i}\\left[\\vec{\\theta} - \\sum_{j=1}^{i}\\bf{\\alpha}^j(\\vec{x}^j)\\right]
 
-        As an initialization we set the physical positions at the first lensing plane to be :math:`\vec{\theta}D_{1,0}` which is just propagation through regular space to the first plane.
-        Note that :math:`\vec{\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
+        As an initialization we set the physical positions at the first lensing plane to be :math:`\\vec{\\theta}D_{1,0}` which is just propagation through regular space to the first plane.
+        Note that :math:`\\vec{\\alpha}` is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
 
         .. math::
 
-          \vec{x}^{i+1} = \vec{x}^i + D_{i+1,i}\vec{\theta}^{i}
-          \vec{\theta}^{i+1} = \vec{\theta}^{i} -  \alpha^i(\vec{x}^{i+1})
+          \\vec{x}^{i+1} = \\vec{x}^i + D_{i+1,i}\\vec{\theta}^{i}
+          \\vec{\\theta}^{i+1} = \\vec{\\theta}^{i} -  \\alpha^i(\\vec{x}^{i+1})
 
-        Here we set as initialization :math:`\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer).
-        The indexing of :math:`\vec{x}^i` and :math:`\vec{\theta}^i` indicates the properties at the plane :math:`i`,
+        Here we set as initialization :math:`\\vec{\theta}^0 = theta` the observation angular coordinates and :math:`\\vec{x}^0 = 0` the initial physical coordinates (i.e. the observation rays come from a point at the observer).
+        The indexing of :math:`\\vec{x}^i` and :math:`\\vec{\\theta}^i` indicates the properties at the plane :math:`i`,
         and 0 means the observer, 1 is the first lensing plane (infinitesimally after the plane since the deflection has been applied),
-        and so on. Note that in the actual implementation we start at :math:`\vec{x}^1` and :math:`\vec{\theta}^0`
+        and so on. Note that in the actual implementation we start at :math:`\\vec{x}^1` and :math:`\\vec{\\theta}^0`
         and begin at the second step in the recursion formula.
 
         Parameters
@@ -277,12 +277,12 @@ class Multiplane(ThickLens):
         This is based on equation 6.22 in Petters et al. 2001.
         For the time delay of a light path from the observer to the source, the following equation is used::
 
-            \Delta t = \sum_{i=1}^{N-1} \tau_{i,i+1} \left[ \frac{1}{2} \left( \vec{\alpha}^i \right)^2 - \beta_{i,i+1} \psi^i \right] \\
-            \tau_{i,j} = (1 + z_i) \frac{D_i D_{j}}{D_{i,j} c} \\
-            \beta_{i,j} = \frac{D_{i,j} D_s}{D_{j} D_{i,s}} \\
+            \\Delta t = \\sum_{i=1}^{N-1} \\tau_{i,i+1} \\left[ \\frac{1}{2} \\left( \\vec{\\alpha}^i \\right)^2 - \\beta_{i,i+1} \\psi^i \\right] \\\\
+            \\tau_{i,j} = (1 + z_i) \\frac{D_i D_{j}}{D_{i,j} c} \\\\
+            \\beta_{i,j} = \\frac{D_{i,j} D_s}{D_{j} D_{i,s}} \\\\
 
-        where :math:`\vec{\alpha}^i` is the deflection angle at the i-th lens plane,
-        :math:`\psi^i` is the lensing potential at the i-th lens plane,
+        where :math:`\\vec{\\alpha}^i` is the deflection angle at the i-th lens plane,
+        :math:`\\psi^i` is the lensing potential at the i-th lens plane,
         :math:`D_i` is the comoving distance to the i-th lens plane,
         :math:`D_{i,j}` is the comoving distance between the i-th and j-th lens plane,
         :math:`D_s` is the comoving distance to the source,

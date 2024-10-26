@@ -11,6 +11,8 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane, PixelatedConvergence
 from caustics.utils import meshgrid
 
+import pytest
+
 
 def test(device):
     rtol = 0
@@ -61,18 +63,19 @@ def test(device):
         multi_plane=True,
     )
 
-    lens_test_helper(
-        lens,
-        lens_ls,
-        z_s,
-        x,
-        kwargs_ls,
-        rtol,
-        atol,
-        test_Psi=False,
-        test_kappa=False,
-        device=device,
-    )
+    with pytest.warns(UserWarning):
+        lens_test_helper(
+            lens,
+            lens_ls,
+            z_s,
+            x,
+            kwargs_ls,
+            rtol,
+            atol,
+            test_Psi=False,
+            test_kappa=False,
+            device=device,
+        )
 
 
 def test_multiplane_time_delay(device):
