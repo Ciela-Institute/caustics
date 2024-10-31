@@ -17,10 +17,10 @@ authors:
     orcid: 0000-0001-8806-7936
     equal-contrib: true
     affiliation: "1, 2, 3"
-  - name: Adam Coogan<sup>[1](#myfootnote1)</sup>
+  - name: Adam Coogan
     orcid: 0000-0002-0055-1780
     equal-contrib: true
-    affiliation: "1, 2, 3"
+    affiliation: "1, 2, 3, ${\dagger}$"
   - name: M. J. Yantovski-Barth
     orcid: 0000-0001-5200-4095
     affiliation: "1, 2, 3"
@@ -67,13 +67,12 @@ affiliations:
       eScience Institute Scientific Software Engineering Center, 1410 NE Campus
       Pkwy, Seattle, WA 98195, USA
     index: 5
+  - name:
+      Work done while at UdeM, Ciela, and Mila
+    index: ${\dagger}$
 date: 19 March 2024
 bibliography: paper.bib
 ---
-
-<a name="myfootnote1">1</a>: Work done while at UdeM, Ciela, and Mila
-
-<!---[^adam]: Work done while at UdeM, Ciela, and Mila --->
 
 # Summary
 
