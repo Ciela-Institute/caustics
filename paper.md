@@ -17,7 +17,7 @@ authors:
     orcid: 0000-0001-8806-7936
     equal-contrib: true
     affiliation: "1, 2, 3"
-  - name: Adam Coogan[^adam]
+  - name: Adam Coogan<sup>[1](#myfootnote1)</sup>
     orcid: 0000-0002-0055-1780
     equal-contrib: true
     affiliation: "1, 2, 3"
@@ -71,7 +71,9 @@ date: 19 March 2024
 bibliography: paper.bib
 ---
 
-[^adam]: Work done while at UdeM, Ciela, and Mila
+<a name="myfootnote1">1</a>: Work done while at UdeM, Ciela, and Mila
+
+<!---[^adam]: Work done while at UdeM, Ciela, and Mila --->
 
 # Summary
 
