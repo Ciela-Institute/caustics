@@ -29,10 +29,10 @@ authors:
     affiliation: "1, 2, 3"
   - name: Landung Setiawan
     orcid: 0000-0002-1624-2667
-    affiliation: "5"
+    affiliation: "4"
   - name: Cordero Core
     orcid: 0000-0002-3531-3221
-    affiliation: "5"
+    affiliation: "4"
   - name: Ronan Legin
     orcid: 0000-0001-9459-6316
     affiliation: "1, 2, 3"
@@ -44,10 +44,10 @@ authors:
     affiliation: "1, 2, 3"
   - name: Yashar Hezaveh
     orcid: 0000-0002-8669-5733
-    affiliation: "1, 2, 3, 4"
+    affiliation: "1, 2, 3, 5, 6, 7"
   - name: Laurence Perreault-Levasseur
     orcid: 0000-0003-3544-3939
-    affiliation: "1, 2, 3, 4"
+    affiliation: "1, 2, 3, 5, 6, 7"
 affiliations:
   - name:
       Ciela Institute - Montréal Institute for Astrophysical Data Analysis and
@@ -60,13 +60,17 @@ affiliations:
       Mila - Québec Artificial Intelligence Institute, Montréal, Québec, Canada
     index: 3
   - name:
-      Center for Computational Astrophysics, Flatiron Institute, 162 5th Avenue,
-      10010, New York, NY, USA
-    index: 4
-  - name:
       eScience Institute Scientific Software Engineering Center, 1410 NE Campus
       Pkwy, Seattle, WA 98195, USA
+    index: 4
+  - name:
+      Center for Computational Astrophysics, Flatiron Institute, 162 5th Avenue,
+      10010, New York, NY, USA
     index: 5
+  - name: Perimeter Institute for Theoretical Physics, Waterloo, Canada
+    index: 6
+  - name: Trottier Space Institute, McGill University, Montréal, Canada
+    index: 7
   - name: Work done while at UdeM, Ciela, and Mila
     index: †
 date: 19 March 2024
