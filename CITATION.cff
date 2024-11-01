@@ -1,5 +1,5 @@
 cff-version: 1.0.0
-message: "If you use this software, please cite it as below."
+message: "If you use this software, please cite the JOSS paper."
 authors:
 - family-names: "Stone"
   given-names: "Connor"
