@@ -46,6 +46,9 @@ from .lenses.func import (
     M0_scalemass_tnfw,
     M0_totmass_tnfw,
     concentration_tnfw,
+    reduced_deflection_angle_multipole,
+    potential_multipole,
+    convergence_multipole,
 )
 
 from .light.func import brightness_sersic, k_lenstronomy, k_sersic
@@ -98,6 +101,9 @@ __all__ = (
     "M0_scalemass_tnfw",
     "M0_totmass_tnfw",
     "concentration_tnfw",
+    "reduced_deflection_angle_multipole",
+    "potential_multipole",
+    "convergence_multipole",
     "brightness_sersic",
     "k_lenstronomy",
     "k_sersic",
