@@ -23,6 +23,7 @@ from .lenses import (
     SinglePlane,
     MassSheet,
     TNFW,
+    Multipole,
     EnclosedMass,
 )
 from .light import (
@@ -30,6 +31,7 @@ from .light import (
     Pixelated,
     PixelatedTime,
     Sersic,
+    LightStack,
     StarSource,
 )
 from . import utils
@@ -62,11 +64,13 @@ __all__ = [
     "SinglePlane",
     "MassSheet",
     "TNFW",
+    "Multipole",
     "EnclosedMass",
     "Source",
     "Pixelated",
     "PixelatedTime",
     "Sersic",
+    "LightStack",
     "StarSource",
     "utils",
     "LensSource",
