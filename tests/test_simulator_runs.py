@@ -193,6 +193,61 @@ def test_simulator_runs(sim_source, device, mocker):
     assert torch.allclose(sim(), sim_q3(), rtol=1e-1)
 
 
+def test_fft_vs_conv2d():
+    # Model
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lensmass = SIE(
+        name="lens",
+        cosmology=cosmology,
+        z_l=1.0,
+        x0=0.0,
+        y0=0.01,
+        q=0.5,
+        phi=pi / 3.0,
+        b=1.0,
+    )
+
+    source = Sersic(
+        name="source", x0=0.01, y0=-0.03, q=0.6, phi=-pi / 4, n=2.0, Re=0.5, Ie=1.0
+    )
+    lenslight = Sersic(
+        name="lenslight", x0=0.0, y0=0.01, q=0.7, phi=pi / 4, n=3.0, Re=0.7, Ie=1.0
+    )
+
+    psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
+    # psf[3, 4] = 0.1
+    psf /= psf.sum()
+
+    sim_fft = LensSource(
+        name="simulatorfft",
+        lens=lensmass,
+        source=source,
+        pixelscale=0.05,
+        pixels_x=50,
+        lens_light=lenslight,
+        psf=psf,
+        psf_mode="fft",
+        z_s=2.0,
+        quad_level=3,
+    )
+
+    sim_conv2d = LensSource(
+        name="simulatorconv2d",
+        lens=lensmass,
+        source=source,
+        pixelscale=0.05,
+        pixels_x=50,
+        lens_light=lenslight,
+        psf=psf,
+        psf_mode="conv2d",
+        z_s=2.0,
+        quad_level=3,
+    )
+
+    print(torch.max(torch.abs((sim_fft() - sim_conv2d()) / sim_fft())))
+    assert torch.allclose(sim_fft(), sim_conv2d(), rtol=1e-1)
+
+
 def test_microlens_simulator_runs():
     cosmology = FlatLambdaCDM()
     sie = SIE(cosmology=cosmology, name="lens")
