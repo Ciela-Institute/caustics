@@ -150,11 +150,6 @@ class LensSource(Module):
     ):
         super().__init__(name)
 
-        # Lensing models
-        self.lens = lens
-        self.source = source
-        self.lens_light = lens_light
-
         # Configure PSF
         self._psf_mode = psf_mode
         if psf is not None:
@@ -167,6 +162,11 @@ class LensSource(Module):
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
         self._pixelscale = pixelscale
+
+        # Lensing models
+        self.lens = lens
+        self.source = source
+        self.lens_light = lens_light
 
         # Image grid
         self._pixels_x = pixels_x
