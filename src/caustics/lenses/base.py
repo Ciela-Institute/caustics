@@ -80,6 +80,31 @@ class Lens(Parametrized):
             raise ValueError("method should be one of: autograd, finitediff")
 
     @unpack
+    def shear(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        method="autograd",
+        pixelscale: Optional[Tensor] = None,
+        **kwargs,
+    ):
+        """
+        General shear calculation for a lens model using the jacobian of the
+        lens equation. Individual lenses may implement more efficient methods.
+        """
+        A = self.jacobian_lens_equation(
+            x, y, z_s, params=params, method=method, pixelscale=pixelscale
+        )
+        I = torch.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
+            *[1] * len(A.shape[:-2]), 2, 2
+        )
+        negPsi = 0.5 * (A[..., 0, 0] + A[..., 1, 1]) * I - A
+        return 0.5 * (negPsi[..., 0, 0] - negPsi[..., 1, 1]), negPsi[..., 0, 1]
+
+    @unpack
     def magnification(
         self,
         x: Tensor,
@@ -193,34 +218,7 @@ class Lens(Parametrized):
             x0 = torch.zeros((), device=bx.device, dtype=bx.dtype)
         if y0 is None:
             y0 = torch.zeros((), device=by.device, dtype=by.dtype)
-        # X = torch.stack((x0, y0)).repeat(4, 1)
-        # X[0] -= fov / 2
-        # X[1][0] -= fov / 2
-        # X[1][1] += fov / 2
-        # X[2][0] += fov / 2
-        # X[2][1] -= fov / 2
-        # X[3] += fov / 2
 
-        # Sx, Sy = raytrace(X[..., 0], X[..., 1])
-        # S = torch.stack((Sx, Sy)).T
-        # res1, ap1 = func.triangle_search(
-        #     torch.stack((bx, by)),
-        #     X[:3],
-        #     S[:3],
-        #     raytrace,
-        #     epsilon,
-        #     torch.zeros((0, 2)),
-        # )
-        # res2, ap2 = func.triangle_search(
-        #     torch.stack((bx, by)),
-        #     X[1:],
-        #     S[1:],
-        #     raytrace,
-        #     epsilon,
-        #     torch.zeros((0, 2)),
-        # )
-        # res = torch.cat((res1, res2), dim=0)
-        # return res[:, 0], res[:, 1], torch.cat((ap1, ap2), dim=0)
         return func.forward_raytrace(
             torch.stack((bx, by)), raytrace, x0, y0, fov, divisions, epsilon
         )
