@@ -55,16 +55,16 @@ class PixelatedConvergence(ThinLens):
             Literal["zero", "circular", "reflect", "tile"],
             "Specifies the type of padding",
         ] = "zero",
+        window_kernel: Annotated[float, "Amount of kernel to be windowed"] = 1.0 / 8.0,
         name: NameType = None,
     ):
         """Strong lensing with user provided kappa map
 
         PixelatedConvergence is a class for strong gravitational lensing with a
-        user-provided kappa map. It inherits from the ThinLens class.
-        This class enables the computation of deflection angles and
-        lensing potential by applying the user-provided kappa map to a
-        grid using either Fast Fourier Transform (FFT) or a 2D
-        convolution.
+        user-provided kappa map. It inherits from the ThinLens class. This class
+        enables the computation of deflection angles and lensing potential by
+        applying the user-provided kappa map to a grid using either Fast Fourier
+        Transform (FFT) or a 2D convolution.
 
         Attributes
         ----------
@@ -103,26 +103,31 @@ class PixelatedConvergence(ThinLens):
             The shape of the convergence map.
 
         convolution_mode: str, optional
-            The convolution mode for calculating deflection angles and lensing potential.
-            It can be either "fft" (Fast Fourier Transform) or "conv2d" (2D convolution).
-            Default is "fft".
+            The convolution mode for calculating deflection angles and lensing
+            potential. It can be either "fft" (Fast Fourier Transform) or
+            "conv2d" (2D convolution). Default is "fft".
 
         use_next_fast_len: bool, optional
             If True, adds additional padding to speed up the FFT by calling
-            `scipy.fft.next_fast_len`.
-            The speed boost can be substantial when `n_pix` is a multiple of a
-            small prime number. Default is True.
+            `scipy.fft.next_fast_len`. The speed boost can be substantial when
+            `n_pix` is a multiple of a small prime number. Default is True.
 
         padding: { "zero", "circular", "reflect", "tile" }
 
-            Specifies the type of padding to use:
-            "zero" will do zero padding,
-            "circular" will do cyclic boundaries.
-            "reflect" will do reflection padding.
-            "tile" will tile the image at 2x2 which
-            basically identical to circular padding, but is easier.
+            Specifies the type of padding to use: "zero" will do zero padding,
+            "circular" will do cyclic boundaries. "reflect" will do reflection
+            padding. "tile" will tile the image at 2x2 which basically identical
+            to circular padding, but is easier. Use zero padding to represent an
+            overdensity, the other padding schemes represent a mass distribution
+            embedded in a field of similar mass distributions.
 
             Generally you should use either "zero" or "tile".
+
+        window_kernel: float, optional
+            Amount of kernel to be windowed, specify the fraction of the kernel
+            size from which a linear window scaling will ensure the edges go to
+            zero for the purpose of FFT stability. Set to 0 for no windowing.
+            Default is 1/8.
 
         """
 
@@ -154,6 +159,13 @@ class PixelatedConvergence(ThinLens):
         self.ax_kernel, self.ay_kernel, self.potential_kernel = (
             func.build_kernels_pixelated_convergence(self.pixelscale, self.n_pix)
         )
+        # Window the kernels if needed
+        if padding != "zero" and convolution_mode == "fft" and window_kernel > 0:
+            window = func.build_window_pixelated_convergence(
+                window_kernel, self.ax_kernel.shape
+            )
+            self.ax_kernel = self.ax_kernel * window
+            self.ay_kernel = self.ay_kernel * window
 
         self.potential_kernel_tilde = None
         self.ax_kernel_tilde = None
@@ -215,14 +227,14 @@ class PixelatedConvergence(ThinLens):
         """
         if convolution_mode == "fft":
             # Create FFTs of kernels
-            self.potential_kernel_tilde = func._fft2_padded(
-                self.potential_kernel, self.n_pix, self.padding
+            self.potential_kernel_tilde = torch.fft.rfft2(
+                self.potential_kernel, func._fft_size(self.n_pix)
             )
-            self.ax_kernel_tilde = func._fft2_padded(
-                self.ax_kernel, self.n_pix, self.padding
+            self.ax_kernel_tilde = torch.fft.rfft2(
+                self.ax_kernel, func._fft_size(self.n_pix)
             )
-            self.ay_kernel_tilde = func._fft2_padded(
-                self.ay_kernel, self.n_pix, self.padding
+            self.ay_kernel_tilde = torch.fft.rfft2(
+                self.ay_kernel, func._fft_size(self.n_pix)
             )
         elif convolution_mode == "conv2d":
             # Drop FFTs of kernels
