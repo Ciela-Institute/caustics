@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 from torch import Tensor
 from caskade import forward
@@ -34,12 +36,14 @@ class BatchedPlane(ThinLens):
         lens: ThinLens,
         name: NameType = None,
         z_l: ZLType = None,
+        chunk_size: Optional[int] = None,
     ):
         """
         Initialize the SinglePlane lens model.
         """
         super().__init__(cosmology, z_l=z_l, name=name)
         self.lens = lens
+        self.chunk_size = chunk_size
 
     @forward
     def reduced_deflection_angle(
@@ -94,6 +98,7 @@ class BatchedPlane(ThinLens):
         ax, ay = torch.vmap(
             lambda p: self.lens.reduced_deflection_angle(x, y, z_s, **p),
             in_dims=(batchdims,),
+            chunk_size=self.chunk_size,
         )(params)
         return ax.sum(dim=0), ay.sum(dim=0)
 
@@ -144,6 +149,7 @@ class BatchedPlane(ThinLens):
         convergence = torch.vmap(
             lambda p: self.lens.convergence(x, y, z_s, **p),
             in_dims=(batchdims,),
+            chunk_size=self.chunk_size,
         )(params)
         return convergence.sum(dim=0)
 
@@ -194,5 +200,6 @@ class BatchedPlane(ThinLens):
         potential = torch.vmap(
             lambda p: self.lens.potential(x, y, z_s, **p),
             in_dims=(batchdims,),
+            chunk_size=self.chunk_size,
         )(params)
         return potential.sum(dim=0)
