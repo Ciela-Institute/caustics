@@ -93,6 +93,8 @@ def test(sim_source, device, lens_models, m, c, t):
         test_alpha=True,
         test_Psi=False,
         test_kappa=True,
+        test_shear=True,
+        shear_egregious=True,  # not sure why match is so bad
         device=device,
     )
 

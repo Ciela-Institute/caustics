@@ -101,7 +101,7 @@ class Lens(Parametrized):
         I = torch.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
             *[1] * len(A.shape[:-2]), 2, 2
         )
-        negPsi = 0.5 * (A[..., 0, 0] + A[..., 1, 1]) * I - A
+        negPsi = 0.5 * (A[..., 0, 0] + A[..., 1, 1]).unsqueeze(-1).unsqueeze(-1) * I - A
         return 0.5 * (negPsi[..., 0, 0] - negPsi[..., 1, 1]), negPsi[..., 0, 1]
 
     @unpack
