@@ -215,7 +215,7 @@ def test_fft_vs_conv2d():
     )
 
     psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
-    # psf[3, 4] = 0.1
+    psf[3, 4] = 0.1  # make PSF asymmetric
     psf /= psf.sum()
 
     sim_fft = LensSource(
