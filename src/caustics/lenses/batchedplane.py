@@ -5,6 +5,7 @@ from torch import Tensor
 from caskade import forward
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
+from ..utils import vmap_reduce
 
 __all__ = ("BatchedPlane",)
 
@@ -95,12 +96,17 @@ class BatchedPlane(ThinLens):
         batchdims = dict(
             (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
         )
-        ax, ay = torch.vmap(
-            lambda p: self.lens.reduced_deflection_angle(x, y, z_s, **p),
-            in_dims=(batchdims,),
+        batchdims["x"] = None
+        batchdims["y"] = None
+        batchdims["z_s"] = None
+        vr_deflection_angle = vmap_reduce(
+            lambda p: self.lens.reduced_deflection_angle(**p),
+            reduce_func=lambda x: (x[0].sum(dim=0), x[1].sum(dim=0)),
             chunk_size=self.chunk_size,
-        )(params)
-        return ax.sum(dim=0), ay.sum(dim=0)
+            in_dims=batchdims,
+            out_dims=(0, 0),
+        )
+        return vr_deflection_angle(x=x, y=y, z_s=z_s, **params)
 
     @forward
     def convergence(

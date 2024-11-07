@@ -1,6 +1,6 @@
 # mypy: disable-error-code="misc", disable-error-code="attr-defined"
-from math import pi
-from typing import Callable, Optional, Tuple, Union, Any, Literal
+from math import pi, ceil
+from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
 from importlib import import_module
 from functools import partial, lru_cache
 
@@ -958,6 +958,120 @@ def vmap_n(
         vmapd_func = torch.vmap(vmapd_func, in_dims, out_dims, randomness)
 
     return vmapd_func
+
+
+def _chunk_input(x, k, in_dims, chunk_size):
+    if isinstance(in_dims, tuple):
+        if chunk_size is None:
+            n_chunks = 1
+        else:
+            i = 0
+            while in_dims[i] is None:
+                i += 1
+            B = x[i].shape[in_dims[i]]
+            n_chunks = ceil(B / chunk_size)
+
+        # Break data into chunks
+        chunks = [[] for _ in range(n_chunks)]
+        for subx, in_dim in zip(x, in_dims):
+            if in_dim is None:
+                subchunking = [subx] * n_chunks
+            else:
+                subchunking = subx.chunk(n_chunks, dim=in_dim)
+            for j, subchunk in enumerate(subchunking):
+                chunks[j].append(subchunk)
+    else:  # isinstance(in_dims, dict)
+        if chunk_size is None:
+            n_chunks = 1
+        else:
+            for key, value in in_dims.items():
+                if value is not None:
+                    B = k[key].shape[value]
+                    n_chunks = ceil(B / chunk_size)
+                    break
+
+        # Break data into chunks
+        chunks = [{} for _ in range(n_chunks)]
+        for key, value in in_dims.items():
+            if value is None:
+                subchunking = [k[key]] * n_chunks
+            else:
+                subchunking = k[key].chunk(n_chunks, dim=value)
+            for j, subchunk in enumerate(subchunking):
+                chunks[j][key] = subchunk
+    return chunks
+
+
+def vmap_reduce(
+    func: Callable,
+    reduce_func: Callable = lambda x: x.sum(dim=0),
+    chunk_size: Optional[int] = None,
+    in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
+    out_dims: Union[int, Tuple[int, ...]] = 0,
+    **kwargs,
+) -> Tensor:
+    """
+    Applies `torch.vmap` to `func` and then reduces the output using
+    `reduce_func` along the appropriate dimensions. This saves on memory
+    management if the dimension being reduced can cause the intermediate tensor
+    (before reduction) to be large.
+
+    Note
+    ----
+    The chunking and reduction is only "one level deep". If the output of `func`
+    is still large even after chunking, this function will not completely solve
+    the problem. Essentially if the batch dimension divided by chunk_size is
+    still larger than chunk_size, then you will still have a large intermediate
+    tensor.
+
+    Parameters
+    ----------
+    func: Callable
+        The function to transform.
+    reduce_func: Callable
+        The function to reduce the output of `func`.
+    in_dims: Tuple[int,...]
+        The dimensions to vectorize over in the input.
+    out_dims: Tuple[int,...]
+        The dimension to stack the output over.
+    chunk_size: (Optional[int])
+        The size of the chunks to process. If None, the entire input is
+        processed at once.
+    kwargs: Dict
+        Additional keyword arguments to pass to `torch.vmap`.
+
+    Returns
+    -------
+    Tensor
+        The reduced output.
+    """
+    if isinstance(in_dims, tuple):
+        vfunc = torch.vmap(func, in_dims, **kwargs)
+    else:  # isinstance(in_dims, dict)
+        vfunc = torch.vmap(func, (in_dims,), **kwargs)
+
+    def wrapped(*x, **k):
+        # Determine chunks
+        chunks = _chunk_input(x, k, in_dims, chunk_size)
+
+        # Process and reduce the chunks
+        if isinstance(in_dims, tuple):
+            out = tuple(reduce_func(vfunc(*chunk)) for chunk in chunks)
+        else:  # isinstance(in_dims, dict)
+            out = tuple(reduce_func(vfunc(chunk)) for chunk in chunks)
+
+        # Stack the output
+        if isinstance(out_dims, int):
+            out = torch.stack(out, dim=out_dims)
+        else:
+            out = tuple(
+                torch.stack([o[i] for o in out], dim=d) for i, d in enumerate(out_dims)
+            )
+
+        # Reduce the output
+        return reduce_func(out)
+
+    return wrapped
 
 
 def cluster_means(xs: Tensor, k: int):

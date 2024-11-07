@@ -37,8 +37,8 @@ class MassSheet(ThinLens):
 
         *Unit: arcsec*
 
-    sd: Optional[Union[Tensor, float]]
-        Surface density normalized by the critical surface density.
+    kappa: Optional[Union[Tensor, float]]
+        Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
     """
@@ -46,7 +46,7 @@ class MassSheet(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "sd": 0.1,
+        "kappa": 0.1,
     }
 
     def __init__(
@@ -63,14 +63,16 @@ class MassSheet(ThinLens):
             "y-coordinate of the shear center in the lens plane",
             True,
         ] = None,
-        sd: Annotated[Optional[Union[Tensor, float]], "Surface density", True] = None,
+        kappa: Annotated[
+            Optional[Union[Tensor, float]], "Surface density", True
+        ] = None,
         name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
-        self.sd = Param("sd", sd, units="unitless")
+        self.kappa = Param("kappa", kappa, units="unitless")
 
     @forward
     def reduced_deflection_angle(
@@ -80,7 +82,7 @@ class MassSheet(ThinLens):
         z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        sd: Annotated[Tensor, "Param"],
+        kappa: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -102,9 +104,6 @@ class MassSheet(ThinLens):
 
             *Unit: unitless*
 
-        params: (Packed, optional)
-            Dynamic parameter container.
-
         Returns
         -------
         x_component: Tensor
@@ -118,7 +117,7 @@ class MassSheet(ThinLens):
             *Unit: arcsec*
 
         """
-        return func.reduced_deflection_angle_mass_sheet(x0, y0, sd, x, y)
+        return func.reduced_deflection_angle_mass_sheet(x0, y0, kappa, x, y)
 
     @forward
     def potential(
@@ -128,10 +127,10 @@ class MassSheet(ThinLens):
         z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        sd: Annotated[Tensor, "Param"],
+        kappa: Annotated[Tensor, "Param"],
     ) -> Tensor:
         # Meneghetti eq 3.81
-        return func.potential_mass_sheet(x0, y0, sd, x, y)
+        return func.potential_mass_sheet(x0, y0, kappa, x, y)
 
     @forward
     def convergence(
@@ -139,7 +138,7 @@ class MassSheet(ThinLens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        sd: Annotated[Tensor, "Param"],
+        kappa: Annotated[Tensor, "Param"],
     ) -> Tensor:
         # Essentially by definition
-        return func.convergence_mass_sheet(sd, x)
+        return func.convergence_mass_sheet(kappa, x)

@@ -1,5 +1,7 @@
 from ._version import version as VERSION  # noqa
 
+from caskade import forward, Module, Param, ValidContext
+
 from .cosmology import (
     Cosmology,
     FlatLambdaCDM,
@@ -44,6 +46,10 @@ __version__ = VERSION
 __author__ = "Ciela Institute"
 
 __all__ = [
+    "Module",
+    "Param",
+    "ValidContext",
+    "forward",
     "Cosmology",
     "FlatLambdaCDM",
     "h0_default",

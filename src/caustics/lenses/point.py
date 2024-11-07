@@ -122,6 +122,62 @@ class Point(ThinLens):
         self.s = s
 
     @forward
+    def mass_to_rein(
+        self, mass: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+    ) -> Tensor:
+        """
+        Convert mass to the Einstein radius.
+
+        Parameters
+        ----------
+        mass: Tensor
+            The mass of the lens
+
+            *Unit: solar mass*
+
+        Returns
+        -------
+        Tensor
+            The Einstein radius.
+
+            *Unit: arcsec*
+
+        """
+
+        Dls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        Dl = self.cosmology.angular_diameter_distance(z_l)
+        Ds = self.cosmology.angular_diameter_distance(z_s)
+        return func.mass_to_rein_point(mass, Dls, Dl, Ds)
+
+    @forward
+    def rein_to_mass(
+        self, r: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+    ) -> Tensor:
+        """
+        Convert Einstein radius to mass.
+
+        Parameters
+        ----------
+        r: Tensor
+            The Einstein radius.
+
+            *Unit: arcsec*
+
+        Returns
+        -------
+        Tensor
+            The mass of the lens
+
+            *Unit: solar mass*
+
+        """
+
+        Dls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        Dl = self.cosmology.angular_diameter_distance(z_l)
+        Ds = self.cosmology.angular_diameter_distance(z_s)
+        return func.rein_to_mass_point(r, Dls, Dl, Ds)
+
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
