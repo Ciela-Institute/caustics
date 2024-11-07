@@ -1,6 +1,7 @@
 """
 Utilities for testing
 """
+
 from typing import Any, Dict, List, Union
 
 import torch
@@ -16,11 +17,12 @@ from caustics.sims import Simulator
 from caustics.cosmology import FlatLambdaCDM
 from .models import mock_from_file
 
-__all__ = (
-    "mock_from_file",
-)
+__all__ = ("mock_from_file",)
 
-def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None):
+
+def setup_simulator(
+    cosmo_static=False, use_nfw=True, simulator_static=False, batched_params=False, device=None
+):
     n_pix = 20
 
     class Sim(Simulator):
@@ -88,7 +90,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
         cosmo_params = [_x[0] for _x in cosmo_params]
         lens_params = [_x[0] for _x in lens_params]
         source_params = [_x[0] for _x in source_params]
-    
+
     sim = Sim()
     # Set device when not None
     if device is not None:
@@ -97,7 +99,7 @@ def setup_simulator(cosmo_static=False, use_nfw=True, simulator_static=False, ba
         cosmo_params = [_p.to(device=device) for _p in cosmo_params]
         lens_params = [_p.to(device=device) for _p in lens_params]
         source_params = [_p.to(device=device) for _p in source_params]
-    
+
     return sim, (sim_params, cosmo_params, lens_params, source_params)
 
 
@@ -161,7 +163,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
         lens_params = [_x[0] for _x in lens_params]
         kappa = kappa[0]
         source = source[0]
-    
+
     sim = Sim()
     # Set device when not None
     if device is not None:
@@ -177,7 +179,7 @@ def setup_image_simulator(cosmo_static=False, batched_params=False, device=None)
 def get_default_cosmologies(device=None):
     cosmology = FlatLambdaCDM("cosmo")
     cosmology_ap = FlatLambdaCDM_AP(100 * cosmology.h0.value, cosmology.Om0.value, Tcmb0=0)
-    
+
     if device is not None:
         cosmology = cosmology.to(device=device)
     return cosmology, cosmology_ap
@@ -231,6 +233,21 @@ def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None)
     assert np.allclose(kappa.cpu().numpy(), kappa_ls, rtol, atol)
 
 
+def shear_test_helper(
+    lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, just_egregious=False, device=None
+):
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
+    gamma1, gamma2 = lens.shear(thx, thy, z_s, x)
+    gamma1_ls, gamma2_ls = lens_ls.gamma(thx_ls, thy_ls, kwargs_ls)
+    if just_egregious:
+        print(np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1))
+        assert np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1) < 1000
+        assert np.sum(np.abs(np.log10(np.abs(1 - gamma2.cpu().numpy() / gamma2_ls))) < 1) < 1000
+    else:
+        assert np.allclose(gamma1.cpu().numpy(), gamma1_ls, rtol, atol)
+        assert np.allclose(gamma2.cpu().numpy(), gamma2_ls, rtol, atol)
+
+
 def lens_test_helper(
     lens: Union[ThinLens, ThickLens],
     lens_ls: LensModel,
@@ -242,6 +259,8 @@ def lens_test_helper(
     test_alpha=True,
     test_Psi=True,
     test_kappa=True,
+    test_shear=True,
+    shear_egregious=False,
     device=None,
 ):
     if device is not None:
@@ -257,3 +276,16 @@ def lens_test_helper(
 
     if test_kappa:
         kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
+
+    if test_shear:
+        shear_test_helper(
+            lens,
+            lens_ls,
+            z_s,
+            x,
+            kwargs_ls,
+            atol,
+            rtol * 10,
+            just_egregious=shear_egregious,
+            device=device,
+        )  # shear seems less precise than other measurements

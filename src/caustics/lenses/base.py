@@ -80,6 +80,31 @@ class Lens(Parametrized):
             raise ValueError("method should be one of: autograd, finitediff")
 
     @unpack
+    def shear(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        *args,
+        params: Optional["Packed"] = None,
+        method="autograd",
+        pixelscale: Optional[Tensor] = None,
+        **kwargs,
+    ):
+        """
+        General shear calculation for a lens model using the jacobian of the
+        lens equation. Individual lenses may implement more efficient methods.
+        """
+        A = self.jacobian_lens_equation(
+            x, y, z_s, params=params, method=method, pixelscale=pixelscale
+        )
+        I = torch.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
+            *[1] * len(A.shape[:-2]), 2, 2
+        )
+        negPsi = 0.5 * (A[..., 0, 0] + A[..., 1, 1]).unsqueeze(-1).unsqueeze(-1) * I - A
+        return 0.5 * (negPsi[..., 0, 0] - negPsi[..., 1, 1]), negPsi[..., 0, 1]
+
+    @unpack
     def magnification(
         self,
         x: Tensor,
@@ -130,13 +155,16 @@ class Lens(Parametrized):
         z_s: Tensor,
         *args,
         params: Optional["Packed"] = None,
-        epsilon=1e-2,
-        n_init=100,
-        fov=5.0,
+        epsilon: float = 1e-3,
+        x0: Optional[Tensor] = None,
+        y0: Optional[Tensor] = None,
+        fov: float = 5.0,
+        divisions: int = 100,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
-        Perform a forward ray-tracing operation which maps from the source plane to the image plane.
+        Perform a forward ray-tracing operation which maps from the source plane
+        to the image plane.
 
         Parameters
         ----------
@@ -159,17 +187,19 @@ class Lens(Parametrized):
             Dynamic parameter container for the lens model. Defaults to None.
 
         epsilon: Tensor
-            maximum distance between two images (arcsec) before they are considered the same image.
+            maximum distance between two images (arcsec) before they are
+            considered the same image.
 
             *Unit: arcsec*
-
-        n_init: int
-            number of random initialization points used to try and find image plane points.
 
         fov: float
             the field of view in which the initial random samples are taken.
 
             *Unit: arcsec*
+
+        divisions: int
+            the number of divisions of the fov on each axis when constructing
+            the grid to perform in the triangle search.
 
         Returns
         -------
@@ -183,18 +213,14 @@ class Lens(Parametrized):
 
             *Unit: arcsec*
         """
-
-        # TODO make FOV more general so that it doesn't have to be centered on zero,zero
-        if fov is None:
-            raise ValueError("fov must be given to generate initial guesses")
+        raytrace = partial(self.raytrace, params=params, z_s=z_s)
+        if x0 is None:
+            x0 = torch.zeros((), device=bx.device, dtype=bx.dtype)
+        if y0 is None:
+            y0 = torch.zeros((), device=by.device, dtype=by.dtype)
 
         return func.forward_raytrace(
-            bx,
-            by,
-            partial(self.raytrace, params=params, z_s=z_s),
-            epsilon,
-            n_init,
-            fov,
+            torch.stack((bx, by)), raytrace, x0, y0, fov, divisions, epsilon
         )
 
 

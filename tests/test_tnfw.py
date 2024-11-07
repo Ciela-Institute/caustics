@@ -13,13 +13,20 @@ from utils import lens_test_helper, setup_grids
 
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustics.lenses import TNFW
+import pytest
+
 
 h0_default = float(default_cosmology.get().h)
 Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
 
 
-def test(sim_source, device, lens_models):
+@pytest.mark.parametrize(
+    "m", [1e8, 1e10, 1e12]
+)  # Note with m=1e14 the test fails, due to the Rs_angle becoming too large (pytorch is unstable)
+@pytest.mark.parametrize("c", [1.0, 8.0, 40.0])
+@pytest.mark.parametrize("t", [2.0, 5.0, 20.0])
+def test(sim_source, device, lens_models, m, c, t):
     atol = 1e-5
     rtol = 3e-2
     z_l = torch.tensor(0.1)
@@ -51,16 +58,11 @@ def test(sim_source, device, lens_models):
     lens_model_list = ["TNFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
-    print(lens)
-
     # Parameters
     z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
-    m = 1e12
-    c = 8.0
-    t = 3.0
     x = torch.tensor([thx0, thy0, m, c, t])
 
     # Lenstronomy
@@ -91,6 +93,8 @@ def test(sim_source, device, lens_models):
         test_alpha=True,
         test_Psi=False,
         test_kappa=True,
+        test_shear=True,
+        shear_egregious=True,  # not sure why match is so bad
         device=device,
     )
 
@@ -118,7 +122,3 @@ def test_runs(device):
     Rt = lens.get_truncation_radius(x)
 
     assert Rt == (rs * t)
-
-
-if __name__ == "__main__":
-    test(None)

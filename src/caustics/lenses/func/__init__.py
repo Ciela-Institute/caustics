@@ -1,5 +1,12 @@
 from .base import (
     forward_raytrace,
+    triangle_contains,
+    triangle_area,
+    triangle_neighbors,
+    triangle_upsample,
+    triangle_equals,
+    remove_triangle_duplicates,
+    forward_raytrace_rootfind,
     physical_from_reduced_deflection_angle,
     reduced_from_physical_deflection_angle,
     time_delay_arcsec2_to_days,
@@ -33,7 +40,9 @@ from .pixelated_convergence import (
     reduced_deflection_angle_pixelated_convergence,
     potential_pixelated_convergence,
     _fft2_padded,
+    _fft_size,
     build_kernels_pixelated_convergence,
+    build_window_pixelated_convergence,
 )
 from .pseudo_jaffe import (
     convergence_0_pseudo_jaffe,
@@ -58,8 +67,21 @@ from .enclosed_mass import (
     convergence_enclosed_mass,
 )
 
+from .multipole import (
+    reduced_deflection_angle_multipole,
+    potential_multipole,
+    convergence_multipole,
+)
+
 __all__ = (
     "forward_raytrace",
+    "triangle_contains",
+    "triangle_area",
+    "triangle_neighbors",
+    "triangle_upsample",
+    "triangle_equals",
+    "remove_triangle_duplicates",
+    "forward_raytrace_rootfind",
     "physical_from_reduced_deflection_angle",
     "reduced_from_physical_deflection_angle",
     "time_delay_arcsec2_to_days",
@@ -91,7 +113,9 @@ __all__ = (
     "reduced_deflection_angle_pixelated_convergence",
     "potential_pixelated_convergence",
     "_fft2_padded",
+    "_fft_size",
     "build_kernels_pixelated_convergence",
+    "build_window_pixelated_convergence",
     "convergence_0_pseudo_jaffe",
     "potential_pseudo_jaffe",
     "reduced_deflection_angle_pseudo_jaffe",
@@ -108,6 +132,9 @@ __all__ = (
     "M0_scalemass_tnfw",
     "M0_totmass_tnfw",
     "concentration_tnfw",
+    "reduced_deflection_angle_multipole",
+    "potential_multipole",
+    "convergence_multipole",
     "physical_deflection_angle_enclosed_mass",
     "convergence_enclosed_mass",
 )

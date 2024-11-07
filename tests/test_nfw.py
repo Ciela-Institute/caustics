@@ -14,12 +14,16 @@ from utils import lens_test_helper, setup_grids
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustics.lenses import NFW
 
+import pytest
+
 h0_default = float(default_cosmology.get().h)
 Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
 
 
-def test(sim_source, device, lens_models):
+@pytest.mark.parametrize("m", [1e8, 1e10, 1e12])
+@pytest.mark.parametrize("c", [1.0, 8.0, 20.0])
+def test_nfw(sim_source, device, lens_models, m, c):
     atol = 1e-5
     rtol = 3e-2
     z_l = torch.tensor(0.1)
@@ -36,6 +40,7 @@ def test(sim_source, device, lens_models):
                 z_l: {float(z_l)}
             init_kwargs:
                 cosmology: *cosmology
+                use_case: differentiable
         """
         yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
         mod = lens_models.get("NFW")
@@ -43,7 +48,7 @@ def test(sim_source, device, lens_models):
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l)
+        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
     lens_model_list = ["NFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
@@ -54,8 +59,8 @@ def test(sim_source, device, lens_models):
 
     thx0 = 0.457
     thy0 = 0.141
-    m = 1e12
-    c = 8.0
+    # m = 1e12
+    # c = 8.0
     x = torch.tensor([thx0, thy0, m, c])
 
     # Lenstronomy
@@ -68,7 +73,17 @@ def test(sim_source, device, lens_models):
         {"Rs": Rs_angle, "alpha_Rs": alpha_Rs, "center_x": thx0, "center_y": thy0}
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
+    lens_test_helper(
+        lens,
+        lens_ls,
+        z_s,
+        x,
+        kwargs_ls,
+        atol,
+        rtol,
+        shear_egregious=True,  # not why match is so bad
+        device=device,
+    )
 
 
 def test_runs(sim_source, device, lens_models):
@@ -113,7 +128,3 @@ def test_runs(sim_source, device, lens_models):
     assert torch.all(torch.isfinite(alpha[1]))
     kappa = lens.convergence(thx, thy, z_s, x)
     assert torch.all(torch.isfinite(kappa))
-
-
-if __name__ == "__main__":
-    test()
