@@ -100,7 +100,6 @@ def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None)
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
-    print(np.sum(np.abs(1 - alpha_x.cpu().numpy() / alpha_x_ls) > 1e-3))
     assert np.allclose(alpha_x.cpu().numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.cpu().numpy(), alpha_y_ls, rtol, atol)
 
@@ -122,6 +121,21 @@ def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None)
     assert np.allclose(kappa.cpu().numpy(), kappa_ls, rtol, atol)
 
 
+def shear_test_helper(
+    lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, just_egregious=False, device=None
+):
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
+    gamma1, gamma2 = lens.shear(thx, thy, z_s, x)
+    gamma1_ls, gamma2_ls = lens_ls.gamma(thx_ls, thy_ls, kwargs_ls)
+    if just_egregious:
+        print(np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1))
+        assert np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1) < 1000
+        assert np.sum(np.abs(np.log10(np.abs(1 - gamma2.cpu().numpy() / gamma2_ls))) < 1) < 1000
+    else:
+        assert np.allclose(gamma1.cpu().numpy(), gamma1_ls, rtol, atol)
+        assert np.allclose(gamma2.cpu().numpy(), gamma2_ls, rtol, atol)
+
+
 def lens_test_helper(
     lens: Union[caustics.ThinLens, caustics.ThickLens],
     lens_ls: LensModel,
@@ -133,6 +147,8 @@ def lens_test_helper(
     test_alpha=True,
     test_Psi=True,
     test_kappa=True,
+    test_shear=True,
+    shear_egregious=False,
     device=None,
 ):
     if device is not None:
@@ -148,3 +164,16 @@ def lens_test_helper(
 
     if test_kappa:
         kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
+
+    if test_shear:
+        shear_test_helper(
+            lens,
+            lens_ls,
+            z_s,
+            x,
+            kwargs_ls,
+            atol,
+            rtol * 10,
+            just_egregious=shear_egregious,
+            device=device,
+        )  # shear seems less precise than other measurements

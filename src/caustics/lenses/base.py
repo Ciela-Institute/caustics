@@ -77,6 +77,26 @@ class Lens(Module):
             raise ValueError("method should be one of: autograd, finitediff")
 
     @forward
+    def shear(
+        self,
+        x: Tensor,
+        y: Tensor,
+        z_s: Tensor,
+        method="autograd",
+        pixelscale: Optional[Tensor] = None,
+    ):
+        """
+        General shear calculation for a lens model using the jacobian of the
+        lens equation. Individual lenses may implement more efficient methods.
+        """
+        A = self.jacobian_lens_equation(x, y, z_s, method=method, pixelscale=pixelscale)
+        I = torch.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
+            *[1] * len(A.shape[:-2]), 2, 2
+        )
+        negPsi = 0.5 * (A[..., 0, 0] + A[..., 1, 1]).unsqueeze(-1).unsqueeze(-1) * I - A
+        return 0.5 * (negPsi[..., 0, 0] - negPsi[..., 1, 1]), negPsi[..., 0, 1]
+
+    @forward
     def magnification(
         self,
         x: Tensor,

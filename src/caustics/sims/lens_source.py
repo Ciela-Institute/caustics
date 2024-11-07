@@ -375,7 +375,9 @@ class LensSource(Module):
             elif self.psf_mode == "conv2d":
                 mu = (
                     conv2d(
-                        mu[None, None], (psf.T / psf.sum())[None, None], padding="same"
+                        mu[None, None],
+                        (torch.flip(psf, (0, 1)) / psf.sum())[None, None],
+                        padding="same",
                     )
                     .squeeze(0)
                     .squeeze(0)
