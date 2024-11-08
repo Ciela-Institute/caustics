@@ -124,13 +124,20 @@ def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None)
 def shear_test_helper(
     lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, just_egregious=False, device=None
 ):
-    thx, thy, thx_ls, thy_ls = setup_grids(device=device)
-    gamma1, gamma2 = lens.shear(thx, thy, z_s, x)
+    thx, thy, thx_ls, thy_ls = setup_grids(device=device, n_pix=1000 if just_egregious else 100)
+    gamma1, gamma2 = lens.shear(
+        thx,
+        thy,
+        z_s,
+        x,
+        method="finitediff" if just_egregious else "autograd",
+        pixelscale=thx[0][1] - thx[0][0],
+    )
     gamma1_ls, gamma2_ls = lens_ls.gamma(thx_ls, thy_ls, kwargs_ls)
-    if just_egregious:
+    if just_egregious:  # only for NFW and TNFW, this needs more attention
         print(np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1))
-        assert np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1) < 1000
-        assert np.sum(np.abs(np.log10(np.abs(1 - gamma2.cpu().numpy() / gamma2_ls))) < 1) < 1000
+        assert np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1) < 100000
+        assert np.sum(np.abs(np.log10(np.abs(1 - gamma2.cpu().numpy() / gamma2_ls))) < 1) < 100000
     else:
         assert np.allclose(gamma1.cpu().numpy(), gamma1_ls, rtol, atol)
         assert np.allclose(gamma2.cpu().numpy(), gamma2_ls, rtol, atol)
