@@ -262,7 +262,7 @@ class ThickLens(Lens):
             "ThickLens objects do not have a reduced deflection angle "
             "since they have no unique lens redshift. "
             "The distance D_{ls} is undefined in the equation "
-            "$\alpha_{reduced} = \frac{D_{ls}}{D_s}\alpha_{physical}$."
+            "$\\alpha_{reduced} = \\frac{D_{ls}}{D_s}\\alpha_{physical}$."
             "See `effective_reduced_deflection_angle`. "
             "Now using effective_reduced_deflection_angle, "
             "please switch functions to remove this warning"
@@ -524,32 +524,45 @@ class ThickLens(Lens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
+        chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
         This equates to a (2,2) matrix at each (x,y) point.
         """
-        # Ensure the x,y coordinates track gradients
-        x = x.detach().requires_grad_()
-        y = y.detach().requires_grad_()
-
-        # Compute deflection angles
-        ax, ay = self.effective_reduced_deflection_angle(x, y, z_s)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
-        (J[..., 0, 0],) = torch.autograd.grad(
-            ax, x, grad_outputs=torch.ones_like(ax), create_graph=True
+        J = torch.zeros((*x.shape, 2, 2), device=x.device, dtype=x.dtype)
+
+        # Compute deflection angle gradients
+        dax_dx = torch.func.grad(
+            lambda *a: self.effective_reduced_deflection_angle(*a)[0], argnums=0
         )
-        (J[..., 0, 1],) = torch.autograd.grad(
-            ax, y, grad_outputs=torch.ones_like(ax), create_graph=True
+        J[..., 0, 0] = torch.vmap(dax_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
+        dax_dy = torch.func.grad(
+            lambda *a: self.effective_reduced_deflection_angle(*a)[0], argnums=1
         )
-        (J[..., 1, 0],) = torch.autograd.grad(
-            ay, x, grad_outputs=torch.ones_like(ay), create_graph=True
+        J[..., 0, 1] = torch.vmap(dax_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
+        day_dx = torch.func.grad(
+            lambda *a: self.effective_reduced_deflection_angle(*a)[1], argnums=0
         )
-        (J[..., 1, 1],) = torch.autograd.grad(
-            ay, y, grad_outputs=torch.ones_like(ay), create_graph=True
+        J[..., 1, 0] = torch.vmap(day_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
+        day_dy = torch.func.grad(
+            lambda *a: self.effective_reduced_deflection_angle(*a)[1], argnums=1
         )
+        J[..., 1, 1] = torch.vmap(day_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
         return J.detach()
 
     @forward
@@ -560,6 +573,7 @@ class ThickLens(Lens):
         z_s: Tensor,
         method="autograd",
         pixelscale=None,
+        **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -569,7 +583,9 @@ class ThickLens(Lens):
         """
 
         if method == "autograd":
-            return self._jacobian_effective_deflection_angle_autograd(x, y, z_s)
+            return self._jacobian_effective_deflection_angle_autograd(
+                x, y, z_s, **kwargs
+            )
         elif method == "finitediff":
             if pixelscale is None:
                 raise ValueError(
@@ -578,7 +594,7 @@ class ThickLens(Lens):
                     "Please include the pixelscale argument"
                 )
             return self._jacobian_effective_deflection_angle_finitediff(
-                x, y, z_s, pixelscale
+                x, y, z_s, pixelscale, **kwargs
             )
         else:
             raise ValueError("method should be one of: autograd, finitediff")
@@ -1095,32 +1111,44 @@ class ThinLens(Lens):
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
+        chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
         This equates to a (2,2) matrix at each (x,y) point.
         """
-        # Ensure the x,y coordinates track gradients
-        x = x.detach().requires_grad_()
-        y = y.detach().requires_grad_()
-
-        # Compute deflection angles
-        ax, ay = self.reduced_deflection_angle(x, y, z_s)
-
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
-        (J[..., 0, 0],) = torch.autograd.grad(
-            ax, x, grad_outputs=torch.ones_like(ax), create_graph=True
+        J = torch.zeros((*x.shape, 2, 2), device=x.device, dtype=x.dtype)
+
+        # Compute deflection angle gradients
+        dax_dx = torch.func.grad(
+            lambda *a: self.reduced_deflection_angle(*a)[0], argnums=0
         )
-        (J[..., 0, 1],) = torch.autograd.grad(
-            ax, y, grad_outputs=torch.ones_like(ax), create_graph=True
+        J[..., 0, 0] = torch.vmap(dax_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
+        dax_dy = torch.func.grad(
+            lambda *a: self.reduced_deflection_angle(*a)[0], argnums=1
         )
-        (J[..., 1, 0],) = torch.autograd.grad(
-            ay, x, grad_outputs=torch.ones_like(ay), create_graph=True
+        J[..., 0, 1] = torch.vmap(dax_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
+        day_dx = torch.func.grad(
+            lambda *a: self.reduced_deflection_angle(*a)[1], argnums=0
         )
-        (J[..., 1, 1],) = torch.autograd.grad(
-            ay, y, grad_outputs=torch.ones_like(ay), create_graph=True
+        J[..., 1, 0] = torch.vmap(day_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
+        day_dy = torch.func.grad(
+            lambda *a: self.reduced_deflection_angle(*a)[1], argnums=1
         )
+        J[..., 1, 1] = torch.vmap(day_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
+            x.flatten(), y.flatten(), z_s
+        ).reshape(x.shape)
+
         return J.detach()
 
     @forward
@@ -1131,6 +1159,7 @@ class ThinLens(Lens):
         z_s: Tensor,
         method="autograd",
         pixelscale=None,
+        chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -1140,7 +1169,7 @@ class ThinLens(Lens):
         """
 
         if method == "autograd":
-            return self._jacobian_deflection_angle_autograd(x, y, z_s)
+            return self._jacobian_deflection_angle_autograd(x, y, z_s, chunk_size)
         elif method == "finitediff":
             if pixelscale is None:
                 raise ValueError(
