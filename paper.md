@@ -20,7 +20,7 @@ authors:
   - name: Adam Coogan
     orcid: 0000-0002-0055-1780
     equal-contrib: true
-    affiliation: "1, 2, 3, †"
+    affiliation: "1, 2, 3, a"
   - name: M. J. Yantovski-Barth
     orcid: 0000-0001-5200-4095
     affiliation: "1, 2, 3"
@@ -72,7 +72,7 @@ affiliations:
   - name: Trottier Space Institute, McGill University, Montréal, Canada
     index: 7
   - name: Work done while at UdeM, Ciela, and Mila
-    index: †
+    index: a
 date: 19 March 2024
 bibliography: paper.bib
 ---
