@@ -204,7 +204,7 @@ for amortized inference of gravitational lensing parameter [@Hezaveh2017] or in
 the detection of gravitational lenses [@Petrillo2017; @Huang2021], but they require
 large and accurate training sets which can be created quickly with `caustics`. The
 simulators are differentiable, enabling algorithms such as recurrent inference machines
-[@Adam2023] and diffusion models [@Adam2022, @Remy2023].
+[@Adam2023] and diffusion models [@Adam2022; @Remy2023].
 
 <!-- A demonstration of such a simulator is given in \autoref{fig:sample} which also demonstrates
 the importance of sub-pixel sampling. This involves raytracing through the lensing
