@@ -139,7 +139,7 @@ in-house codes developed for specialized analysis which are then not publicly re
 three aspects: processing speed, user experience, and flexibility. Processing
 speed is comparable to the widely used `lenstronomy` when on CPU, and can be
 over 1000 times faster on GPU depending on configuration as seen in
-\autoref{fig:sample}. The user experience is streamlined by providing three
+\autoref{fig:runtime}. The user experience is streamlined by providing three
 interfaces to the code: configuration file, object-oriented, and functional.
 Flexibility is achieved by a determined focus on minimalism in the core
 functionality of `caustics` and encouraging user extension.
