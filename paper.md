@@ -138,11 +138,13 @@ in-house codes developed for specialized analysis which are then not publicly re
 [e.g. @Suyu2010]. The development of `caustics` has been primarily focused on
 three aspects: processing speed, user experience, and flexibility. Processing
 speed is comparable to the widely used `lenstronomy` when on CPU, and can be
-over 1000 times faster on GPU depending on configuration. The user experience is
-streamlined by providing three interfaces to the code: configuration file,
-object-oriented, and functional. Flexibility is achieved by a determined focus
-on minimalism in the core functionality of `caustics` and encouraging user
-extension.
+over 1000 times faster on GPU depending on configuration as seen in
+\autoref{fig:sample}. The user experience is streamlined by providing three
+interfaces to the code: configuration file, object-oriented, and functional.
+Flexibility is achieved by a determined focus on minimalism in the core
+functionality of `caustics` and encouraging user extension.
+
+![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. For CPU calculations we use `Intel Gold 6148 Skylake` and for the GPU we use a `NVIDIA V100`, all tests were done at 64 bit precision. On the left, the lensing system is sampled 128 pixel resolution only at pixel midpoints. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.\label{fig:runtime}](media/runtime_comparison.png)
 
 <!--
 , where each interface level
