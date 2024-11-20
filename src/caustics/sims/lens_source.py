@@ -314,10 +314,11 @@ class LensSource(Module):
         psf: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        source_light=True,
-        lens_light=True,
-        lens_source=True,
-        psf_convolve=True,
+        source_light: bool = True,
+        lens_light: bool = True,
+        lens_source: bool = True,
+        psf_convolve: bool = True,
+        chunk_size: int = 10000,
     ):
         """
         forward function
@@ -350,12 +351,18 @@ class LensSource(Module):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = self.lens.raytrace(*grid, z_s)
-                mu_fine = self.source.brightness(bx, by)
+                bx, by = torch.vmap(
+                    self.lens.raytrace, in_dims=(0, 0, None), chunk_size=chunk_size
+                )(grid[0].flatten(), grid[1].flatten(), z_s)
+                mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
+                    bx, by
+                ).reshape(grid[0].shape)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
             else:
                 # Source is imaged without lensing
-                mu_fine = self.source.brightness(*grid)
+                mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
+                    grid[0].flatten(), grid[1].flatten()
+                ).reshape(grid[0].shape)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
@@ -363,7 +370,9 @@ class LensSource(Module):
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            mu_fine = self.lens_light.brightness(*grid)
+            mu_fine = torch.vmap(self.lens_light.brightness, chunk_size=chunk_size)(
+                grid[0].flatten(), grid[1].flatten()
+            ).reshape(grid[0].shape)
             mu += gaussian_quadrature_integrator(mu_fine, self._weights)
 
         # Convolve the PSF
