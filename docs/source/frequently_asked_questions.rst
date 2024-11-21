@@ -5,7 +5,7 @@ FAQs - Frequently asked questions
 | **A:** If you are using any ``Module``` object (so a simulator), then you can
 get the parameters using ``print(simulator)``. The order of the dynamical
 parameters (top to bottom) corresponds to the order you should use in your
-parameter value tensor. Note that you can ignore the static parameters. |
+parameter value tensor. Note that you can ignore the static parameters.
 | **Q:** Why can I put the lens redshift at higher values than the source
   redshift or to negative values for some parametric models?
 | **A:** We can calculate everything for those profiles with reduced deflection
@@ -13,7 +13,7 @@ angles where the redshifts do not actually play into the calculation. If you use
 a profile defined by the lens mass, like a NFW lens, or a Multiplane lens then
 it does matter that the redshifts make sense and you will very likely get errors
 for those. Similarly, if you call the ``lens.physical_deflection_angle`` you
-will encounter errors. |
+will encounter errors.
 | **Q:** I do (multiplane-)lensing with pixelated convergence using the
   pixelated kappa map of a parametric profile. The lensing effect differs from
   directly using the parametric lens. Why is the lensing effect different?
@@ -24,4 +24,4 @@ will encounter errors. |
   have to increase the resolution and/or FOV of your pixelated convergence map.
   Especially for SIE or EPL profiles (which go to infinity density in the
   center, and have infinite mass outside any FOV) you will miss infinite mass
-  when pixelating. |
+  when pixelating.
