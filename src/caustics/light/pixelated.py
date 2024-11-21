@@ -131,6 +131,7 @@ class Pixelated(Source):
         y0: Annotated[Tensor, "Param"],
         image: Annotated[Tensor, "Param"],
         pixelscale: Annotated[Tensor, "Param"],
+        padding_mode: str = "zeros",
     ):
         """
         Implements the `brightness` method for `Pixelated`.
@@ -171,4 +172,5 @@ class Pixelated(Source):
             image,
             (x - x0).view(-1) / fov_x * 2,
             (y - y0).view(-1) / fov_y * 2,  # make coordinates bounds at half the fov
+            padding_mode=padding_mode,
         ).reshape(x.shape)

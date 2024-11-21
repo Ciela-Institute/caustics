@@ -470,8 +470,8 @@ def interp2d(
     padding_mode: str = "zeros",
 ) -> Tensor:
     """
-    Interpolates a 2D image at specified coordinates.
-    Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
+    Interpolates a 2D image at specified coordinates. Similar to
+    `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Parameters
     ----------
@@ -482,10 +482,15 @@ def interp2d(
     y: Tensor
         A 0D or 1D tensor of y coordinates at which to interpolate.
     method: (str, optional)
-        Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
+        Interpolation method. Either 'nearest' or 'linear'. Defaults to
+        'linear'.
     padding_mode:  (str, optional)
         Defines the padding mode when out-of-bound indices are encountered.
-        Either 'zeros' or 'extrapolate'. Defaults to 'zeros'.
+        Either 'zeros', 'clamp', or 'extrapolate'. Defaults to 'zeros' which
+        fills padded coordinates with zeros. The 'clamp' mode clamps the
+        coordinates to the image boundaries (essentially taking the border
+        values out to infinity). The 'extrapolate' mode extrapolates the outer
+        linear interpolation beyond the last pixel boundary.
 
     Raises
     ------
@@ -503,7 +508,8 @@ def interp2d(
     Returns
     -------
     Tensor
-        Tensor with the same shape as `x` and `y` containing the interpolated values.
+        Tensor with the same shape as `x` and `y` containing the interpolated
+        values.
     """
     if im.ndim != 2:
         raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
@@ -514,7 +520,12 @@ def interp2d(
     if padding_mode not in ["extrapolate", "zeros"]:
         raise ValueError(f"{padding_mode} is not a valid padding mode")
 
-    idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+    if padding_mode == "clamp":
+        x = x.clamp(-1, 1)
+        y = y.clamp(-1, 1)
+    else:
+        idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+
     # Convert coordinates to pixel indices
     h, w = im.shape
     x = 0.5 * ((x + 1) * w - 1)
