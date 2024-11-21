@@ -3,10 +3,9 @@ from typing import Optional, Union, Annotated
 
 from torch import Tensor
 import torch
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("ExternalShear",)
@@ -79,26 +78,22 @@ class ExternalShear(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("gamma_1", gamma_1)
-        self.add_param("gamma_2", gamma_2)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.gamma_1 = Param("gamma_1", gamma_1, units="unitless")
+        self.gamma_2 = Param("gamma_2", gamma_2, units="unitless")
         self.s = s
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        gamma_1: Annotated[Tensor, "Param"],
+        gamma_2: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculates the reduced deflection angle.
@@ -140,20 +135,16 @@ class ExternalShear(ThinLens):
             x0, y0, gamma_1, gamma_2, x, y
         )
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        gamma_1: Annotated[Tensor, "Param"],
+        gamma_2: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculates the lensing potential.
@@ -188,20 +179,12 @@ class ExternalShear(ThinLens):
         """
         return func.potential_external_shear(x0, y0, gamma_1, gamma_2, x, y)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        gamma_1: Optional[Tensor] = None,
-        gamma_2: Optional[Tensor] = None,
-        **kwargs,
     ) -> Tensor:
         """
         The convergence is undefined for an external shear.

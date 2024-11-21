@@ -2,11 +2,10 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from ..utils import interp2d
 from .base import Source, NameType
-from ..parametrized import unpack
-from ..packed import Packed
 
 __all__ = ("Pixelated",)
 
@@ -116,23 +115,23 @@ class Pixelated(Source):
                 f"shape must be specify 2D or 3D tensors. Received shape={shape}"
             )
         super().__init__(name=name)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("image", image, shape)
-        self.add_param("pixelscale", pixelscale)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.image = Param("image", image, shape, units="flux")
+        self.pixelscale = Param(
+            "pixelscale", pixelscale, units="arcsec/pixel", valid=(0, None)
+        )
 
-    @unpack
+    @forward
     def brightness(
         self,
         x,
         y,
-        *args,
-        params: Optional["Packed"] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        image: Optional[Tensor] = None,
-        pixelscale: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        image: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
+        padding_mode: str = "zeros",
     ):
         """
         Implements the `brightness` method for `Pixelated`.
@@ -173,4 +172,5 @@ class Pixelated(Source):
             image,
             (x - x0).view(-1) / fov_x * 2,
             (y - y0).view(-1) / fov_y * 2,  # make coordinates bounds at half the fov
+            padding_mode=padding_mode,
         ).reshape(x.shape)

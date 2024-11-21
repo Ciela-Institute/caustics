@@ -1,5 +1,5 @@
 from math import pi
-import yaml
+from io import StringIO
 
 import lenstronomy.Util.param_util as param_util
 import torch
@@ -9,6 +9,7 @@ from utils import lens_test_helper
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.utils import meshgrid
+from caustics.sims import build_simulator
 
 import pytest
 
@@ -16,7 +17,7 @@ import pytest
 @pytest.mark.parametrize("q", [0.5, 0.7, 0.9])
 @pytest.mark.parametrize("phi", [pi / 3, -pi / 4, pi / 6])
 @pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.5])
-def test_sie(sim_source, device, lens_models, q, phi, th_ein):
+def test_sie(sim_source, device, q, phi, th_ein):
     atol = 1e-5
     rtol = 1e-3
 
@@ -31,9 +32,8 @@ def test_sie(sim_source, device, lens_models, q, phi, th_ein):
             init_kwargs:
                 cosmology: *cosmology
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("SIE")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
