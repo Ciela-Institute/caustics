@@ -1,6 +1,7 @@
 import torch
 
 from ...utils import translate_rotate
+from ...constants import G_over_c2, rad_to_arcsec
 
 
 def reduced_deflection_angle_point(x0, y0, th_ein, x, y, s=0.0):
@@ -147,3 +148,77 @@ def convergence_point(x0, y0, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
     return torch.where((x == 0) & (y == 0), torch.inf, 0.0)
+
+
+def mass_to_rein_point(M, d_ls, d_l, d_s):
+    """
+    Compute the Einstein radius of a point mass. See Meneghetti lecture notes equation 1.39
+
+    Parameters
+    ----------
+    M: Tensor
+        Mass of the lens.
+
+        *Unit: solar masses*
+
+    d_ls: Tensor
+        Distance between the lens and the source.
+
+        *Unit: Mpc*
+
+    d_l: Tensor
+        Distance between the observer and the lens.
+
+        *Unit: Mpc*
+
+    d_s: Tensor
+        Distance between the observer and the source.
+
+        *Unit: Mpc*
+
+    Returns
+    -------
+    Tensor
+        The Einstein radius.
+
+        *Unit: arcsec*
+
+    """
+    return rad_to_arcsec * (4 * G_over_c2 * M * d_ls / (d_l * d_s)).sqrt()
+
+
+def rein_to_mass_point(r, d_ls, d_l, d_s):
+    """
+    Compute the Einstein radius of a point mass. See Meneghetti lecture notes equation 1.39
+
+    Parameters
+    ----------
+    r: Tensor
+        Einstein radius of the lens.
+
+        *Unit: arcsec*
+
+    d_ls: Tensor
+        Distance between the lens and the source.
+
+        *Unit: Mpc*
+
+    d_l: Tensor
+        Distance between the observer and the lens.
+
+        *Unit: Mpc*
+
+    d_s: Tensor
+        Distance between the observer and the source.
+
+        *Unit: Mpc*
+
+    Returns
+    -------
+    Tensor
+        The mass of the lens
+
+        *Unit: solar masses*
+
+    """
+    return (r / rad_to_arcsec) ** 2 * d_l * d_s / (4 * G_over_c2 * d_ls)

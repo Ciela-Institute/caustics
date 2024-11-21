@@ -1,16 +1,22 @@
+from typing import Optional
+
 import torch
 from torch import Tensor
 from caskade import forward
 
-from .base import ThinLens, CosmologyType, NameType, LensesType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZLType
+from ..utils import vmap_reduce
 
-__all__ = ("SinglePlane",)
+__all__ = ("BatchedPlane",)
 
 
-class SinglePlane(ThinLens):
+class BatchedPlane(ThinLens):
     """
-    A class for combining multiple thin lenses into a single lensing plane.
-    This model inherits from the base `ThinLens` class.
+    A class for combining multiple thin lenses into a single lensing plane. It
+    is assumed that the lens parameters will have a batch dimension, internally
+    this class will vmap over the batch dimension and return the combined
+    lensing quantity. This class can only handle a single lens type, if you want
+    to combine different lens types, use the `SinglePlane` class.
 
     Attributes
     ----------
@@ -20,26 +26,25 @@ class SinglePlane(ThinLens):
     cosmology: Cosmology
         An instance of the Cosmology class.
 
-    lenses: List[ThinLens]
-        A list of ThinLens objects that are being combined into a single lensing plane.
+    lens: ThinLens
+        A ThinLens object that will be vmapped over into a single lensing plane.
 
     """
 
     def __init__(
         self,
         cosmology: CosmologyType,
-        lenses: LensesType,
+        lens: ThinLens,
         name: NameType = None,
         z_l: ZLType = None,
+        chunk_size: Optional[int] = None,
     ):
         """
         Initialize the SinglePlane lens model.
         """
         super().__init__(cosmology, z_l=z_l, name=name)
-        self.lenses = lenses
-        for lens in lenses:
-            self.link(lens.name, lens)
-        # TODO: assert all z_l are the same?
+        self.lens = lens
+        self.chunk_size = chunk_size
 
     @forward
     def reduced_deflection_angle(
@@ -85,13 +90,23 @@ class SinglePlane(ThinLens):
             *Unit: arcsec*
 
         """
-        ax = torch.zeros_like(x)
-        ay = torch.zeros_like(x)
-        for lens in self.lenses:
-            ax_cur, ay_cur = lens.reduced_deflection_angle(x, y, z_s)
-            ax = ax + ax_cur
-            ay = ay + ay_cur
-        return ax, ay
+
+        # Collect the dynamic parameters to vmap over
+        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        batchdims = dict(
+            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+        )
+        batchdims["x"] = None
+        batchdims["y"] = None
+        batchdims["z_s"] = None
+        vr_deflection_angle = vmap_reduce(
+            lambda p: self.lens.reduced_deflection_angle(**p),
+            reduce_func=lambda x: (x[0].sum(dim=0), x[1].sum(dim=0)),
+            chunk_size=self.chunk_size,
+            in_dims=batchdims,
+            out_dims=(0, 0),
+        )
+        return vr_deflection_angle(x=x, y=y, z_s=z_s, **params)
 
     @forward
     def convergence(
@@ -132,11 +147,17 @@ class SinglePlane(ThinLens):
             *Unit: unitless*
 
         """
-        convergence = torch.zeros_like(x)
-        for lens in self.lenses:
-            convergence_cur = lens.convergence(x, y, z_s)
-            convergence = convergence + convergence_cur
-        return convergence
+        # Collect the dynamic parameters to vmap over
+        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        batchdims = dict(
+            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+        )
+        convergence = torch.vmap(
+            lambda p: self.lens.convergence(x, y, z_s, **p),
+            in_dims=(batchdims,),
+            chunk_size=self.chunk_size,
+        )(params)
+        return convergence.sum(dim=0)
 
     @forward
     def potential(
@@ -177,8 +198,14 @@ class SinglePlane(ThinLens):
             *Unit: arcsec^2*
 
         """
-        potential = torch.zeros_like(x)
-        for lens in self.lenses:
-            potential_cur = lens.potential(x, y, z_s)
-            potential = potential + potential_cur
-        return potential
+        # Collect the dynamic parameters to vmap over
+        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        batchdims = dict(
+            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+        )
+        potential = torch.vmap(
+            lambda p: self.lens.potential(x, y, z_s, **p),
+            in_dims=(batchdims,),
+            chunk_size=self.chunk_size,
+        )(params)
+        return potential.sum(dim=0)

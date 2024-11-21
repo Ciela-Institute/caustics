@@ -1,12 +1,14 @@
+from io import StringIO
+
 import lenstronomy.Util.param_util as param_util
 import numpy as np
-import yaml
 import torch
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
 
 from caustics.light import Sersic
 from caustics.utils import meshgrid
+from caustics.sims import build_simulator
 
 import pytest
 
@@ -14,7 +16,7 @@ import pytest
 @pytest.mark.parametrize("q", [0.2, 0.7])
 @pytest.mark.parametrize("n", [1.0, 2.0, 3.0])
 @pytest.mark.parametrize("th_e", [1.0, 10.0])
-def test_sersic(sim_source, device, light_models, q, n, th_e):
+def test_sersic(sim_source, device, q, n, th_e):
     # Caustics setup
     res = 0.05
     nx = 200
@@ -29,9 +31,8 @@ def test_sersic(sim_source, device, light_models, q, n, th_e):
             init_kwargs:
                 use_lenstronomy_k: true
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = light_models.get("Sersic")
-        sersic = mod(**yaml_dict["light"]).model_obj()
+        with StringIO(yaml_str) as f:
+            sersic = build_simulator(f)
     else:
         sersic = Sersic(name="sersic", use_lenstronomy_k=True)
     sersic.to(device=device)

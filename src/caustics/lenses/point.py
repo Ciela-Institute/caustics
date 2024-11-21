@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
 from . import func
 
 __all__ = ("Point",)
@@ -117,24 +116,76 @@ class Point(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("th_ein", th_ein)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.th_ein = Param("th_ein", th_ein, units="arcsec", valid=(0, None))
         self.s = s
 
-    @unpack
+    @forward
+    def mass_to_rein(
+        self, mass: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+    ) -> Tensor:
+        """
+        Convert mass to the Einstein radius.
+
+        Parameters
+        ----------
+        mass: Tensor
+            The mass of the lens
+
+            *Unit: solar mass*
+
+        Returns
+        -------
+        Tensor
+            The Einstein radius.
+
+            *Unit: arcsec*
+
+        """
+
+        Dls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        Dl = self.cosmology.angular_diameter_distance(z_l)
+        Ds = self.cosmology.angular_diameter_distance(z_s)
+        return func.mass_to_rein_point(mass, Dls, Dl, Ds)
+
+    @forward
+    def rein_to_mass(
+        self, r: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+    ) -> Tensor:
+        """
+        Convert Einstein radius to mass.
+
+        Parameters
+        ----------
+        r: Tensor
+            The Einstein radius.
+
+            *Unit: arcsec*
+
+        Returns
+        -------
+        Tensor
+            The mass of the lens
+
+            *Unit: solar mass*
+
+        """
+
+        Dls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        Dl = self.cosmology.angular_diameter_distance(z_l)
+        Ds = self.cosmology.angular_diameter_distance(z_s)
+        return func.rein_to_mass_point(r, Dls, Dl, Ds)
+
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -174,19 +225,15 @@ class Point(ThinLens):
         """
         return func.reduced_deflection_angle_point(x0, y0, th_ein, x, y, self.s)
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        th_ein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -221,19 +268,14 @@ class Point(ThinLens):
         """
         return func.potential_point(x0, y0, th_ein, x, y, self.s)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
         z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        th_ein: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence (dimensionless surface mass density).
