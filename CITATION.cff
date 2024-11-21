@@ -37,7 +37,7 @@ authors:
 - family-names: "Hezaveh"
   given-names: "Yashar"
   orcid: "https://orcid.org/0000-0002-8669-5733"
-title: "caustics"
+title: "Caustics: A Python Package for Accelerated Strong Gravitational Lensing Simulations"
 doi: 10.5281/zenodo.10806382
 abstract: "The lensing pipeline of the future: GPU-accelerated, automatically-differentiable, highly modular. Currently under heavy development."
 repository-code: "https://github.com/Ciela-Institute/caustics"
