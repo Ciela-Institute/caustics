@@ -1,15 +1,17 @@
+from io import StringIO
+
 import torch
-import yaml
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import MassSheet
 from caustics.utils import meshgrid
+from caustics.sims import build_simulator
 
 import pytest
 
 
 @pytest.mark.parametrize("convergence", [-1.0, 0.0, 1.0])
-def test_masssheet(sim_source, device, lens_models, convergence):
+def test_masssheet(sim_source, device, convergence):
     if sim_source == "yaml":
         yaml_str = """\
         cosmology: &cosmology
@@ -21,9 +23,8 @@ def test_masssheet(sim_source, device, lens_models, convergence):
             init_kwargs:
                 cosmology: *cosmology
         """
-        yaml_dict = yaml.safe_load(yaml_str.encode("utf-8"))
-        mod = lens_models.get("MassSheet")
-        lens = mod(**yaml_dict["lens"]).model_obj()
+        with StringIO(yaml_str) as f:
+            lens = build_simulator(f)
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")

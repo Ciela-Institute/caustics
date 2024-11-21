@@ -12,7 +12,13 @@ from .base import (
     time_delay_arcsec2_to_days,
 )
 from .sie import reduced_deflection_angle_sie, potential_sie, convergence_sie
-from .point import reduced_deflection_angle_point, potential_point, convergence_point
+from .point import (
+    reduced_deflection_angle_point,
+    potential_point,
+    convergence_point,
+    mass_to_rein_point,
+    rein_to_mass_point,
+)
 from .mass_sheet import (
     reduced_deflection_angle_mass_sheet,
     potential_mass_sheet,
@@ -91,6 +97,8 @@ __all__ = (
     "reduced_deflection_angle_point",
     "potential_point",
     "convergence_point",
+    "mass_to_rein_point",
+    "rein_to_mass_point",
     "reduced_deflection_angle_mass_sheet",
     "potential_mass_sheet",
     "convergence_mass_sheet",

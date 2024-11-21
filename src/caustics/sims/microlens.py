@@ -1,8 +1,9 @@
 from typing import Optional, Annotated, Union, Literal
 import torch
 from torch import Tensor
+from caskade import Module, forward, Param
 
-from .simulator import Simulator, NameType
+from .simulator import NameType
 from ..lenses.base import Lens
 from ..light.base import Source
 
@@ -10,7 +11,7 @@ from ..light.base import Source
 __all__ = ("Microlens",)
 
 
-class Microlens(Simulator):
+class Microlens(Module):
     """Computes the total flux from a microlens system within an fov.
 
     Straightforward simulator to compute the total flux a lensed image of a
@@ -57,15 +58,16 @@ class Microlens(Simulator):
     ):
         super().__init__(name)
 
+        self.z_s = Param("z_s", z_s, units="unitless")
+
         self.lens = lens
         self.source = source
 
-        self.add_param("z_s", z_s)
-
-    def forward(
+    @forward
+    def __call__(
         self,
-        params,
         fov: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
         N_grid: int = 100,
@@ -94,14 +96,13 @@ class Microlens(Simulator):
             Error estimate on the total flux
 
         """
-        (z_s,) = self.unpack(params)
 
         if method == "mcmc":
             # Sample the source using MCMC
             sample_x = torch.rand(N_mcmc) * (fov[1] - fov[0]) + fov[0]
             sample_y = torch.rand(N_mcmc) * (fov[3] - fov[2]) + fov[2]
-            bx, by = self.lens.raytrace(sample_x, sample_y, z_s, params)
-            mu = self.source.brightness(bx, by, params)
+            bx, by = self.lens.raytrace(sample_x, sample_y, z_s)
+            mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
             return mu.mean() * A, mu.std() * A / N_mcmc**0.5
         elif method == "grid":
@@ -109,8 +110,8 @@ class Microlens(Simulator):
             x = torch.linspace(fov[0], fov[1], N_grid)
             y = torch.linspace(fov[2], fov[3], N_grid)
             sample_x, sample_y = torch.meshgrid(x, y, indexing="ij")
-            bx, by = self.lens.raytrace(sample_x, sample_y, z_s, params)
-            mu = self.source.brightness(bx, by, params)
+            bx, by = self.lens.raytrace(sample_x, sample_y, z_s)
+            mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
             return mu.mean() * A, mu.std() * A / N_grid
         else:

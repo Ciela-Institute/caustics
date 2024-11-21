@@ -5,8 +5,9 @@ from torch.nn.functional import avg_pool2d, conv2d
 from typing import Optional, Annotated, Literal, Union
 import torch
 from torch import Tensor
+from caskade import Module, forward, Param
 
-from .simulator import Simulator, NameType
+from .simulator import NameType
 from ..utils import (
     meshgrid,
     gaussian_quadrature_grid,
@@ -19,7 +20,7 @@ from ..light.base import Source
 __all__ = ("LensSource",)
 
 
-class LensSource(Simulator):
+class LensSource(Module):
     """Lens image of a source.
 
     Straightforward simulator to sample a lensed image of a source object.
@@ -149,11 +150,6 @@ class LensSource(Simulator):
     ):
         super().__init__(name)
 
-        # Lensing models
-        self.lens = lens
-        self.source = source
-        self.lens_light = lens_light
-
         # Configure PSF
         self._psf_mode = psf_mode
         if psf is not None:
@@ -161,11 +157,16 @@ class LensSource(Simulator):
         self._psf_shape = psf.shape if psf is not None else psf_shape
 
         # Build parameters
-        self.add_param("z_s", z_s)
-        self.add_param("psf", psf, self.psf_shape)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
+        self.z_s = Param("z_s", z_s, units="unitless", valid=(0, None))
+        self.psf = Param("psf", psf, self.psf_shape, units="unitless")
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
         self._pixelscale = pixelscale
+
+        # Lensing models
+        self.lens = lens
+        self.source = source
+        self.lens_light = lens_light
 
         # Image grid
         self._pixels_x = pixels_x
@@ -306,13 +307,18 @@ class LensSource(Simulator):
             ..., : self._s[0], : self._s[1]
         ]
 
-    def forward(
+    @forward
+    def __call__(
         self,
-        params,
-        source_light=True,
-        lens_light=True,
-        lens_source=True,
-        psf_convolve=True,
+        z_s: Annotated[Tensor, "Param"],
+        psf: Annotated[Tensor, "Param"],
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        source_light: bool = True,
+        lens_light: bool = True,
+        lens_source: bool = True,
+        psf_convolve: bool = True,
+        chunk_size: int = 10000,
     ):
         """
         forward function
@@ -330,7 +336,6 @@ class LensSource(Simulator):
         psf_convolve: boolean
             when true the image will be convolved with the psf
         """
-        z_s, psf, x0, y0 = self.unpack(params)
 
         # Automatically turn off light for missing objects
         if self.source is None:
@@ -346,12 +351,18 @@ class LensSource(Simulator):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = self.lens.raytrace(*grid, z_s, params)
-                mu_fine = self.source.brightness(bx, by, params)
+                bx, by = torch.vmap(
+                    self.lens.raytrace, in_dims=(0, 0, None), chunk_size=chunk_size
+                )(grid[0].flatten(), grid[1].flatten(), z_s)
+                mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
+                    bx, by
+                ).reshape(grid[0].shape)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
             else:
                 # Source is imaged without lensing
-                mu_fine = self.source.brightness(*grid, params)
+                mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
+                    grid[0].flatten(), grid[1].flatten()
+                ).reshape(grid[0].shape)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
@@ -359,7 +370,9 @@ class LensSource(Simulator):
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            mu_fine = self.lens_light.brightness(*grid, params)
+            mu_fine = torch.vmap(self.lens_light.brightness, chunk_size=chunk_size)(
+                grid[0].flatten(), grid[1].flatten()
+            ).reshape(grid[0].shape)
             mu += gaussian_quadrature_integrator(mu_fine, self._weights)
 
         # Convolve the PSF
