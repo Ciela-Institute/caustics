@@ -1201,6 +1201,7 @@ def batch_lm(
         Cinv = 1 / C
     else:
         Cinv = torch.linalg.inv(C)
+    Cinv = Cinv.to(dtype=X.dtype)
 
     v_lm_step = torch.vmap(
         partial(
