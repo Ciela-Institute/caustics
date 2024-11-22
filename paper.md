@@ -87,7 +87,7 @@ occurs when the distortions are significant and multiple images of the
 background source are observed. The lens and lensed object(s) must be aligned
 closely on the sky. As the discovery of lens systems has grown to the low
 thousands, these systems have become pivotal for precision measurements in
-astrophysics. Notably, for phenomena including: dark matter [e.g.
+astrophysics, notably for phenomena including dark matter [e.g.
 @Hezaveh2016; @Vegetti2014], supernovae [e.g. @Rodney2021], quasars [e.g.
 @Peng2006],
 the first stars [e.g. @Welch2022], and the Universe's expansion rate [e.g.
@@ -109,20 +109,20 @@ gravitational lensing studies. Currently, analyzing a single lensing system can
 take several days or weeks, which will soon be infeasible to scale. Thus,
 advancements such as GPU acceleration and/or automatic differentiation are
 needed to reduce the analysis timescales. Machine learning will be critical to
-achieve the necessary speed to process these lenses, it will also be needed to
+achieve the necessary speed to process these lenses. It will also be needed to
 meet the complexity of strong lens modelling. Literature on machine learning
 applications in strong gravitational lensing underscores this need
 [@Brehmer2019; @Chianese2020; @Coogan2020; @Mishra2022; @Karchev2022;
 @Karchev2022b]. `caustics` is built with the future of lensing in mind, using `PyTorch`
-[@pytorch] to accelerate the low-level computation and enable deep learning algorithms
+[@pytorch] to accelerate the low-level computation and enable deep learning algorithms,
 which rely on automatic differentiation.
 
 Several other simulation packages for strong gravitational lensing are already
 publicly available. The well-established `lenstronomy` package has been in use
 since 2018 [@lenstronomy]; `GLAMER` is a C++-based code for modelling complex
 and large dynamic range fields [@GLAMER]; `PyAutoLens` is also widely used
-[@PyAutoLens]; `GIGA-Lens` is a specialized JAX [@JAX] based gravitational
-lensing package [@GIGALens]; and `Herculens` is a more general JAX based lensing
+[@PyAutoLens]; `GIGA-Lens` is a specialized JAX-based [@JAX] gravitational
+lensing package [@GIGALens]; and `Herculens` is a more general JAX-based lensing
 simulator package [@Herculens]; among others [`GRAVLENS` @Keeton2011; `LENSTOOL`
 @Kneib2011; `SLITRONOMY` @Galan2021; `paltax` @Wagner2024]. There are also several
 in-house codes developed for specialized analysis which are then not publicly released
@@ -135,28 +135,28 @@ interfaces to the code: configuration file, object-oriented, and functional.
 Flexibility is achieved by a determined focus on minimalism in the core
 functionality of `caustics` and encouraging user extension.
 
-![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. For CPU calculations we use `Intel Gold 6148 Skylake` and for the GPU we use a `NVIDIA V100`, all tests were done at 64 bit precision. On the left, the lensing system is sampled 128 pixel resolution only at pixel midpoints. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.\label{fig:runtime}](media/runtime_comparison.png)
+![Runtime comparisons for a simple lensing setup. We compare the amount of time taken (y-axis) to generate a certain number of lensing realizations (x-axis) where a Sérsic model is lensed by an SIE mass distribution. For CPU calculations we use an Intel Gold 6148 Skylake and for the GPU we use a NVIDIA V100. All tests were done at 64-bit precision. On the left, the lensing system is sampled at 128-pixel resolution only at pixel midpoints. On the right, a more realistic simulation includes upsampled pixels and PSF convolution. From the two tests we see varying performance enhancements from compiled, unbatched, batched, multi-threaded, and GPU processing setups.\label{fig:runtime}](media/runtime_comparison.png)
 
-`Caustics` fills a timely need for a differentiable lensing simulator. Several
-other fields have already benefited from such simulators, for example:
-gravitational wave analysis [@Coogan2022; @Edwards2023; @Wong2023]; astronomical
-image photometry [@Stone2023]; point spread function modelling [@Desdoigts2023];
-time series analysis [@Millon2024]; and even generic optimization for scientific
+`caustics` fills a timely need for a differentiable lensing simulator. Several
+other fields have already benefited from such simulators, for example
+gravitational wave analysis [@Coogan2022; @Edwards2023; @Wong2023], astronomical
+image photometry [@Stone2023], point spread function modelling [@Desdoigts2023];
+time series analysis [@Millon2024], and even generic optimization for scientific
 problems [@Nikolic2018]. With `caustics` it will now be possible to analyze over
 100,000 lenses in a timely manner [@Hezaveh2017; @Perreault2017].
 
 # Scope
 
-`Caustics` is a gravitational lensing simulator. The purpose of the project is
+`caustics` is a gravitational lensing simulator. The purpose of the project is
 to streamline the simulation of strong gravitational lensing effects on the
 light of a background source. The primary focus is on all transformations
 between the source plane(s) and the image plane through the lensing plane(s).
-There is minimal effort on modelling the observational elements of atmosphere,
-telescope optics. A variety of parametric lensing profiles are included, such
-as: Singular Isothermal Ellipsoid (SIE), Elliptical Power Law (EPL),
-Pseudo-Jaffe, Navarro-Frenk-White (NFW), and External Shear. Additionally, it
-offers non-parametric representations such as a gridded convergence or a
-potential field and pixelized sources.
+There is minimal effort on modelling the observational elements of the
+atmosphere or telescope optics. A variety of parametric lensing profiles are
+included, such as: Singular Isothermal Ellipsoid (SIE), Elliptical Power Law
+(EPL), Pseudo-Jaffe, Navarro-Frenk-White (NFW), and External Shear.
+Additionally, it offers non-parametric representations such as a gridded
+convergence or a potential field and pixelized sources.
 
 Once a lensing system has been defined, `caustics` can then perform various
 computational operations on the system such as raytracing through the lensing
@@ -168,9 +168,9 @@ for interlopers or multiple sources.
 With these building blocks in place, one can construct fast and accurate
 simulators used to produce training sets for machine learning models or for
 inference on real-world systems. Neural networks have become a widespread tool
-for amortized inference of gravitational lensing parameter [@Hezaveh2017] or in
+for amortized inference of gravitational lensing parameters [@Hezaveh2017] or in
 the detection of gravitational lenses [@Petrillo2017; @Huang2021], but they require
-large and accurate training sets which can be created quickly with `caustics`. The
+large and accurate training sets that can be created quickly with `caustics`. The
 simulators are differentiable, enabling algorithms such as recurrent inference machines
 [@Adam2023] and diffusion models [@Adam2022; @Remy2023].
 
