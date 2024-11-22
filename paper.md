@@ -151,12 +151,12 @@ problems [@Nikolic2018]. With `caustics` it will now be possible to analyze over
 to streamline the simulation of strong gravitational lensing effects on the
 light of a background source. The primary focus is on all transformations
 between the source plane(s) and the image plane through the lensing plane(s).
-There is minimal effort on modelling the observational elements of the atmosphere or
-telescope optics. A variety of parametric lensing profiles are included, such
-as: Singular Isothermal Ellipsoid (SIE), Elliptical Power Law (EPL),
-Pseudo-Jaffe, Navarro-Frenk-White (NFW), and External Shear. Additionally, it
-offers non-parametric representations such as a gridded convergence or a
-potential field and pixelized sources.
+There is minimal effort on modelling the observational elements of the
+atmosphere or telescope optics. A variety of parametric lensing profiles are
+included, such as: Singular Isothermal Ellipsoid (SIE), Elliptical Power Law
+(EPL), Pseudo-Jaffe, Navarro-Frenk-White (NFW), and External Shear.
+Additionally, it offers non-parametric representations such as a gridded
+convergence or a potential field and pixelized sources.
 
 Once a lensing system has been defined, `caustics` can then perform various
 computational operations on the system such as raytracing through the lensing
