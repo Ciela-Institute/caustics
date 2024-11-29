@@ -517,7 +517,7 @@ def interp2d(
         raise ValueError(f"x must be 0 or 1D (received {x.ndim}D tensor)")
     if y.ndim > 1:
         raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
-    if padding_mode not in ["extrapolate", "zeros"]:
+    if padding_mode not in ["extrapolate", "clamp", "zeros"]:
         raise ValueError(f"{padding_mode} is not a valid padding mode")
 
     if padding_mode == "clamp":
