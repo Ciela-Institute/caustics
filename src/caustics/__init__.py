@@ -1,5 +1,7 @@
 from ._version import version as VERSION  # noqa
 
+from caskade import forward, Module, Param, ValidContext
+
 from .cosmology import (
     Cosmology,
     FlatLambdaCDM,
@@ -21,6 +23,7 @@ from .lenses import (
     SIE,
     SIS,
     SinglePlane,
+    BatchedPlane,
     MassSheet,
     TNFW,
     Multipole,
@@ -35,15 +38,18 @@ from .light import (
     StarSource,
 )
 from . import utils
-from .sims import LensSource, Microlens, Simulator
+from .sims import LensSource, Microlens, build_simulator
 from .tests import test
-from .models.api import build_simulator
 from . import func
 
 __version__ = VERSION
 __author__ = "Ciela Institute"
 
 __all__ = [
+    "Module",
+    "Param",
+    "ValidContext",
+    "forward",
     "Cosmology",
     "FlatLambdaCDM",
     "h0_default",
@@ -62,6 +68,7 @@ __all__ = [
     "SIE",
     "SIS",
     "SinglePlane",
+    "BatchedPlane",
     "MassSheet",
     "TNFW",
     "Multipole",
@@ -75,7 +82,6 @@ __all__ = [
     "utils",
     "LensSource",
     "Microlens",
-    "Simulator",
     "test",
     "build_simulator",
     "func",
