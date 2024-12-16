@@ -7,6 +7,7 @@ chapters:
   - file: getting_started
   - file: install
   - file: websim
+  - file: gravlensingintro
   - file: tutorials/index
     sections:
       - file: tutorials/Introduction
