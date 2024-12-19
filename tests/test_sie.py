@@ -16,8 +16,8 @@ import pytest
 
 @pytest.mark.parametrize("q", [0.5, 0.7, 0.9])
 @pytest.mark.parametrize("phi", [pi / 3, -pi / 4, pi / 6])
-@pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.5])
-def test_sie(sim_source, device, q, phi, th_ein):
+@pytest.mark.parametrize("Rein", [0.1, 1.0, 2.5])
+def test_sie(sim_source, device, q, phi, Rein):
     atol = 1e-5
     rtol = 1e-3
 
@@ -43,11 +43,11 @@ def test_sie(sim_source, device, q, phi, th_ein):
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([0.5, 0.912, -0.442, q, phi, th_ein])
+    x = torch.tensor([0.5, 0.912, -0.442, q, phi, Rein])
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
     kwargs_ls = [
         {
-            "theta_E": th_ein,
+            "theta_E": Rein,
             "e1": e1,
             "e2": e2,
             "center_x": x[1].item(),

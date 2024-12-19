@@ -37,7 +37,7 @@ class Point(ThinLens):
 
         *Unit: arcsec*
 
-    th_ein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[Tensor, float]]
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -52,7 +52,7 @@ class Point(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "th_ein": 1.0,
+        "Rein": 1.0,
     }
 
     def __init__(
@@ -69,7 +69,7 @@ class Point(ThinLens):
             "Y coordinate of the center of the lens",
             True,
         ] = None,
-        th_ein: Annotated[
+        Rein: Annotated[
             Optional[Union[Tensor, float]], "Einstein radius of the lens", True
         ] = None,
         s: Annotated[
@@ -103,7 +103,7 @@ class Point(ThinLens):
 
             *Unit: arcsec*
 
-        th_ein: Optional[Tensor]
+        Rein: Optional[Tensor]
             Einstein radius of the lens.
 
             *Unit: arcsec*
@@ -118,7 +118,7 @@ class Point(ThinLens):
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
-        self.th_ein = Param("th_ein", th_ein, units="arcsec", valid=(0, None))
+        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self.s = s
 
     @forward
@@ -185,7 +185,7 @@ class Point(ThinLens):
         z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -223,7 +223,7 @@ class Point(ThinLens):
             *Unit: arcsec*
 
         """
-        return func.reduced_deflection_angle_point(x0, y0, th_ein, x, y, self.s)
+        return func.reduced_deflection_angle_point(x0, y0, Rein, x, y, self.s)
 
     @forward
     def potential(
@@ -233,7 +233,7 @@ class Point(ThinLens):
         z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -266,7 +266,7 @@ class Point(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_point(x0, y0, th_ein, x, y, self.s)
+        return func.potential_point(x0, y0, Rein, x, y, self.s)
 
     @forward
     def convergence(

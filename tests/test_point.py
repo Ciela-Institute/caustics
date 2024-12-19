@@ -11,8 +11,8 @@ from caustics.sims import build_simulator
 import pytest
 
 
-@pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.0])
-def test_point_lens(sim_source, device, th_ein):
+@pytest.mark.parametrize("Rein", [0.1, 1.0, 2.0])
+def test_point_lens(sim_source, device, Rein):
     atol = 1e-5
     rtol = 1e-5
     z_l = torch.tensor(0.9)
@@ -40,7 +40,7 @@ def test_point_lens(sim_source, device, th_ein):
 
     # Parameters
     z_s = torch.tensor(1.2)
-    x = torch.tensor([0.912, -0.442, th_ein])
-    kwargs_ls = [{"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": th_ein}]
+    x = torch.tensor([0.912, -0.442, Rein])
+    kwargs_ls = [{"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": Rein}]
 
     lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
