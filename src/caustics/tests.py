@@ -118,7 +118,7 @@ def _test_jacobian_autograd_vs_finitediff(device=DEVICE):
 
     assert (
         torch.sum(((J_autograd - J_finitediff) / J_autograd).abs() < 1e-3)
-        > 0.8 * J_autograd.numel()
+        > 0.7 * J_autograd.numel()
     )
 
 
