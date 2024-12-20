@@ -836,6 +836,8 @@ class ThinLens(Lens):
             in_dims=(0, 0, None),
             chunk_size=10000,
         )(x.flatten(), y.flatten(), z_s)
+        Psi_H = torch.stack([torch.stack(Hrow, dim=-1) for Hrow in Psi_H], dim=-2)
+        Psi_H = Psi_H.reshape(*x.shape, 2, 2)
         return 0.5 * (Psi_H[..., 0, 0] + Psi_H[..., 1, 1]).reshape(x.shape)
 
     @abstractmethod
