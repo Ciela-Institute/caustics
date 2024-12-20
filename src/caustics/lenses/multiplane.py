@@ -114,7 +114,6 @@ class Multiplane(ThickLens):
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
                 Y * rad_to_arcsec / D_l,
-                z_s,
             )
 
             # Update angle of rays after passing through lens (sum in eq 18)
@@ -126,7 +125,7 @@ class Multiplane(ThickLens):
             if shapiro_time_delay:
                 beta_ij = D * D_s / (D_next * D_is)
                 potential = self.lenses[i].potential(
-                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l, z_s
+                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l
                 )
                 TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
             if geometric_time_delay:

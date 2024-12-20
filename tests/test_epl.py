@@ -21,7 +21,7 @@ import pytest
 def test_lenstronomy_epl(sim_source, device, q, phi, b, t):
     z_s = torch.tensor(1.0, device=device)
     if sim_source == "yaml":
-        yaml_str = """\
+        yaml_str = f"""\
         cosmology: &cosmology
             name: cosmo
             kind: FlatLambdaCDM
@@ -29,6 +29,7 @@ def test_lenstronomy_epl(sim_source, device, q, phi, b, t):
             name: epl
             kind: EPL
             init_kwargs:
+                z_s: {float(z_s)}
                 cosmology: *cosmology
         """
         with StringIO(yaml_str) as f:

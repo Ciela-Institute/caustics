@@ -14,7 +14,7 @@ import pytest
 def test_masssheet(sim_source, device, convergence):
     z_s = torch.tensor(1.2)
     if sim_source == "yaml":
-        yaml_str = """\
+        yaml_str = f"""\
         cosmology: &cosmology
             name: cosmo
             kind: FlatLambdaCDM
@@ -22,6 +22,7 @@ def test_masssheet(sim_source, device, convergence):
             name: sheet
             kind: MassSheet
             init_kwargs:
+                z_s: {float(z_s)}
                 cosmology: *cosmology
         """
         with StringIO(yaml_str) as f:

@@ -15,7 +15,7 @@ def test(sim_source, device):
     z_s = torch.tensor(2.0, device=device)
 
     if sim_source == "yaml":
-        yaml_str = """\
+        yaml_str = f"""\
         cosmology: &cosmology
             name: cosmo
             kind: FlatLambdaCDM
@@ -23,6 +23,7 @@ def test(sim_source, device):
             name: shear
             kind: ExternalShear
             init_kwargs:
+                z_s: {float(z_s)}
                 cosmology: *cosmology
         """
         with StringIO(yaml_str) as f:

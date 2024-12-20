@@ -181,9 +181,7 @@ def test_lens_potential_vs_convergence(device):
 
         # Compute the laplacian of the lensing potential.
         phi_H = torch.vmap(
-            torch.vmap(
-                torch.func.hessian(lens.potential, (0, 1)), in_dims=(0, 0, None)
-            ),
+            torch.vmap(torch.func.hessian(lens.potential, (0, 1))),
         )(x, y)
         phi_kappa = 0.5 * (phi_H[0][0] + phi_H[1][1])
 

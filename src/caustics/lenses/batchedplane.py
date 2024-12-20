@@ -45,6 +45,8 @@ class BatchedPlane(ThinLens):
         """
         super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
         self.lens = lens
+        self.lens.z_s = z_s
+        self.lens.z_l = z_l
         self.chunk_size = chunk_size
 
     @forward

@@ -129,7 +129,7 @@ class Lens(Module):
             *Unit: unitless*
 
         """
-        return magnification(self.raytrace, x, y, z_s)
+        return magnification(self.raytrace, x, y)
 
     @forward
     def forward_raytrace(
@@ -699,9 +699,7 @@ class ThinLens(Lens):
         """
         d_s = self.cosmology.angular_diameter_distance(z_s)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
-        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(
-            x, y, z_s
-        )
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
         return func.reduced_from_physical_deflection_angle(
             deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
@@ -744,9 +742,7 @@ class ThinLens(Lens):
         """
         d_s = self.cosmology.angular_diameter_distance(z_s)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
-        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(
-            x, y, z_s
-        )
+        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(x, y)
         return func.physical_from_reduced_deflection_angle(
             deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
