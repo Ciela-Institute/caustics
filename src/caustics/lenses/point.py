@@ -4,7 +4,7 @@ from typing import Optional, Union, Annotated
 from torch import Tensor
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("Point",)
@@ -58,7 +58,8 @@ class Point(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "X coordinate of the center of the lens",
@@ -114,7 +115,7 @@ class Point(ThinLens):
             *Unit: arcsec*
 
         """
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -123,7 +124,10 @@ class Point(ThinLens):
 
     @forward
     def mass_to_rein(
-        self, mass: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+        self,
+        mass: Tensor,
+        z_s: Annotated[Tensor, "Param"],
+        z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Convert mass to the Einstein radius.
@@ -151,7 +155,10 @@ class Point(ThinLens):
 
     @forward
     def rein_to_mass(
-        self, r: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+        self,
+        r: Tensor,
+        z_s: Annotated[Tensor, "Param"],
+        z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Convert Einstein radius to mass.
@@ -182,7 +189,6 @@ class Point(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         th_ein: Annotated[Tensor, "Param"],
@@ -201,14 +207,6 @@ class Point(ThinLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         -------
@@ -230,7 +228,6 @@ class Point(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         th_ein: Annotated[Tensor, "Param"],
@@ -250,14 +247,6 @@ class Point(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -273,7 +262,6 @@ class Point(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
     ) -> Tensor:
@@ -291,14 +279,6 @@ class Point(ThinLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         --------

@@ -5,7 +5,7 @@ from torch import Tensor
 import torch
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("ExternalShear",)
@@ -25,6 +25,11 @@ class ExternalShear(ThinLens):
 
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
+        *Unit: unitless*
+
+    z_s: Optional[Union[Tensor, float]]
+        The redshift of the source.
 
         *Unit: unitless*
 
@@ -54,7 +59,8 @@ class ExternalShear(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "x-coordinate of the shear center in the lens plane",
@@ -76,7 +82,7 @@ class ExternalShear(ThinLens):
         ] = 0.0,
         name: NameType = None,
     ):
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology=cosmology, z_l=z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -89,7 +95,6 @@ class ExternalShear(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         gamma_1: Annotated[Tensor, "Param"],
@@ -109,14 +114,6 @@ class ExternalShear(ThinLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
 
         Returns
         -------
@@ -140,7 +137,6 @@ class ExternalShear(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         gamma_1: Annotated[Tensor, "Param"],
@@ -161,14 +157,6 @@ class ExternalShear(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -184,7 +172,6 @@ class ExternalShear(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> Tensor:
         """
         The convergence is undefined for an external shear.
@@ -200,14 +187,6 @@ class ExternalShear(ThinLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
 
         Returns
         -------

@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 from caskade import forward
 
-from .base import ThinLens, CosmologyType, NameType, LensesType, ZLType
+from .base import ThinLens, CosmologyType, NameType, LensesType, ZType
 
 __all__ = ("SinglePlane",)
 
@@ -30,23 +30,37 @@ class SinglePlane(ThinLens):
         cosmology: CosmologyType,
         lenses: LensesType,
         name: NameType = None,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
     ):
         """
         Initialize the SinglePlane lens model.
         """
-        super().__init__(cosmology, z_l=z_l, name=name)
-        self.lenses = lenses
+        super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
+        self.lenses: LensesType = []
         for lens in lenses:
-            self.link(lens.name, lens)
-        # TODO: assert all z_l are the same?
+            self.add_lens(lens)
+
+    def add_lens(self, lens: ThinLens):
+        """
+        Add a lens to the list of lenses.
+
+        Parameters
+        ----------
+        lens: ThinLens
+            The lens to be added to the list of lenses.
+
+        """
+        self.lenses.append(lens)
+        self.link(lens.name, lens)
+        lens.z_l = self.z_l
+        lens.z_s = self.z_s
 
     @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the total deflection angle by summing
@@ -88,7 +102,7 @@ class SinglePlane(ThinLens):
         ax = torch.zeros_like(x)
         ay = torch.zeros_like(x)
         for lens in self.lenses:
-            ax_cur, ay_cur = lens.reduced_deflection_angle(x, y, z_s)
+            ax_cur, ay_cur = lens.reduced_deflection_angle(x, y)
             ax = ax + ax_cur
             ay = ay + ay_cur
         return ax, ay
@@ -98,7 +112,6 @@ class SinglePlane(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> Tensor:
         """
         Calculate the total projected mass density by
@@ -116,14 +129,6 @@ class SinglePlane(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -134,7 +139,7 @@ class SinglePlane(ThinLens):
         """
         convergence = torch.zeros_like(x)
         for lens in self.lenses:
-            convergence_cur = lens.convergence(x, y, z_s)
+            convergence_cur = lens.convergence(x, y)
             convergence = convergence + convergence_cur
         return convergence
 
@@ -143,7 +148,6 @@ class SinglePlane(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> Tensor:
         """
         Compute the total lensing potential by summing
@@ -161,14 +165,6 @@ class SinglePlane(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -179,6 +175,6 @@ class SinglePlane(ThinLens):
         """
         potential = torch.zeros_like(x)
         for lens in self.lenses:
-            potential_cur = lens.potential(x, y, z_s)
+            potential_cur = lens.potential(x, y)
             potential = potential + potential_cur
         return potential

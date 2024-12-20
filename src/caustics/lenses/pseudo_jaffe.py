@@ -7,7 +7,7 @@ from torch import Tensor
 from caskade import forward, Param
 
 from ..constants import arcsec_to_rad
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("PseudoJaffe",)
@@ -27,6 +27,11 @@ class PseudoJaffe(ThinLens):
         The cosmology used for calculations.
     z_l: Optional[Union[Tensor, float]]
         Redshift of the lens.
+
+        *Unit: unitless*
+
+    z_s: Optional[Union[Tensor, float]]
+        Redshift of the source.
 
         *Unit: unitless*
 
@@ -73,7 +78,8 @@ class PseudoJaffe(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "X coordinate of the center of the lens",
@@ -148,7 +154,7 @@ class PseudoJaffe(ThinLens):
             *Unit: arcsec*
 
         """
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -164,7 +170,7 @@ class PseudoJaffe(ThinLens):
     @forward
     def get_convergence_0(
         self,
-        z_s,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         mass: Annotated[Tensor, "Param"],
         core_radius: Annotated[Tensor, "Param"],
@@ -178,7 +184,6 @@ class PseudoJaffe(ThinLens):
     def mass_enclosed_2d(
         self,
         theta,
-        z_s,
         mass: Annotated[Tensor, "Param"],
         core_radius: Annotated[Tensor, "Param"],
         scale_radius: Annotated[Tensor, "Param"],
@@ -215,8 +220,6 @@ class PseudoJaffe(ThinLens):
 
     @staticmethod
     def central_convergence(
-        z_l,
-        z_s,
         rho_0,
         core_radius,
         scale_radius,
@@ -227,16 +230,6 @@ class PseudoJaffe(ThinLens):
 
         Parameters
         -----------
-        z_l: Tensor
-            Lens redshift.
-
-            *Unit: unitless*
-
-        z_s: Tensor
-            Source redshift.
-
-            *Unit: unitless*
-
         rho_0: Tensor
             Central mass density.
 
@@ -270,7 +263,7 @@ class PseudoJaffe(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
@@ -291,14 +284,6 @@ class PseudoJaffe(ThinLens):
             y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         --------
@@ -322,7 +307,7 @@ class PseudoJaffe(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
@@ -345,14 +330,6 @@ class PseudoJaffe(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         --------
         Tensor
@@ -373,7 +350,7 @@ class PseudoJaffe(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
@@ -395,14 +372,6 @@ class PseudoJaffe(ThinLens):
             y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         -------

@@ -12,6 +12,7 @@ from caustics.sims import build_simulator
 def test(sim_source, device):
     atol = 1e-5
     rtol = 1e-5
+    z_s = torch.tensor(2.0, device=device)
 
     if sim_source == "yaml":
         yaml_str = """\
@@ -29,14 +30,12 @@ def test(sim_source, device):
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
-        lens = ExternalShear(name="shear", cosmology=cosmology)
+        lens = ExternalShear(name="shear", cosmology=cosmology, z_s=z_s)
     lens.to(device=device)
     lens_model_list = ["SHEAR"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
-    print(lens)
 
     # Parameters
-    z_s = torch.tensor(2.0, device=device)
     x = torch.tensor([0.7, 0.12, -0.52, -0.1, 0.1], device=device)
     kwargs_ls = [
         {
@@ -48,5 +47,5 @@ def test(sim_source, device):
     ]
 
     lens_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, test_kappa=False, device=device
+        lens, lens_ls, x, kwargs_ls, rtol, atol, test_kappa=False, device=device
     )

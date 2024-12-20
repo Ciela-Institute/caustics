@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from caskade import forward
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from ..utils import vmap_reduce
 
 __all__ = ("BatchedPlane",)
@@ -36,13 +36,14 @@ class BatchedPlane(ThinLens):
         cosmology: CosmologyType,
         lens: ThinLens,
         name: NameType = None,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         chunk_size: Optional[int] = None,
     ):
         """
         Initialize the SinglePlane lens model.
         """
-        super().__init__(cosmology, z_l=z_l, name=name)
+        super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
         self.lens = lens
         self.chunk_size = chunk_size
 
@@ -51,7 +52,6 @@ class BatchedPlane(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the total deflection angle by summing
@@ -68,14 +68,6 @@ class BatchedPlane(ThinLens):
             The y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         -------
@@ -98,7 +90,6 @@ class BatchedPlane(ThinLens):
         )
         batchdims["x"] = None
         batchdims["y"] = None
-        batchdims["z_s"] = None
         vr_deflection_angle = vmap_reduce(
             lambda p: self.lens.reduced_deflection_angle(**p),
             reduce_func=lambda x: (x[0].sum(dim=0), x[1].sum(dim=0)),
@@ -106,14 +97,13 @@ class BatchedPlane(ThinLens):
             in_dims=batchdims,
             out_dims=(0, 0),
         )
-        return vr_deflection_angle(x=x, y=y, z_s=z_s, **params)
+        return vr_deflection_angle(x=x, y=y, **params)
 
     @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> Tensor:
         """
         Calculate the total projected mass density by
@@ -131,14 +121,6 @@ class BatchedPlane(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -153,7 +135,7 @@ class BatchedPlane(ThinLens):
             (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
         )
         convergence = torch.vmap(
-            lambda p: self.lens.convergence(x, y, z_s, **p),
+            lambda p: self.lens.convergence(x, y, **p),
             in_dims=(batchdims,),
             chunk_size=self.chunk_size,
         )(params)
@@ -164,7 +146,6 @@ class BatchedPlane(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> Tensor:
         """
         Compute the total lensing potential by summing
@@ -182,14 +163,6 @@ class BatchedPlane(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -204,7 +177,7 @@ class BatchedPlane(ThinLens):
             (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
         )
         potential = torch.vmap(
-            lambda p: self.lens.potential(x, y, z_s, **p),
+            lambda p: self.lens.potential(x, y, **p),
             in_dims=(batchdims,),
             chunk_size=self.chunk_size,
         )(params)

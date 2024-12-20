@@ -1,3 +1,4 @@
+from typing import Annotated
 from operator import itemgetter
 
 import torch
@@ -5,7 +6,7 @@ from torch import Tensor
 from caskade import forward
 
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
-from .base import ThickLens, NameType, CosmologyType, LensesType
+from .base import ThickLens, ThinLens, NameType, CosmologyType, LensesType, ZType
 
 __all__ = ("Multiplane",)
 
@@ -27,15 +28,34 @@ class Multiplane(ThickLens):
         Cosmological parameters used for calculations.
     lenses: list[ThinLens]
         List of thin lenses.
+    z_s: ZType
+        Redshift of the source.
     """
 
     def __init__(
-        self, cosmology: CosmologyType, lenses: LensesType, name: NameType = None
+        self,
+        cosmology: CosmologyType,
+        lenses: LensesType,
+        name: NameType = None,
+        z_s: ZType = None,
     ):
-        super().__init__(cosmology, name=name)
-        self.lenses = lenses
+        super().__init__(cosmology, name=name, z_s=z_s)
+        self.lenses: LensesType = []
         for lens in lenses:
-            self.link(lens.name, lens)
+            self.add_lens(lens)
+
+    def add_lens(self, lens: ThinLens):
+        """
+        Add a lens to the list of lenses.
+
+        Parameters
+        ----------
+        lens: ThinLens
+            The lens to be added to the list of lenses.
+        """
+        self.lenses.append(lens)
+        self.link(lens.name, lens)
+        lens.z_s = self.z_s
 
     @forward
     def get_z_ls(self) -> list[Tensor]:
@@ -63,7 +83,7 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
         ray_coords: bool = True,
@@ -133,7 +153,6 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> tuple[Tensor, Tensor]:
         """Calculate the angular source positions corresponding to the
         observer positions x,y. See Margarita et al. 2013 for the
@@ -200,7 +219,6 @@ class Multiplane(ThickLens):
         return self._raytrace_helper(
             x,
             y,
-            z_s,
             shapiro_time_delay=False,
             geometric_time_delay=False,
             ray_coords=True,
@@ -211,9 +229,8 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> tuple[Tensor, Tensor]:
-        bx, by = self.raytrace(x, y, z_s)
+        bx, by = self.raytrace(x, y)
         return x - bx, y - by
 
     @forward
@@ -221,7 +238,6 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -268,7 +284,6 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
     ) -> Tensor:
@@ -302,14 +317,6 @@ class Multiplane(ThickLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the source.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         shapiro_time_delay: bool
             Whether to include the Shapiro time delay component.
 
@@ -332,7 +339,6 @@ class Multiplane(ThickLens):
         return self._raytrace_helper(
             x,
             y,
-            z_s,
             shapiro_time_delay=shapiro_time_delay,
             geometric_time_delay=geometric_time_delay,
             ray_coords=False,
