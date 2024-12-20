@@ -1,5 +1,5 @@
 # mypy: disable-error-code="dict-item"
-from typing import Optional, Union, Annotated
+from typing import Optional, Union, Annotated, Literal
 
 from torch import Tensor
 import torch
@@ -71,6 +71,7 @@ class ExternalShear(ThinLens):
         gamma_2: Annotated[
             Optional[Union[Tensor, float]], "Shear component in the y-direction", True
         ] = None,
+        parametrization: Literal["cartesian", "angular"] = "cartesian",
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
@@ -82,7 +83,53 @@ class ExternalShear(ThinLens):
         self.y0 = Param("y0", y0, units="arcsec")
         self.gamma_1 = Param("gamma_1", gamma_1, units="unitless")
         self.gamma_2 = Param("gamma_2", gamma_2, units="unitless")
+        self._parametrization = "cartesian"
+        self.parametrization = parametrization
         self.s = s
+
+    @property
+    def parametrization(self) -> str:
+        return self._parametrization
+
+    @parametrization.setter
+    def parametrization(self, value: str):
+        if value not in ["cartesian", "angular"]:
+            raise ValueError(
+                f"Invalid parametrization: {value}. Must be 'cartesian' or 'angular'."
+            )
+        if value == "angular" and self._parametrization != "angular":
+            try:
+                gamma = torch.sqrt(self.gamma_1.value**2 + self.gamma_2.value**2)
+                theta = 0.5 * torch.acos(self.gamma_1.value / gamma)
+            except TypeError:
+                gamma = None
+                theta = None
+            self.gamma = Param(
+                "gamma", value=gamma, shape=self.gamma_1.shape, units="unitless"
+            )
+            self.theta = Param(
+                "theta", value=theta, shape=self.gamma_1.shape, units="radians"
+            )
+            self.gamma_1.value = lambda p: func.gamma_theta_to_gamma1(
+                p["gamma"].value, p["theta"].value
+            )
+            self.gamma_2.value = lambda p: func.gamma_theta_to_gamma2(
+                p["gamma"].value, p["theta"].value
+            )
+            self.gamma_1.link(self.gamma)
+            self.gamma_1.link(self.theta)
+            self.gamma_2.link(self.gamma)
+            self.gamma_2.link(self.theta)
+        if value == "cartesian" and self._parametrization != "cartesian":
+            try:
+                del self.gamma
+                del self.theta
+                self.gamma_1 = None
+                self.gamma_2 = None
+            except AttributeError:
+                pass
+
+        self._parametrization = value
 
     @forward
     def reduced_deflection_angle(

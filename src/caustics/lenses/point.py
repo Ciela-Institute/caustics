@@ -1,5 +1,5 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Optional, Union, Annotated, Literal
 
 from torch import Tensor
 from caskade import forward, Param
@@ -72,6 +72,7 @@ class Point(ThinLens):
         th_ein: Annotated[
             Optional[Union[Tensor, float]], "Einstein radius of the lens", True
         ] = None,
+        parametrization: Literal["Rein", "mass"] = "Rein",
         s: Annotated[
             float, "Softening parameter to prevent numerical instabilities"
         ] = 0.0,
@@ -119,7 +120,46 @@ class Point(ThinLens):
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
         self.th_ein = Param("th_ein", th_ein, units="arcsec", valid=(0, None))
+        self._parametrization = "Rein"
+        self.parametrization = parametrization
         self.s = s
+
+    @property
+    def parametrization(self):
+        return self._parametrization
+
+    @parametrization.setter
+    def parametrization(self, value):
+        if value not in ["Rein", "mass"]:
+            raise ValueError(
+                f"Invalid parametrization {value}. Choose from ['Rein', 'mass']"
+            )
+        if value == "mass" and self.parametrization != "mass":
+            self.z_s = Param("z_s", value=None, shape=self.z_l.shape, units="unitless")
+            self.mass = Param("mass", shape=self.th_ein.shape, units="Msol")
+
+            def mass_to_rein(p):
+                Dls = p["cosmology"].angular_diameter_distance_z1z2(
+                    p["z_l"].value, p["z_s"].value
+                )
+                Dl = p["cosmology"].cosmology.angular_diameter_distance(p["z_l"].value)
+                Ds = p["cosmology"].cosmology.angular_diameter_distance(p["z_s"].value)
+                return func.mass_to_rein_point(p["mass"].value, Dls, Dl, Ds)
+
+            self.th_ein.value = mass_to_rein
+            self.th_ein.link(self.mass)
+            self.th_ein.link(self.z_s)
+            self.th_ein.link("cosmology", self.cosmology)
+            self.th_ein.link(self.z_l)
+        if value == "Rein" and self.parametrization != "Rein":
+            try:
+                del self.mass
+                del self.z_s
+                self.th_ein = None
+            except AttributeError:
+                pass
+
+        self._parametrization = value
 
     @forward
     def mass_to_rein(

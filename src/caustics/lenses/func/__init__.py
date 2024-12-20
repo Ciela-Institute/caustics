@@ -28,6 +28,8 @@ from .epl import reduced_deflection_angle_epl, potential_epl, convergence_epl
 from .external_shear import (
     reduced_deflection_angle_external_shear,
     potential_external_shear,
+    gamma_theta_to_gamma1,
+    gamma_theta_to_gamma2,
 )
 from .nfw import (
     physical_deflection_angle_nfw,
@@ -107,6 +109,8 @@ __all__ = (
     "convergence_epl",
     "reduced_deflection_angle_external_shear",
     "potential_external_shear",
+    "gamma_theta_to_gamma1",
+    "gamma_theta_to_gamma2",
     "physical_deflection_angle_nfw",
     "potential_nfw",
     "convergence_nfw",
