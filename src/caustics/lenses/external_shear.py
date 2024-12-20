@@ -100,7 +100,10 @@ class ExternalShear(ThinLens):
         if value == "angular" and self._parametrization != "angular":
             try:
                 gamma = torch.sqrt(self.gamma_1.value**2 + self.gamma_2.value**2)
-                theta = 0.5 * torch.acos(self.gamma_1.value / gamma)
+                if gamma.item() == 0:
+                    theta = 0.0
+                else:
+                    theta = 0.5 * torch.acos(self.gamma_1.value / gamma)
             except TypeError:
                 gamma = None
                 theta = None

@@ -142,8 +142,8 @@ class Point(ThinLens):
                 Dls = p["cosmology"].angular_diameter_distance_z1z2(
                     p["z_l"].value, p["z_s"].value
                 )
-                Dl = p["cosmology"].cosmology.angular_diameter_distance(p["z_l"].value)
-                Ds = p["cosmology"].cosmology.angular_diameter_distance(p["z_s"].value)
+                Dl = p["cosmology"].angular_diameter_distance(p["z_l"].value)
+                Ds = p["cosmology"].angular_diameter_distance(p["z_s"].value)
                 return func.mass_to_rein_point(p["mass"].value, Dls, Dl, Ds)
 
             self.th_ein.value = mass_to_rein
