@@ -98,21 +98,8 @@ class ExternalShear(ThinLens):
                 f"Invalid parametrization: {value}. Must be 'cartesian' or 'angular'."
             )
         if value == "angular" and self._parametrization != "angular":
-            try:
-                gamma = torch.sqrt(self.gamma_1.value**2 + self.gamma_2.value**2)
-                if gamma.item() == 0:
-                    theta = 0.0
-                else:
-                    theta = 0.5 * torch.acos(self.gamma_1.value / gamma)
-            except TypeError:
-                gamma = None
-                theta = None
-            self.gamma = Param(
-                "gamma", value=gamma, shape=self.gamma_1.shape, units="unitless"
-            )
-            self.theta = Param(
-                "theta", value=theta, shape=self.gamma_1.shape, units="radians"
-            )
+            self.gamma = Param("gamma", shape=self.gamma_1.shape, units="unitless")
+            self.theta = Param("theta", shape=self.gamma_1.shape, units="radians")
             self.gamma_1.value = lambda p: func.gamma_theta_to_gamma1(
                 p["gamma"].value, p["theta"].value
             )
@@ -125,10 +112,10 @@ class ExternalShear(ThinLens):
             self.gamma_2.link(self.theta)
         if value == "cartesian" and self._parametrization != "cartesian":
             try:
-                del self.gamma
-                del self.theta
                 self.gamma_1 = None
                 self.gamma_2 = None
+                del self.gamma
+                del self.theta
             except AttributeError:
                 pass
 

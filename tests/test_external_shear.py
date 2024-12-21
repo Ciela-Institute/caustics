@@ -80,22 +80,5 @@ def test_external_shear_parametrization():
     assert not hasattr(lens, "gamma")
     assert not hasattr(lens, "theta")
 
-    # Check set to angular when gamma1 and gamma2 have values
-    lens.gamma_1 = 0.0
-    lens.gamma_2 = 1.0
-    lens.parametrization = "angular"
-    assert np.allclose(lens.gamma.value.item(), 1.0)
-    assert np.allclose(lens.gamma_1.value.item(), 0.0, atol=1e-5)
-    assert np.allclose(lens.gamma_2.value.item(), 1.0, atol=1e-5)
-
-    # Check case where gamma = 0
-    lens.parametrization = "cartesian"
-    lens.gamma_1 = 0.0
-    lens.gamma_2 = 0.0
-    lens.parametrization = "angular"
-    assert np.allclose(lens.gamma.value.item(), 0.0, atol=1e-5)
-    assert np.allclose(lens.gamma_1.value.item(), 0.0, atol=1e-5)
-    assert np.allclose(lens.gamma_2.value.item(), 0.0, atol=1e-5)
-
     with pytest.raises(ValueError):
         lens.parametrization = "weird"
