@@ -1,3 +1,5 @@
+from warnings import warn
+
 import torch
 from torch import Tensor
 from caskade import forward
@@ -53,7 +55,17 @@ class SinglePlane(ThinLens):
         """
         self.lenses.append(lens)
         self.link(lens.name, lens)
+
+        if lens.z_l.static:
+            warn(
+                f"Lens model {lens.name} has a static lens redshift. This is now overwritten by the SinglePlane ({self.name}) lens redshift. To prevent this warning, set the lens redshift of the lens model to be dynamic before adding to the system."
+            )
         lens.z_l = self.z_l
+
+        if lens.z_s.static:
+            warn(
+                f"Lens model {lens.name} has a static source redshift. This is now overwritten by the SinglePlane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens model to be dynamic before adding to the system."
+            )
         lens.z_s = self.z_s
 
     @forward

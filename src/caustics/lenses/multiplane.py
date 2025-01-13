@@ -1,5 +1,6 @@
 from typing import Annotated
 from operator import itemgetter
+from warnings import warn
 
 import torch
 from torch import Tensor
@@ -55,6 +56,10 @@ class Multiplane(ThickLens):
         """
         self.lenses.append(lens)
         self.link(lens.name, lens)
+        if lens.z_s.static:
+            warn(
+                f"Lens plane {lens.name} has a static source redshift. This is now overwritten by the Multiplane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens plane to be dynamic before adding to multiplane system."
+            )
         lens.z_s = self.z_s
 
     @forward

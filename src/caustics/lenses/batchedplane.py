@@ -1,4 +1,5 @@
 from typing import Optional
+from warnings import warn
 
 import torch
 from torch import Tensor
@@ -45,8 +46,16 @@ class BatchedPlane(ThinLens):
         """
         super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
         self.lens = lens
-        self.lens.z_s = z_s
-        self.lens.z_l = z_l
+        if lens.z_l.static:
+            warn(
+                f"Lens model {lens.name} has a static lens redshift. This is now overwritten by the BatchedPlane ({self.name}) lens redshift. To prevent this warning, set the lens redshift of the lens model to be dynamic before adding to the system."
+            )
+        self.lens.z_l = self.z_l
+        if lens.z_s.static:
+            warn(
+                f"Lens model {lens.name} has a static source redshift. This is now overwritten by the BatchedPlane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens model to be dynamic before adding to the system."
+            )
+        self.lens.z_s = self.z_s
         self.chunk_size = chunk_size
 
     @forward
