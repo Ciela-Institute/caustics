@@ -912,7 +912,10 @@ class ThinLens(Lens):
         ax, ay = self.reduced_deflection_angle(x, y, **kwargs)
         return x - ax, y - ay
 
-    def _arcsec2_to_days(self, z_l, z_s):
+    @forward
+    def _arcsec2_to_days(
+        self, z_s: Annotated[Tensor, "Param"], z_l: Annotated[Tensor, "Param"]
+    ):
         """
         This method is used by :func:`caustics.lenses.ThinLens.time_delay` to
         convert arcsec^2 to days in the context of gravitational time delays.
@@ -927,8 +930,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
     ) -> Tensor:
@@ -988,7 +989,7 @@ class ThinLens(Lens):
             fp = 0.5 * (ax**2 + ay**2)
             TD = TD + fp
 
-        factor = self._arcsec2_to_days(z_l, z_s)
+        factor = self._arcsec2_to_days()
 
         return factor * TD
 
