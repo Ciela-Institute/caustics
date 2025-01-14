@@ -1076,7 +1076,7 @@ class ThinLens(Lens):
             potential = self.potential(x, y, z_s)
             TD = TD - potential
         if geometric_time_delay:
-            ax, ay = self.physical_deflection_angle(x, y, z_s)
+            ax, ay = self.reduced_deflection_angle(x, y, z_s)
             fp = 0.5 * (ax**2 + ay**2)
             TD = TD + fp
 
