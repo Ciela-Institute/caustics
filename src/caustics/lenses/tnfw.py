@@ -1,5 +1,5 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Literal, Annotated
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 from caskade import forward, Param
@@ -88,12 +88,6 @@ class TNFW(ThinLens):
         false it is interpreted as what the mass would have been within R200 of a an NFW that
         isn't truncated (good because it is easily compared with an NFW).
 
-
-    use_case: str
-        Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
-        specifically can't be both batchable and differentiable. You may select which version
-        you wish to use by setting this parameter to one of: batchable, differentiable.
-
     """
 
     _null_params = {
@@ -142,9 +136,6 @@ class TNFW(ThinLens):
         interpret_m_total_mass: Annotated[
             bool, "Indicates how to interpret the mass variable 'm'"
         ] = True,
-        use_case: Annotated[
-            Literal["batchable", "differentiable"], "the NFW/TNFW profile"
-        ] = "batchable",
         name: NameType = None,
     ):
         """
@@ -162,9 +153,6 @@ class TNFW(ThinLens):
         self.tau = Param("tau", tau, units="unitless", valid=(0, None))
         self.s = s
         self.interpret_m_total_mass = interpret_m_total_mass
-        self._F_mode = use_case
-        if use_case not in ["batchable", "differentiable"]:
-            raise ValueError("use case should be one of: batchable, differentiable")
 
     @forward
     def get_concentration(
@@ -475,7 +463,6 @@ class TNFW(ThinLens):
             critical_density,
             M0,
             d_l,
-            self._F_mode,
             self.s,
         )
 
@@ -535,7 +522,7 @@ class TNFW(ThinLens):
         """
 
         M0 = self.M0()
-        return func.mass_enclosed_2d_tnfw(r, scale_radius, tau, M0, self._F_mode)
+        return func.mass_enclosed_2d_tnfw(r, scale_radius, tau, M0)
 
     @forward
     def physical_deflection_angle(
@@ -606,7 +593,7 @@ class TNFW(ThinLens):
         d_l = self.cosmology.angular_diameter_distance(z_l)
         M0 = self.M0(z_l=z_l, mass=mass, scale_radius=scale_radius, tau=tau)
         return func.physical_deflection_angle_tnfw(
-            x0, y0, scale_radius, tau, x, y, M0, d_l, self._F_mode, self.s
+            x0, y0, scale_radius, tau, x, y, M0, d_l, self.s
         )
 
     @forward
@@ -690,5 +677,5 @@ class TNFW(ThinLens):
 
         M0 = self.M0(z_l=z_l, mass=mass, scale_radius=scale_radius, tau=tau)
         return func.potential_tnfw(
-            x0, y0, scale_radius, tau, x, y, M0, d_l, d_s, d_ls, self._F_mode, self.s
+            x0, y0, scale_radius, tau, x, y, M0, d_l, d_s, d_ls, self.s
         )
