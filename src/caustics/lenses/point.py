@@ -1,5 +1,6 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated, Literal
+from warnings import warn
 
 from torch import Tensor
 from caskade import forward, Param
@@ -146,6 +147,10 @@ class Point(ThinLens):
                 Ds = p["cosmology"].angular_diameter_distance(p["z_s"].value)
                 return func.mass_to_rein_point(p["mass"].value, Dls, Dl, Ds)
 
+            if self.th_ein.static:
+                warn(
+                    f"Parameter {self.th_ein.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.th_ein.name} be dynamic when changing parametrizations.",
+                )
             self.th_ein.value = mass_to_rein
             self.th_ein.link(self.mass)
             self.th_ein.link(self.z_s)
@@ -153,6 +158,10 @@ class Point(ThinLens):
             self.th_ein.link(self.z_l)
         if value == "Rein" and self.parametrization != "Rein":
             try:
+                if self.mass.static:
+                    warn(
+                        f"Parameter {self.mass.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.mass.name} be dynamic when changing parametrizations.",
+                    )
                 del self.mass
                 del self.z_s
                 self.th_ein = None

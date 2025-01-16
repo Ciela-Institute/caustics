@@ -1,5 +1,6 @@
 # mypy: disable-error-code="dict-item"
 from typing import Optional, Union, Annotated, Literal
+from warnings import warn
 
 from torch import Tensor
 import torch
@@ -100,9 +101,17 @@ class ExternalShear(ThinLens):
         if value == "angular" and self._parametrization != "angular":
             self.gamma = Param("gamma", shape=self.gamma_1.shape, units="unitless")
             self.theta = Param("theta", shape=self.gamma_1.shape, units="radians")
+            if self.gamma_1.static:
+                warn(
+                    f"Parameter {self.gamma_1.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma_1.name} be dynamic when changing parametrizations.",
+                )
             self.gamma_1.value = lambda p: func.gamma_theta_to_gamma1(
                 p["gamma"].value, p["theta"].value
             )
+            if self.gamma_1.static:
+                warn(
+                    f"Parameter {self.gamma_2.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma_2.name} be dynamic when changing parametrizations.",
+                )
             self.gamma_2.value = lambda p: func.gamma_theta_to_gamma2(
                 p["gamma"].value, p["theta"].value
             )
@@ -112,6 +121,10 @@ class ExternalShear(ThinLens):
             self.gamma_2.link(self.theta)
         if value == "cartesian" and self._parametrization != "cartesian":
             try:
+                if self.gamma.static or self.theta.static:
+                    warn(
+                        f"Parameter {self.gamma.name} and/or {self.theta.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma.name} and {self.theta.name} be dynamic when changing parametrizations.",
+                    )
                 self.gamma_1 = None
                 self.gamma_2 = None
                 del self.gamma
