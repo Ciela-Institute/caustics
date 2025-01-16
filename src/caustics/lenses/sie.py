@@ -128,7 +128,7 @@ class SIE(ThinLens):
             self.z_s = Param("z_s", value=None, shape=self.z_l.shape, units="unitless")
             if self.b.static:
                 warn(
-                    "Parameter {self.b.name} is static, value now overridden by new {value} parametrization. To remove this warning, have {self.b.name} be dynamic when changing parametrizations.",
+                    f"Parameter {self.b.name} is static, value now overridden by new {value} parametrization. To remove this warning, have {self.b.name} be dynamic when changing parametrizations.",
                 )
 
             def sigma_v_to_rein(p):
