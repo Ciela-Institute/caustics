@@ -1,4 +1,7 @@
+from math import pi
+
 from ...utils import translate_rotate, derotate
+from ...constants import c_km_s
 
 
 def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
@@ -191,3 +194,36 @@ def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
     return 0.5 * q.sqrt() * b / psi
+
+
+def sigma_v_to_rein_sie(sigma_v, dls, ds):
+    """
+    Convert the velocity dispersion to the Einstein radius. See equation 16.22
+    inDynamic and Astrophysics of Galaxies by Jo Bovy
+
+    Parameters
+    ----------
+    sigma_v: Tensor
+        The velocity dispersion of the lens.
+
+        *Unit: km/s*
+
+    dls: Tensor
+        The angular diameter distance between the lens and the source.
+
+        *Unit: Mpc*
+
+    ds: Tensor
+        The angular diameter distance between the observer and the source.
+
+        *Unit: Mpc*
+
+    Returns
+    -------
+    Tensor
+        The Einstein radius.
+
+        *Unit: arcsec*
+
+    """
+    return 4 * pi * (sigma_v / c_km_s) ** 2 * dls / ds

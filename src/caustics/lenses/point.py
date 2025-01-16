@@ -130,7 +130,7 @@ class Point(ThinLens):
         return self._parametrization
 
     @parametrization.setter
-    def parametrization(self, value):
+    def parametrization(self, value: str):
         if value not in ["Rein", "mass"]:
             raise ValueError(
                 f"Invalid parametrization {value}. Choose from ['Rein', 'mass']"
@@ -158,13 +158,13 @@ class Point(ThinLens):
             self.th_ein.link(self.z_l)
         if value == "Rein" and self.parametrization != "Rein":
             try:
+                self.th_ein = None
                 if self.mass.static:
                     warn(
                         f"Parameter {self.mass.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.mass.name} be dynamic when changing parametrizations.",
                     )
                 del self.mass
                 del self.z_s
-                self.th_ein = None
             except AttributeError:
                 pass
 

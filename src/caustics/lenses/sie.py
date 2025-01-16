@@ -1,5 +1,6 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Optional, Union, Annotated, Literal
+from warnings import warn
 
 from torch import Tensor, pi
 from caskade import forward, Param
@@ -89,6 +90,7 @@ class SIE(ThinLens):
         b: Annotated[
             Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
         ] = None,
+        parametrization: Literal["Rein", "velocity_dispersion"] = "Rein",
         s: Annotated[float, "The core radius of the lens"] = 0.0,
         name: NameType = None,
     ):
@@ -102,7 +104,58 @@ class SIE(ThinLens):
         self.q = Param("q", q, units="unitless", valid=(0, 1))
         self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
         self.b = Param("b", b, units="arcsec", valid=(0, None))
+        self._parametrization = "Rein"
+        self.parametrization = parametrization
         self.s = s
+
+    @property
+    def parametrization(self) -> str:
+        return self._parametrization
+
+    @parametrization.setter
+    def parametrization(self, value: str):
+        if value not in ["Rein", "velocity_dispersion"]:
+            raise ValueError(
+                f"Invalid parametrization: {value}. Must be 'Rein' or 'velocity_dispersion'."
+            )
+        if (
+            value == "velocity_dispersion"
+            and self._parametrization != "velocity_dispersion"
+        ):
+            self.sigma_v = Param(
+                "sigma_v", shape=self.b.shape, units="km/s", valid=(0, None)
+            )
+            self.z_s = Param("z_s", value=None, shape=self.z_l.shape, units="unitless")
+            if self.b.static:
+                warn(
+                    "Parameter {self.b.name} is static, value now overridden by new {value} parametrization. To remove this warning, have {self.b.name} be dynamic when changing parametrizations.",
+                )
+
+            def sigma_v_to_rein(p):
+                Dls = p["cosmology"].angular_diameter_distance_z1z2(
+                    p["z_l"].value, p["z_s"].value
+                )
+                Ds = p["cosmology"].angular_diameter_distance(p["z_s"].value)
+                return func.sigma_v_to_rein_sie(p["sigma_v"].value, Dls, Ds)
+
+            self.b.value = lambda p: sigma_v_to_rein(p)
+            self.b.link(self.sigma_v)
+            self.b.link(self.z_s)
+            self.b.link(self.z_l)
+            self.b.link("cosmology", self.cosmology)
+        if value == "Rein" and self.parametrization != "Rein":
+            try:
+                self.b = None
+                if self.sigma_v.static:
+                    warn(
+                        f"Parameter {self.sigma_v.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.sigma_v.name} be dynamic when changing parametrizations.",
+                    )
+                del self.sigma_v
+                del self.z_s
+            except AttributeError:
+                pass
+
+        self._parametrization = value
 
     def _get_potential(self, x, y, q):
         """
