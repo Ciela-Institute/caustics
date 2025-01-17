@@ -61,7 +61,7 @@ def _F_tnfw(x):
         torch.where(
             x > 1 + 1e-2,
             torch.arccos(1 / x_gt1) / (x_gt1**2 - 1.0).sqrt(),
-            1 - 2 * (x - 1) / 3,  # where: x == 1
+            1 - 2 * (x - 1) / 3 + 5 * (x - 1) ** 2 / 9,  # where: x == 1
         ),
     )
 
