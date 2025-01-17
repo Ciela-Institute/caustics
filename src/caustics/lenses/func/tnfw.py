@@ -53,22 +53,17 @@ def _F_tnfw(x):
 
     Helper method from Baltz et al. 2009 equation A.5
     """
-    x_gt1 = torch.clamp(x, min=1 + 1e-6)
-    x_lt1 = torch.clamp(x, max=1 - 1e-6)
+    x_gt1 = torch.clamp(x, min=1 + 1e-3)
+    x_lt1 = torch.clamp(x, max=1 - 1e-3)
     return torch.where(
-        x < 1 - 1e-6,
-        torch.log(1 / x_lt1 + (1 / x_lt1**2 - 1).sqrt()) / (1.0 - x_lt1**2).sqrt(),
+        x < 1 - 1e-2,
+        torch.arccosh(1 / x_lt1) / (1.0 - x_lt1**2).sqrt(),
         torch.where(
-            x > 1 + 1e-6,
+            x > 1 + 1e-2,
             torch.arccos(1 / x_gt1) / (x_gt1**2 - 1.0).sqrt(),
-            torch.ones_like(x),  # where: x == 1
+            1 - 2 * (x - 1) / 3,  # where: x == 1
         ),
     )
-    # return (
-    #     ((1 / x.to(dtype=torch.cdouble)).arccos() / (x.to(dtype=torch.cdouble) ** 2 - 1).sqrt())
-    #     .abs()
-    #     .to(dtype=x.dtype)
-    # )
 
 
 def _L_tnfw(x, tau):
