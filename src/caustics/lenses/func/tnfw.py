@@ -326,6 +326,25 @@ def convergence_tnfw(
     return a1 * (a2 + a3 + a4 + a5) * S / critical_density  # fmt: skip
 
 
+def _P_tnfw(x):
+    """
+    Compute the function F(x) for a TNFW profile.
+
+    Helper method from Baltz et al. 2009 equation A.5
+    """
+    x_gt1 = torch.clamp(x, min=1 + 1e-4)
+    x_lt1 = torch.clamp(x, max=1 - 1e-4)
+    return torch.where(
+        x < 1 - 1e-3,
+        -torch.arccosh(1 / x_lt1) ** 2,
+        torch.where(
+            x > 1 + 1e-3,
+            torch.arccos(1 / x_gt1) ** 2,
+            (2 * (x - 1)) * (x - 1).sign(),  # where: x == 1 # fixme
+        ),
+    )
+
+
 def potential_tnfw(
     x0,
     y0,
@@ -416,7 +435,7 @@ def potential_tnfw(
     a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L
     a4 = t2 * (t2 - 1) * L**2
     a5 = 4 * t2 * (u - 1) * F
-    a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2
+    a6 = t2 * (t2 - 1) * _P_tnfw(g)
     a7 = t2 * ((t2 - 1) * tau.log() - t2 - 1) * u.log()
     a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())
 

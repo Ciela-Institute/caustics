@@ -88,7 +88,7 @@ def test(sim_source, device, m, c, t):
         atol,
         rtol,
         test_alpha=True,
-        test_Psi=False,
+        test_Psi=True,
         test_kappa=True,
         test_shear=False,
         shear_egregious=True,  # not sure why match is so bad
