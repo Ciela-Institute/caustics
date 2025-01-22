@@ -340,7 +340,7 @@ def _P_tnfw(x):
         torch.where(
             x > 1 + 1e-3,
             torch.arccos(1 / x_gt1) ** 2,
-            (2 * (x - 1)) * (x - 1).sign(),  # where: x == 1 # fixme
+            (2 * (x - 1) - 5 * (x - 1) ** 2 / 3),  # where: x == 1 # fixme
         ),
     )
 

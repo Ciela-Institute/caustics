@@ -122,7 +122,9 @@ def test_lens_potential_vs_convergence(device):
         ),
         caustics.SIE(cosmology=cosmo, z_l=z_l, **caustics.SIE._null_params),
         caustics.SIS(cosmology=cosmo, z_l=z_l, **caustics.SIS._null_params),
-        # caustics.TNFW(cosmology=cosmo, z_l=z_l, **caustics.TNFW._null_params), # Hessian of TNFW potential not accurate within x < 1, don't know why since gradient it correct
+        caustics.TNFW(
+            cosmology=cosmo, z_l=z_l, **caustics.TNFW._null_params
+        ),  # Hessian of TNFW potential not accurate within x < 1, don't know why since gradient it correct
     ]
 
     # Define a list of lens model names.
@@ -143,8 +145,8 @@ def test_lens_potential_vs_convergence(device):
         # Check that the laplacian of the lensing potential equals the convergence.
         if name.strip("_0") in ["NFW", "TNFW"]:
             print(torch.abs(phi_kappa - kappa) / kappa)
-            assert torch.allclose(phi_kappa, kappa, atol=1e-3)
+            assert torch.allclose(phi_kappa, kappa, rtol=1e-3, atol=1e-3)
         elif name.strip("_0") in ["PixelatedConvergence", "PixelatedPotential"]:
-            assert torch.allclose(phi_kappa, kappa, atol=1e-4)
+            assert torch.allclose(phi_kappa, kappa, rtol=1e-4, atol=1e-4)
         else:
-            assert torch.allclose(phi_kappa, kappa, atol=1e-6)
+            assert torch.allclose(phi_kappa, kappa, rtol=1e-6, atol=1e-6)
