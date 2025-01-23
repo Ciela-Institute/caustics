@@ -23,6 +23,7 @@ def test_simulator_runs(sim_source, device):
             kind: SIE
             init_kwargs:
                 z_l: 1.0
+                z_s: 2.0
                 x0: 0.0
                 y0: 0.01
                 q: 0.5
@@ -68,7 +69,6 @@ def test_simulator_runs(sim_source, device):
             kind: LensSource
             init_kwargs:
                 # Single lens
-                z_s: 2.0
                 lens: *lensmass
                 source: *source
                 lens_light: *lenslight
@@ -86,6 +86,7 @@ def test_simulator_runs(sim_source, device):
             name="lens",
             cosmology=cosmology,
             z_l=1.0,
+            z_s=2.0,
             x0=0.0,
             y0=0.01,
             q=0.5,
@@ -110,7 +111,6 @@ def test_simulator_runs(sim_source, device):
             pixels_x=50,
             lens_light=lenslight,
             psf=psf,
-            z_s=2.0,
         )
 
         sim_q3 = LensSource(
@@ -121,7 +121,6 @@ def test_simulator_runs(sim_source, device):
             pixels_x=50,
             lens_light=lenslight,
             psf=psf,
-            z_s=2.0,
             quad_level=3,
         )
 
@@ -190,6 +189,7 @@ def test_fft_vs_conv2d():
         name="lens",
         cosmology=cosmology,
         z_l=1.0,
+        z_s=2.0,
         x0=0.0,
         y0=0.01,
         q=0.5,
@@ -217,7 +217,6 @@ def test_fft_vs_conv2d():
         lens_light=lenslight,
         psf=psf,
         psf_mode="fft",
-        z_s=2.0,
         quad_level=3,
     )
 
@@ -230,7 +229,6 @@ def test_fft_vs_conv2d():
         lens_light=lenslight,
         psf=psf,
         psf_mode="conv2d",
-        z_s=2.0,
         quad_level=3,
     )
 

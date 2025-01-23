@@ -5,7 +5,7 @@ import torch
 from torch import Tensor, pi
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("EPL",)
@@ -89,7 +89,8 @@ class EPL(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "X coordinate of the lens center", True
         ] = None,
@@ -174,7 +175,7 @@ class EPL(ThinLens):
         n_iter: int
             Number of iterations for the iterative solver.
         """
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -191,7 +192,6 @@ class EPL(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -213,14 +213,6 @@ class EPL(ThinLens):
             Y coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model.
 
         Returns
         --------
@@ -288,7 +280,6 @@ class EPL(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -311,14 +302,6 @@ class EPL(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model.
-
         Returns
         -------
         Tensor
@@ -334,7 +317,6 @@ class EPL(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -356,14 +338,6 @@ class EPL(ThinLens):
             Y coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model.
 
         Returns
         -------

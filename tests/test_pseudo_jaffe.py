@@ -17,8 +17,9 @@ def test_pseudo_jaffe(sim_source, device, mass, Rc, Rs):
     atol = 1e-5
     rtol = 1e-5
 
+    z_s = torch.tensor(2.1)
     if sim_source == "yaml":
-        yaml_str = """\
+        yaml_str = f"""\
         cosmology: &cosmology
             name: cosmo
             kind: FlatLambdaCDM
@@ -26,6 +27,7 @@ def test_pseudo_jaffe(sim_source, device, mass, Rc, Rs):
             name: pj
             kind: PseudoJaffe
             init_kwargs:
+                z_s: {float(z_s)}
                 cosmology: *cosmology
         """
         with StringIO(yaml_str) as f:
@@ -34,14 +36,13 @@ def test_pseudo_jaffe(sim_source, device, mass, Rc, Rs):
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
-        lens = PseudoJaffe(name="pj", cosmology=cosmology)
+        lens = PseudoJaffe(name="pj", cosmology=cosmology, z_s=z_s)
     lens_model_list = ["PJAFFE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters, computing kappa_0 with a helper function
-    z_s = torch.tensor(2.1)
     x = torch.tensor([0.5, 0.071, 0.023, mass, Rc, Rs])
-    kappa_0 = lens.get_convergence_0(z_s, x)
+    kappa_0 = lens.get_convergence_0(x)
 
     kwargs_ls = [
         {
@@ -53,20 +54,18 @@ def test_pseudo_jaffe(sim_source, device, mass, Rc, Rs):
         }
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
+    lens_test_helper(lens, lens_ls, x, kwargs_ls, rtol, atol, device=device)
 
 
 def test_massenclosed(device):
     cosmology = FlatLambdaCDM(name="cosmo")
-    lens = PseudoJaffe(name="pj", cosmology=cosmology)
-    lens.to(device=device)
     z_s = torch.tensor(2.1)
+    lens = PseudoJaffe(name="pj", cosmology=cosmology, z_s=z_s)
+    lens.to(device=device)
     x = torch.tensor([0.5, 0.071, 0.023, -1e100, 0.5, 1.5])
     d_l = cosmology.angular_diameter_distance(x[0])
     arcsec_to_rad = 1 / (180 / torch.pi * 60**2)
     kappa_0 = lens.central_convergence(
-        x[0],
-        z_s,
         torch.tensor(2e11),
         x[4] * d_l * arcsec_to_rad,
         x[5] * d_l * arcsec_to_rad,
@@ -82,6 +81,6 @@ def test_massenclosed(device):
         * (d_l * arcsec_to_rad) ** 2
     )
     xx = torch.linspace(0, 10, 10, device=device)
-    masses = lens.mass_enclosed_2d(xx, z_s, x)
+    masses = lens.mass_enclosed_2d(xx, x)
 
     assert torch.all(masses < x[3])

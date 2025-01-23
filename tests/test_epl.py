@@ -18,8 +18,9 @@ import pytest
 @pytest.mark.parametrize("Rein", [0.1, 1.0])
 @pytest.mark.parametrize("t", [0.1, 1.0, 1.9])
 def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
+    z_s = torch.tensor(1.0, device=device)
     if sim_source == "yaml":
-        yaml_str = """\
+        yaml_str = f"""\
         cosmology: &cosmology
             name: cosmo
             kind: FlatLambdaCDM
@@ -27,6 +28,7 @@ def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
             name: epl
             kind: EPL
             init_kwargs:
+                z_s: {float(z_s)}
                 cosmology: *cosmology
         """
         with StringIO(yaml_str) as f:
@@ -34,14 +36,13 @@ def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
-        lens = EPL(name="epl", cosmology=cosmology)
+        lens = EPL(name="epl", cosmology=cosmology, z_s=z_s)
     lens = lens.to(device=device)
     # There is also an EPL_NUMBA class lenstronomy, but it shouldn't matter much
     lens_model_list = ["EPL"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    z_s = torch.tensor(1.0, device=device)
     x = torch.tensor([0.7, 0.912, -0.442, q, phi, Rein, t], device=device)
 
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
@@ -59,14 +60,12 @@ def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
 
     # Different tolerances for difference quantities
     alpha_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=1e-3, device=device
+        lens, lens_ls, x, kwargs_ls, rtol=1e-100, atol=1e-3, device=device
     )
     kappa_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
+        lens, lens_ls, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
     )
-    Psi_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-3, atol=1e-100, device=device
-    )
+    Psi_test_helper(lens, lens_ls, x, kwargs_ls, rtol=1e-3, atol=1e-100, device=device)
 
 
 def test_special_case_sie(device):
@@ -74,13 +73,13 @@ def test_special_case_sie(device):
     Checks that the deflection field matches an SIE for `t=1`.
     """
     cosmology = FlatLambdaCDM(name="cosmo")
-    lens = EPL(name="epl", cosmology=cosmology)
+    z_s = torch.tensor(1.9, device=device)
+    lens = EPL(name="epl", cosmology=cosmology, z_s=z_s)
     lens.to(device=device)
     lens_model_list = ["SIE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    z_s = torch.tensor(1.9, device=device)
     x = torch.tensor([0.7, 0.912, -0.442, 0.7, pi / 3, 1.4, 1.0], device=device)
     e1, e2 = param_util.phi_q2_ellipticity(phi=x[4].item(), q=x[3].item())
     theta_E = x[5].item()  # (x[5] / x[3].sqrt()).item()
@@ -96,11 +95,9 @@ def test_special_case_sie(device):
 
     # Different tolerances for difference quantities
     alpha_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=1e-100, atol=6e-5, device=device
+        lens, lens_ls, x, kwargs_ls, rtol=1e-100, atol=6e-5, device=device
     )
     kappa_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=6e-5, atol=1e-100, device=device
+        lens, lens_ls, x, kwargs_ls, rtol=6e-5, atol=1e-100, device=device
     )
-    Psi_test_helper(
-        lens, lens_ls, z_s, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device
-    )
+    Psi_test_helper(lens, lens_ls, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device)

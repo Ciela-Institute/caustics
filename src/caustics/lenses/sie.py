@@ -4,7 +4,7 @@ from typing import Optional, Union, Annotated
 from torch import Tensor, pi
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("SIE",)
@@ -25,6 +25,11 @@ class SIE(ThinLens):
 
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
+        *Unit: unitless*
+
+    z_s: Optional[Union[Tensor, float]]
+        The redshift of the source.
 
         *Unit: unitless*
 
@@ -71,7 +76,8 @@ class SIE(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
         ] = None,
@@ -95,7 +101,7 @@ class SIE(ThinLens):
         """
         Initialize the SIE lens model.
         """
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -140,7 +146,6 @@ class SIE(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -162,14 +167,6 @@ class SIE(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         --------
         x_component: Tensor
@@ -190,7 +187,6 @@ class SIE(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -212,14 +208,6 @@ class SIE(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -235,7 +223,6 @@ class SIE(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -256,14 +243,6 @@ class SIE(ThinLens):
             The y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         -------
