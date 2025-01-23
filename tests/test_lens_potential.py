@@ -24,39 +24,49 @@ def test_lens_potential_vs_deflection(device):
 
     # Define a list of lens models.
     lenses = [
-        caustics.EPL(cosmology=cosmo, z_l=z_l, **caustics.EPL._null_params),
+        caustics.EPL(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.EPL._null_params),
         caustics.ExternalShear(
-            cosmology=cosmo, z_l=z_l, **caustics.ExternalShear._null_params
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.ExternalShear._null_params
         ),
-        caustics.Multipole(cosmology=cosmo, z_l=z_l, **caustics.Multipole._null_params),
-        caustics.MassSheet(cosmology=cosmo, z_l=z_l, **caustics.MassSheet._null_params),
+        caustics.Multipole(
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.Multipole._null_params
+        ),
+        caustics.MassSheet(
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.MassSheet._null_params
+        ),
         caustics.NFW(
             cosmology=cosmo,
             z_l=z_l,
+            z_s=z_s,
             **caustics.NFW._null_params,
             use_case="differentiable",
         ),
         caustics.PixelatedConvergence(
             cosmology=cosmo,
             z_l=z_l,
+            z_s=z_s,
             **caustics.PixelatedConvergence._null_params,
             pixelscale=0.1,
         ),
         caustics.PixelatedPotential(
             cosmology=cosmo,
             z_l=z_l,
+            z_s=z_s,
             **caustics.PixelatedPotential._null_params,
             pixelscale=0.2,
         ),
-        caustics.Point(cosmology=cosmo, z_l=z_l, **caustics.Point._null_params),
-        caustics.PseudoJaffe(
-            cosmology=cosmo, z_l=z_l, **caustics.PseudoJaffe._null_params
+        caustics.Point(
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.Point._null_params
         ),
-        caustics.SIE(cosmology=cosmo, z_l=z_l, **caustics.SIE._null_params),
-        caustics.SIS(cosmology=cosmo, z_l=z_l, **caustics.SIS._null_params),
+        caustics.PseudoJaffe(
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.PseudoJaffe._null_params
+        ),
+        caustics.SIE(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.SIE._null_params),
+        caustics.SIS(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.SIS._null_params),
         caustics.TNFW(
             cosmology=cosmo,
             z_l=z_l,
+            z_s=z_s,
             **caustics.TNFW._null_params,
             use_case="differentiable",
         ),
@@ -69,14 +79,14 @@ def test_lens_potential_vs_deflection(device):
         print(f"Testing lens: {name}")
         lens.to(device=device)
         # Compute the deflection angle.
-        ax, ay = lens.reduced_deflection_angle(x, y, z_s)
+        ax, ay = lens.reduced_deflection_angle(x, y)
 
         # Ensure the x,y coordinates track gradients
         x = x.detach().requires_grad_()
         y = y.detach().requires_grad_()
 
         # Compute the lensing potential.
-        phi = lens.potential(x, y, z_s)
+        phi = lens.potential(x, y)
         # Compute the gradient of the lensing potential.
         phi_ax, phi_ay = torch.autograd.grad(
             phi, (x, y), grad_outputs=torch.ones_like(phi)
@@ -114,21 +124,27 @@ def test_lens_potential_vs_convergence(device):
 
     # Define a list of lens models.
     lenses = [
-        caustics.EPL(cosmology=cosmo, z_l=z_l, **caustics.EPL._null_params),
+        caustics.EPL(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.EPL._null_params),
         caustics.ExternalShear(
-            cosmology=cosmo, z_l=z_l, **caustics.ExternalShear._null_params
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.ExternalShear._null_params
         ),
-        caustics.Multipole(cosmology=cosmo, z_l=z_l, **caustics.Multipole._null_params),
-        caustics.MassSheet(cosmology=cosmo, z_l=z_l, **caustics.MassSheet._null_params),
+        caustics.Multipole(
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.Multipole._null_params
+        ),
+        caustics.MassSheet(
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.MassSheet._null_params
+        ),
         # caustics.NFW(
         #     cosmology=cosmo,
         #     z_l=z_l,
+        #     z_s=z_s,
         #     **caustics.NFW._null_params,
         #     use_case="differentiable",
         # ), # Cannot vmap NFW when in differentiable mode
         # caustics.PixelatedConvergence(
         #     cosmology=cosmo,
         #     z_l=z_l,
+        #     z_s=z_s,
         #     **caustics.PixelatedConvergence._null_params,
         #     pixelscale=0.2,
         #     n_pix=10,
@@ -136,17 +152,18 @@ def test_lens_potential_vs_convergence(device):
         caustics.PixelatedPotential(
             cosmology=cosmo,
             z_l=z_l,
+            z_s=z_s,
             **caustics.PixelatedPotential._null_params,
             pixelscale=0.2,
         ),
-        # caustics.Point(cosmology=cosmo, z_l=z_l, **caustics.Point._null_params), # Point mass convergence is delta function
+        # caustics.Point(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.Point._null_params), # Point mass convergence is delta function
         caustics.PseudoJaffe(
-            cosmology=cosmo, z_l=z_l, **caustics.PseudoJaffe._null_params
+            cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.PseudoJaffe._null_params
         ),
-        caustics.SIE(cosmology=cosmo, z_l=z_l, **caustics.SIE._null_params),
-        caustics.SIS(cosmology=cosmo, z_l=z_l, **caustics.SIS._null_params),
+        caustics.SIE(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.SIE._null_params),
+        caustics.SIS(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.SIS._null_params),
         # caustics.TNFW(
-        #     cosmology=cosmo, z_l=z_l, **caustics.TNFW._null_params, use_case="differentiable"
+        #     cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.TNFW._null_params, use_case="differentiable"
         # ), # Cannot vmap TNFW when in differentiable mode
     ]
 
@@ -158,17 +175,14 @@ def test_lens_potential_vs_convergence(device):
         lens.to(device=device)
         # Compute the convergence.
         try:
-            kappa = lens.convergence(x, y, z_s)
+            kappa = lens.convergence(x, y)
         except NotImplementedError:
             continue
 
         # Compute the laplacian of the lensing potential.
         phi_H = torch.vmap(
-            torch.vmap(
-                torch.func.hessian(lens.potential, (0, 1)), in_dims=(0, 0, None)
-            ),
-            in_dims=(0, 0, None),
-        )(x, y, z_s)
+            torch.vmap(torch.func.hessian(lens.potential, (0, 1))),
+        )(x, y)
         phi_kappa = 0.5 * (phi_H[0][0] + phi_H[1][1])
 
         # Check that the laplacian of the lensing potential equals the convergence.

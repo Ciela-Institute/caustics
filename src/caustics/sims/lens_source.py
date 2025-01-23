@@ -130,9 +130,6 @@ class LensSource(Module):
             Literal["fft", "conv2d"], "Mode for convolving psf"
         ] = "fft",
         psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
-        z_s: Annotated[
-            Optional[Union[Tensor, float]], "Redshift of the source", True
-        ] = None,
         psf: Annotated[
             Optional[Union[Tensor, list]], "An image to convolve with the scene", True
         ] = [[1.0]],
@@ -157,7 +154,6 @@ class LensSource(Module):
         self._psf_shape = psf.shape if psf is not None else psf_shape
 
         # Build parameters
-        self.z_s = Param("z_s", z_s, units="unitless", valid=(0, None))
         self.psf = Param("psf", psf, self.psf_shape, units="unitless")
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -310,7 +306,6 @@ class LensSource(Module):
     @forward
     def __call__(
         self,
-        z_s: Annotated[Tensor, "Param"],
         psf: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
@@ -325,8 +320,6 @@ class LensSource(Module):
 
         Parameters
         ----------
-        params:
-            Packed object
         source_light: boolean
             when true the source light will be sampled
         lens_light: boolean
@@ -351,9 +344,9 @@ class LensSource(Module):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = torch.vmap(
-                    self.lens.raytrace, in_dims=(0, 0, None), chunk_size=chunk_size
-                )(grid[0].flatten(), grid[1].flatten(), z_s)
+                bx, by = torch.vmap(self.lens.raytrace, chunk_size=chunk_size)(
+                    grid[0].flatten(), grid[1].flatten()
+                )
                 mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
                     bx, by
                 ).reshape(grid[0].shape)

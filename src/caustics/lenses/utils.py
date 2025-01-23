@@ -8,7 +8,7 @@ __all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
 
 
 def pixel_jacobian(
-    raytrace, x, y, z_s
+    raytrace, x, y
 ) -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor]]:
     """Computes the Jacobian matrix of the partial derivatives of the
     image position with respect to the source position
@@ -29,11 +29,6 @@ def pixel_jacobian(
 
         *Unit: arcsec*
 
-    z_s: Tensor
-        The redshift of the source.
-
-        *Unit: unitless*
-
     Returns
     --------
     The Jacobian matrix of the image position with respect
@@ -42,11 +37,11 @@ def pixel_jacobian(
         *Unit: unitless*
 
     """
-    jac = torch.func.jacfwd(raytrace, (0, 1))(x, y, z_s)  # type: ignore
+    jac = torch.func.jacfwd(raytrace, (0, 1))(x, y)  # type: ignore
     return jac
 
 
-def pixel_magnification(raytrace, x, y, z_s) -> Tensor:
+def pixel_magnification(raytrace, x, y) -> Tensor:
     """
     Computes the magnification at a single point on the lensing plane.
     The magnification is derived from the determinant
@@ -67,11 +62,6 @@ def pixel_magnification(raytrace, x, y, z_s) -> Tensor:
 
         *Unit: arcsec*
 
-    z_s: Tensor
-        The redshift of the source.
-
-        *Unit: unitless*
-
     Returns
     -------
     Tensor
@@ -80,11 +70,11 @@ def pixel_magnification(raytrace, x, y, z_s) -> Tensor:
         *Unit: unitless*
 
     """
-    jac = pixel_jacobian(raytrace, x, y, z_s)
+    jac = pixel_jacobian(raytrace, x, y)
     return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()  # fmt: skip
 
 
-def magnification(raytrace, x, y, z_s) -> Tensor:
+def magnification(raytrace, x, y) -> Tensor:
     """
     Computes the magnification over a grid on the lensing plane.
     This is done by calling `pixel_magnification`
@@ -105,11 +95,6 @@ def magnification(raytrace, x, y, z_s) -> Tensor:
 
         *Unit: arcsec*
 
-    z_s: Tensor
-        The redshift of the source.
-
-        *Unit: unitless*
-
     Returns
     --------
     Tensor
@@ -119,8 +104,8 @@ def magnification(raytrace, x, y, z_s) -> Tensor:
 
     """
     return torch.reshape(
-        torch.func.vmap(pixel_magnification, in_dims=(None, 0, 0, None))(
-            raytrace, x.reshape(-1), y.reshape(-1), z_s
+        torch.func.vmap(pixel_magnification, in_dims=(None, 0, 0))(
+            raytrace, x.reshape(-1), y.reshape(-1)
         ),
         x.shape,
     )
