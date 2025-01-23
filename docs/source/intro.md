@@ -73,7 +73,7 @@ J = torch.func.jacfwd(sim)(x)
 
 # Plot the new images
 fig, axarr = plt.subplots(3, 7, figsize=(20, 9))
-for i, ax in enumerate(axarr.flatten()):
+for i, ax in enumerate(axarr.flatten()[2:]):
     ax.imshow(J[..., i], origin="lower")
 plt.show()
 ```

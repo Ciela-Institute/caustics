@@ -41,8 +41,12 @@ class Lens(Module):
             The name of the lens model.
 
         cosmology: Cosmology
-            An instance of a Cosmology class that describes
-            the cosmological parametersof the model.
+            An instance of a Cosmology class that describes the cosmological
+            parameters of the model.
+
+        z_s: ZType
+            Redshift of the source. Needed for various lensing calculations so
+            z_s is held by the lens object rather than the source object.
         """
         super().__init__(name)
         self.cosmology = cosmology

@@ -29,21 +29,20 @@ class Source(Module):
     @forward
     def brightness(self, x: Tensor, y: Tensor, *args, **kwargs) -> Tensor:
         """
-        Abstract method that calculates the brightness of the source at the given coordinates.
-        This method is expected to be implemented in any class that derives from Source.
+        Abstract method that calculates the brightness of the source at the
+        given coordinates. This method is expected to be implemented in any
+        class that derives from Source.
 
         Parameters
         ----------
         x: Tensor
-            The x-coordinate(s) at which to calculate
-            the source brightness.
+            The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
         y: Tensor
-            The y-coordinate(s) at which to calculate
-            the source brightness.
+            The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
@@ -51,13 +50,16 @@ class Source(Module):
         Returns
         -------
         Tensor
-            The brightness of the source at the given coordinate(s).
-            The exact form of the output will depend on
-            the specific implementation in the derived class.
+            The brightness of the source at the given coordinate(s). The exact
+            form of the output will depend on the specific implementation in the
+            derived class.
 
         Notes
         -----
-        This method must be overridden in any class
-        that inherits from `Source`.
+        This method must be overridden in any class that inherits from `Source`.
+
+        Note that the source redshift z_s is not included as an argument since
+        most sources don't need to know their redshift, it is instead held by
+        the lens object.
         """
         ...
