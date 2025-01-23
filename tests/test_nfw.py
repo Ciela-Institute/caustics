@@ -27,6 +27,7 @@ def test_nfw(sim_source, device, mass, c):
     atol = 1e-5
     rtol = 3e-2
     z_l = torch.tensor(0.1)
+    z_s = torch.tensor(0.5)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -38,6 +39,7 @@ def test_nfw(sim_source, device, mass, c):
             kind: NFW
             init_kwargs:
                 z_l: {float(z_l)}
+                z_s: {float(z_s)}
                 cosmology: *cosmology
                 use_case: differentiable
         """
@@ -46,14 +48,15 @@ def test_nfw(sim_source, device, mass, c):
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
+        lens = NFW(
+            name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable", z_s=z_s
+        )
     lens_model_list = ["NFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     print(lens)
 
     # Parameters
-    z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
@@ -74,7 +77,6 @@ def test_nfw(sim_source, device, mass, c):
     lens_test_helper(
         lens,
         lens_ls,
-        z_s,
         x,
         kwargs_ls,
         atol,
@@ -86,6 +88,7 @@ def test_nfw(sim_source, device, mass, c):
 
 def test_runs(sim_source, device):
     z_l = torch.tensor(0.1)
+    z_s = torch.tensor(0.5)
     if sim_source == "yaml":
         yaml_str = f"""\
         cosmology: &cosmology
@@ -96,6 +99,7 @@ def test_runs(sim_source, device):
             kind: NFW
             init_kwargs:
                 z_l: {float(z_l)}
+                z_s: {float(z_s)}
                 cosmology: *cosmology
                 use_case: differentiable
         """
@@ -104,10 +108,11 @@ def test_runs(sim_source, device):
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
+        lens = NFW(
+            name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable", z_s=z_s
+        )
     lens.to(device=device)
     # Parameters
-    z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
@@ -117,10 +122,10 @@ def test_runs(sim_source, device):
 
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
-    Psi = lens.potential(thx, thy, z_s, x)
+    Psi = lens.potential(thx, thy, x)
     assert torch.all(torch.isfinite(Psi))
-    alpha = lens.reduced_deflection_angle(thx, thy, z_s, x)
+    alpha = lens.reduced_deflection_angle(thx, thy, x)
     assert torch.all(torch.isfinite(alpha[0]))
     assert torch.all(torch.isfinite(alpha[1]))
-    kappa = lens.convergence(thx, thy, z_s, x)
+    kappa = lens.convergence(thx, thy, x)
     assert torch.all(torch.isfinite(kappa))
