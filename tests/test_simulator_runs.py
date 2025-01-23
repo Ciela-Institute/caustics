@@ -23,11 +23,12 @@ def test_simulator_runs(sim_source, device):
             kind: SIE
             init_kwargs:
                 z_l: 1.0
+                z_s: 2.0
                 x0: 0.0
                 y0: 0.01
                 q: 0.5
                 phi: 1.05
-                b: 1.0
+                Rein: 1.0
                 cosmology: *cosmology
 
         source: &source
@@ -68,7 +69,6 @@ def test_simulator_runs(sim_source, device):
             kind: LensSource
             init_kwargs:
                 # Single lens
-                z_s: 2.0
                 lens: *lensmass
                 source: *source
                 lens_light: *lenslight
@@ -86,11 +86,12 @@ def test_simulator_runs(sim_source, device):
             name="lens",
             cosmology=cosmology,
             z_l=1.0,
+            z_s=2.0,
             x0=0.0,
             y0=0.01,
             q=0.5,
             phi=pi / 3.0,
-            b=1.0,
+            Rein=1.0,
         )
 
         source = Sersic(
@@ -110,7 +111,6 @@ def test_simulator_runs(sim_source, device):
             pixels_x=50,
             lens_light=lenslight,
             psf=psf,
-            z_s=2.0,
         )
 
         sim_q3 = LensSource(
@@ -121,7 +121,6 @@ def test_simulator_runs(sim_source, device):
             pixels_x=50,
             lens_light=lenslight,
             psf=psf,
-            z_s=2.0,
             quad_level=3,
         )
 
@@ -190,11 +189,12 @@ def test_fft_vs_conv2d():
         name="lens",
         cosmology=cosmology,
         z_l=1.0,
+        z_s=2.0,
         x0=0.0,
         y0=0.01,
         q=0.5,
         phi=pi / 3.0,
-        b=1.0,
+        Rein=1.0,
     )
 
     source = Sersic(
@@ -217,7 +217,6 @@ def test_fft_vs_conv2d():
         lens_light=lenslight,
         psf=psf,
         psf_mode="fft",
-        z_s=2.0,
         quad_level=3,
     )
 
@@ -230,7 +229,6 @@ def test_fft_vs_conv2d():
         lens_light=lenslight,
         psf=psf,
         psf_mode="conv2d",
-        z_s=2.0,
         quad_level=3,
     )
 
@@ -244,7 +242,7 @@ def test_microlens_simulator_runs():
     src = Sersic(name="source")
 
     x = torch.tensor([
-    #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re   Ie
+    #   z_s  z_l   x0   y0   q    phi     Rein x0   y0   q     phi    n    Re   Ie
         1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0, 5.0
     ])  # fmt: skip
     fov = torch.tensor((-1, -0.5, -0.25, 0.25))

@@ -17,13 +17,14 @@ import pytest
 
 @pytest.mark.parametrize("q", [0.5, 0.7, 0.9])
 @pytest.mark.parametrize("phi", [pi / 3, -pi / 4, pi / 6])
-@pytest.mark.parametrize("th_ein", [0.1, 1.0, 2.5])
-def test_sie(sim_source, device, q, phi, th_ein):
+@pytest.mark.parametrize("Rein", [0.1, 1.0, 2.5])
+def test_sie(sim_source, device, q, phi, Rein):
     atol = 1e-5
     rtol = 1e-3
+    z_s = torch.tensor(1.2)
 
     if sim_source == "yaml":
-        yaml_str = """\
+        yaml_str = f"""\
         cosmology: &cosmology
             name: cosmo
             kind: FlatLambdaCDM
@@ -31,6 +32,7 @@ def test_sie(sim_source, device, q, phi, th_ein):
             name: sie
             kind: SIE
             init_kwargs:
+                z_s: {float(z_s)}
                 cosmology: *cosmology
         """
         with StringIO(yaml_str) as f:
@@ -38,17 +40,16 @@ def test_sie(sim_source, device, q, phi, th_ein):
     else:
         # Models
         cosmology = FlatLambdaCDM(name="cosmo")
-        lens = SIE(name="sie", cosmology=cosmology)
+        lens = SIE(name="sie", cosmology=cosmology, z_s=z_s)
     lens_model_list = ["SIE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    z_s = torch.tensor(1.2)
-    x = torch.tensor([0.5, 0.912, -0.442, q, phi, th_ein])
+    x = torch.tensor([0.5, 0.912, -0.442, q, phi, Rein])
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
     kwargs_ls = [
         {
-            "theta_E": th_ein,
+            "theta_E": Rein,
             "e1": e1,
             "e2": e2,
             "center_x": x[1].item(),
@@ -56,16 +57,16 @@ def test_sie(sim_source, device, q, phi, th_ein):
         }
     ]
 
-    lens_test_helper(lens, lens_ls, z_s, x, kwargs_ls, rtol, atol, device=device)
+    lens_test_helper(lens, lens_ls, x, kwargs_ls, rtol, atol, device=device)
 
 
 def test_sie_time_delay():
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
-    lens = SIE(name="sie", cosmology=cosmology)
+    z_s = torch.tensor(1.2)
+    lens = SIE(name="sie", cosmology=cosmology, z_s=z_s)
 
     # Parameters
-    z_s = torch.tensor(1.2)
     x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
 
     n_pix = 10
@@ -78,13 +79,12 @@ def test_sie_time_delay():
         dtype=torch.float32,
     )
 
-    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, z_s, x)))
+    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, x)))
     assert torch.all(
         torch.isfinite(
             lens.time_delay(
                 thx,
                 thy,
-                z_s,
                 x,
                 geometric_time_delay=True,
                 shapiro_time_delay=False,
@@ -96,7 +96,6 @@ def test_sie_time_delay():
             lens.time_delay(
                 thx,
                 thy,
-                z_s,
                 x,
                 geometric_time_delay=False,
                 shapiro_time_delay=True,
@@ -109,7 +108,14 @@ def test_sie_parametrization():
 
     cosmology = FlatLambdaCDM(name="cosmo")
     lens = SIE(
-        name="sie", cosmology=cosmology, z_l=0.5, x0=0.0, y0=0.0, q=0.5, phi=pi / 4
+        name="sie",
+        cosmology=cosmology,
+        z_l=0.5,
+        z_s=1.0,
+        x0=0.0,
+        y0=0.0,
+        q=0.5,
+        phi=pi / 4,
     )
 
     # Check default
@@ -120,13 +126,12 @@ def test_sie_parametrization():
     assert lens.parametrization == "velocity_dispersion"
     # Check setting sigma_v to get Rein
     lens.sigma_v = 1.0
-    lens.z_s = 1.0
-    assert np.isfinite(lens.b.value.item())
+    assert np.isfinite(lens.Rein.value.item())
 
     # Check reset to cartesian
     lens.parametrization = "Rein"
     assert lens.parametrization == "Rein"
-    assert lens.b.value is None
+    assert lens.Rein.value is None
     assert not hasattr(lens, "sigma_v")
 
     with pytest.raises(ValueError):

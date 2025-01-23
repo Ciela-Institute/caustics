@@ -16,7 +16,7 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     cosmology = FlatLambdaCDM(name="cosmology")
     # Use PseudoJaffe since it is compact: 99.16% of its mass is contained in
     # the circle circumscribing this image plane
-    lens_pj = PseudoJaffe(name="pj", cosmology=cosmology)
+    lens_pj = PseudoJaffe(name="pj", cosmology=cosmology, z_s=z_s)
     lens_pj.to(device=device)
 
     thx0 = torch.tensor(7.0, device=device)
@@ -29,8 +29,6 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     arcsec_to_rad = 1 / (180 / torch.pi * 60**2)
 
     kappa_0 = lens_pj.central_convergence(
-        z_l,
-        z_s,
         rho_0,
         th_core * d_l * arcsec_to_rad,
         th_s * d_l * arcsec_to_rad,
@@ -40,15 +38,16 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
     x_pj = torch.tensor([z_l, thx0, thy0, kappa_0, th_core, th_s], device=device)
 
     # Exact calculations
-    Psi = lens_pj.potential(thx, thy, z_s, x_pj)
+    Psi = lens_pj.potential(thx, thy, x_pj)
     Psi -= Psi.min()
-    alpha_x, alpha_y = lens_pj.reduced_deflection_angle(thx, thy, z_l, x_pj)
+    alpha_x, alpha_y = lens_pj.reduced_deflection_angle(thx, thy, x_pj)
 
     # Approximate calculations
     lens_kap = PixelatedConvergence(
         res,
         cosmology,
         z_l=z_l,
+        z_s=z_s,
         shape=(n_pix, n_pix),
         convolution_mode=mode,
         use_next_fast_len=use_next_fast_len,
@@ -56,17 +55,15 @@ def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):
         padding=padding,
     )
     lens_kap.to(device=device)
-    kappa_map = lens_pj.convergence(thx, thy, z_s, x_pj)
+    kappa_map = lens_pj.convergence(thx, thy, x_pj)
     x_kap = kappa_map.flatten()
 
-    Psi_approx = lens_kap.potential(thx, thy, z_s, x_kap)
+    Psi_approx = lens_kap.potential(thx, thy, x_kap)
     Psi_approx -= Psi_approx.min()
     # Try to remove unobservable constant offset
     Psi_approx += torch.mean(Psi - Psi_approx)
 
-    alpha_x_approx, alpha_y_approx = lens_kap.reduced_deflection_angle(
-        thx, thy, z_s, x_kap
-    )
+    alpha_x_approx, alpha_y_approx = lens_kap.reduced_deflection_angle(thx, thy, x_kap)
 
     return Psi, Psi_approx, alpha_x, alpha_x_approx, alpha_y, alpha_y_approx
 

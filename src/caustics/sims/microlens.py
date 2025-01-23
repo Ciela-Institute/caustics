@@ -1,7 +1,7 @@
-from typing import Optional, Annotated, Union, Literal
+from typing import Annotated, Literal
 import torch
 from torch import Tensor
-from caskade import Module, forward, Param
+from caskade import Module, forward
 
 from .simulator import NameType
 from ..lenses.base import Lens
@@ -51,14 +51,9 @@ class Microlens(Module):
         source: Annotated[
             Source, "caustics light object which defines the background source"
         ],
-        z_s: Annotated[
-            Optional[Union[Tensor, float]], "Redshift of the source", True
-        ] = None,
         name: NameType = "sim",
     ):
         super().__init__(name)
-
-        self.z_s = Param("z_s", z_s, units="unitless")
 
         self.lens = lens
         self.source = source
@@ -67,7 +62,6 @@ class Microlens(Module):
     def __call__(
         self,
         fov: Tensor,
-        z_s: Annotated[Tensor, "Param"],
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
         N_grid: int = 100,
@@ -101,7 +95,7 @@ class Microlens(Module):
             # Sample the source using MCMC
             sample_x = torch.rand(N_mcmc) * (fov[1] - fov[0]) + fov[0]
             sample_y = torch.rand(N_mcmc) * (fov[3] - fov[2]) + fov[2]
-            bx, by = self.lens.raytrace(sample_x, sample_y, z_s)
+            bx, by = self.lens.raytrace(sample_x, sample_y)
             mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
             return mu.mean() * A, mu.std() * A / N_mcmc**0.5
@@ -110,7 +104,7 @@ class Microlens(Module):
             x = torch.linspace(fov[0], fov[1], N_grid)
             y = torch.linspace(fov[2], fov[3], N_grid)
             sample_x, sample_y = torch.meshgrid(x, y, indexing="ij")
-            bx, by = self.lens.raytrace(sample_x, sample_y, z_s)
+            bx, by = self.lens.raytrace(sample_x, sample_y)
             mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
             return mu.mean() * A, mu.std() * A / N_grid

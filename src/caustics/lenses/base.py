@@ -1,7 +1,6 @@
 # mypy: disable-error-code="call-overload"
 from abc import abstractmethod
 from typing import Optional, Union, Annotated, List
-from functools import partial
 import warnings
 
 import torch
@@ -19,7 +18,9 @@ CosmologyType = Annotated[
     "Cosmology object that encapsulates cosmological parameters and distances",
 ]
 NameType = Annotated[Optional[str], "Name of the lens model"]
-ZLType = Annotated[Optional[Union[Tensor, float]], "The redshift of the lens", True]
+ZType = Annotated[
+    Optional[Union[Tensor, float]], "The redshift of an object in the lens system", True
+]
 LensesType = Annotated[List["ThinLens"], "A list of ThinLens objects"]
 
 
@@ -28,7 +29,9 @@ class Lens(Module):
     Base class for all lenses
     """
 
-    def __init__(self, cosmology: CosmologyType, name: NameType = None):
+    def __init__(
+        self, cosmology: CosmologyType, name: NameType = None, z_s: ZType = None
+    ):
         """
         Initializes a new instance of the Lens class.
 
@@ -38,18 +41,22 @@ class Lens(Module):
             The name of the lens model.
 
         cosmology: Cosmology
-            An instance of a Cosmology class that describes
-            the cosmological parametersof the model.
+            An instance of a Cosmology class that describes the cosmological
+            parameters of the model.
+
+        z_s: ZType
+            Redshift of the source. Needed for various lensing calculations so
+            z_s is held by the lens object rather than the source object.
         """
         super().__init__(name)
         self.cosmology = cosmology
+        self.z_s = Param("z_s", z_s, units="unitless", valid=(0, None))
 
     @forward
     def jacobian_lens_equation(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         method="autograd",
         pixelscale=None,
         **kwargs,
@@ -62,7 +69,7 @@ class Lens(Module):
         """
 
         if method == "autograd":
-            return self._jacobian_lens_equation_autograd(x, y, z_s, **kwargs)
+            return self._jacobian_lens_equation_autograd(x, y, **kwargs)
         elif method == "finitediff":
             if pixelscale is None:
                 raise ValueError(
@@ -70,9 +77,7 @@ class Lens(Module):
                     "and known pixelscale. "
                     "Please include the pixelscale argument"
                 )
-            return self._jacobian_lens_equation_finitediff(
-                x, y, z_s, pixelscale, **kwargs
-            )
+            return self._jacobian_lens_equation_finitediff(x, y, pixelscale, **kwargs)
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
@@ -81,7 +86,6 @@ class Lens(Module):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         method="autograd",
         pixelscale: Optional[Tensor] = None,
     ):
@@ -89,7 +93,7 @@ class Lens(Module):
         General shear calculation for a lens model using the jacobian of the
         lens equation. Individual lenses may implement more efficient methods.
         """
-        A = self.jacobian_lens_equation(x, y, z_s, method=method, pixelscale=pixelscale)
+        A = self.jacobian_lens_equation(x, y, method=method, pixelscale=pixelscale)
         I = torch.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
             *[1] * len(A.shape[:-2]), 2, 2
         )
@@ -101,7 +105,7 @@ class Lens(Module):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
@@ -118,11 +122,6 @@ class Lens(Module):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
         params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -134,14 +133,13 @@ class Lens(Module):
             *Unit: unitless*
 
         """
-        return magnification(self.raytrace, x, y, z_s)
+        return magnification(self.raytrace, x, y)
 
     @forward
     def forward_raytrace(
         self,
         bx: Tensor,
         by: Tensor,
-        z_s: Tensor,
         epsilon: float = 1e-3,
         x0: Optional[Tensor] = None,
         y0: Optional[Tensor] = None,
@@ -199,14 +197,13 @@ class Lens(Module):
 
             *Unit: arcsec*
         """
-        raytrace = partial(self.raytrace, z_s=z_s)
         if x0 is None:
             x0 = torch.zeros((), device=bx.device, dtype=bx.dtype)
         if y0 is None:
             y0 = torch.zeros((), device=by.device, dtype=by.dtype)
 
         return func.forward_raytrace(
-            torch.stack((bx, by)), raytrace, x0, y0, fov, divisions, epsilon
+            torch.stack((bx, by)), self.raytrace, x0, y0, fov, divisions, epsilon
         )
 
 
@@ -229,7 +226,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -248,9 +244,6 @@ class ThickLens(Lens):
 
             *Unit: unitless*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
         params: Packed, optional
             Dynamic parameter container for the lens model. Defaults to None.
 
@@ -267,14 +260,13 @@ class ThickLens(Lens):
             "Now using effective_reduced_deflection_angle, "
             "please switch functions to remove this warning"
         )
-        return self.effective_reduced_deflection_angle(x, y, z_s, **kwargs)
+        return self.effective_reduced_deflection_angle(x, y, **kwargs)
 
     @forward
     def effective_reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """ThickLens objects do not have a reduced deflection angle since the
@@ -306,7 +298,7 @@ class ThickLens(Lens):
             Dynamic parameter container for the lens model. Defaults to None.
 
         """
-        bx, by = self.raytrace(x, y, z_s, **kwargs)
+        bx, by = self.raytrace(x, y, **kwargs)
         return x - bx, y - by
 
     @forward
@@ -314,7 +306,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
@@ -367,7 +358,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
@@ -386,14 +376,6 @@ class ThickLens(Lens):
             Tensor of y coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
@@ -416,7 +398,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -435,14 +416,6 @@ class ThickLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         Tensor
@@ -460,7 +433,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -479,14 +451,6 @@ class ThickLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor ofsource redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         Tensor
@@ -502,7 +466,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         pixelscale: Tensor,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -510,7 +473,7 @@ class ThickLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Compute deflection angles
-        ax, ay = self.effective_reduced_deflection_angle(x, y, z_s)
+        ax, ay = self.effective_reduced_deflection_angle(x, y)
 
         # Build Jacobian
         J = torch.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
@@ -523,7 +486,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -538,29 +500,29 @@ class ThickLens(Lens):
         dax_dx = torch.func.grad(
             lambda *a: self.effective_reduced_deflection_angle(*a)[0], argnums=0
         )
-        J[..., 0, 0] = torch.vmap(dax_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 0, 0] = torch.vmap(dax_dx, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         dax_dy = torch.func.grad(
             lambda *a: self.effective_reduced_deflection_angle(*a)[0], argnums=1
         )
-        J[..., 0, 1] = torch.vmap(dax_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 0, 1] = torch.vmap(dax_dy, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         day_dx = torch.func.grad(
             lambda *a: self.effective_reduced_deflection_angle(*a)[1], argnums=0
         )
-        J[..., 1, 0] = torch.vmap(day_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 1, 0] = torch.vmap(day_dx, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         day_dy = torch.func.grad(
             lambda *a: self.effective_reduced_deflection_angle(*a)[1], argnums=1
         )
-        J[..., 1, 1] = torch.vmap(day_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 1, 1] = torch.vmap(day_dy, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         return J.detach()
@@ -570,7 +532,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         method="autograd",
         pixelscale=None,
         **kwargs,
@@ -583,9 +544,7 @@ class ThickLens(Lens):
         """
 
         if method == "autograd":
-            return self._jacobian_effective_deflection_angle_autograd(
-                x, y, z_s, **kwargs
-            )
+            return self._jacobian_effective_deflection_angle_autograd(x, y, **kwargs)
         elif method == "finitediff":
             if pixelscale is None:
                 raise ValueError(
@@ -594,7 +553,7 @@ class ThickLens(Lens):
                     "Please include the pixelscale argument"
                 )
             return self._jacobian_effective_deflection_angle_finitediff(
-                x, y, z_s, pixelscale, **kwargs
+                x, y, pixelscale, **kwargs
             )
         else:
             raise ValueError("method should be one of: autograd, finitediff")
@@ -604,7 +563,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         pixelscale: Tensor,
         **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
@@ -614,7 +572,7 @@ class ThickLens(Lens):
         """
         # Build Jacobian
         J = self._jacobian_effective_deflection_angle_finitediff(
-            x, y, z_s, pixelscale, **kwargs
+            x, y, pixelscale, **kwargs
         )
         return torch.eye(2).to(J.device) - J
 
@@ -623,7 +581,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -631,7 +588,7 @@ class ThickLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
-        J = self._jacobian_effective_deflection_angle_autograd(x, y, z_s, **kwargs)
+        J = self._jacobian_effective_deflection_angle_autograd(x, y, **kwargs)
         return torch.eye(2).to(J.device) - J.detach()
 
     @forward
@@ -639,7 +596,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> Tensor:
         """
@@ -652,7 +608,7 @@ class ThickLens(Lens):
         See: https://arxiv.org/pdf/2006.07383.pdf
         see also the `effective_convergence_curl` method.
         """
-        J = self.jacobian_effective_deflection_angle(x, y, z_s, **kwargs)
+        J = self.jacobian_effective_deflection_angle(x, y, **kwargs)
         return 0.5 * (J[..., 0, 0] + J[..., 1, 1])
 
     @forward
@@ -660,7 +616,6 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> Tensor:
         """
@@ -672,7 +627,7 @@ class ThickLens(Lens):
 
         See: https://arxiv.org/pdf/2006.07383.pdf
         """
-        J = self.jacobian_effective_deflection_angle(x, y, z_s, **kwargs)
+        J = self.jacobian_effective_deflection_angle(x, y, **kwargs)
         return 0.5 * (J[..., 1, 0] - J[..., 0, 1])
 
 
@@ -703,10 +658,11 @@ class ThinLens(Lens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         name: NameType = None,
     ):
-        super().__init__(cosmology=cosmology, name=name)
+        super().__init__(cosmology=cosmology, name=name, z_s=z_s)
         self.z_l = Param("z_l", z_l, units="unitless", valid=(0, None))
 
     @forward
@@ -714,7 +670,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
@@ -732,14 +688,6 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         --------
         x_component: Tensor
@@ -755,9 +703,7 @@ class ThinLens(Lens):
         """
         d_s = self.cosmology.angular_diameter_distance(z_s)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
-        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(
-            x, y, z_s
-        )
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
         return func.reduced_from_physical_deflection_angle(
             deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
@@ -767,7 +713,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
@@ -785,14 +731,6 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         x_component: Tensor
@@ -808,9 +746,7 @@ class ThinLens(Lens):
         """
         d_s = self.cosmology.angular_diameter_distance(z_s)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
-        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(
-            x, y, z_s
-        )
+        deflection_angle_x, deflection_angle_y = self.reduced_deflection_angle(x, y)
         return func.physical_from_reduced_deflection_angle(
             deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
@@ -821,7 +757,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -864,7 +799,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -906,7 +840,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
@@ -948,7 +882,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
@@ -967,14 +900,6 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         x_component: Tensor
@@ -988,10 +913,13 @@ class ThinLens(Lens):
             *Unit: arcsec*
 
         """
-        ax, ay = self.reduced_deflection_angle(x, y, z_s, **kwargs)
+        ax, ay = self.reduced_deflection_angle(x, y, **kwargs)
         return x - ax, y - ay
 
-    def _arcsec2_to_days(self, z_l, z_s):
+    @forward
+    def _arcsec2_to_days(
+        self, z_s: Annotated[Tensor, "Param"], z_l: Annotated[Tensor, "Param"]
+    ):
         """
         This method is used by :func:`caustics.lenses.ThinLens.time_delay` to
         convert arcsec^2 to days in the context of gravitational time delays.
@@ -1006,8 +934,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        z_l: Annotated[Tensor, "Param"],
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
     ) -> Tensor:
@@ -1039,19 +965,6 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        z_l: Tensor
-            Redshift of the lens.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         shapiro_time_delay: bool
             Whether to include the Shapiro time delay component.
 
@@ -1073,14 +986,14 @@ class ThinLens(Lens):
         TD = torch.zeros_like(x)
 
         if shapiro_time_delay:
-            potential = self.potential(x, y, z_s)
+            potential = self.potential(x, y)
             TD = TD - potential
         if geometric_time_delay:
-            ax, ay = self.reduced_deflection_angle(x, y, z_s)
+            ax, ay = self.reduced_deflection_angle(x, y)
             fp = 0.5 * (ax**2 + ay**2)
             TD = TD + fp
 
-        factor = self._arcsec2_to_days(z_l, z_s)
+        factor = self._arcsec2_to_days()
 
         return factor * TD
 
@@ -1089,7 +1002,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         pixelscale: Tensor,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -1097,7 +1009,7 @@ class ThinLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Compute deflection angles
-        ax, ay = self.reduced_deflection_angle(x, y, z_s)
+        ax, ay = self.reduced_deflection_angle(x, y)
 
         # Build Jacobian
         J = torch.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
@@ -1110,7 +1022,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -1124,29 +1035,29 @@ class ThinLens(Lens):
         dax_dx = torch.func.grad(
             lambda *a: self.reduced_deflection_angle(*a)[0], argnums=0
         )
-        J[..., 0, 0] = torch.vmap(dax_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 0, 0] = torch.vmap(dax_dx, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         dax_dy = torch.func.grad(
             lambda *a: self.reduced_deflection_angle(*a)[0], argnums=1
         )
-        J[..., 0, 1] = torch.vmap(dax_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 0, 1] = torch.vmap(dax_dy, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         day_dx = torch.func.grad(
             lambda *a: self.reduced_deflection_angle(*a)[1], argnums=0
         )
-        J[..., 1, 0] = torch.vmap(day_dx, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 1, 0] = torch.vmap(day_dx, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         day_dy = torch.func.grad(
             lambda *a: self.reduced_deflection_angle(*a)[1], argnums=1
         )
-        J[..., 1, 1] = torch.vmap(day_dy, in_dims=(0, 0, None), chunk_size=chunk_size)(
-            x.flatten(), y.flatten(), z_s
+        J[..., 1, 1] = torch.vmap(day_dy, chunk_size=chunk_size)(
+            x.flatten(), y.flatten()
         ).reshape(x.shape)
 
         return J.detach()
@@ -1156,7 +1067,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         method="autograd",
         pixelscale=None,
         chunk_size: int = 10000,
@@ -1169,14 +1079,14 @@ class ThinLens(Lens):
         """
 
         if method == "autograd":
-            return self._jacobian_deflection_angle_autograd(x, y, z_s, chunk_size)
+            return self._jacobian_deflection_angle_autograd(x, y, chunk_size)
         elif method == "finitediff":
             if pixelscale is None:
                 raise ValueError(
                     "Finite differences lensing jacobian requires regular grid "
                     "and known pixelscale. Please include the pixelscale argument"
                 )
-            return self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale)
+            return self._jacobian_deflection_angle_finitediff(x, y, pixelscale)
         else:
             raise ValueError("method should be one of: autograd, finitediff")
 
@@ -1185,7 +1095,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         pixelscale: Tensor,
         **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
@@ -1194,7 +1103,7 @@ class ThinLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
-        J = self._jacobian_deflection_angle_finitediff(x, y, z_s, pixelscale, **kwargs)
+        J = self._jacobian_deflection_angle_finitediff(x, y, pixelscale, **kwargs)
         return torch.eye(2).to(J.device) - J
 
     @forward
@@ -1202,7 +1111,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
@@ -1210,5 +1118,5 @@ class ThinLens(Lens):
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
-        J = self._jacobian_deflection_angle_autograd(x, y, z_s, **kwargs)
+        J = self._jacobian_deflection_angle_autograd(x, y, **kwargs)
         return torch.eye(2).to(J.device) - J.detach()
