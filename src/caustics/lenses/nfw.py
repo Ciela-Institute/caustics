@@ -4,7 +4,7 @@ from typing import Optional, Union, Annotated
 from torch import Tensor
 from caskade import forward, Param
 
-from .base import ThinLens, NameType, CosmologyType, ZLType
+from .base import ThinLens, NameType, CosmologyType, ZType
 from . import func
 
 DELTA = 200.0
@@ -25,6 +25,11 @@ class NFW(ThinLens):
 
         *Unit: unitless*
 
+    z_s: Optional[Tensor]
+        Redshift of the source. Default is None.
+
+        *Unit: unitless*
+
     x0: Optional[Tensor]
         x-coordinate of the lens center in the lens plane. Default is None.
 
@@ -35,7 +40,7 @@ class NFW(ThinLens):
 
         *Unit: arcsec*
 
-    m: Optional[Tensor]
+    mass: Optional[Tensor]
         Mass of the lens. Default is None.
 
         *Unit: Msun*
@@ -75,21 +80,24 @@ class NFW(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "m": 1e13,
+        "mass": 1e13,
         "c": 5.0,
     }
 
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "X coordinate of the lens center", True
         ] = None,
         y0: Annotated[
             Optional[Union[Tensor, float]], "Y coordinate of the lens center", True
         ] = None,
-        m: Annotated[Optional[Union[Tensor, float]], "Mass of the lens", True] = None,
+        mass: Annotated[
+            Optional[Union[Tensor, float]], "Mass of the lens", True
+        ] = None,
         c: Annotated[
             Optional[Union[Tensor, float]], "Concentration parameter of the lens", True
         ] = None,
@@ -128,7 +136,7 @@ class NFW(ThinLens):
 
             *Unit: arcsec*
 
-        m: Optional[Union[Tensor, float]]
+        mass: Optional[Union[Tensor, float]]
             Mass of the lens. Default is None.
 
             *Unit: Msun*
@@ -145,11 +153,11 @@ class NFW(ThinLens):
             *Unit: arcsec*
 
         """
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
-        self.m = Param("m", m, units="Msun")
+        self.mass = Param("mass", mass, units="Msun")
         self.c = Param("c", c, units="unitless")
         self.s = s
 
@@ -157,7 +165,7 @@ class NFW(ThinLens):
     def get_scale_radius(
         self,
         z_l: Annotated[Tensor, "Param"],
-        m: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
@@ -170,18 +178,13 @@ class NFW(ThinLens):
 
             *Unit: unitless*
 
-        m: Tensor
+        mass: Tensor
             Mass of the lens.
 
             *Unit: Msun*
 
         c: Tensor
             Concentration parameter of the lens.
-
-            *Unit: unitless*
-
-        x: dict
-            Dynamic parameter container.
 
             *Unit: unitless*
 
@@ -194,7 +197,7 @@ class NFW(ThinLens):
 
         """
         critical_density = self.cosmology.critical_density(z_l)
-        return func.scale_radius_nfw(critical_density, m, c, DELTA)
+        return func.scale_radius_nfw(critical_density, mass, c, DELTA)
 
     @forward
     def get_scale_density(
@@ -217,9 +220,6 @@ class NFW(ThinLens):
 
             *Unit: unitless*
 
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -236,11 +236,10 @@ class NFW(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        m: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         c: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
@@ -258,14 +257,6 @@ class NFW(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         x_component: Tensor
@@ -282,16 +273,14 @@ class NFW(ThinLens):
         d_l = self.cosmology.angular_diameter_distance(z_l)
         critical_density = self.cosmology.critical_density(z_l)
         return func.physical_deflection_angle_nfw(
-            x0, y0, m, c, critical_density, d_l, x, y, DELTA=DELTA, s=self.s
+            x0, y0, mass, c, critical_density, d_l, x, y, DELTA=DELTA, s=self.s
         )
 
     @forward
     def reduced_deflection_angle(self, x, y, z_s, z_l):
         d_s = self.cosmology.angular_diameter_distance(z_s)
         d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
-        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(
-            x, y, z_s
-        )
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
         return func.reduced_from_physical_deflection_angle(
             deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
@@ -301,11 +290,11 @@ class NFW(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        m: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
@@ -323,14 +312,6 @@ class NFW(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -347,7 +328,7 @@ class NFW(ThinLens):
             critical_density,
             x0,
             y0,
-            m,
+            mass,
             c,
             x,
             y,
@@ -361,11 +342,11 @@ class NFW(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        m: Annotated[Tensor, "Param"],
+        mass: Annotated[Tensor, "Param"],
         c: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
@@ -383,14 +364,6 @@ class NFW(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -407,7 +380,7 @@ class NFW(ThinLens):
             critical_density,
             x0,
             y0,
-            m,
+            mass,
             c,
             d_l,
             x,

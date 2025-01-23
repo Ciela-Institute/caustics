@@ -29,6 +29,7 @@ def test(sim_source, device, m, c, t):
     atol = 1e-2
     rtol = 3e-2
     z_l = torch.tensor(0.1)
+    z_s = torch.tensor(0.5)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -40,6 +41,7 @@ def test(sim_source, device, m, c, t):
             kind: TNFW
             init_kwargs:
                 z_l: {float(z_l)}
+                z_s: {float(z_s)}
                 cosmology: *cosmology
                 interpret_m_total_mass: false
         """
@@ -49,14 +51,17 @@ def test(sim_source, device, m, c, t):
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
         lens = TNFW(
-            name="tnfw", cosmology=cosmology, z_l=z_l, interpret_m_total_mass=False
+            name="tnfw",
+            cosmology=cosmology,
+            z_l=z_l,
+            interpret_m_total_mass=False,
+            z_s=z_s,
         )
 
     lens_model_list = ["TNFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
@@ -82,7 +87,6 @@ def test(sim_source, device, m, c, t):
     lens_test_helper(
         lens,
         lens_ls,
-        z_s,
         x,
         kwargs_ls,
         atol,
@@ -99,10 +103,10 @@ def test(sim_source, device, m, c, t):
 def test_runs(device):
     cosmology = CausticFlatLambdaCDM(name="cosmo")
     z_l = torch.tensor(0.1)
-    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l)
+    z_s = torch.tensor(0.5)
+    lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l, z_s=z_s)
     lens.to(device=device)
     # Parameters
-    z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
@@ -113,7 +117,7 @@ def test_runs(device):
 
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
-    Psi = lens.potential(thx, thy, z_s, x)
+    Psi = lens.potential(thx, thy, x)
     assert torch.all(torch.isfinite(Psi))
 
     Rt = lens.get_truncation_radius(x)
