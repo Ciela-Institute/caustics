@@ -51,7 +51,7 @@ def test_point_lens(sim_source, device, Rein):
 def test_point_parametrization():
 
     cosmology = FlatLambdaCDM(name="cosmo")
-    lens = Point(name="point", cosmology=cosmology, z_l=0.5, z_s=1.0)
+    lens = Point(name="point", cosmology=cosmology, z_l=0.5, z_s=1.0, Rein=1.0)
 
     # Check default
     assert lens.parametrization == "Rein"
@@ -71,3 +71,9 @@ def test_point_parametrization():
 
     with pytest.raises(ValueError):
         lens.parametrization = "weird"
+
+    # Check init mass
+    lens = Point(
+        cosmology=cosmology, z_l=0.5, z_s=1.0, parametrization="mass", mass=1e10
+    )
+    assert np.allclose(lens.mass.value.item(), 1e10, rtol=1e-5)

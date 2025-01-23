@@ -83,6 +83,7 @@ class ExternalShear(ThinLens):
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         name: NameType = None,
+        **kwargs,
     ):
         super().__init__(cosmology=cosmology, z_l=z_l, name=name, z_s=z_s)
 
@@ -92,6 +93,9 @@ class ExternalShear(ThinLens):
         self.gamma_2 = Param("gamma_2", gamma_2, units="unitless")
         self._parametrization = "cartesian"
         self.parametrization = parametrization
+        if self.parametrization == "angular":
+            self.gamma = kwargs.get("gamma", None)
+            self.phi = kwargs.get("phi", None)
         self.s = s
 
     @property
@@ -105,36 +109,51 @@ class ExternalShear(ThinLens):
                 f"Invalid parametrization: {value}. Must be 'cartesian' or 'angular'."
             )
         if value == "angular" and self._parametrization != "angular":
-            self.gamma = Param("gamma", shape=self.gamma_1.shape, units="unitless")
-            self.theta = Param("theta", shape=self.gamma_1.shape, units="radians")
+            self.gamma = Param(
+                "gamma",
+                shape=self.gamma_1.shape if self.gamma_1.static else (),
+                units="unitless",
+            )
+            self.phi = Param(
+                "phi",
+                shape=self.gamma_1.shape if self.gamma_1.static else (),
+                units="radians",
+            )
             if self.gamma_1.static:
                 warn(
                     f"Parameter {self.gamma_1.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma_1.name} be dynamic when changing parametrizations.",
                 )
-            self.gamma_1.value = lambda p: func.gamma_theta_to_gamma1(
-                p["gamma"].value, p["theta"].value
+            self.gamma_1.value = lambda p: func.gamma_phi_to_gamma1(
+                p["gamma"].value, p["phi"].value
             )
-            if self.gamma_1.static:
+            if self.gamma_2.static:
                 warn(
                     f"Parameter {self.gamma_2.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma_2.name} be dynamic when changing parametrizations.",
                 )
-            self.gamma_2.value = lambda p: func.gamma_theta_to_gamma2(
-                p["gamma"].value, p["theta"].value
+            self.gamma_2.value = lambda p: func.gamma_phi_to_gamma2(
+                p["gamma"].value, p["phi"].value
             )
             self.gamma_1.link(self.gamma)
-            self.gamma_1.link(self.theta)
+            self.gamma_1.link(self.phi)
             self.gamma_2.link(self.gamma)
-            self.gamma_2.link(self.theta)
+            self.gamma_2.link(self.phi)
         if value == "cartesian" and self._parametrization != "cartesian":
+            self.gamma_1 = None
+            self.gamma_2 = None
             try:
-                if self.gamma.static or self.theta.static:
+                if self.gamma.static:
                     warn(
-                        f"Parameter {self.gamma.name} and/or {self.theta.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma.name} and {self.theta.name} be dynamic when changing parametrizations.",
+                        f"Parameter {self.gamma.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma.name} be dynamic when changing parametrizations.",
                     )
-                self.gamma_1 = None
-                self.gamma_2 = None
                 del self.gamma
-                del self.theta
+            except AttributeError:
+                pass
+            try:
+                if self.phi.static:
+                    warn(
+                        f"Parameter {self.phi.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.phi.name} be dynamic when changing parametrizations.",
+                    )
+                del self.phi
             except AttributeError:
                 pass
 

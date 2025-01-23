@@ -99,6 +99,7 @@ class SIE(ThinLens):
         parametrization: Literal["Rein", "velocity_dispersion"] = "Rein",
         s: Annotated[float, "The core radius of the lens"] = 0.0,
         name: NameType = None,
+        **kwargs,
     ):
         """
         Initialize the SIE lens model.
@@ -112,6 +113,8 @@ class SIE(ThinLens):
         self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self._parametrization = "Rein"
         self.parametrization = parametrization
+        if self.parametrization == "velocity_dispersion":
+            self.sigma_v = kwargs.get("sigma_v", None)
         self.s = s
 
     @property
@@ -129,7 +132,10 @@ class SIE(ThinLens):
             and self._parametrization != "velocity_dispersion"
         ):
             self.sigma_v = Param(
-                "sigma_v", shape=self.Rein.shape, units="km/s", valid=(0, None)
+                "sigma_v",
+                shape=self.Rein.shape if self.Rein.static else (),
+                units="km/s",
+                valid=(0, None),
             )
             if self.Rein.static:
                 warn(

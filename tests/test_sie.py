@@ -116,6 +116,7 @@ def test_sie_parametrization():
         y0=0.0,
         q=0.5,
         phi=pi / 4,
+        Rein=1.0,
     )
 
     # Check default
@@ -125,7 +126,7 @@ def test_sie_parametrization():
     lens.parametrization = "velocity_dispersion"
     assert lens.parametrization == "velocity_dispersion"
     # Check setting sigma_v to get Rein
-    lens.sigma_v = 1.0
+    lens.sigma_v = 250.0
     assert np.isfinite(lens.Rein.value.item())
 
     # Check reset to cartesian
@@ -136,3 +137,11 @@ def test_sie_parametrization():
 
     with pytest.raises(ValueError):
         lens.parametrization = "weird"
+
+    # check init velocity_dispersion
+    lens = SIE(
+        cosmology=cosmology,
+        parametrization="velocity_dispersion",
+        sigma_v=250.0,
+    )
+    assert np.allclose(lens.sigma_v.value.item(), 250, rtol=1e-5)

@@ -1,7 +1,7 @@
 from math import pi
 
 from ...utils import translate_rotate, derotate
-from ...constants import c_km_s
+from ...constants import c_km_s, rad_to_arcsec
 
 
 def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
@@ -208,7 +208,7 @@ def convergence_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 def sigma_v_to_rein_sie(sigma_v, dls, ds):
     """
     Convert the velocity dispersion to the Einstein radius. See equation 16.22
-    inDynamic and Astrophysics of Galaxies by Jo Bovy
+    in Dynamics and Astrophysics of Galaxies by Jo Bovy
 
     Parameters
     ----------
@@ -235,4 +235,4 @@ def sigma_v_to_rein_sie(sigma_v, dls, ds):
         *Unit: arcsec*
 
     """
-    return 4 * pi * (sigma_v / c_km_s) ** 2 * dls / ds
+    return rad_to_arcsec * 4 * pi * (sigma_v / c_km_s) ** 2 * dls / ds

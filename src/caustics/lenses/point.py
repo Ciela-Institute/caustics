@@ -79,6 +79,7 @@ class Point(ThinLens):
             float, "Softening parameter to prevent numerical instabilities"
         ] = 0.0,
         name: NameType = None,
+        **kwargs,
     ):
         """
         Initialize the Point class.
@@ -124,6 +125,8 @@ class Point(ThinLens):
         self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self._parametrization = "Rein"
         self.parametrization = parametrization
+        if self.parametrization == "mass":
+            self.mass = kwargs.get("mass", None)
         self.s = s
 
     @property
@@ -137,7 +140,9 @@ class Point(ThinLens):
                 f"Invalid parametrization {value}. Choose from ['Rein', 'mass']"
             )
         if value == "mass" and self.parametrization != "mass":
-            self.mass = Param("mass", shape=self.Rein.shape, units="Msol")
+            self.mass = Param(
+                "mass", shape=self.Rein.shape if self.Rein.static else (), units="Msol"
+            )
 
             def mass_to_rein(p):
                 Dls = p["cosmology"].angular_diameter_distance_z1z2(

@@ -109,7 +109,7 @@ def potential_external_shear(x0, y0, gamma_1, gamma_2, x, y):
     return 0.5 * gamma_1 * (x**2 - y**2) + gamma_2 * x * y
 
 
-def gamma_theta_to_gamma1(gamma, theta):
+def gamma_phi_to_gamma1(gamma, phi):
     """
     Convert the shear magnitude and angle to the gamma_1 component.
 
@@ -120,7 +120,7 @@ def gamma_theta_to_gamma1(gamma, theta):
 
         *Unit: unitless*
 
-    theta: Tensor
+    phi: Tensor
         The shear angle.
 
         *Unit: radians*
@@ -133,10 +133,10 @@ def gamma_theta_to_gamma1(gamma, theta):
         *Unit: unitless*
 
     """
-    return gamma * torch.cos(2 * theta)
+    return gamma * torch.cos(2 * phi)
 
 
-def gamma_theta_to_gamma2(gamma, theta):
+def gamma_phi_to_gamma2(gamma, phi):
     """
     Convert the shear magnitude and angle to the gamma_2 component.
 
@@ -147,7 +147,7 @@ def gamma_theta_to_gamma2(gamma, theta):
 
         *Unit: unitless*
 
-    theta: Tensor
+    phi: Tensor
         The shear angle.
 
         *Unit: radians*
@@ -160,4 +160,4 @@ def gamma_theta_to_gamma2(gamma, theta):
         *Unit: unitless*
 
     """
-    return gamma * torch.sin(2 * theta)
+    return gamma * torch.sin(2 * phi)
