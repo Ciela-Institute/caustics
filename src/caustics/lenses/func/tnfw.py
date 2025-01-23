@@ -4,7 +4,7 @@ from ...constants import arcsec_to_rad, G_over_c2, rad_to_arcsec
 from ...utils import translate_rotate
 
 
-def concentration_tnfw(mass, scale_radius, critical_density, d_l, DELTA=200.0):
+def concentration_tnfw(mass, Rs, critical_density, d_l, DELTA=200.0):
     """
     Compute the concentration parameter "c" for a TNFW profile.
 
@@ -15,7 +15,7 @@ def concentration_tnfw(mass, scale_radius, critical_density, d_l, DELTA=200.0):
 
         *Unit: Msun*
 
-    scale_radius: Tensor
+    Rs: Tensor
         The scale radius of the TNFW lens.
 
         *Unit: arcsec*
@@ -44,7 +44,7 @@ def concentration_tnfw(mass, scale_radius, critical_density, d_l, DELTA=200.0):
 
     """
     r_delta = (3 * mass / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
-    return r_delta / (scale_radius * d_l * arcsec_to_rad)  # fmt: skip
+    return r_delta / (Rs * d_l * arcsec_to_rad)  # fmt: skip
 
 
 def _F_batchable_tnfw(x):
@@ -93,12 +93,12 @@ def M0_totmass_tnfw(mass, tau):
     return mass * (tau**2 + 1) ** 2 / (tau**2 * ((tau**2 - 1) * tau.log() + torch.pi * tau - (tau**2 + 1)))  # fmt: skip
 
 
-def M0_scalemass_tnfw(scale_radius, c, critical_density, d_l, DELTA=200.0):
+def M0_scalemass_tnfw(Rs, c, critical_density, d_l, DELTA=200.0):
     """What M0 would be for an NFW
 
     Parameters
     ----------
-    scale_radius: Tensor
+    Rs: Tensor
         The scale radius of the TNFW lens.
 
         *Unit: arcsec*
@@ -123,12 +123,12 @@ def M0_scalemass_tnfw(scale_radius, c, critical_density, d_l, DELTA=200.0):
 
         *Unit: unitless*
     """
-    return 4 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 3 * scale_density_tnfw(c, critical_density, DELTA)  # fmt: skip
+    return 4 * torch.pi * (Rs * d_l * arcsec_to_rad) ** 3 * scale_density_tnfw(c, critical_density, DELTA)  # fmt: skip
 
 
 def mass_enclosed_2d_tnfw(
     r,
-    scale_radius,
+    Rs,
     tau,
     M0,
     _F_mode="differentiable",
@@ -149,7 +149,7 @@ def mass_enclosed_2d_tnfw(
 
         *Unit: Msun*
 
-    scale_radius: Tensor
+    Rs: Tensor
         Scale radius of the TNFW lens.
 
         *Unit: arcsec*
@@ -167,7 +167,7 @@ def mass_enclosed_2d_tnfw(
         *Unit: Msun*
 
     """
-    g = r / scale_radius
+    g = r / Rs
     t2 = tau**2
     if _F_mode == "differentiable":
         F = _F_differentiable(g)
@@ -187,7 +187,7 @@ def mass_enclosed_2d_tnfw(
 def physical_deflection_angle_tnfw(
     x0,
     y0,
-    scale_radius,
+    Rs,
     tau,
     x,
     y,
@@ -212,7 +212,7 @@ def physical_deflection_angle_tnfw(
 
         *Unit: arcsec*
 
-    scale_radius: Tensor
+    Rs: Tensor
         The scale radius of the TNFW lens.
 
         *Unit: arcsec*
@@ -258,7 +258,7 @@ def physical_deflection_angle_tnfw(
     theta = torch.arctan2(y, x)
 
     # The below actually equally comes from eq 2.13 in Meneghetti notes
-    dr = mass_enclosed_2d_tnfw(r, scale_radius, tau, M0,_F_mode) / (
+    dr = mass_enclosed_2d_tnfw(r, Rs, tau, M0,_F_mode) / (
         r * d_l * arcsec_to_rad
     )  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
     S = 4 * G_over_c2 * rad_to_arcsec
@@ -268,7 +268,7 @@ def physical_deflection_angle_tnfw(
 def convergence_tnfw(
     x0,
     y0,
-    scale_radius,
+    Rs,
     tau,
     x,
     y,
@@ -294,7 +294,7 @@ def convergence_tnfw(
 
         *Unit: arcsec*
 
-    scale_radius: Tensor
+    Rs: Tensor
         The scale radius of the TNFW lens.
 
         *Unit: arcsec*
@@ -336,7 +336,7 @@ def convergence_tnfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
-    g = r / scale_radius
+    g = r / Rs
     if _F_mode == "differentiable":
         F = _F_differentiable(g)
     elif _F_mode == "batchable":
@@ -345,7 +345,7 @@ def convergence_tnfw(
         raise ValueError("_F_mode must be 'differentiable' or 'batchable'")
     L = _L_tnfw(g, tau)
 
-    S = M0 / (2 * torch.pi * (scale_radius * d_l * arcsec_to_rad) ** 2)  # fmt: skip
+    S = M0 / (2 * torch.pi * (Rs * d_l * arcsec_to_rad) ** 2)  # fmt: skip
 
     t2 = tau**2
     a1 = t2 / (t2 + 1) ** 2
@@ -359,7 +359,7 @@ def convergence_tnfw(
 def potential_tnfw(
     x0,
     y0,
-    scale_radius,
+    Rs,
     tau,
     x,
     y,
@@ -386,7 +386,7 @@ def potential_tnfw(
 
         *Unit: arcsec*
 
-    scale_radius: Tensor
+    Rs: Tensor
         The scale radius of the TNFW lens.
 
         *Unit: arcsec*
@@ -438,7 +438,7 @@ def potential_tnfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
-    g = r / scale_radius
+    g = r / Rs
     t2 = tau**2
     u = g**2
     if _F_mode == "differentiable":

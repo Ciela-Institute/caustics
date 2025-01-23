@@ -4,7 +4,7 @@ from ...utils import translate_rotate
 from ...constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 
 
-def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
+def scale_radius_nfw(critical_density, mass, c, DELTA=200.0):
     """
     Compute the scale radius of the NFW profile.
 
@@ -15,7 +15,7 @@ def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo.
 
         *Unit: Msun*
@@ -38,7 +38,7 @@ def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
         *Unit: Mpc*
 
     """
-    r_delta = (3 * m / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
+    r_delta = (3 * mass / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
     return 1 / c * r_delta
 
 
@@ -74,7 +74,7 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
     return DELTA / 3 * critical_density * c**3 / ((1 + c).log() - c / (1 + c))  # fmt: skip
 
 
-def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
+def convergence_s_nfw(critical_surface_density, critical_density, mass, c, DELTA):
     """
     Compute the dimensionaless surface mass density of the lens.
 
@@ -88,7 +88,7 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo.
 
         *Unit: Msun*
@@ -110,7 +110,7 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
 
         *Unit: unitless*
     """
-    Rs = scale_radius_nfw(critical_density, m, c, DELTA)
+    Rs = scale_radius_nfw(critical_density, mass, c, DELTA)
     Ds = scale_density_nfw(critical_density, c, DELTA)
     return Rs * Ds / critical_surface_density
 
@@ -275,7 +275,7 @@ def _h_batchable_nfw(x):
 def physical_deflection_angle_nfw(
     x0,
     y0,
-    m,
+    mass,
     c,
     critical_density,
     d_l,
@@ -301,7 +301,7 @@ def physical_deflection_angle_nfw(
 
         *Unit: arcsec*
 
-    m: Tensor
+    mass: Tensor
         Mass of the lens. Default is None.
 
         *Unit: Msun*
@@ -329,7 +329,7 @@ def physical_deflection_angle_nfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius
 
@@ -345,7 +345,7 @@ def convergence_nfw(
     critical_density,
     x0,
     y0,
-    m,
+    mass,
     c,
     x,
     y,
@@ -370,7 +370,7 @@ def convergence_nfw(
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo
 
     c: Optional[Tensor]
@@ -395,11 +395,11 @@ def convergence_nfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius  # xi / xi_0
     convergence_s = convergence_s_nfw(
-        critical_surface_density, critical_density, m, c, DELTA
+        critical_surface_density, critical_density, mass, c, DELTA
     )
     return 2 * convergence_s * _f(r) / (r**2 - 1)  # fmt: skip
 
@@ -409,7 +409,7 @@ def potential_nfw(
     critical_density,
     x0,
     y0,
-    m,
+    mass,
     c,
     d_l,
     x,
@@ -434,7 +434,7 @@ def potential_nfw(
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo
 
     c: Optional[Tensor]
@@ -459,10 +459,10 @@ def potential_nfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius  # xi / xi_0
     convergence_s = convergence_s_nfw(
-        critical_surface_density, critical_density, m, c, DELTA
+        critical_surface_density, critical_density, mass, c, DELTA
     )
     return 2 * convergence_s * _g(r) * scale_radius**2 / (d_l**2 * arcsec_to_rad**2)  # fmt: skip

@@ -27,7 +27,7 @@ def test_simulator_runs(sim_source, device):
                 y0: 0.01
                 q: 0.5
                 phi: 1.05
-                b: 1.0
+                Rein: 1.0
                 cosmology: *cosmology
 
         source: &source
@@ -90,7 +90,7 @@ def test_simulator_runs(sim_source, device):
             y0=0.01,
             q=0.5,
             phi=pi / 3.0,
-            b=1.0,
+            Rein=1.0,
         )
 
         source = Sersic(
@@ -194,7 +194,7 @@ def test_fft_vs_conv2d():
         y0=0.01,
         q=0.5,
         phi=pi / 3.0,
-        b=1.0,
+        Rein=1.0,
     )
 
     source = Sersic(
@@ -244,7 +244,7 @@ def test_microlens_simulator_runs():
     src = Sersic(name="source")
 
     x = torch.tensor([
-    #   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re   Ie
+    #   z_s  z_l   x0   y0   q    phi     Rein x0   y0   q     phi    n    Re   Ie
         1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0, 5.0
     ])  # fmt: skip
     fov = torch.tensor((-1, -0.5, -0.25, 0.25))

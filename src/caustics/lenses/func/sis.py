@@ -1,7 +1,7 @@
 from ...utils import translate_rotate
 
 
-def reduced_deflection_angle_sis(x0, y0, th_ein, x, y, s=0.0):
+def reduced_deflection_angle_sis(x0, y0, Rein, x, y, s=0.0):
     """
     Compute the reduced deflection angles. See the Meneghetti lecture notes equation 3.46.
 
@@ -17,7 +17,7 @@ def reduced_deflection_angle_sis(x0, y0, th_ein, x, y, s=0.0):
 
         *Unit: arcsec*
 
-    th_ein: Tensor
+    Rein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -52,12 +52,12 @@ def reduced_deflection_angle_sis(x0, y0, th_ein, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0)
     R = (x**2 + y**2).sqrt() + s
-    ax = th_ein * x / R
-    ay = th_ein * y / R
+    ax = Rein * x / R
+    ay = Rein * y / R
     return ax, ay
 
 
-def potential_sis(x0, y0, th_ein, x, y, s=0.0):
+def potential_sis(x0, y0, Rein, x, y, s=0.0):
     """
     Compute the lensing potential. See the Meneghetti lecture notes equation 3.45.
 
@@ -73,7 +73,7 @@ def potential_sis(x0, y0, th_ein, x, y, s=0.0):
 
         *Unit: arcsec*
 
-    th_ein: Tensor
+    Rein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -103,10 +103,10 @@ def potential_sis(x0, y0, th_ein, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0)
     R = (x**2 + y**2).sqrt() + s
-    return th_ein * R
+    return Rein * R
 
 
-def convergence_sis(x0, y0, th_ein, x, y, s=0.0):
+def convergence_sis(x0, y0, Rein, x, y, s=0.0):
     """
     Compute the lensing convergence. See the Meneghetti lecture notes equation 3.44.
 
@@ -122,7 +122,7 @@ def convergence_sis(x0, y0, th_ein, x, y, s=0.0):
 
         *Unit: arcsec*
 
-    th_ein: Tensor
+    Rein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -152,4 +152,4 @@ def convergence_sis(x0, y0, th_ein, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0)
     R = (x**2 + y**2).sqrt() + s
-    return 0.5 * th_ein / R
+    return 0.5 * Rein / R
