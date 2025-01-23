@@ -41,7 +41,7 @@ class SIS(ThinLens):
     y0: Optional[Union[Tensor, float]]
         The y-coordinate of the lens center.
 
-    th_ein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[Tensor, float]]
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -56,7 +56,7 @@ class SIS(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "th_ein": 1.0,
+        "Rein": 1.0,
     }
 
     def __init__(
@@ -70,7 +70,7 @@ class SIS(ThinLens):
         y0: Annotated[
             Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
         ] = None,
-        th_ein: Annotated[
+        Rein: Annotated[
             Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
         ] = None,
         s: Annotated[float, "A smoothing factor"] = 0.0,
@@ -83,7 +83,7 @@ class SIS(ThinLens):
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
-        self.th_ein = Param("th_ein", th_ein, units="arcsec", valid=(0, None))
+        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self.s = s
 
     @forward
@@ -93,7 +93,7 @@ class SIS(ThinLens):
         y: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the deflection angle of the SIS lens.
@@ -123,7 +123,7 @@ class SIS(ThinLens):
             *Unit: arcsec*
 
         """
-        return func.reduced_deflection_angle_sis(x0, y0, th_ein, x, y, self.s)
+        return func.reduced_deflection_angle_sis(x0, y0, Rein, x, y, self.s)
 
     @forward
     def potential(
@@ -132,7 +132,7 @@ class SIS(ThinLens):
         y: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential of the SIS lens.
@@ -157,7 +157,7 @@ class SIS(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_sis(x0, y0, th_ein, x, y, self.s)
+        return func.potential_sis(x0, y0, Rein, x, y, self.s)
 
     @forward
     def convergence(
@@ -166,7 +166,7 @@ class SIS(ThinLens):
         y: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the projected mass density of the SIS lens.
@@ -191,4 +191,4 @@ class SIS(ThinLens):
             *Unit: unitless*
 
         """
-        return func.convergence_sis(x0, y0, th_ein, x, y, self.s)
+        return func.convergence_sis(x0, y0, Rein, x, y, self.s)

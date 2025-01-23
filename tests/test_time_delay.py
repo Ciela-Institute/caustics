@@ -22,7 +22,7 @@ def test_time_delay_pointsource(q, phi, bx, by):
     # Define caustics lens
     cosmo = caustics.FlatLambdaCDM(name="cosmo")
     lens = caustics.SIE(
-        cosmology=cosmo, z_l=z_l, z_s=z_s, x0=0.0, y0=0.0, q=q, phi=phi, b=1.0
+        cosmology=cosmo, z_l=z_l, z_s=z_s, x0=0.0, y0=0.0, q=q, phi=phi, Rein=1.0
     )
     x, y = lens.forward_raytrace(bx, by)
 

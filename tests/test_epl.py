@@ -9,16 +9,15 @@ from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
 from caustics.sims import build_simulator
-import numpy as np
 
 import pytest
 
 
 @pytest.mark.parametrize("q", [0.4, 0.7])
 @pytest.mark.parametrize("phi", [pi / 3, -pi / 4])
-@pytest.mark.parametrize("b", [0.1, 1.0])
+@pytest.mark.parametrize("Rein", [0.1, 1.0])
 @pytest.mark.parametrize("t", [0.1, 1.0, 1.9])
-def test_lenstronomy_epl(sim_source, device, q, phi, b, t):
+def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
     z_s = torch.tensor(1.0, device=device)
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -44,10 +43,10 @@ def test_lenstronomy_epl(sim_source, device, q, phi, b, t):
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    x = torch.tensor([0.7, 0.912, -0.442, q, phi, b, t], device=device)
+    x = torch.tensor([0.7, 0.912, -0.442, q, phi, Rein, t], device=device)
 
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
-    theta_E = b / np.sqrt(q)  # (x[5] / x[3].sqrt()).item()
+    theta_E = Rein
     kwargs_ls = [
         {
             "theta_E": theta_E,
@@ -83,7 +82,7 @@ def test_special_case_sie(device):
     # Parameters
     x = torch.tensor([0.7, 0.912, -0.442, 0.7, pi / 3, 1.4, 1.0], device=device)
     e1, e2 = param_util.phi_q2_ellipticity(phi=x[4].item(), q=x[3].item())
-    theta_E = (x[5] / x[3].sqrt()).item()
+    theta_E = x[5].item()  # (x[5] / x[3].sqrt()).item()
     kwargs_ls = [
         {
             "theta_E": theta_E,

@@ -30,7 +30,7 @@ def _test_simulator_runs(device=DEVICE):
         y0=0.01,
         q=0.5,
         phi=pi / 3.0,
-        b=1.0,
+        Rein=1.0,
     )
 
     source = Sersic(

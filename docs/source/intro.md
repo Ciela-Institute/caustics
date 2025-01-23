@@ -35,7 +35,7 @@ src = caustics.Sersic(name="source")
 lnslt = caustics.Sersic(name="lenslight")
 
 x = torch.tensor([
-#    x0   y0   q    phi     b    x0   y0   q     phi    n    Re
+#    x0   y0   q    phi     Rein x0   y0   q     phi    n    Re
     -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
 #   Ie    x0   y0   q    phi  n   Re   Ie
     5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0

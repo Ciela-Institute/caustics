@@ -21,7 +21,7 @@ def test(device):
         y0=torch.tensor(0.0),
         q=torch.tensor(0.4),
         phi=torch.tensor(np.pi / 5),
-        b=torch.tensor(1.0),
+        Rein=torch.tensor(1.0),
     )
     # Send to device
     lens = lens.to(device)
@@ -55,7 +55,7 @@ def test_magnification(device):
         y0=torch.tensor(0.0),
         q=torch.tensor(0.4),
         phi=torch.tensor(np.pi / 5),
-        b=torch.tensor(1.0),
+        Rein=torch.tensor(1.0),
     )
     # Send to device
     lens = lens.to(device)

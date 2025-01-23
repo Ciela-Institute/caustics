@@ -53,7 +53,7 @@ class SIE(ThinLens):
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[Tensor, float]]
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -70,7 +70,7 @@ class SIE(ThinLens):
         "y0": 0.0,
         "q": 0.5,
         "phi": 0.0,
-        "b": 1.0,
+        "Rein": 1.0,
     }
 
     def __init__(
@@ -92,7 +92,7 @@ class SIE(ThinLens):
             "The orientation angle of the lens (position angle)",
             True,
         ] = None,
-        b: Annotated[
+        Rein: Annotated[
             Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
         ] = None,
         s: Annotated[float, "The core radius of the lens"] = 0.0,
@@ -107,39 +107,39 @@ class SIE(ThinLens):
         self.y0 = Param("y0", y0, units="arcsec")
         self.q = Param("q", q, units="unitless", valid=(0, 1))
         self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
-        self.b = Param("b", b, units="arcsec", valid=(0, None))
+        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self.s = s
 
-    def _get_potential(self, x, y, q):
-        """
-        Compute the radial coordinate in the lens plane.
+    # def _get_potential(self, x, y, q):
+    #     """
+    #     Compute the radial coordinate in the lens plane.
 
-        Parameters
-        ----------
-        x: Tensor
-            The x-coordinate in the lens plane.
+    #     Parameters
+    #     ----------
+    #     x: Tensor
+    #         The x-coordinate in the lens plane.
 
-            *Unit: arcsec*
+    #         *Unit: arcsec*
 
-        y: Tensor
-            The y-coordinate in the lens plane.
+    #     y: Tensor
+    #         The y-coordinate in the lens plane.
 
-            *Unit: arcsec*
+    #         *Unit: arcsec*
 
-        q: Tensor
-            The axis ratio of the lens.
+    #     q: Tensor
+    #         The axis ratio of the lens.
 
-            *Unit: unitless*
+    #         *Unit: unitless*
 
-        Returns
-        --------
-        Tensor
-            The radial coordinate in the lens plane.
+    #     Returns
+    #     --------
+    #     Tensor
+    #         The radial coordinate in the lens plane.
 
-            *Unit: arcsec*
+    #         *Unit: arcsec*
 
-        """
-        return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
+    #     """
+    #     return (q**2 * (x**2 + self.s**2) + y**2).sqrt()  # fmt: skip
 
     @forward
     def reduced_deflection_angle(
@@ -150,7 +150,7 @@ class SIE(ThinLens):
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
         phi: Annotated[Tensor, "Param"],
-        b: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Calculate the physical deflection angle.
@@ -180,7 +180,7 @@ class SIE(ThinLens):
             *Unit: arcsec*
 
         """
-        return func.reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, self.s)
+        return func.reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, self.s)
 
     @forward
     def potential(
@@ -191,7 +191,7 @@ class SIE(ThinLens):
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
         phi: Annotated[Tensor, "Param"],
-        b: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -216,7 +216,7 @@ class SIE(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_sie(x0, y0, q, phi, b, x, y, self.s)
+        return func.potential_sie(x0, y0, q, phi, Rein, x, y, self.s)
 
     @forward
     def convergence(
@@ -227,7 +227,7 @@ class SIE(ThinLens):
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
         phi: Annotated[Tensor, "Param"],
-        b: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Calculate the projected mass density.
@@ -252,4 +252,4 @@ class SIE(ThinLens):
             *Unit: unitless*
 
         """
-        return func.convergence_sie(x0, y0, q, phi, b, x, y, self.s)
+        return func.convergence_sie(x0, y0, q, phi, Rein, x, y, self.s)
