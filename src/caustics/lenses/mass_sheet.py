@@ -4,7 +4,7 @@ from typing import Optional, Union, Annotated
 from torch import Tensor
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("MassSheet",)
@@ -24,6 +24,11 @@ class MassSheet(ThinLens):
 
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
+        *Unit: unitless*
+
+    z_s : Optional[Union[Tensor, float]]
+        The redshift of the source.
 
         *Unit: unitless*
 
@@ -52,7 +57,8 @@ class MassSheet(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "x-coordinate of the shear center in the lens plane",
@@ -68,7 +74,7 @@ class MassSheet(ThinLens):
         ] = None,
         name: NameType = None,
     ):
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -79,7 +85,6 @@ class MassSheet(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         kappa: Annotated[Tensor, "Param"],
@@ -98,11 +103,6 @@ class MassSheet(ThinLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
 
         Returns
         -------
@@ -124,7 +124,6 @@ class MassSheet(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         kappa: Annotated[Tensor, "Param"],
@@ -137,7 +136,6 @@ class MassSheet(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         kappa: Annotated[Tensor, "Param"],
     ) -> Tensor:
         # Essentially by definition
