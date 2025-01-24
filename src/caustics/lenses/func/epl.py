@@ -26,7 +26,7 @@ def _r_omega(z, t, q, n_iter):
     return part_sum
 
 
-def reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter):
+def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter):
     """
     Calculate the reduced deflection angle. Given in Tessore et al. 2015 equation 13.
 
@@ -100,14 +100,14 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter):
     # Tessore et al 2015 (eq. 23)
     r_omega = _r_omega(z, t, q, n_iter)
     # Tessore et al 2015 (eq. 13)
-    alpha_c = 2.0 / (1.0 + q) * (b / r) ** t * r_omega  # fmt: skip
+    alpha_c = 2.0 / (1.0 + q) * (Rein * q.sqrt() / r) ** t * r_omega  # fmt: skip
 
     alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
     alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
     return derotate(alpha_real, alpha_imag, phi)
 
 
-def potential_epl(x0, y0, q, phi, b, t, x, y, n_iter):
+def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter):
     """
     Calculate the potential for the EPL as defined in Tessore et al. 2015 equation 15.
 
@@ -133,8 +133,8 @@ def potential_epl(x0, y0, q, phi, b, t, x, y, n_iter):
 
         *Unit: radians*
 
-    b: Tensor
-        Scale length of the lens.
+    Rein: Tensor
+        The Einstein radius of the lens.
 
         *Unit: arcsec*
 
@@ -172,13 +172,13 @@ def potential_epl(x0, y0, q, phi, b, t, x, y, n_iter):
         *Unit: arcsec*
 
     """
-    ax, ay = reduced_deflection_angle_epl(x0, y0, q, phi, b, t, x, y, n_iter)
+    ax, ay = reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter)
     ax, ay = derotate(ax, ay, -phi)
     x, y = translate_rotate(x, y, x0, y0, phi)
     return (x * ax + y * ay) / (2 - t)  # fmt: skip
 
 
-def convergence_epl(x0, y0, q, phi, b, t, x, y, s=0.0):
+def convergence_epl(x0, y0, q, phi, Rein, t, x, y, s=0.0):
     """
     Calculate the reduced deflection angle.
 
@@ -206,8 +206,8 @@ def convergence_epl(x0, y0, q, phi, b, t, x, y, s=0.0):
 
         *Unit: radians*
 
-    b: Tensor
-        Scale length of the lens.
+    Rein: Tensor
+        Einstein radius of the lens.
 
         *Unit: arcsec*
 
@@ -247,4 +247,4 @@ def convergence_epl(x0, y0, q, phi, b, t, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * x**2 + y**2 + s**2).sqrt()  # fmt: skip
-    return (2 - t) / 2 * (b / psi) ** t  # fmt: skip
+    return (2 - t) / 2 * (Rein * q.sqrt() / psi) ** t  # fmt: skip

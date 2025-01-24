@@ -7,7 +7,7 @@ import numpy as np
 from caskade import forward, Param
 
 from ..utils import interp_bicubic
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 
 __all__ = ("PixelatedPotential",)
 
@@ -23,7 +23,8 @@ class PixelatedPotential(ThinLens):
         self,
         pixelscale: Annotated[float, "pixelscale"],
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "The x-coordinate of the center of the grid",
@@ -91,7 +92,7 @@ class PixelatedPotential(ThinLens):
 
         """
 
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         if potential_map is not None and potential_map.ndim != 2:
             raise ValueError(
@@ -120,7 +121,6 @@ class PixelatedPotential(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
@@ -139,14 +139,6 @@ class PixelatedPotential(ThinLens):
             The y-coordinates of the positions to compute the deflection angles for.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            A dictionary containing additional parameters.
 
         Returns
         -------
@@ -179,7 +171,6 @@ class PixelatedPotential(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
@@ -198,14 +189,6 @@ class PixelatedPotential(ThinLens):
             The y-coordinates of the positions to compute the lensing potential for.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            A dictionary containing additional parameters.
 
         Returns
         -------
@@ -229,7 +212,6 @@ class PixelatedPotential(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
@@ -248,14 +230,6 @@ class PixelatedPotential(ThinLens):
             The y-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            A dictionary containing additional parameters.
 
         Returns
         -------
