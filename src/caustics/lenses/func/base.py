@@ -159,6 +159,21 @@ def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
     return x
 
 
+def remove_duplicate_points(x, epsilon):
+    """
+    Remove duplicate points from the coordinates list.
+    """
+    unique_points = torch.zeros((0, 2))
+    for i in range(x.shape[0]):
+        # Compare current point with all points in the unique list
+        if i == 0 or not torch.any(
+            torch.linalg.norm(x[i] - unique_points, dim=1) < epsilon
+        ):
+            unique_points = torch.cat((unique_points, x[i].unsqueeze(0)), dim=0)
+
+    return unique_points
+
+
 def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
 
     # Construct a tiling of the image plane (squares at this point)
@@ -197,7 +212,8 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
         E = E[locate]
         i += 1
 
-        if triangle_area(E[0]) > epsilon**2:
+        # Triangles now smaller than resolution, try to find exact points
+        if triangle_area(E[0]) < epsilon**2:
             # Rootfind the source plane point in the triangle
             Emid = E.sum(dim=1) / 3
             Emid = forward_raytrace_rootfind(
@@ -209,7 +225,12 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
                 Smid, s, atol=epsilon
             ):
                 break
-    return Emid[..., 0], Emid[..., 1]
+
+    # Remove duplicates
+    unique = remove_duplicate_points(
+        torch.stack((Emid[..., 0], Emid[..., 1]), dim=1), epsilon
+    )
+    return unique[..., 0], unique[..., 1]
 
 
 def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
