@@ -41,16 +41,13 @@ def test_nfw(sim_source, device, mass, c):
                 z_l: {float(z_l)}
                 z_s: {float(z_s)}
                 cosmology: *cosmology
-                use_case: differentiable
         """
         with StringIO(yaml_str) as f:
             lens = build_simulator(f)
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(
-            name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable", z_s=z_s
-        )
+        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, z_s=z_s)
     lens_model_list = ["NFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
@@ -101,16 +98,13 @@ def test_runs(sim_source, device):
                 z_l: {float(z_l)}
                 z_s: {float(z_s)}
                 cosmology: *cosmology
-                use_case: differentiable
         """
         with StringIO(yaml_str) as f:
             lens = build_simulator(f)
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(
-            name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable", z_s=z_s
-        )
+        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, z_s=z_s)
     lens.to(device=device)
     # Parameters
 

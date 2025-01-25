@@ -5,7 +5,11 @@ from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZType
-from .func import physical_deflection_angle_enclosed_mass, convergence_enclosed_mass
+from .func import (
+    physical_deflection_angle_enclosed_mass,
+    convergence_enclosed_mass,
+    reduced_from_physical_deflection_angle,
+)
 
 __all__ = ("EnclosedMass",)
 
@@ -156,6 +160,15 @@ class EnclosedMass(ThinLens):
         """
         return physical_deflection_angle_enclosed_mass(
             x0, y0, q, phi, lambda r: self.enclosed_mass(r, p), x, y, self.s
+        )
+
+    @forward
+    def reduced_deflection_angle(self, x, y, z_s, z_l):
+        d_s = self.cosmology.angular_diameter_distance(z_s)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
+        return reduced_from_physical_deflection_angle(
+            deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
 
     @forward
