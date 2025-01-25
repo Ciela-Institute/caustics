@@ -30,13 +30,13 @@ import caustics
 import torch
 
 cosmology = caustics.FlatLambdaCDM()
-sie = caustics.SIE(cosmology=cosmology, name="lens")
+sie = caustics.SIE(cosmology=cosmology, name="lens", z_l=0.5, z_s=1.0)
 src = caustics.Sersic(name="source")
 lnslt = caustics.Sersic(name="lenslight")
 
 x = torch.tensor([
-#   z_s  z_l   x0   y0   q    phi     b    x0   y0   q     phi    n    Re
-    1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
+#    x0   y0   q    phi     Rein x0   y0   q     phi    n    Re
+    -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
 #   Ie    x0   y0   q    phi  n   Re   Ie
     5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
 ])  # fmt: skip
@@ -73,7 +73,7 @@ J = torch.func.jacfwd(sim)(x)
 
 # Plot the new images
 fig, axarr = plt.subplots(3, 7, figsize=(20, 9))
-for i, ax in enumerate(axarr.flatten()):
+for i, ax in enumerate(axarr.flatten()[2:]):
     ax.imshow(J[..., i], origin="lower")
 plt.show()
 ```
