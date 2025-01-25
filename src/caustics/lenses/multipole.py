@@ -5,7 +5,7 @@ import torch
 from torch import Tensor, pi
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("Multipole",)
@@ -19,18 +19,24 @@ class Multipole(ThinLens):
     ----------
     name: str
         Identifier for the lens instance.
+
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
+
     m: Union[Tensor, int, tuple[int]]
         Order of multipole(s).
+
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
     x0, y0: Optional[Union[Tensor, float]]
         Coordinates of the shear center in the lens plane.
+
     a_m: Optional[Union[Tensor, float]]
         Strength of multipole.
+
     phi_m: Optional[Union[Tensor, float]]
-        Orientation of multiple.
+        Orientation of multipole.
 
     """
 
@@ -40,7 +46,8 @@ class Multipole(ThinLens):
         self,
         cosmology: CosmologyType,
         m: Annotated[Union[Tensor, int, tuple[int]], "The Multipole moment(s) m"],
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
         ] = None,
@@ -57,7 +64,7 @@ class Multipole(ThinLens):
         ] = None,
         name: NameType = None,
     ):
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -100,7 +107,6 @@ class Multipole(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         a_m: Annotated[Tensor, "Param"],
@@ -120,14 +126,6 @@ class Multipole(ThinLens):
             The y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
 
         Returns
         -------
@@ -151,7 +149,6 @@ class Multipole(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         a_m: Annotated[Tensor, "Param"],
@@ -172,14 +169,6 @@ class Multipole(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -197,7 +186,6 @@ class Multipole(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         a_m: Annotated[Tensor, "Param"],
@@ -217,14 +205,6 @@ class Multipole(ThinLens):
             The y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
 
         Returns
         -------

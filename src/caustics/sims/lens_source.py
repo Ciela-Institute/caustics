@@ -23,87 +23,94 @@ __all__ = ("LensSource",)
 class LensSource(Module):
     """Lens image of a source.
 
-    Straightforward simulator to sample a lensed image of a source object.
-    Constructs a sampling grid internally based on the pixelscale and gridding
-    parameters. It can automatically upscale and fine sample an image. This is
-    the most straightforward simulator to view the image if you already have a
-    lens and source chosen.
+        Straightforward simulator to sample a lensed image of a source object.
+        Constructs a sampling grid internally based on the pixelscale and gridding
+        parameters. It can automatically upscale and fine sample an image. This is
+        the most straightforward simulator to view the image if you already have a
+        lens and source chosen.
 
-    Example usage:
+        Example usage:
 
-    .. code:: python
+        .. code:: python
 
-       import matplotlib.pyplot as plt
-       import caustics
+           import matplotlib.pyplot as plt
+           import caustics
 
-       cosmo = caustics.FlatLambdaCDM()
-       lens = caustics.lenses.SIS(cosmology=cosmo, x0=0.0, y0=0.0, th_ein=1.0)
-       source = caustics.sources.Sersic(x0=0.0, y0=0.0, q=0.5, phi=0.4, n=2.0, Re=1.0, Ie=1.0)
-       sim = caustics.sims.LensSource(
-           lens, source, pixelscale=0.05, pixels_x=100, upsample_factor=2, z_s=1.0
-       )
+           cosmo = caustics.FlatLambdaCDM()
+           lens = caustics.lenses.SIS(cosmology=cosmo, x0=0.0, y0=0.0, th_ein=1.0)
+           source = caustics.sources.Sersic(x0=0.0, y0=0.0, q=0.5, phi=0.4, n=2.0, Re=1.0, Ie=1.0)
+           sim = caustics.sims.LensSource(
+               lens, source, pixelscale=0.05, pixels_x=100, upsample_factor=2, z_s=1.0
+           )
 
-       img = sim()
-       plt.imshow(img, origin="lower")
-       plt.show()
+           img = sim()
+           plt.imshow(img, origin="lower")
+           plt.show()
 
-    Attributes
-    ----------
-    lens: Lens
-        caustics lens mass model object
-    source: Source
-        caustics light object which defines the background source
-    pixelscale: float
-        pixelscale of the sampling grid.
-    pixels_x: int
-        number of pixels on the x-axis for the sampling grid
-    lens_light: Source, optional
-        caustics light object which defines the lensing object's light
-    psf: Tensor, optional
-        An image to convolve with the scene. Note that if ``upsample_factor >
-        1`` the psf must also be at the higher resolution.
-    pixels_y: Optional[int]
-        number of pixels on the y-axis for the sampling grid. If left as
-        ``None`` then this will simply be equal to ``gridx``
-    upsample_factor (default 1)
-        Amount of upsampling to model the image. For example ``upsample_factor =
-        2`` indicates that the image will be sampled at double the resolution
-        then summed back to the original resolution (given by pixelscale and
-        gridx/y).
-    quad_level: int (default None)
-        sub pixel integration resolution. This will use Gaussian quadrature to
-        sample the image at a higher resolution, then integrate the image back
-        to the original resolution. This is useful for high accuracy integration
-        of the image, but may increase memory usage and runtime.
-    z_s: optional
-        redshift of the source
-    name: string (default "sim")
-        a name for this simulator in the parameter DAG.
+        Attributes
+        ----------
+        lens: Lens
+            caustics lens mass model object
 
-    Notes:
-    -----
-    - The simulator will automatically pad the image to half the PSF size to
-      ensure valid convolution. This is done by default, but can be turned off
-      by setting ``psf_pad = False``. This is only relevant if you are using a
-      PSF.
-    - The upsample factor will increase the resolution of the image by the given
-      factor. For example, ``upsample_factor = 2`` will sample the image at
-      double the resolution, then sum back to the original resolution. This is
-      used when a PSF is provided at high resolution than the original image.
-      Not that the when a PSF is used, the upsample_factor must equal the PSF
-      upsampling level.
-    - For arbitrary pixel integration accuracy using the quad_level parameter.
-      This will use Gaussian quadrature to sample the image at a higher
-      resolution, then integrate the image back to the original resolution. This
-      is useful for high accuracy integration of the image, but is not
-      recommended for large images as it will be slow. The quad_level and
-      upsample_factor can be used together to achieve high accuracy integration
-      of the image convolved with a PSF.
-    - A `Pixelated` light source is defined by bilinear interpolation of the
-      provided image. This means that sub-pixel integration is not required for
-      accurate integration of the pixels. However, if you are using a PSF then
-      you should still use upsample_factor (if your PSF is supersampled) to
-      ensure that everything is sampled at the PSF resolution.
+        source: Source
+            caustics light object which defines the background source
+
+        pixelscale: float
+            pixelscale of the sampling grid.
+
+        pixels_x: int
+            number of pixels on the x-axis for the sampling grid
+
+        lens_light: Source, optional
+            caustics light object which defines the lensing object's light
+
+        psf: Tensor, optional
+            An image to convolve with the scene. Note that if ``upsample_factor >
+            1`` the psf must also be at the higher resolution.
+
+        pixels_y: Optional[int]
+            number of pixels on the y-axis for the sampling grid. If left as
+            ``None`` then this will simply be equal to ``gridx``
+
+        upsample_factor (default 1)
+            Amount of upsampling to model the image. For example ``upsample_factor =
+            2`` indicates that the image will be sampled at double the resolution
+            then summed back to the original resolution (given by pixelscale and
+            gridx/y).
+
+        quad_level: int (default None)
+            sub pixel integration resolution. This will use Gaussian quadrature to
+            sample the image at a higher resolution, then integrate the image back
+            to the original resolution. This is useful for high accuracy integration
+            of the image, but may increase memory usage and runtime.
+    e
+        name: string (default "sim")
+            a name for this simulator in the parameter DAG.
+
+        Notes:
+        -----
+        - The simulator will automatically pad the image to half the PSF size to
+          ensure valid convolution. This is done by default, but can be turned off
+          by setting ``psf_pad = False``. This is only relevant if you are using a
+          PSF.
+        - The upsample factor will increase the resolution of the image by the given
+          factor. For example, ``upsample_factor = 2`` will sample the image at
+          double the resolution, then sum back to the original resolution. This is
+          used when a PSF is provided at high resolution than the original image.
+          Not that the when a PSF is used, the upsample_factor must equal the PSF
+          upsampling level.
+        - For arbitrary pixel integration accuracy using the quad_level parameter.
+          This will use Gaussian quadrature to sample the image at a higher
+          resolution, then integrate the image back to the original resolution. This
+          is useful for high accuracy integration of the image, but is not
+          recommended for large images as it will be slow. The quad_level and
+          upsample_factor can be used together to achieve high accuracy integration
+          of the image convolved with a PSF.
+        - A `Pixelated` light source is defined by bilinear interpolation of the
+          provided image. This means that sub-pixel integration is not required for
+          accurate integration of the pixels. However, if you are using a PSF then
+          you should still use upsample_factor (if your PSF is supersampled) to
+          ensure that everything is sampled at the PSF resolution.
 
     """  # noqa: E501
 
@@ -130,9 +137,6 @@ class LensSource(Module):
             Literal["fft", "conv2d"], "Mode for convolving psf"
         ] = "fft",
         psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
-        z_s: Annotated[
-            Optional[Union[Tensor, float]], "Redshift of the source", True
-        ] = None,
         psf: Annotated[
             Optional[Union[Tensor, list]], "An image to convolve with the scene", True
         ] = [[1.0]],
@@ -157,7 +161,6 @@ class LensSource(Module):
         self._psf_shape = psf.shape if psf is not None else psf_shape
 
         # Build parameters
-        self.z_s = Param("z_s", z_s, units="unitless", valid=(0, None))
         self.psf = Param("psf", psf, self.psf_shape, units="unitless")
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
@@ -310,7 +313,6 @@ class LensSource(Module):
     @forward
     def __call__(
         self,
-        z_s: Annotated[Tensor, "Param"],
         psf: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
@@ -325,14 +327,15 @@ class LensSource(Module):
 
         Parameters
         ----------
-        params:
-            Packed object
         source_light: boolean
             when true the source light will be sampled
+
         lens_light: boolean
             when true the lens light will be sampled
+
         lens_source: boolean
             when true, the source light model will be lensed by the lens mass distribution
+
         psf_convolve: boolean
             when true the image will be convolved with the psf
         """
@@ -351,9 +354,9 @@ class LensSource(Module):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = torch.vmap(
-                    self.lens.raytrace, in_dims=(0, 0, None), chunk_size=chunk_size
-                )(grid[0].flatten(), grid[1].flatten(), z_s)
+                bx, by = torch.vmap(self.lens.raytrace, chunk_size=chunk_size)(
+                    grid[0].flatten(), grid[1].flatten()
+                )
                 mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
                     bx, by
                 ).reshape(grid[0].shape)

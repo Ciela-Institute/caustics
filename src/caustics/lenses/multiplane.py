@@ -1,11 +1,13 @@
+from typing import Annotated
 from operator import itemgetter
+from warnings import warn
 
 import torch
 from torch import Tensor
 from caskade import forward
 
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
-from .base import ThickLens, NameType, CosmologyType, LensesType
+from .base import ThickLens, ThinLens, NameType, CosmologyType, LensesType, ZType
 
 __all__ = ("Multiplane",)
 
@@ -27,25 +29,43 @@ class Multiplane(ThickLens):
         Cosmological parameters used for calculations.
     lenses: list[ThinLens]
         List of thin lenses.
+    z_s: ZType
+        Redshift of the source.
     """
 
     def __init__(
-        self, cosmology: CosmologyType, lenses: LensesType, name: NameType = None
+        self,
+        cosmology: CosmologyType,
+        lenses: LensesType,
+        name: NameType = None,
+        z_s: ZType = None,
     ):
-        super().__init__(cosmology, name=name)
-        self.lenses = lenses
+        super().__init__(cosmology, name=name, z_s=z_s)
+        self.lenses: LensesType = []
         for lens in lenses:
-            self.link(lens.name, lens)
+            self.add_lens(lens)
+
+    def add_lens(self, lens: ThinLens):
+        """
+        Add a lens to the list of lenses.
+
+        Parameters
+        ----------
+        lens: ThinLens
+            The lens to be added to the list of lenses.
+        """
+        self.lenses.append(lens)
+        self.link(lens.name, lens)
+        if lens.z_s.static:
+            warn(
+                f"Lens plane {lens.name} has a static source redshift. This is now overwritten by the Multiplane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens plane to be dynamic before adding to multiplane system."
+            )
+        lens.z_s = self.z_s
 
     @forward
     def get_z_ls(self) -> list[Tensor]:
         """
         Get the redshifts of each lens in the multiplane.
-
-        Parameters
-        ----------
-        params: (Packed, optional)
-            Dynamic parameter container.
 
         Returns
         --------
@@ -54,8 +74,6 @@ class Multiplane(ThickLens):
 
             *Unit: unitless*
         """
-        # Relies on z_l being the first element to be unpacked, which should always
-        # be the case for a ThinLens
         return [lens.z_l.value for lens in self.lenses]
 
     @forward
@@ -63,7 +81,7 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
         ray_coords: bool = True,
@@ -94,7 +112,6 @@ class Multiplane(ThickLens):
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
                 Y * rad_to_arcsec / D_l,
-                z_s,
             )
 
             # Update angle of rays after passing through lens (sum in eq 18)
@@ -106,7 +123,7 @@ class Multiplane(ThickLens):
             if shapiro_time_delay:
                 beta_ij = D * D_s / (D_next * D_is)
                 potential = self.lenses[i].potential(
-                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l, z_s
+                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l
                 )
                 TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
             if geometric_time_delay:
@@ -133,7 +150,6 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> tuple[Tensor, Tensor]:
         """Calculate the angular source positions corresponding to the
         observer positions x,y. See Margarita et al. 2013 for the
@@ -172,14 +188,6 @@ class Multiplane(ThickLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         x_component: Tensor
@@ -200,7 +208,6 @@ class Multiplane(ThickLens):
         return self._raytrace_helper(
             x,
             y,
-            z_s,
             shapiro_time_delay=False,
             geometric_time_delay=False,
             ray_coords=True,
@@ -211,9 +218,8 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
     ) -> tuple[Tensor, Tensor]:
-        bx, by = self.raytrace(x, y, z_s)
+        bx, by = self.raytrace(x, y)
         return x - bx, y - by
 
     @forward
@@ -221,7 +227,6 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -239,14 +244,6 @@ class Multiplane(ThickLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         -------
@@ -268,7 +265,6 @@ class Multiplane(ThickLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
     ) -> Tensor:
@@ -302,14 +298,6 @@ class Multiplane(ThickLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the source.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         shapiro_time_delay: bool
             Whether to include the Shapiro time delay component.
 
@@ -332,7 +320,6 @@ class Multiplane(ThickLens):
         return self._raytrace_helper(
             x,
             y,
-            z_s,
             shapiro_time_delay=shapiro_time_delay,
             geometric_time_delay=geometric_time_delay,
             ray_coords=False,

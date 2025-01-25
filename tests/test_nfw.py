@@ -21,12 +21,13 @@ Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
 
 
-@pytest.mark.parametrize("m", [1e8, 1e10, 1e12])
+@pytest.mark.parametrize("mass", [1e8, 1e10, 1e12])
 @pytest.mark.parametrize("c", [1.0, 8.0, 20.0])
-def test_nfw(sim_source, device, m, c):
+def test_nfw(sim_source, device, mass, c):
     atol = 1e-5
     rtol = 3e-2
     z_l = torch.tensor(0.1)
+    z_s = torch.tensor(0.5)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -38,33 +39,32 @@ def test_nfw(sim_source, device, m, c):
             kind: NFW
             init_kwargs:
                 z_l: {float(z_l)}
+                z_s: {float(z_s)}
                 cosmology: *cosmology
-                use_case: differentiable
         """
         with StringIO(yaml_str) as f:
             lens = build_simulator(f)
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
+        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, z_s=z_s)
     lens_model_list = ["NFW"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     print(lens)
 
     # Parameters
-    z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
     # m = 1e12
     # c = 8.0
-    x = torch.tensor([thx0, thy0, m, c])
+    x = torch.tensor([thx0, thy0, mass, c])
 
     # Lenstronomy
     cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
     lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)
-    Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=m, c=c)
+    Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=mass, c=c)
 
     # lenstronomy params ['Rs', 'alpha_Rs', 'center_x', 'center_y']
     kwargs_ls = [
@@ -74,7 +74,6 @@ def test_nfw(sim_source, device, m, c):
     lens_test_helper(
         lens,
         lens_ls,
-        z_s,
         x,
         kwargs_ls,
         atol,
@@ -86,6 +85,7 @@ def test_nfw(sim_source, device, m, c):
 
 def test_runs(sim_source, device):
     z_l = torch.tensor(0.1)
+    z_s = torch.tensor(0.5)
     if sim_source == "yaml":
         yaml_str = f"""\
         cosmology: &cosmology
@@ -96,31 +96,30 @@ def test_runs(sim_source, device):
             kind: NFW
             init_kwargs:
                 z_l: {float(z_l)}
+                z_s: {float(z_s)}
                 cosmology: *cosmology
-                use_case: differentiable
         """
         with StringIO(yaml_str) as f:
             lens = build_simulator(f)
     else:
         # Models
         cosmology = CausticFlatLambdaCDM(name="cosmo")
-        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, use_case="differentiable")
+        lens = NFW(name="nfw", cosmology=cosmology, z_l=z_l, z_s=z_s)
     lens.to(device=device)
     # Parameters
-    z_s = torch.tensor(0.5)
 
     thx0 = 0.457
     thy0 = 0.141
-    m = 1e12
+    mass = 1e12
     rs = 8.0
-    x = torch.tensor([thx0, thy0, m, rs])
+    x = torch.tensor([thx0, thy0, mass, rs])
 
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
-    Psi = lens.potential(thx, thy, z_s, x)
+    Psi = lens.potential(thx, thy, x)
     assert torch.all(torch.isfinite(Psi))
-    alpha = lens.reduced_deflection_angle(thx, thy, z_s, x)
+    alpha = lens.reduced_deflection_angle(thx, thy, x)
     assert torch.all(torch.isfinite(alpha[0]))
     assert torch.all(torch.isfinite(alpha[1]))
-    kappa = lens.convergence(thx, thy, z_s, x)
+    kappa = lens.convergence(thx, thy, x)
     assert torch.all(torch.isfinite(kappa))

@@ -4,7 +4,7 @@ from ...utils import translate_rotate
 from ...constants import G_over_c2, rad_to_arcsec
 
 
-def reduced_deflection_angle_point(x0, y0, th_ein, x, y, s=0.0):
+def reduced_deflection_angle_point(x0, y0, Rein, x, y, s=0.0):
     """
     Compute the reduced deflection angles. See the Meneghetti lecture notes
     equation 3.1 for more detail.
@@ -21,7 +21,7 @@ def reduced_deflection_angle_point(x0, y0, th_ein, x, y, s=0.0):
 
         *Unit: arcsec*
 
-    th_ein: Tensor
+    Rein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -56,12 +56,12 @@ def reduced_deflection_angle_point(x0, y0, th_ein, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    ax = x * th_ein**2 / th**2
-    ay = y * th_ein**2 / th**2
+    ax = x * Rein**2 / th**2
+    ay = y * Rein**2 / th**2
     return ax, ay
 
 
-def potential_point(x0, y0, th_ein, x, y, s=0.0):
+def potential_point(x0, y0, Rein, x, y, s=0.0):
     """
     Compute the lensing potential. See the Meneghetti lecture notes
     equation 3.3 for more detail.
@@ -78,7 +78,7 @@ def potential_point(x0, y0, th_ein, x, y, s=0.0):
 
         *Unit: arcsec*
 
-    th_ein: Tensor
+    Rein: Tensor
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -108,7 +108,7 @@ def potential_point(x0, y0, th_ein, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    return th_ein**2 * th.log()
+    return Rein**2 * th.log()
 
 
 def convergence_point(x0, y0, x, y):

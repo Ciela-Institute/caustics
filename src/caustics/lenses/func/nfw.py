@@ -4,7 +4,7 @@ from ...utils import translate_rotate
 from ...constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 
 
-def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
+def scale_radius_nfw(critical_density, mass, c, DELTA=200.0):
     """
     Compute the scale radius of the NFW profile.
 
@@ -15,7 +15,7 @@ def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo.
 
         *Unit: Msun*
@@ -38,7 +38,7 @@ def scale_radius_nfw(critical_density, m, c, DELTA=200.0):
         *Unit: Mpc*
 
     """
-    r_delta = (3 * m / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
+    r_delta = (3 * mass / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
     return 1 / c * r_delta
 
 
@@ -74,7 +74,7 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
     return DELTA / 3 * critical_density * c**3 / ((1 + c).log() - c / (1 + c))  # fmt: skip
 
 
-def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
+def convergence_s_nfw(critical_surface_density, critical_density, mass, c, DELTA):
     """
     Compute the dimensionaless surface mass density of the lens.
 
@@ -88,7 +88,7 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo.
 
         *Unit: Msun*
@@ -110,12 +110,12 @@ def convergence_s_nfw(critical_surface_density, critical_density, m, c, DELTA):
 
         *Unit: unitless*
     """
-    Rs = scale_radius_nfw(critical_density, m, c, DELTA)
+    Rs = scale_radius_nfw(critical_density, mass, c, DELTA)
     Ds = scale_density_nfw(critical_density, c, DELTA)
     return Rs * Ds / critical_surface_density
 
 
-def _f_differentiable_nfw(x):
+def _f_nfw(x):
     """
     Helper method for computing convergence. This can be found in the Meneghetti
     Lecture notes equation 3.69.
@@ -131,44 +131,22 @@ def _f_differentiable_nfw(x):
         The value of the function f(x).
 
     """
-    # TODO: generalize beyond torch, or patch Tensor
-    f = torch.zeros_like(x)
-    f[x > 1] = 1 - 2 / (x[x > 1] ** 2 - 1).sqrt() * ((x[x > 1] - 1) / (x[x > 1] + 1)).sqrt().arctan()  # fmt: skip
-    f[x < 1] = 1 - 2 / (1 - x[x < 1] ** 2).sqrt() * ((1 - x[x < 1]) / (1 + x[x < 1])).sqrt().arctanh()  # fmt: skip
-    return f
-
-
-def _f_batchable_nfw(x):
-    """
-    Helper method for computing convergence. This can be found in the Meneghetti
-    Lecture notes equation 3.69.
-
-    Parameters
-    ----------
-    x: Tensor
-        The input to the function.
-
-    Returns
-    -------
-    Tensor
-        The value of the function f(x).
-
-    """
-    # TODO: generalize beyond torch, or patch Tensor
     # fmt: off
+    x_gt1 = torch.clamp(x, min=1 + 1e-6)
+    x_lt1 = torch.clamp(x, max=1 - 1e-6)
     return torch.where(
         x > 1,
-        1 - 2 / (x**2 - 1).sqrt() * ((x - 1) / (x + 1)).sqrt().arctan(),
+        1 - 2 / (x_gt1**2 - 1).sqrt() * ((x_gt1 - 1) / (x_gt1 + 1)).sqrt().arctan(),
         torch.where(
             x < 1,
-            1 - 2 / (1 - x**2).sqrt() * ((1 - x) / (1 + x)).sqrt().arctanh(),
+            1 - 2 / (1 - x_lt1**2).sqrt() * ((1 - x_lt1) / (1 + x_lt1)).sqrt().arctanh(),
             torch.zeros_like(x),  # where: x == 1
         ),
     )
     # fmt: on
 
 
-def _g_differentiable_nfw(x):
+def _g_nfw(x):
     """
     Helper method for computing potential. This can be found in the Meneghetti
     Lecture notes equation 3.71.
@@ -184,45 +162,22 @@ def _g_differentiable_nfw(x):
         The value of the function g(x).
 
     """
-    # TODO: generalize beyond torch, or patch Tensor
     term_1 = (x / 2).log() ** 2
-    term_2 = torch.zeros_like(x)
-    term_2[x > 1] = (1 / x[x > 1]).arccos() ** 2  # fmt: skip
-    term_2[x < 1] = -(1 / x[x < 1]).arccosh() ** 2  # fmt: skip
-    return term_1 + term_2
-
-
-def _g_batchable_nfw(x):
-    """
-    Helper method for computing potential. This can be found in the Meneghetti
-    Lecture notes equation 3.71.
-
-    Parameters
-    ----------
-    x: Tensor
-        The input to the function.
-
-    Returns
-    -------
-    Tensor
-        The value of the function g(x).
-
-    """
-    # TODO: generalize beyond torch, or patch Tensor
-    term_1 = (x / 2).log() ** 2
+    x_gt1 = torch.clamp(x, min=1 + 1e-6)
+    x_lt1 = torch.clamp(x, max=1 - 1e-6)
     term_2 = torch.where(
         x > 1,
-        (1 / x).arccos() ** 2,
+        (1 / x_gt1).arccos() ** 2,
         torch.where(
             x < 1,
-            -(1 / x).arccosh() ** 2,
+            -(1 / x_lt1).arccosh() ** 2,
             torch.zeros_like(x),  # where: x == 1
         ),
     )
     return term_1 + term_2
 
 
-def _h_differentiable_nfw(x):
+def _h_nfw(x):
     """
     Helper method for computing deflection angles. This can be found in the Meneghetti
     Lecture notes equation 3.73.
@@ -239,34 +194,13 @@ def _h_differentiable_nfw(x):
 
     """
     term_1 = (x / 2).log()
-    term_2 = torch.ones_like(x)
-    term_2[x > 1] = (1 / x[x > 1]).arccos() * 1 / (x[x > 1] ** 2 - 1).sqrt()  # fmt: skip
-    term_2[x < 1] = (1 / x[x < 1]).arccosh() * 1 / (1 - x[x < 1] ** 2).sqrt()  # fmt: skip
-    return term_1 + term_2
-
-
-def _h_batchable_nfw(x):
-    """
-    Helper method for computing deflection angles. This can be found in the Meneghetti
-    Lecture notes equation 3.73.
-
-    Parameters
-    ----------
-    x: Tensor
-        The input to the function.
-
-    Returns
-    -------
-    Tensor
-        The value of the function h(x).
-
-    """
-    term_1 = (x / 2).log()
+    x_gt1 = torch.clamp(x, min=1 + 1e-6)
+    x_lt1 = torch.clamp(x, max=1 - 1e-6)
     term_2 = torch.where(
         x > 1,
-        (1 / x).arccos() * 1 / (x**2 - 1).sqrt(),  # fmt: skip
+        (1 / x_gt1).arccos() * 1 / (x_gt1**2 - 1).sqrt(),  # fmt: skip
         torch.where(
-            x < 1, (1 / x).arccosh() * 1 / (1 - x**2).sqrt(), torch.ones_like(x)  # fmt: skip
+            x < 1, (1 / x_lt1).arccosh() * 1 / (1 - x_lt1**2).sqrt(), torch.ones_like(x)  # fmt: skip
         ),
     )
     return term_1 + term_2
@@ -275,13 +209,12 @@ def _h_batchable_nfw(x):
 def physical_deflection_angle_nfw(
     x0,
     y0,
-    m,
+    mass,
     c,
     critical_density,
     d_l,
     x,
     y,
-    _h=_h_differentiable_nfw,
     DELTA=200.0,
     s=0.0,
 ):
@@ -301,7 +234,7 @@ def physical_deflection_angle_nfw(
 
         *Unit: arcsec*
 
-    m: Tensor
+    mass: Tensor
         Mass of the lens. Default is None.
 
         *Unit: Msun*
@@ -329,11 +262,11 @@ def physical_deflection_angle_nfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius
 
-    deflection_angle = 16 * torch.pi * G_over_c2 * scale_density_nfw(critical_density, c, DELTA) * scale_radius**3 * _h(r) * rad_to_arcsec / xi  # fmt: skip
+    deflection_angle = 16 * torch.pi * G_over_c2 * scale_density_nfw(critical_density, c, DELTA) * scale_radius**3 * _h_nfw(r) * rad_to_arcsec / xi  # fmt: skip
 
     ax = deflection_angle * x / th
     ay = deflection_angle * y / th
@@ -345,12 +278,11 @@ def convergence_nfw(
     critical_density,
     x0,
     y0,
-    m,
+    mass,
     c,
     x,
     y,
     d_l,
-    _f=_f_differentiable_nfw,
     DELTA=200.0,
     s=0.0,
 ):
@@ -370,7 +302,7 @@ def convergence_nfw(
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo
 
     c: Optional[Tensor]
@@ -395,13 +327,13 @@ def convergence_nfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius  # xi / xi_0
     convergence_s = convergence_s_nfw(
-        critical_surface_density, critical_density, m, c, DELTA
+        critical_surface_density, critical_density, mass, c, DELTA
     )
-    return 2 * convergence_s * _f(r) / (r**2 - 1)  # fmt: skip
+    return 2 * convergence_s * _f_nfw(r) / (r**2 - 1)  # fmt: skip
 
 
 def potential_nfw(
@@ -409,12 +341,11 @@ def potential_nfw(
     critical_density,
     x0,
     y0,
-    m,
+    mass,
     c,
     d_l,
     x,
     y,
-    _g=_g_differentiable_nfw,
     DELTA=200.0,
     s=0.0,
 ):
@@ -434,7 +365,7 @@ def potential_nfw(
 
         *Unit: Msun/Mpc^3*
 
-    m: Tensor
+    mass: Tensor
         The mass of the halo
 
     c: Optional[Tensor]
@@ -459,10 +390,10 @@ def potential_nfw(
     """
     x, y = translate_rotate(x, y, x0, y0)
     th = (x**2 + y**2).sqrt() + s
-    scale_radius = scale_radius_nfw(critical_density, m, c, DELTA)
+    scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius  # xi / xi_0
     convergence_s = convergence_s_nfw(
-        critical_surface_density, critical_density, m, c, DELTA
+        critical_surface_density, critical_density, mass, c, DELTA
     )
-    return 2 * convergence_s * _g(r) * scale_radius**2 / (d_l**2 * arcsec_to_rad**2)  # fmt: skip
+    return 2 * convergence_s * _g_nfw(r) * scale_radius**2 / (d_l**2 * arcsec_to_rad**2)  # fmt: skip

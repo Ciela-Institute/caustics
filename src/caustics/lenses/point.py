@@ -1,10 +1,11 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Optional, Union, Annotated, Literal
+from warnings import warn
 
 from torch import Tensor
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
 __all__ = ("Point",)
@@ -37,7 +38,7 @@ class Point(ThinLens):
 
         *Unit: arcsec*
 
-    th_ein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[Tensor, float]]
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -52,13 +53,14 @@ class Point(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "th_ein": 1.0,
+        "Rein": 1.0,
     }
 
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "X coordinate of the center of the lens",
@@ -69,13 +71,15 @@ class Point(ThinLens):
             "Y coordinate of the center of the lens",
             True,
         ] = None,
-        th_ein: Annotated[
+        Rein: Annotated[
             Optional[Union[Tensor, float]], "Einstein radius of the lens", True
         ] = None,
+        parametrization: Literal["Rein", "mass"] = "Rein",
         s: Annotated[
             float, "Softening parameter to prevent numerical instabilities"
         ] = 0.0,
         name: NameType = None,
+        **kwargs,
     ):
         """
         Initialize the Point class.
@@ -103,7 +107,7 @@ class Point(ThinLens):
 
             *Unit: arcsec*
 
-        th_ein: Optional[Tensor]
+        Rein: Optional[Tensor]
             Einstein radius of the lens.
 
             *Unit: arcsec*
@@ -114,16 +118,68 @@ class Point(ThinLens):
             *Unit: arcsec*
 
         """
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
-        self.th_ein = Param("th_ein", th_ein, units="arcsec", valid=(0, None))
+        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
+        self._parametrization = "Rein"
+        self.parametrization = parametrization
+        if self.parametrization == "mass":
+            self.mass = kwargs.get("mass", None)
         self.s = s
+
+    @property
+    def parametrization(self):
+        return self._parametrization
+
+    @parametrization.setter
+    def parametrization(self, value: str):
+        if value not in ["Rein", "mass"]:
+            raise ValueError(
+                f"Invalid parametrization {value}. Choose from ['Rein', 'mass']"
+            )
+        if value == "mass" and self.parametrization != "mass":
+            self.mass = Param(
+                "mass", shape=self.Rein.shape if self.Rein.static else (), units="Msol"
+            )
+
+            def mass_to_rein(p):
+                Dls = p["cosmology"].angular_diameter_distance_z1z2(
+                    p["z_l"].value, p["z_s"].value
+                )
+                Dl = p["cosmology"].angular_diameter_distance(p["z_l"].value)
+                Ds = p["cosmology"].angular_diameter_distance(p["z_s"].value)
+                return func.mass_to_rein_point(p["mass"].value, Dls, Dl, Ds)
+
+            if self.Rein.static:
+                warn(
+                    f"Parameter {self.Rein.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.Rein.name} be dynamic when changing parametrizations.",
+                )
+            self.Rein.value = mass_to_rein
+            self.Rein.link(self.mass)
+            self.Rein.link(self.z_s)
+            self.Rein.link(self.z_l)
+            self.Rein.link("cosmology", self.cosmology)
+        if value == "Rein" and self.parametrization != "Rein":
+            try:
+                self.Rein = None
+                if self.mass.static:
+                    warn(
+                        f"Parameter {self.mass.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.mass.name} be dynamic when changing parametrizations.",
+                    )
+                del self.mass
+            except AttributeError:
+                pass
+
+        self._parametrization = value
 
     @forward
     def mass_to_rein(
-        self, mass: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+        self,
+        mass: Tensor,
+        z_s: Annotated[Tensor, "Param"],
+        z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Convert mass to the Einstein radius.
@@ -151,7 +207,10 @@ class Point(ThinLens):
 
     @forward
     def rein_to_mass(
-        self, r: Tensor, z_s: Tensor, z_l: Annotated[Tensor, "Param"]
+        self,
+        r: Tensor,
+        z_s: Annotated[Tensor, "Param"],
+        z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Convert Einstein radius to mass.
@@ -182,10 +241,9 @@ class Point(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles.
@@ -202,14 +260,6 @@ class Point(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         x_component: Tensor
@@ -223,17 +273,16 @@ class Point(ThinLens):
             *Unit: arcsec*
 
         """
-        return func.reduced_deflection_angle_point(x0, y0, th_ein, x, y, self.s)
+        return func.reduced_deflection_angle_point(x0, y0, Rein, x, y, self.s)
 
     @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
-        th_ein: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential.
@@ -250,14 +299,6 @@ class Point(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -266,14 +307,13 @@ class Point(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_point(x0, y0, th_ein, x, y, self.s)
+        return func.potential_point(x0, y0, Rein, x, y, self.s)
 
     @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
     ) -> Tensor:
@@ -291,14 +331,6 @@ class Point(ThinLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         --------

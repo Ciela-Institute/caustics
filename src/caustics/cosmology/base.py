@@ -52,12 +52,9 @@ class Cosmology(Module):
         Parameters
         ----------
         z: Tensor
-            The redshifts.
+            The redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -78,12 +75,9 @@ class Cosmology(Module):
         Parameters
         ----------
         z: Tensor
-            The redshifts.
+            The redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -104,12 +98,9 @@ class Cosmology(Module):
         Parameters
         ----------
         z: Tensor
-            The redshifts.
+            The redshift.
 
             *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -129,17 +120,14 @@ class Cosmology(Module):
         Parameters
         ----------
         z1: Tensor
-            The starting redshifts.
+            The starting redshift.
 
             *Unit: unitless*
 
         z2: Tensor
-            The ending redshifts.
+            The ending redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -159,17 +147,14 @@ class Cosmology(Module):
         Parameters
         ----------
         z1: Tensor
-            The starting redshifts.
+            The starting redshift.
 
             *Unit: unitless*
 
         z2: Tensor
-            The ending redshifts.
+            The ending redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -191,12 +176,9 @@ class Cosmology(Module):
         Parameters
         -----------
         z: Tensor
-            The redshifts.
+            The redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -216,17 +198,14 @@ class Cosmology(Module):
         Parameters
         ----------
         z1: Tensor
-            The starting redshifts.
+            The starting redshift.
 
             *Unit: unitless*
 
         z2: Tensor
-            The ending redshifts.
+            The ending redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -250,17 +229,14 @@ class Cosmology(Module):
         Parameters
         ----------
         z_l: Tensor
-            The lens redshifts.
+            The lens redshift.
 
             *Unit: unitless*
 
         z_s: Tensor
-            The source redshifts.
+            The source redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -287,17 +263,14 @@ class Cosmology(Module):
         Parameters
         ----------
         z_l: Tensor
-            The lens redshifts.
+            The lens redshift.
 
             *Unit: unitless*
 
         z_s: Tensor
-            The source redshifts.
+            The source redshift.
 
             *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the computation.
 
         Returns
         -------

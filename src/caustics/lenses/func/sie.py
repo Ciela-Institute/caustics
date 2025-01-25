@@ -1,10 +1,14 @@
+from math import pi
+import torch
+
 from ...utils import translate_rotate, derotate
+from ...constants import c_km_s, rad_to_arcsec
 
 
-def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
+def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     """
     Calculate the physical deflection angle. For more detail see Keeton 2002
-    equations 34 and 35, although our ``b`` is defined as :math:`\\sqrt(q)b` in
+    equations 34 and 35, although our ``Rein`` is defined as :math:`b/\\sqrt(q)` in
     Keeton's notation.
 
     Parameters
@@ -29,7 +33,7 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
         *Unit: radians*
 
-    b: Tensor
+    Rein: Tensor
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -62,20 +66,23 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s=0.0):
         *Unit: arcsec*
 
     """
+    # Handle the case where q = 1.0, numerical instability
+    q = q - torch.where(q == 1.0, 1e-6 * torch.ones_like(q), torch.zeros_like(q))
+
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
     f = (1 - q**2).sqrt()
-    ax = b * q.sqrt() / f * (f * x / (psi + s)).atan()  # fmt: skip
-    ay = b * q.sqrt() / f * (f * y / (psi + q**2 * s)).atanh()  # fmt: skip
+    ax = Rein * q.sqrt() / f * (f * x / (psi + s)).atan()  # fmt: skip
+    ay = Rein * q.sqrt() / f * (f * y / (psi + q**2 * s)).atanh()  # fmt: skip
 
     return derotate(ax, ay, phi)
 
 
-def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
+def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     """
     Compute the lensing potential. For more detail see Keeton 2002
-    equation 33, although our ``b`` is defined as :math:`\\sqrt(q)b` in
-    Keeton's notation. Also we use the :math:`s \\approx 0` limit here.
+    equation 33, although our ``Rein`` is defined as :math:`b/\\sqrt(q)` in
+    Keeton's notation.
 
     Parameters
     ----------
@@ -127,13 +134,22 @@ def potential_sie(x0, y0, q, phi, b, x, y, s=0.0):
         *Unit: arcsec^2*
 
     """
-    ax, ay = reduced_deflection_angle_sie(x0, y0, q, phi, b, x, y, s)
+    ax, ay = reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s)
     ax, ay = derotate(ax, ay, -phi)
     x, y = translate_rotate(x, y, x0, y0, phi)
-    return x * ax + y * ay
+    psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
+    return (
+        x * ax
+        + y * ay
+        - Rein
+        * q.sqrt()
+        * s
+        * ((psi + max(s, 1e-6)) ** 2 + (1 - q**2) * x**2).sqrt().log()
+        + Rein * q.sqrt() * s * ((1 + q) * max(s, 1e-6)).log()
+    )
 
 
-def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
+def convergence_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     """
     Calculate the projected mass density. This is converted from the SIS
     convergence definition.
@@ -160,7 +176,7 @@ def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
 
         *Unit: radians*
 
-    b: Tensor
+    Rein: Tensor
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -190,4 +206,37 @@ def convergence_sie(x0, y0, q, phi, b, x, y, s=0.0):
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
-    return 0.5 * q.sqrt() * b / psi
+    return 0.5 * q.sqrt() * Rein / psi
+
+
+def sigma_v_to_rein_sie(sigma_v, dls, ds):
+    """
+    Convert the velocity dispersion to the Einstein radius. See equation 16.22
+    in Dynamics and Astrophysics of Galaxies by Jo Bovy
+
+    Parameters
+    ----------
+    sigma_v: Tensor
+        The velocity dispersion of the lens.
+
+        *Unit: km/s*
+
+    dls: Tensor
+        The angular diameter distance between the lens and the source.
+
+        *Unit: Mpc*
+
+    ds: Tensor
+        The angular diameter distance between the observer and the source.
+
+        *Unit: Mpc*
+
+    Returns
+    -------
+    Tensor
+        The Einstein radius.
+
+        *Unit: arcsec*
+
+    """
+    return rad_to_arcsec * 4 * pi * (sigma_v / c_km_s) ** 2 * dls / ds

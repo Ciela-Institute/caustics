@@ -21,8 +21,10 @@ def test_time_delay_pointsource(q, phi, bx, by):
 
     # Define caustics lens
     cosmo = caustics.FlatLambdaCDM(name="cosmo")
-    lens = caustics.SIE(cosmology=cosmo, z_l=z_l, x0=0.0, y0=0.0, q=q, phi=phi, b=1.0)
-    x, y = lens.forward_raytrace(bx, by, z_s)
+    lens = caustics.SIE(
+        cosmology=cosmo, z_l=z_l, z_s=z_s, x0=0.0, y0=0.0, q=q, phi=phi, Rein=1.0
+    )
+    x, y = lens.forward_raytrace(bx, by)
 
     # Define lenstronomy lens
     lens_model_list = ["SIE"]
@@ -33,7 +35,7 @@ def test_time_delay_pointsource(q, phi, bx, by):
     kwargs_ls = [{"theta_E": 1.0, "e1": e1, "e2": e2, "center_x": 0.0, "center_y": 0.0}]
 
     # Compute time delay caustics
-    tdc = lens.time_delay(x, y, z_s).detach().cpu().numpy()
+    tdc = lens.time_delay(x, y).detach().cpu().numpy()
     tdc = tdc - np.min(tdc)
     np.sort(tdc)
 

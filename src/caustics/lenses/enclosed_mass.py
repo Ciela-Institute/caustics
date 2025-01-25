@@ -4,8 +4,12 @@ from typing import Optional, Union, Annotated, Callable
 from torch import Tensor, pi
 from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
-from .func import physical_deflection_angle_enclosed_mass, convergence_enclosed_mass
+from .base import ThinLens, CosmologyType, NameType, ZType
+from .func import (
+    physical_deflection_angle_enclosed_mass,
+    convergence_enclosed_mass,
+    reduced_from_physical_deflection_angle,
+)
 
 __all__ = ("EnclosedMass",)
 
@@ -30,7 +34,8 @@ class EnclosedMass(ThinLens):
         self,
         cosmology: CosmologyType,
         enclosed_mass: Callable,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
         ] = None,
@@ -75,6 +80,11 @@ class EnclosedMass(ThinLens):
 
             *Unit: unitless*
 
+        z_s : float
+            The redshift of the source.
+
+            *Unit: unitless*
+
         x0 : float or Tensor, optional
             The x-coordinate of the lens center.
 
@@ -105,7 +115,7 @@ class EnclosedMass(ThinLens):
 
             *Unit: arcsec*
         """
-        super().__init__(cosmology, z_l, name=name, **kwargs)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s, **kwargs)
         self.enclosed_mass = enclosed_mass
 
         self.x0 = Param("x0", x0, units="arcsec")
@@ -121,7 +131,6 @@ class EnclosedMass(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         q: Annotated[Tensor, "Param"],
@@ -133,41 +142,15 @@ class EnclosedMass(ThinLens):
 
         Parameters
         ----------
-        name : str
-            The name of the lens.
-
-        cosmology : Cosmology
-            The cosmology object that describes the Universe.
-
-        z_l : float
-            The redshift of the lens.
-
-            *Unit: unitless*
-
-        x0 : float or Tensor, optional
-            The x-coordinate of the lens center.
+        x: Tensor
+            The x-coordinate on the lens plane.
 
             *Unit: arcsec*
 
-        y0 : float or Tensor, optional
-            The y-coordinate of the lens center.
+        y: Tensor
+            The y-coordinate on the lens plane.
 
             *Unit: arcsec*
-
-        q : float or Tensor, optional
-            The axis ratio of the lens. ratio of semi-minor to semi-major axis (b/a).
-
-            *Unit: unitless*
-
-        phi : float or Tensor, optional
-            The position angle of the lens.
-
-            *Unit: radians*
-
-        p : list[float] or Tensor, optional
-            The parameters for the enclosed mass function.
-
-            *Unit: user-defined*
 
         Returns
         -------
@@ -180,11 +163,19 @@ class EnclosedMass(ThinLens):
         )
 
     @forward
+    def reduced_deflection_angle(self, x, y, z_s, z_l):
+        d_s = self.cosmology.angular_diameter_distance(z_s)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
+        return reduced_from_physical_deflection_angle(
+            deflection_angle_x, deflection_angle_y, d_s, d_ls
+        )
+
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -197,7 +188,7 @@ class EnclosedMass(ThinLens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
+        z_s: Annotated[Tensor, "Param"],
         z_l: Annotated[Tensor, "Param"],
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
@@ -210,41 +201,15 @@ class EnclosedMass(ThinLens):
 
         Parameters
         ----------
-        name : str
-            The name of the lens.
-
-        cosmology : Cosmology
-            The cosmology object that describes the Universe.
-
-        z_l : float
-            The redshift of the lens.
-
-            *Unit: unitless*
-
-        x0 : float or Tensor, optional
-            The x-coordinate of the lens center.
+        x: Tensor
+            The x-coordinate on the lens plane.
 
             *Unit: arcsec*
 
-        y0 : float or Tensor, optional
-            The y-coordinate of the lens center.
+        y: Tensor
+            The y-coordinate on the lens plane.
 
             *Unit: arcsec*
-
-        q : float or Tensor, optional
-            The axis ratio of the lens. ratio of semi-minor to semi-major axis (b/a).
-
-            *Unit: unitless*
-
-        phi : float or Tensor, optional
-            The position angle of the lens.
-
-            *Unit: radians*
-
-        p : list[float] or Tensor, optional
-            The parameters for the enclosed mass function.
-
-            *Unit: user-defined*
 
         Returns
         -------

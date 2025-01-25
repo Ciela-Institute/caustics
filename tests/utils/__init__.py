@@ -8,6 +8,7 @@ import numpy as np
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
+import matplotlib.pyplot as plt
 
 import caustics
 
@@ -96,17 +97,17 @@ def setup_grids(res=0.05, n_pix=100, device=None):
     return thx, thy, thx_ls, thy_ls
 
 
-def alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
+def alpha_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
-    alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, z_s, x)
+    alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(alpha_x.cpu().numpy(), alpha_x_ls, rtol, atol)
     assert np.allclose(alpha_y.cpu().numpy(), alpha_y_ls, rtol, atol)
 
 
-def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
+def Psi_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
-    Psi = lens.potential(thx, thy, z_s, x)
+    Psi = lens.potential(thx, thy, x)
     Psi_ls = lens_ls.potential(thx_ls, thy_ls, kwargs_ls)
     # Potential is only defined up to a constant
     Psi -= Psi.min()
@@ -114,21 +115,18 @@ def Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
     assert np.allclose(Psi.cpu().numpy(), Psi_ls, rtol, atol)
 
 
-def kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=None):
+def kappa_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
-    kappa = lens.convergence(thx, thy, z_s, x)
+    kappa = lens.convergence(thx, thy, x)
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
     assert np.allclose(kappa.cpu().numpy(), kappa_ls, rtol, atol)
 
 
-def shear_test_helper(
-    lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, just_egregious=False, device=None
-):
+def shear_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, just_egregious=False, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device, n_pix=1000 if just_egregious else 100)
     gamma1, gamma2 = lens.shear(
         thx,
         thy,
-        z_s,
         x,
         method="finitediff" if just_egregious else "autograd",
         pixelscale=thx[0][1] - thx[0][0],
@@ -146,7 +144,6 @@ def shear_test_helper(
 def lens_test_helper(
     lens: Union[caustics.ThinLens, caustics.ThickLens],
     lens_ls: LensModel,
-    z_s,
     x,
     kwargs_ls: List[Dict[str, Any]],
     rtol,
@@ -160,23 +157,21 @@ def lens_test_helper(
 ):
     if device is not None:
         lens = lens.to(device=device)
-        z_s = z_s.to(device=device)
         x = x.to(device=device)
 
     if test_alpha:
-        alpha_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
+        alpha_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=device)
 
     if test_Psi:
-        Psi_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
+        Psi_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=device)
 
     if test_kappa:
-        kappa_test_helper(lens, lens_ls, z_s, x, kwargs_ls, atol, rtol, device=device)
+        kappa_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=device)
 
     if test_shear:
         shear_test_helper(
             lens,
             lens_ls,
-            z_s,
             x,
             kwargs_ls,
             atol,

@@ -44,11 +44,6 @@ def physical_deflection_angle_enclosed_mass(x0, y0, q, phi, enclosed_mass, x, y,
 
         *Unit: arcsec*
 
-    z_s: Tensor
-        The redshift of the source.
-
-        *Unit: unitless*
-
     Returns
     -------
     tuple[Tensor, Tensor]
@@ -104,11 +99,6 @@ def convergence_enclosed_mass(
         The y-coordinate of the lens.
 
         *Unit: arcsec*
-
-    z_s: Tensor
-        The redshift of the source.
-
-        *Unit: unitless*
 
     Returns
     -------

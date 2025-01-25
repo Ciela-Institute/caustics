@@ -167,10 +167,6 @@ class PixelatedTime(Source):
 
             *Unit: seconds*
 
-        params : Packed, optional
-            A dictionary containing additional parameters that might be required to
-            calculate the brightness.
-
         Returns
         -------
         Tensor
