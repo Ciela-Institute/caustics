@@ -1,4 +1,5 @@
 from math import pi
+import torch
 
 from ...utils import translate_rotate, derotate
 from ...constants import c_km_s, rad_to_arcsec
@@ -65,6 +66,9 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
         *Unit: arcsec*
 
     """
+    # Handle the case where q = 1.0, numerical instability
+    q = q - torch.where(q == 1.0, 1e-6 * torch.ones_like(q), torch.zeros_like(q))
+
     x, y = translate_rotate(x, y, x0, y0, phi)
     psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
     f = (1 - q**2).sqrt()

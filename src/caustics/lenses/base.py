@@ -105,7 +105,6 @@ class Lens(Module):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
@@ -161,14 +160,6 @@ class Lens(Module):
             Tensor of y coordinate in the source plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the lens model. Defaults to None.
 
         epsilon: Tensor
             maximum distance between two images (arcsec) before they are
@@ -289,14 +280,6 @@ class ThickLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the lens model. Defaults to None.
-
         """
         bx, by = self.raytrace(x, y, **kwargs)
         return x - bx, y - by
@@ -324,14 +307,6 @@ class ThickLens(Lens):
             Tensor of y coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
@@ -492,40 +467,16 @@ class ThickLens(Lens):
         Return the jacobian of the effective reduced deflection angle vector field.
         This equates to a (2,2) matrix at each (x,y) point.
         """
-
-        # Build Jacobian
-        J = torch.zeros((*x.shape, 2, 2), device=x.device, dtype=x.dtype)
-
-        # Compute deflection angle gradients
-        dax_dx = torch.func.grad(
-            lambda *a: self.effective_reduced_deflection_angle(*a)[0], argnums=0
-        )
-        J[..., 0, 0] = torch.vmap(dax_dx, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        dax_dy = torch.func.grad(
-            lambda *a: self.effective_reduced_deflection_angle(*a)[0], argnums=1
-        )
-        J[..., 0, 1] = torch.vmap(dax_dy, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        day_dx = torch.func.grad(
-            lambda *a: self.effective_reduced_deflection_angle(*a)[1], argnums=0
-        )
-        J[..., 1, 0] = torch.vmap(day_dx, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        day_dy = torch.func.grad(
-            lambda *a: self.effective_reduced_deflection_angle(*a)[1], argnums=1
-        )
-        J[..., 1, 1] = torch.vmap(day_dy, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        return J.detach()
+        J = torch.vmap(
+            torch.func.jacfwd(
+                self.effective_reduced_deflection_angle,
+                argnums=(0, 1),
+                randomness="different",
+            ),
+            chunk_size=chunk_size,
+        )(x.flatten(), y.flatten())
+        J = torch.stack([torch.stack(Jrow, dim=-1) for Jrow in J], dim=-2)
+        return J.reshape(*x.shape, 2, 2)
 
     @forward
     def jacobian_effective_deflection_angle(
@@ -670,8 +621,6 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -701,12 +650,11 @@ class ThinLens(Lens):
             *Unit: arcsec*
 
         """
-        d_s = self.cosmology.angular_diameter_distance(z_s)
-        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
-        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
-        return func.reduced_from_physical_deflection_angle(
-            deflection_angle_x, deflection_angle_y, d_s, d_ls
-        )
+        ax, ay = torch.vmap(
+            torch.func.grad(self.potential, (0, 1)),
+            chunk_size=10000,
+        )(x.flatten(), y.flatten())
+        return ax.reshape(x.shape), ay.reshape(y.shape)
 
     @forward
     def physical_deflection_angle(
@@ -775,14 +723,6 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         Tensor
@@ -791,7 +731,13 @@ class ThinLens(Lens):
             *Unit: unitless*
 
         """
-        ...
+        Psi_H = torch.vmap(
+            torch.func.hessian(self.potential, (0, 1)),
+            chunk_size=10000,
+        )(x.flatten(), y.flatten())
+        Psi_H = torch.stack([torch.stack(Hrow, dim=-1) for Hrow in Psi_H], dim=-2)
+        Psi_H = Psi_H.reshape(*x.shape, 2, 2)
+        return 0.5 * (Psi_H[..., 0, 0] + Psi_H[..., 1, 1]).reshape(x.shape)
 
     @abstractmethod
     @forward
@@ -816,14 +762,6 @@ class ThinLens(Lens):
             Tensor of y coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
 
         Returns
         -------
@@ -858,14 +796,6 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Tensor of source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         Tensor
@@ -875,7 +805,7 @@ class ThinLens(Lens):
 
         """
         critical_surface_density = self.cosmology.critical_surface_density(z_l, z_s)
-        return self.convergence(x, y, z_s) * critical_surface_density  # fmt: skip
+        return self.convergence(x, y) * critical_surface_density  # fmt: skip
 
     @forward
     def raytrace(
@@ -1028,39 +958,15 @@ class ThinLens(Lens):
         Return the jacobian of the deflection angle vector.
         This equates to a (2,2) matrix at each (x,y) point.
         """
-        # Build Jacobian
-        J = torch.zeros((*x.shape, 2, 2), device=x.device, dtype=x.dtype)
-
         # Compute deflection angle gradients
-        dax_dx = torch.func.grad(
-            lambda *a: self.reduced_deflection_angle(*a)[0], argnums=0
-        )
-        J[..., 0, 0] = torch.vmap(dax_dx, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        dax_dy = torch.func.grad(
-            lambda *a: self.reduced_deflection_angle(*a)[0], argnums=1
-        )
-        J[..., 0, 1] = torch.vmap(dax_dy, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        day_dx = torch.func.grad(
-            lambda *a: self.reduced_deflection_angle(*a)[1], argnums=0
-        )
-        J[..., 1, 0] = torch.vmap(day_dx, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        day_dy = torch.func.grad(
-            lambda *a: self.reduced_deflection_angle(*a)[1], argnums=1
-        )
-        J[..., 1, 1] = torch.vmap(day_dy, chunk_size=chunk_size)(
-            x.flatten(), y.flatten()
-        ).reshape(x.shape)
-
-        return J.detach()
+        J = torch.vmap(
+            torch.func.jacfwd(
+                self.reduced_deflection_angle, argnums=(0, 1), randomness="different"
+            ),
+            chunk_size=chunk_size,
+        )(x.flatten(), y.flatten())
+        J = torch.stack([torch.stack(Jrow, dim=-1) for Jrow in J], dim=-2)
+        return J.reshape(*x.shape, 2, 2)
 
     @forward
     def jacobian_deflection_angle(

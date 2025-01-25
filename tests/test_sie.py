@@ -15,7 +15,7 @@ from caustics.sims import build_simulator
 import pytest
 
 
-@pytest.mark.parametrize("q", [0.5, 0.7, 0.9])
+@pytest.mark.parametrize("q", [0.5, 0.7, 0.9, 1.0])
 @pytest.mark.parametrize("phi", [pi / 3, -pi / 4, pi / 6])
 @pytest.mark.parametrize("Rein", [0.1, 1.0, 2.5])
 def test_sie(sim_source, device, q, phi, Rein):
@@ -57,7 +57,9 @@ def test_sie(sim_source, device, q, phi, Rein):
         }
     ]
 
-    lens_test_helper(lens, lens_ls, x, kwargs_ls, rtol, atol, device=device)
+    lens_test_helper(
+        lens, lens_ls, x, kwargs_ls, rtol, atol, test_shear=q < 0.99, device=device
+    )
 
 
 def test_sie_time_delay():

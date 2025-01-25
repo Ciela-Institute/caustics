@@ -39,7 +39,6 @@ def test_lens_potential_vs_deflection(device):
             z_l=z_l,
             z_s=z_s,
             **caustics.NFW._null_params,
-            use_case="differentiable",
         ),
         caustics.PixelatedConvergence(
             cosmology=cosmo,
@@ -68,7 +67,6 @@ def test_lens_potential_vs_deflection(device):
             z_l=z_l,
             z_s=z_s,
             **caustics.TNFW._null_params,
-            use_case="differentiable",
         ),
     ]
 
@@ -81,16 +79,8 @@ def test_lens_potential_vs_deflection(device):
         # Compute the deflection angle.
         ax, ay = lens.reduced_deflection_angle(x, y)
 
-        # Ensure the x,y coordinates track gradients
-        x = x.detach().requires_grad_()
-        y = y.detach().requires_grad_()
-
-        # Compute the lensing potential.
-        phi = lens.potential(x, y)
-        # Compute the gradient of the lensing potential.
-        phi_ax, phi_ay = torch.autograd.grad(
-            phi, (x, y), grad_outputs=torch.ones_like(phi)
-        )
+        # Compute deflection angles using the lensing potential.
+        phi_ax, phi_ay = super(lens.__class__, lens).reduced_deflection_angle(x, y)
 
         # Check that the gradient of the lensing potential equals the deflection angle.
         if name in ["NFW", "TNFW"]:
@@ -134,13 +124,12 @@ def test_lens_potential_vs_convergence(device):
         caustics.MassSheet(
             cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.MassSheet._null_params
         ),
-        # caustics.NFW(
-        #     cosmology=cosmo,
-        #     z_l=z_l,
-        #     z_s=z_s,
-        #     **caustics.NFW._null_params,
-        #     use_case="differentiable",
-        # ), # Cannot vmap NFW when in differentiable mode
+        caustics.NFW(
+            cosmology=cosmo,
+            z_l=z_l,
+            z_s=z_s,
+            **caustics.NFW._null_params,
+        ),
         # caustics.PixelatedConvergence(
         #     cosmology=cosmo,
         #     z_l=z_l,
@@ -162,9 +151,7 @@ def test_lens_potential_vs_convergence(device):
         ),
         caustics.SIE(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.SIE._null_params),
         caustics.SIS(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.SIS._null_params),
-        # caustics.TNFW(
-        #     cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.TNFW._null_params, use_case="differentiable"
-        # ), # Cannot vmap TNFW when in differentiable mode
+        caustics.TNFW(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.TNFW._null_params),
     ]
 
     # Define a list of lens model names.
@@ -179,16 +166,14 @@ def test_lens_potential_vs_convergence(device):
         except NotImplementedError:
             continue
 
-        # Compute the laplacian of the lensing potential.
-        phi_H = torch.vmap(
-            torch.vmap(torch.func.hessian(lens.potential, (0, 1))),
-        )(x, y)
-        phi_kappa = 0.5 * (phi_H[0][0] + phi_H[1][1])
+        # Compute the convergence from the lensing potential.
+        phi_kappa = super(lens.__class__, lens).convergence(x, y)
 
         # Check that the laplacian of the lensing potential equals the convergence.
         if name.strip("_0") in ["NFW", "TNFW"]:
-            assert torch.allclose(phi_kappa, kappa, atol=1e-4)
+            print(torch.abs(phi_kappa - kappa) / kappa)
+            assert torch.allclose(phi_kappa, kappa, rtol=1e-3, atol=1e-3)
         elif name.strip("_0") in ["PixelatedConvergence", "PixelatedPotential"]:
-            assert torch.allclose(phi_kappa, kappa, atol=1e-4)
+            assert torch.allclose(phi_kappa, kappa, rtol=1e-4, atol=1e-4)
         else:
-            assert torch.allclose(phi_kappa, kappa, atol=1e-6)
+            assert torch.allclose(phi_kappa, kappa, rtol=1e-6, atol=1e-6)

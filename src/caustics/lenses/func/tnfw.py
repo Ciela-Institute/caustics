@@ -47,32 +47,23 @@ def concentration_tnfw(mass, Rs, critical_density, d_l, DELTA=200.0):
     return r_delta / (Rs * d_l * arcsec_to_rad)  # fmt: skip
 
 
-def _F_batchable_tnfw(x):
+def _F_tnfw(x):
     """
     Compute the function F(x) for a TNFW profile.
 
     Helper method from Baltz et al. 2009 equation A.5
     """
+    x_gt1 = torch.clamp(x, min=1 + 1e-3)
+    x_lt1 = torch.clamp(x, max=1 - 1e-3)
     return torch.where(
-        x == 1,
-        torch.ones_like(x),
-        (
-            (1 / x.to(dtype=torch.cdouble)).arccos()
-            / (x.to(dtype=torch.cdouble) ** 2 - 1).sqrt()
-        ).abs(),
+        x < 1 - 1e-2,
+        torch.arccosh(1 / x_lt1) / (1.0 - x_lt1**2).sqrt(),
+        torch.where(
+            x > 1 + 1e-2,
+            torch.arccos(1 / x_gt1) / (x_gt1**2 - 1.0).sqrt(),
+            1 - 2 * (x - 1) / 3 + 7 * (x - 1) ** 2 / 15,  # where: x == 1
+        ),
     )
-
-
-def _F_differentiable(x):
-    """
-    Compute the function F(x) for a TNFW profile.
-
-    Helper method from Baltz et al. 2009 equation A.5
-    """
-    f = torch.ones_like(x)
-    f[x < 1] = torch.arctanh((1.0 - x[x < 1] ** 2).sqrt()) / (1.0 - x[x < 1] ** 2).sqrt()  # fmt: skip
-    f[x > 1] = torch.arctan( (x[x > 1] ** 2 - 1.0).sqrt()) / (x[x > 1] ** 2 - 1.0).sqrt()  # fmt: skip
-    return f
 
 
 def _L_tnfw(x, tau):
@@ -131,7 +122,6 @@ def mass_enclosed_2d_tnfw(
     Rs,
     tau,
     M0,
-    _F_mode="differentiable",
 ):
     """
     Total projected mass (Msun) within a radius r (arcsec). Given in Baltz et
@@ -169,12 +159,7 @@ def mass_enclosed_2d_tnfw(
     """
     g = r / Rs
     t2 = tau**2
-    if _F_mode == "differentiable":
-        F = _F_differentiable(g)
-    elif _F_mode == "batchable":
-        F = _F_batchable_tnfw(g)
-    else:
-        raise ValueError("_F_mode must be 'differentiable' or 'batchable'")
+    F = _F_tnfw(g)
     L = _L_tnfw(g, tau)
     a1 = t2 / (t2 + 1) ** 2
     a2 = (t2 + 1 + 2 * (g**2 - 1)) * F
@@ -193,7 +178,6 @@ def physical_deflection_angle_tnfw(
     y,
     M0,
     d_l,
-    _F_mode="differentiable",
     s=0.0,
 ):
     """
@@ -243,10 +227,6 @@ def physical_deflection_angle_tnfw(
 
         *Unit: Mpc*
 
-    _F_mode: str
-        The mode to use for computing the function F(x). Either "differentiable"
-        or "batchable".
-
     s: float
         Softening parameter to prevent numerical instabilities.
 
@@ -258,7 +238,7 @@ def physical_deflection_angle_tnfw(
     theta = torch.arctan2(y, x)
 
     # The below actually equally comes from eq 2.13 in Meneghetti notes
-    dr = mass_enclosed_2d_tnfw(r, Rs, tau, M0,_F_mode) / (
+    dr = mass_enclosed_2d_tnfw(r, Rs, tau, M0) / (
         r * d_l * arcsec_to_rad
     )  # note dpsi(u)/du = 2x*dpsi(x)/dx when u = x^2  # fmt: skip
     S = 4 * G_over_c2 * rad_to_arcsec
@@ -275,7 +255,6 @@ def convergence_tnfw(
     critical_density,
     M0,
     d_l,
-    _F_mode="differentiable",
     s=0.0,
 ):
     """
@@ -325,10 +304,6 @@ def convergence_tnfw(
 
         *Unit: Mpc*
 
-    _F_mode: str
-        The mode to use for computing the function F(x). Either "differentiable"
-        or "batchable".
-
     s: float
         Softening parameter to prevent numerical instabilities.
 
@@ -337,12 +312,7 @@ def convergence_tnfw(
     x, y = translate_rotate(x, y, x0, y0)
     r = (x**2 + y**2).sqrt() + s
     g = r / Rs
-    if _F_mode == "differentiable":
-        F = _F_differentiable(g)
-    elif _F_mode == "batchable":
-        F = _F_batchable_tnfw(g)
-    else:
-        raise ValueError("_F_mode must be 'differentiable' or 'batchable'")
+    F = _F_tnfw(g)
     L = _L_tnfw(g, tau)
 
     S = M0 / (2 * torch.pi * (Rs * d_l * arcsec_to_rad) ** 2)  # fmt: skip
@@ -356,6 +326,25 @@ def convergence_tnfw(
     return a1 * (a2 + a3 + a4 + a5) * S / critical_density  # fmt: skip
 
 
+def _P_tnfw(x):
+    """
+    Compute the function F(x) for a TNFW profile.
+
+    Helper method from Baltz et al. 2009 equation A.5
+    """
+    x_gt1 = torch.clamp(x, min=1 + 1e-4)
+    x_lt1 = torch.clamp(x, max=1 - 1e-4)
+    return torch.where(
+        x < 1 - 1e-3,
+        -torch.arccosh(1 / x_lt1) ** 2,
+        torch.where(
+            x > 1 + 1e-3,
+            torch.arccos(1 / x_gt1) ** 2,
+            (2 * (x - 1) - 5 * (x - 1) ** 2 / 3),  # where: x == 1 # fixme
+        ),
+    )
+
+
 def potential_tnfw(
     x0,
     y0,
@@ -367,7 +356,6 @@ def potential_tnfw(
     d_l,
     d_s,
     d_ls,
-    _F_mode="differentiable",
     s=0.0,
 ):
     """
@@ -427,10 +415,6 @@ def potential_tnfw(
 
         *Unit: Mpc*
 
-    _F_mode: str
-        The mode to use for computing the function F(x). Either "differentiable"
-        or "batchable".
-
     s: float
         Softening parameter to prevent numerical instabilities.
 
@@ -441,12 +425,7 @@ def potential_tnfw(
     g = r / Rs
     t2 = tau**2
     u = g**2
-    if _F_mode == "differentiable":
-        F = _F_differentiable(g)
-    elif _F_mode == "batchable":
-        F = _F_batchable_tnfw(g)
-    else:
-        raise ValueError("_F_mode must be 'differentiable' or 'batchable'")
+    F = _F_tnfw(g)
     L = _L_tnfw(g, tau)
 
     # fmt: off
@@ -456,7 +435,7 @@ def potential_tnfw(
     a3 = 2 * (t2 - 1) * tau * (t2 + u).sqrt() * L
     a4 = t2 * (t2 - 1) * L**2
     a5 = 4 * t2 * (u - 1) * F
-    a6 = t2 * (t2 - 1) * (1 / g.to(dtype=torch.cdouble)).arccos().abs() ** 2
+    a6 = t2 * (t2 - 1) * _P_tnfw(g)
     a7 = t2 * ((t2 - 1) * tau.log() - t2 - 1) * u.log()
     a8 = t2 * ((t2 - 1) * tau.log() * (4 * tau).log() + 2 * (tau / 2).log() - 2 * tau * (tau - torch.pi) * (2 * tau).log())
 
