@@ -200,9 +200,6 @@ class TNFW(ThinLens):
 
             *Unit: unitless*
 
-        params: dict
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor

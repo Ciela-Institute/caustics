@@ -121,9 +121,6 @@ class Lens(Module):
 
             *Unit: arcsec*
 
-        params: Packed, optional
-            Dynamic parameter container for the lens model. Defaults to None.
-
         Returns
         -------
         Tensor
@@ -235,12 +232,6 @@ class ThickLens(Lens):
 
             *Unit: unitless*
 
-        params: Packed, optional
-            Dynamic parameter container for the lens model. Defaults to None.
-
-        Raises
-        ------
-        NotImplementedError
         """
         warnings.warn(
             "ThickLens objects do not have a reduced deflection angle "

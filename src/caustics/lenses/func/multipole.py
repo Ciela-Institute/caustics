@@ -13,8 +13,6 @@ def reduced_deflection_angle_multipole(x0, y0, m, a_m, phi_m, x, y):
         x-coordinates in the lens plane.
     y: Tensor
         y-coordinates in the lens plane.
-    z_s: Tensor
-        Redshifts of the sources.
     x0: Tensor
         x-coordinate of the center of the lens.
     y0: Tensor
@@ -61,8 +59,6 @@ def potential_multipole(x0, y0, m, a_m, phi_m, x, y):
         x-coordinates in the lens plane.
     y: Tensor
         y-coordinates in the lens plane.
-    z_s: Tensor
-        Redshifts of the sources.
     x0: Tensor
         x-coordinate of the center of the lens.
     y0: Tensor
@@ -106,8 +102,6 @@ def convergence_multipole(x0, y0, m, a_m, phi_m, x, y):
         x-coordinates in the lens plane.
     y: Tensor
         y-coordinates in the lens plane.
-    z_s: Tensor
-        Redshifts of the sources.
     x0: Tensor
         x-coordinate of the center of the lens.
     y0: Tensor

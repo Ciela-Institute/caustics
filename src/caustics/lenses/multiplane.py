@@ -67,11 +67,6 @@ class Multiplane(ThickLens):
         """
         Get the redshifts of each lens in the multiplane.
 
-        Parameters
-        ----------
-        params: (Packed, optional)
-            Dynamic parameter container.
-
         Returns
         --------
         List[Tensor]
@@ -79,8 +74,6 @@ class Multiplane(ThickLens):
 
             *Unit: unitless*
         """
-        # Relies on z_l being the first element to be unpacked, which should always
-        # be the case for a ThinLens
         return [lens.z_l.value for lens in self.lenses]
 
     @forward
@@ -195,14 +188,6 @@ class Multiplane(ThickLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         x_component: Tensor
@@ -259,14 +244,6 @@ class Multiplane(ThickLens):
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            Redshifts of the sources.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
 
         Returns
         -------
