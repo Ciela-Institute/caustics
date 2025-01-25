@@ -36,10 +36,10 @@ class Microlens(Module):
     ----------
     lens: Lens
         caustics lens mass model object
+
     source: Source
         caustics light object which defines the background source
-    z_s: optional
-        redshift of the source
+
     name: string (default "sim")
         a name for this simulator in the parameter DAG.
 
@@ -70,14 +70,15 @@ class Microlens(Module):
 
         Parameters
         ----------
-        params: dict
-            Dictionary of parameters for the simulator
         fov: Tensor
             Field of view box of the simulation in arcseconds indexed as (x_min, x_max, y_min, y_max)
+
         method: str (default "mcmc")
             Method for sampling the image. Choose from "mcmc" or "grid"
+
         N_mcmc: int
             Number of sample points for the source sampling if method is "mcmc"
+
         N_grid: int
             Number of sample points for the sampling grid on each axis if method is "grid"
 

@@ -112,7 +112,7 @@ class FlatLambdaCDM(Cosmology):
     @forward
     def critical_density(
         self,
-        z: Annotated[Tensor, "Param"],
+        z: Tensor,
         critical_density_0: Annotated[Tensor, "Param"],
         Om0: Annotated[Tensor, "Param"],
     ) -> torch.Tensor:
@@ -123,8 +123,6 @@ class FlatLambdaCDM(Cosmology):
         ----------
         z: Tensor
             Redshift.
-        params: (Packed, optional)
-            Dynamic parameter container for the computation.
 
         Returns
         -------
@@ -169,8 +167,6 @@ class FlatLambdaCDM(Cosmology):
         ----------
         z: Tensor
             Redshift.
-        params: (Packed, optional)
-            Dynamic parameter container for the computation.
 
         Returns
         -------

@@ -1,5 +1,6 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Optional, Union, Annotated, Literal
+from warnings import warn
 
 from torch import Tensor
 from caskade import forward, Param
@@ -73,10 +74,12 @@ class Point(ThinLens):
         Rein: Annotated[
             Optional[Union[Tensor, float]], "Einstein radius of the lens", True
         ] = None,
+        parametrization: Literal["Rein", "mass"] = "Rein",
         s: Annotated[
             float, "Softening parameter to prevent numerical instabilities"
         ] = 0.0,
         name: NameType = None,
+        **kwargs,
     ):
         """
         Initialize the Point class.
@@ -120,7 +123,56 @@ class Point(ThinLens):
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
         self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
+        self._parametrization = "Rein"
+        self.parametrization = parametrization
+        if self.parametrization == "mass":
+            self.mass = kwargs.get("mass", None)
         self.s = s
+
+    @property
+    def parametrization(self):
+        return self._parametrization
+
+    @parametrization.setter
+    def parametrization(self, value: str):
+        if value not in ["Rein", "mass"]:
+            raise ValueError(
+                f"Invalid parametrization {value}. Choose from ['Rein', 'mass']"
+            )
+        if value == "mass" and self.parametrization != "mass":
+            self.mass = Param(
+                "mass", shape=self.Rein.shape if self.Rein.static else (), units="Msol"
+            )
+
+            def mass_to_rein(p):
+                Dls = p["cosmology"].angular_diameter_distance_z1z2(
+                    p["z_l"].value, p["z_s"].value
+                )
+                Dl = p["cosmology"].angular_diameter_distance(p["z_l"].value)
+                Ds = p["cosmology"].angular_diameter_distance(p["z_s"].value)
+                return func.mass_to_rein_point(p["mass"].value, Dls, Dl, Ds)
+
+            if self.Rein.static:
+                warn(
+                    f"Parameter {self.Rein.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.Rein.name} be dynamic when changing parametrizations.",
+                )
+            self.Rein.value = mass_to_rein
+            self.Rein.link(self.mass)
+            self.Rein.link(self.z_s)
+            self.Rein.link(self.z_l)
+            self.Rein.link("cosmology", self.cosmology)
+        if value == "Rein" and self.parametrization != "Rein":
+            try:
+                self.Rein = None
+                if self.mass.static:
+                    warn(
+                        f"Parameter {self.mass.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.mass.name} be dynamic when changing parametrizations.",
+                    )
+                del self.mass
+            except AttributeError:
+                pass
+
+        self._parametrization = value
 
     @forward
     def mass_to_rein(

@@ -11,7 +11,12 @@ from .base import (
     reduced_from_physical_deflection_angle,
     time_delay_arcsec2_to_days,
 )
-from .sie import reduced_deflection_angle_sie, potential_sie, convergence_sie
+from .sie import (
+    reduced_deflection_angle_sie,
+    potential_sie,
+    convergence_sie,
+    sigma_v_to_rein_sie,
+)
 from .point import (
     reduced_deflection_angle_point,
     potential_point,
@@ -28,6 +33,8 @@ from .epl import reduced_deflection_angle_epl, potential_epl, convergence_epl
 from .external_shear import (
     reduced_deflection_angle_external_shear,
     potential_external_shear,
+    gamma_phi_to_gamma1,
+    gamma_phi_to_gamma2,
 )
 from .nfw import (
     physical_deflection_angle_nfw,
@@ -35,12 +42,9 @@ from .nfw import (
     convergence_nfw,
     scale_radius_nfw,
     scale_density_nfw,
-    _f_batchable_nfw,
-    _f_differentiable_nfw,
-    _g_batchable_nfw,
-    _g_differentiable_nfw,
-    _h_batchable_nfw,
-    _h_differentiable_nfw,
+    _f_nfw,
+    _g_nfw,
+    _h_nfw,
 )
 from .pixelated_convergence import (
     reduced_deflection_angle_pixelated_convergence,
@@ -94,6 +98,7 @@ __all__ = (
     "reduced_deflection_angle_sie",
     "potential_sie",
     "convergence_sie",
+    "sigma_v_to_rein_sie",
     "reduced_deflection_angle_point",
     "potential_point",
     "convergence_point",
@@ -107,17 +112,16 @@ __all__ = (
     "convergence_epl",
     "reduced_deflection_angle_external_shear",
     "potential_external_shear",
+    "gamma_phi_to_gamma1",
+    "gamma_phi_to_gamma2",
     "physical_deflection_angle_nfw",
     "potential_nfw",
     "convergence_nfw",
     "scale_radius_nfw",
     "scale_density_nfw",
-    "_f_batchable_nfw",
-    "_f_differentiable_nfw",
-    "_g_batchable_nfw",
-    "_g_differentiable_nfw",
-    "_h_batchable_nfw",
-    "_h_differentiable_nfw",
+    "_f_nfw",
+    "_g_nfw",
+    "_h_nfw",
     "reduced_deflection_angle_pixelated_convergence",
     "potential_pixelated_convergence",
     "_fft2_padded",

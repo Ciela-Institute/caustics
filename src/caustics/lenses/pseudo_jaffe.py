@@ -194,14 +194,6 @@ class PseudoJaffe(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor

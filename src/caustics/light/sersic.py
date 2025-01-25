@@ -206,9 +206,6 @@ class Sersic(Source):
 
             *Unit: arcsec*
 
-        params: Packed, optional
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
