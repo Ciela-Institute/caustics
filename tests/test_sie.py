@@ -56,7 +56,9 @@ def test_sie(sim_source, device, q, phi, Rein):
         }
     ]
 
-    lens_test_helper(lens, lens_ls, x, kwargs_ls, rtol, atol, test_shear=q < 0.99, device=device)
+    lens_test_helper(
+        lens, lens_ls, x, kwargs_ls, rtol, atol, test_shear=q < 0.99, device=device
+    )
 
 
 def test_sie_time_delay():
