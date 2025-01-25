@@ -1,13 +1,10 @@
 # Welcome to Caustics’ documentation!
 
-![Logo GIF](../../media/caustics_logo.gif)
+[![Logo GIF](../../media/caustics_logo.gif)](https://github.com/Ciela-Institute/caustics)
 
 The lensing pipeline of the future: GPU-accelerated,
 automatically-differentiable, highly modular and extensible.
-
-```{note}
-Caustics is in its early development phase. This means the API will change with time. These changes are a good thing, but they can be annoying. Watch the version numbers, when we get to 1.0.0 that will be the first stable release!
-```
+All code is installable with `pip` and hosted on [Github](https://github.com/Ciela-Institute/caustics).
 
 ## Installation
 
