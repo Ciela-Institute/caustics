@@ -8,6 +8,7 @@ import numpy as np
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LensModel.lens_model import LensModel
+import matplotlib.pyplot as plt
 
 import caustics
 
