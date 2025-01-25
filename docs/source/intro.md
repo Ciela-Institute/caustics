@@ -5,7 +5,7 @@
 The lensing pipeline of the future: GPU-accelerated,
 automatically-differentiable, highly modular and extensible. All code is
 installable with `pip` and hosted on
-[Github](https://github.com/Ciela-Institute/caustics).
+[GitHub](https://github.com/Ciela-Institute/caustics).
 
 ## Installation
 
