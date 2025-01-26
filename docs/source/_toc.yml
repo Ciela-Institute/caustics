@@ -10,18 +10,19 @@ chapters:
   - file: gravlensingintro
   - file: tutorials/index
     sections:
-      - file: tutorials/Introduction
       - file: interfaceindex
         sections:
           - file: tutorials/InterfaceIntroduction_yaml
           - file: tutorials/InterfaceIntroduction_oop
           - file: tutorials/InterfaceIntroduction_func
-      - file: tutorials/LensZoo
+      - file: tutorials/BasicCustomSimulator
+      - file: tutorials/IntroductionInDepth
       - file: tutorials/Microlensing
       - file: tutorials/VisualizeCaustics
       - file: tutorials/MultiplaneDemo
       - file: tutorials/InvertLensEquation
       - file: tutorials/MultiSource
+      - file: tutorials/LensZoo
   - file: examples/index
     sections:
       - file: examples/Example_ImageFit_LM
