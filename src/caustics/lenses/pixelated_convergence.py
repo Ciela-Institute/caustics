@@ -276,14 +276,6 @@ class PixelatedConvergence(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            A dictionary containing additional parameters.
-
         Returns
         -------
         x_component: Tensor
@@ -336,13 +328,6 @@ class PixelatedConvergence(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            A dictionary containing additional parameters.
 
         Returns
         -------
@@ -389,14 +374,6 @@ class PixelatedConvergence(ThinLens):
             The y-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            A dictionary containing additional parameters.
 
         Returns
         -------

@@ -19,18 +19,24 @@ class Multipole(ThinLens):
     ----------
     name: str
         Identifier for the lens instance.
+
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
+
     m: Union[Tensor, int, tuple[int]]
         Order of multipole(s).
+
     z_l: Optional[Union[Tensor, float]]
         The redshift of the lens.
+
     x0, y0: Optional[Union[Tensor, float]]
         Coordinates of the shear center in the lens plane.
+
     a_m: Optional[Union[Tensor, float]]
         Strength of multipole.
+
     phi_m: Optional[Union[Tensor, float]]
-        Orientation of multiple.
+        Orientation of multipole.
 
     """
 
@@ -121,14 +127,6 @@ class Multipole(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
-
         Returns
         -------
         x_component: Tensor
@@ -171,14 +169,6 @@ class Multipole(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
-
         Returns
         -------
         Tensor
@@ -215,14 +205,6 @@ class Multipole(ThinLens):
             The y-coordinate of the lens.
 
             *Unit: arcsec*
-
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container.
 
         Returns
         -------

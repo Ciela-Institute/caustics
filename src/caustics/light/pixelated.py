@@ -152,10 +152,6 @@ class Pixelated(Source):
 
             *Unit: arcsec*
 
-        params : Packed, optional
-            A dictionary containing additional parameters that might be required to
-            calculate the brightness.
-
         Returns
         -------
         Tensor

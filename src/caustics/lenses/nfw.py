@@ -1,5 +1,5 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Annotated, Literal
+from typing import Optional, Union, Annotated
 
 from torch import Tensor
 from caskade import forward, Param
@@ -55,11 +55,6 @@ class NFW(ThinLens):
 
         *Unit: arcsec*
 
-    use_case: str
-        Due to an idyosyncratic behaviour of PyTorch, the NFW/TNFW profile
-        specifically can't be both batchable and differentiable. You may select which version
-        you wish to use by setting this parameter to one of: batchable, differentiable.
-
     Methods
     -------
     get_scale_radius
@@ -110,9 +105,6 @@ class NFW(ThinLens):
             float,
             "Softening parameter to avoid singularities at the center of the lens",
         ] = 0.0,
-        use_case: Annotated[
-            Literal["batchable", "differentiable"], "the NFW/TNFW profile"
-        ] = "batchable",
         name: NameType = None,
     ):
         """
@@ -168,16 +160,6 @@ class NFW(ThinLens):
         self.mass = Param("mass", mass, units="Msun")
         self.c = Param("c", c, units="unitless")
         self.s = s
-        if use_case == "batchable":
-            self._f = func._f_batchable_nfw
-            self._h = func._h_batchable_nfw
-            self._g = func._g_batchable_nfw
-        elif use_case == "differentiable":
-            self._f = func._f_differentiable_nfw
-            self._h = func._h_differentiable_nfw
-            self._g = func._g_differentiable_nfw
-        else:
-            raise ValueError("use case should be one of: batchable, differentiable")
 
     @forward
     def get_scale_radius(
@@ -291,17 +273,16 @@ class NFW(ThinLens):
         d_l = self.cosmology.angular_diameter_distance(z_l)
         critical_density = self.cosmology.critical_density(z_l)
         return func.physical_deflection_angle_nfw(
-            x0,
-            y0,
-            mass,
-            c,
-            critical_density,
-            d_l,
-            x,
-            y,
-            _h=self._h,
-            DELTA=DELTA,
-            s=self.s,
+            x0, y0, mass, c, critical_density, d_l, x, y, DELTA=DELTA, s=self.s
+        )
+
+    @forward
+    def reduced_deflection_angle(self, x, y, z_s, z_l):
+        d_s = self.cosmology.angular_diameter_distance(z_s)
+        d_ls = self.cosmology.angular_diameter_distance_z1z2(z_l, z_s)
+        deflection_angle_x, deflection_angle_y = self.physical_deflection_angle(x, y)
+        return func.reduced_from_physical_deflection_angle(
+            deflection_angle_x, deflection_angle_y, d_s, d_ls
         )
 
     @forward
@@ -352,7 +333,6 @@ class NFW(ThinLens):
             x,
             y,
             d_l,
-            _f=self._f,
             DELTA=DELTA,
             s=self.s,
         )
@@ -405,7 +385,6 @@ class NFW(ThinLens):
             d_l,
             x,
             y,
-            _g=self._g,
             DELTA=DELTA,
             s=self.s,
         )
