@@ -3,12 +3,12 @@ import pytest
 
 from caustics.utils import (
     meshgrid,
-    gnomonic_plane_to_world,
-    gnomonic_world_to_plane,
     pixel_to_world,
     world_to_pixel,
-    pixel_to_world_sip,
-    world_to_pixel_sip,
+    plane_to_world_gnomonic,
+    world_to_plane_gnomonic,
+    pixel_to_plane,
+    plane_to_pixel,
 )
 from caustics.constants import arcsec_to_deg
 
@@ -18,15 +18,15 @@ def test_gnomonic_projection(crval):
 
     px, py = meshgrid(pixelscale=0.1 * arcsec_to_deg, nx=100, dtype=torch.float64)
 
-    ra, dec = gnomonic_plane_to_world(
+    ra, dec = plane_to_world_gnomonic(
         px, py, crval=torch.tensor(crval, dtype=torch.float64)
     )
-    px2, py2 = gnomonic_world_to_plane(
+    px2, py2 = world_to_plane_gnomonic(
         ra, dec, crval=torch.tensor(crval, dtype=torch.float64)
     )
 
-    assert torch.allclose(px, px2, atol=1e-5)
-    assert torch.allclose(py, py2, atol=1e-5)
+    assert torch.allclose(px, px2, atol=1e-7)
+    assert torch.allclose(py, py2, atol=1e-7)
 
 
 @pytest.mark.parametrize("crpix", [(0.0, 0.0), (50.0, 50.0), (-10.0, -100.0)])
@@ -35,7 +35,7 @@ def test_gnomonic_projection(crval):
     "CD",
     [((1e-4, 0.0), (0.0, 1e-4)), ((-9.72e-6, -1.03e-5), (-9.63e-6, 8.70e-6))],
 )
-def test_linear_wcs(crpix, crval, CD):
+def test_tangent_projection(crpix, crval, CD):
     crpix = torch.tensor(crpix, dtype=torch.float64)
     crval = torch.tensor(crval, dtype=torch.float64)
     CD = torch.tensor(CD, dtype=torch.float64)
@@ -46,11 +46,11 @@ def test_linear_wcs(crpix, crval, CD):
         indexing="ij",
     )
 
-    ra, dec = pixel_to_world(px, py, crpix=crpix, crval=crval, CD=CD)
-    px2, py2 = world_to_pixel(ra, dec, crpix=crpix, crval=crval, CD=CD)
+    ra, dec = pixel_to_plane(px, py, crpix=crpix, CD=CD)
+    px2, py2 = plane_to_pixel(ra, dec, crpix=crpix, CD=CD)
 
-    assert torch.allclose(px, px2, atol=1e-5)
-    assert torch.allclose(py, py2, atol=1e-5)
+    assert torch.allclose(px, px2, atol=1e-7)
+    assert torch.allclose(py, py2, atol=1e-7)
 
 
 @pytest.mark.parametrize("crpix", [(0.0, 0.0), (50.0, 50.0), (-10.0, -100.0)])
@@ -116,11 +116,23 @@ def test_sip_wcs(crpix, crval, CD):
         indexing="ij",
     )
 
-    ra, dec = pixel_to_world_sip(
-        px, py, crpix=crpix, crval=crval, CD=CD, powers=sip_powers, coefs=sip_coefs
+    ra, dec = pixel_to_world(
+        px,
+        py,
+        crpix=crpix,
+        crval=crval,
+        CD=CD,
+        sip_powers=sip_powers,
+        sip_coefs=sip_coefs,
     )
-    px2, py2 = world_to_pixel_sip(
-        ra, dec, crpix=crpix, crval=crval, CD=CD, powers=sip_powers, coefs=-sip_coefs
+    px2, py2 = world_to_pixel(
+        ra,
+        dec,
+        crpix=crpix,
+        crval=crval,
+        CD=CD,
+        sip_powers=sip_powers,
+        sip_coefs=-sip_coefs,
     )
 
     assert torch.allclose(px, px2, atol=1e-3)
