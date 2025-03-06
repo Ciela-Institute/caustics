@@ -3,7 +3,7 @@
 Citation
 ========
 
-The `caustics release paper <https://joss.theoj.org/papers/10.21105/joss.07081#>`_ is published JOSS, please cite this article if you use caustics in your research.:
+The `caustics release paper <https://joss.theoj.org/papers/10.21105/joss.07081#>`_ is published JOSS, please cite this article if you use ``caustics`` in your research.:
 
 .. code-block:: bibtex
 

@@ -15,9 +15,9 @@ The easiest way to install is to make a new virtual environment then run:
 pip install caustics
 ```
 
-this will install all the required libraries and then install caustics and you
+this will install all the required libraries and then install `caustics` and you
 are ready to go! You can check out the tutorials afterwards to see some of
-caustics' capabilities. If you want to help out with building the caustics code
+`caustics`' capabilities. If you want to help out with building the `caustics` code
 base check out the developer installation instructions instead.
 
 ## Minimal Example
