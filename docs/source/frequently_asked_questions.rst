@@ -4,7 +4,7 @@ FAQs - Frequently asked questions
 **Q:** How do I know what order to put the parameter values in the pytorch tensor which gets passed to the simulator?
 -----------
 
-**A:** If you are using any ``Module``` object (so a simulator), then you can
+**A:** If you are using any ``Module`` object (so a simulator), then you can
 get the parameters using ``print(simulator)``. The order of the dynamical
 parameters (top to bottom) corresponds to the order you should use in your
 parameter value tensor. Note that you can ignore the static parameters.
