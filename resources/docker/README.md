@@ -41,5 +41,5 @@ apptainer run --nv caustics_dev-cuda-11.8.0.sif /bin/run-tests
 
 In the example above, we are pulling the `dev-cuda-11.8.0` image from the github
 registry and then running the `/bin/run-tests` script within the container to
-run all of the tests for `caustics`. The `--nv` flag is used to enable GPU access
-within the container.
+run all of the tests for `caustics`. The `--nv` flag is used to enable GPU
+access within the container.
