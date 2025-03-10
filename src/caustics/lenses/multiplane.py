@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Tuple
 from operator import itemgetter
 from warnings import warn
 
@@ -7,7 +7,7 @@ from torch import Tensor
 from caskade import forward
 
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
-from .base import ThickLens, NameType, CosmologyType, LensesType, ZType
+from .base import ThickLens, ThinLens, NameType, CosmologyType, ZType
 
 __all__ = ("Multiplane",)
 
@@ -36,12 +36,12 @@ class Multiplane(ThickLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        lenses: LensesType,
+        lenses: Tuple[ThinLens],
         name: NameType = None,
         z_s: ZType = None,
     ):
         super().__init__(cosmology, name=name, z_s=z_s)
-        self.lenses = lenses
+        self.lenses = tuple(lenses)
         for lens in self.lenses:
             if lens.z_s.static:
                 warn(

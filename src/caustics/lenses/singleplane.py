@@ -1,10 +1,11 @@
 from warnings import warn
+from typing import Tuple
 
 import torch
 from torch import Tensor
 from caskade import forward
 
-from .base import ThinLens, CosmologyType, NameType, LensesType, ZType
+from .base import ThinLens, CosmologyType, NameType, ZType
 
 __all__ = ("SinglePlane",)
 
@@ -30,7 +31,7 @@ class SinglePlane(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        lenses: LensesType,
+        lenses: Tuple[ThinLens],
         name: NameType = None,
         z_l: ZType = None,
         z_s: ZType = None,
@@ -39,7 +40,7 @@ class SinglePlane(ThinLens):
         Initialize the SinglePlane lens model.
         """
         super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
-        self.lenses = lenses
+        self.lenses = tuple(lenses)
 
         for lens in self.lenses:
             if lens.z_l.static:
