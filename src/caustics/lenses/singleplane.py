@@ -39,34 +39,20 @@ class SinglePlane(ThinLens):
         Initialize the SinglePlane lens model.
         """
         super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
-        self.lenses: LensesType = []
-        for lens in lenses:
-            self.add_lens(lens)
+        self.lenses = lenses
 
-    def add_lens(self, lens: ThinLens):
-        """
-        Add a lens to the list of lenses.
+        for lens in self.lenses:
+            if lens.z_l.static:
+                warn(
+                    f"Lens model {lens.name} has a static lens redshift. This is now overwritten by the SinglePlane ({self.name}) lens redshift. To prevent this warning, set the lens redshift of the lens model to be dynamic before adding to the system."
+                )
+            lens.z_l = self.z_l
 
-        Parameters
-        ----------
-        lens: ThinLens
-            The lens to be added to the list of lenses.
-
-        """
-        self.lenses.append(lens)
-        self.link(lens.name, lens)
-
-        if lens.z_l.static:
-            warn(
-                f"Lens model {lens.name} has a static lens redshift. This is now overwritten by the SinglePlane ({self.name}) lens redshift. To prevent this warning, set the lens redshift of the lens model to be dynamic before adding to the system."
-            )
-        lens.z_l = self.z_l
-
-        if lens.z_s.static:
-            warn(
-                f"Lens model {lens.name} has a static source redshift. This is now overwritten by the SinglePlane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens model to be dynamic before adding to the system."
-            )
-        lens.z_s = self.z_s
+            if lens.z_s.static:
+                warn(
+                    f"Lens model {lens.name} has a static source redshift. This is now overwritten by the SinglePlane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens model to be dynamic before adding to the system."
+                )
+            lens.z_s = self.z_s
 
     @forward
     def reduced_deflection_angle(

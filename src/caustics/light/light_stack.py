@@ -42,8 +42,6 @@ class LightStack(Source):
         """
         super().__init__(name=name)
         self.light_models = light_models
-        for model in light_models:
-            self.link(model.name, model)
 
     @forward
     def brightness(

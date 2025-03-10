@@ -7,7 +7,7 @@ from torch import Tensor
 from caskade import forward
 
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
-from .base import ThickLens, ThinLens, NameType, CosmologyType, LensesType, ZType
+from .base import ThickLens, NameType, CosmologyType, LensesType, ZType
 
 __all__ = ("Multiplane",)
 
@@ -41,26 +41,13 @@ class Multiplane(ThickLens):
         z_s: ZType = None,
     ):
         super().__init__(cosmology, name=name, z_s=z_s)
-        self.lenses: LensesType = []
-        for lens in lenses:
-            self.add_lens(lens)
-
-    def add_lens(self, lens: ThinLens):
-        """
-        Add a lens to the list of lenses.
-
-        Parameters
-        ----------
-        lens: ThinLens
-            The lens to be added to the list of lenses.
-        """
-        self.lenses.append(lens)
-        self.link(lens.name, lens)
-        if lens.z_s.static:
-            warn(
-                f"Lens plane {lens.name} has a static source redshift. This is now overwritten by the Multiplane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens plane to be dynamic before adding to multiplane system."
-            )
-        lens.z_s = self.z_s
+        self.lenses = lenses
+        for lens in self.lenses:
+            if lens.z_s.static:
+                warn(
+                    f"Lens plane {lens.name} has a static source redshift. This is now overwritten by the Multiplane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens plane to be dynamic before adding to multiplane system."
+                )
+            lens.z_s = self.z_s
 
     @forward
     def get_z_ls(self) -> list[Tensor]:
