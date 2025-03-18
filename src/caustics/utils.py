@@ -9,6 +9,8 @@ from torch import Tensor
 from torch.func import jacfwd
 from scipy.special import roots_legendre
 
+from .constants import rad_to_deg, deg_to_rad
+
 
 def _import_func_or_class(module_path: str) -> Any:
     """
@@ -194,6 +196,412 @@ def meshgrid(
     xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2  # fmt: skip
     ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2  # fmt: skip
     return torch.meshgrid([xs, ys], indexing="xy")
+
+
+def plane_to_world_gnomonic(px, py, crval):
+    """
+    Perform a gnomonic projection from a tangent plane to the celestial sphere
+    world coordinates.
+
+    Parameters
+    ----------
+    px: Tensor
+        The x-coordinate of the point on the tangent plane in degrees.
+    py: Tensor
+        The y-coordinate of the point on the tangent plane in degrees.
+    crval: Tensor
+        The celestial sphere world coordinates in degrees where the tangent
+        plane meets the celestial sphere, should be a shape (2,) tensor. It is
+        assumed that the tangent plane is centered at (0,0) for these
+        coordinates. Thus ``crval`` matches the standard FITS convention.
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the right ascension and declination in degrees.
+    """
+    plane = torch.stack((px, py), -1) * deg_to_rad
+    rho = torch.sqrt(torch.sum(plane**2, dim=-1))
+    c = torch.arctan(rho)
+
+    # Convert to sky coordinates
+    ra = crval[0] + rad_to_deg * torch.arctan2(
+        plane[..., 0] * torch.sin(c),
+        rho * torch.cos(crval[1] * deg_to_rad) * torch.cos(c)
+        - plane[..., 1] * torch.sin(crval[1] * deg_to_rad) * torch.sin(c),
+    )
+
+    dec = torch.where(
+        rho == 0,
+        crval[1],
+        rad_to_deg
+        * torch.arcsin(
+            torch.cos(c) * torch.sin(crval[1] * deg_to_rad)
+            + plane[..., 1] * torch.sin(c) * torch.cos(crval[1] * deg_to_rad) / rho
+        ),
+    )
+    return ra, dec
+
+
+def pixel_to_plane(i, j, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None):
+    """
+    Convert pixel coordinates to a tangent plane using the WCS information. This
+    matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    i: Tensor
+        The first coordinate of the pixel in pixel units. The origin may be
+        either 0 indexed (python convention) or 1 indexed (FITS convention),
+        simply ensure that ``crpix`` has the same convention.
+    j: Tensor
+        The second coordinate of the pixel in pixel units. The origin may be
+        either 0 indexed (python convention) or 1 indexed (FITS convention),
+        simply ensure that ``crpix`` has the same convention.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), simply ensure that ``i`` and ``j`` have the same
+        convention.
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to degree units and also handles rotation/skew.
+    sip_powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``i,
+        j``.
+    sip_coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+    crplane: Optional[Tensor], optional
+        The reference plane coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates. If None, it is assumed to be (0, 0). Defaults to None.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``plane_to_pixel`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the x and y tangent plane coordinates in degrees.
+    """
+    if crplane is None:
+        crplane = torch.zeros_like(crpix)
+
+    pixel = torch.stack((i, j), -1) - crpix
+    delta_p = torch.zeros_like(pixel)
+    for p in range(len(sip_powers)):
+        delta_p += sip_coefs[p] * torch.prod(pixel ** sip_powers[p], dim=-1).unsqueeze(
+            -1
+        )
+    plane = torch.einsum("ij,...j->...i", CD, pixel + delta_p) + crplane
+    return plane[..., 0], plane[..., 1]
+
+
+def pixel_to_world(
+    i,
+    j,
+    crpix,
+    crval,
+    CD,
+    sip_powers=[],
+    sip_coefs=[],
+    crplane=None,
+):
+    """
+    Convert pixel coordinates to world coordinates using the WCS information.
+    This matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    i: Tensor
+        The first coordinate of the pixel in pixel units. The origin may be either 0
+        indexed (python convention) or 1 indexed (FITS convention), simply
+        ensure that ``crpix`` has the same convention.
+    j: Tensor
+        The second coordinate of the pixel in pixel units. The origin may be either 0
+        indexed (python convention) or 1 indexed (FITS convention), simply
+        ensure that ``crpix`` has the same convention.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), simply ensure that ``i`` and ``j`` have the same
+        convention.
+    crval: Tensor
+        The reference world coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates.
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to world units and also handles rotation/skew.
+    sip_powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``i,
+        j``.
+    sip_coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+    crplane: Optional[Tensor], optional
+        The reference plane coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates. If None, it is assumed to be (0, 0). Defaults to None.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``world_to_pixel`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the right ascension and declination in degrees.
+    """
+
+    px, py = pixel_to_plane(i, j, crpix, CD, sip_powers, sip_coefs, crplane)
+    ra, dec = plane_to_world_gnomonic(px, py, crval)
+    return ra, dec
+
+
+def world_to_plane_gnomonic(ra, dec, crval):
+    """
+    Perform a gnomonic projection from the celestial sphere
+    world coordinates to a tangent plane.
+
+    Parameters
+    ----------
+    ra: Tensor
+        The right ascension in degrees.
+    dec: Tensor
+        The declination in degrees.
+    crval: Tensor
+        The celestial sphere world coordinates in degrees where the tangent
+        plane meets the celestial sphere, should be a shape (2,) tensor. It is
+        assumed that the tangent plane is centered at (0,0) for these
+        coordinates. Thus ``crval`` matches the standard FITS convention.
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the x and y tangent plane coordinates in degrees.
+    """
+    ra = ra * deg_to_rad
+    dec = dec * deg_to_rad
+
+    cosc = torch.sin(crval[1] * deg_to_rad) * torch.sin(dec) + torch.cos(
+        crval[1] * deg_to_rad
+    ) * torch.cos(dec) * torch.cos(ra - crval[0] * deg_to_rad)
+
+    x = torch.cos(dec) * torch.sin(ra - crval[0] * deg_to_rad) / cosc
+
+    y = (
+        torch.cos(crval[1] * deg_to_rad) * torch.sin(dec)
+        - torch.sin(crval[1] * deg_to_rad)
+        * torch.cos(dec)
+        * torch.cos(ra - crval[0] * deg_to_rad)
+    ) / cosc
+
+    return x * rad_to_deg, y * rad_to_deg
+
+
+def plane_to_pixel(px, py, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None):
+    """
+    Convert tangent plane coordinates to pixel coordinates using the WCS
+    information. This matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    px: Tensor
+        The x-coordinate of the point on the tangent plane in degrees.
+    py: Tensor
+        The y-coordinate of the point on the tangent plane in degrees.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), ``i`` and ``j`` will have the same convention.
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to world units and also handles rotation/skew.
+    sip_powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``px,
+        py``.
+    sip_coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+    crplane: Optional[Tensor], optional
+        The reference plane coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates. If None, it is assumed to be (0, 0). Defaults to None.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``pixel_to_plane`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the ``i`` and ``j`` pixel coordinates (in pixel units).
+
+    """
+    if crplane is None:
+        crplane = torch.zeros_like(crpix)
+
+    plane = torch.stack((px, py), -1) - crplane
+    iCD = torch.linalg.inv(CD)
+    pixel = torch.einsum("ij,...j->...i", iCD, plane)
+    delta_w = torch.zeros_like(plane)
+    for i in range(len(sip_powers)):
+        delta_w += sip_coefs[i] * torch.prod(pixel ** sip_powers[i], dim=-1).unsqueeze(
+            -1
+        )
+    pixel += delta_w + crpix
+    return pixel[..., 0], pixel[..., 1]
+
+
+def world_to_pixel(
+    ra,
+    dec,
+    crpix,
+    crval,
+    CD,
+    sip_powers=[],
+    sip_coefs=[],
+    crplane=None,
+):
+    """
+    Convert world coordinates to pixel coordinates using the WCS information.
+    This matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    ra: Tensor
+        The right ascension in degrees.
+    dec: Tensor
+        The declination in degrees.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), ``i`` and ``j`` will have the same convention.
+    crval: Tensor
+        The reference world coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates (unless ``crplane`` is non-zero).
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to world units and also handles rotation/skew.
+    powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``i,
+        j``.
+    coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``pixel_to_world`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the x and y pixel coordinates (in pixels).
+    """
+    px, py = world_to_plane_gnomonic(ra, dec, crval)
+    i, j = plane_to_pixel(px, py, crpix, CD, sip_powers, sip_coefs, crplane)
+    return i, j
 
 
 @lru_cache(maxsize=32)
