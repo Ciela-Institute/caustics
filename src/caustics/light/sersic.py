@@ -6,11 +6,12 @@ from caskade import forward, Param
 
 from .base import Source, NameType
 from . import func
+from ..angle_mixin import Angle_Mixin
 
 __all__ = ("Sersic",)
 
 
-class Sersic(Source):
+class Sersic(Angle_Mixin, Source):
     """
     `Sersic` is a subclass of the abstract class `Source`.
     It represents a source in a strong gravitational lensing system
@@ -108,6 +109,11 @@ class Sersic(Source):
             bool,
             "A flag indicating whether to use lenstronomy to compute the value of k.",
         ] = False,
+        angle_system: str = "q_phi",
+        e1: Optional[Union[Tensor, float]] = None,
+        e2: Optional[Union[Tensor, float]] = None,
+        c1: Optional[Union[Tensor, float]] = None,
+        c2: Optional[Union[Tensor, float]] = None,
         name: NameType = None,
     ):
         """
@@ -174,6 +180,13 @@ class Sersic(Source):
         self.s = s
 
         self.lenstronomy_k_mode = use_lenstronomy_k
+        self.angle_system = angle_system
+        if self.angle_system == "e1_e2":
+            self.e1 = e1
+            self.e2 = e2
+        elif self.angle_system == "c1_c2":
+            self.c1 = c1
+            self.c2 = c2
 
     @forward
     def brightness(
