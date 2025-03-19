@@ -55,7 +55,6 @@ from .lenses.func import (
 
 from .light.func import brightness_sersic, k_lenstronomy, k_sersic
 from .angle_mixin import (
-    Angle_Mixin,
     e1e2_to_qphi,
     qphi_to_e1e2,
     c1c2_to_qphi,
@@ -118,7 +117,6 @@ __all__ = (
     "brightness_sersic",
     "k_lenstronomy",
     "k_sersic",
-    "Angle_Mixin",
     "e1e2_to_qphi",
     "qphi_to_e1e2",
     "c1c2_to_qphi",
