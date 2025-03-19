@@ -120,36 +120,3 @@ class Angle_Mixin:
                 pass
 
         self._angle_system = value
-
-
-if __name__ == "__main__":
-    e1, e2 = torch.meshgrid(
-        torch.linspace(-2, 2, 100), torch.linspace(-2, 2, 100), indexing="ij"
-    )
-
-    q = e1e2_to_q(e1, e2)
-    phi = e1e2_to_phi(e1, e2)
-
-    import matplotlib.pyplot as plt
-
-    plt.imshow(q, origin="lower")
-    plt.colorbar()
-    plt.title("q")
-    plt.show()
-
-    plt.imshow(phi, origin="lower")
-    plt.colorbar()
-    plt.title("phi")
-    plt.show()
-
-    e1_, e2_ = qphi_to_e1e2(q, phi)
-
-    plt.imshow(e1_, origin="lower")
-    plt.colorbar()
-    plt.title("e1")
-    plt.show()
-
-    plt.imshow(e2_, origin="lower")
-    plt.colorbar()
-    plt.title("e2")
-    plt.show()
