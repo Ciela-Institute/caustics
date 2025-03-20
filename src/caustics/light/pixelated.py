@@ -54,6 +54,7 @@ class Pixelated(Source):
             Optional[Tensor],
             "The source image from which brightness values will be interpolated.",
             True,
+            "flux",
         ] = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
@@ -71,6 +72,12 @@ class Pixelated(Source):
             True,
             "arcsec/pixel",
         ] = None,
+        scale: Annotated[
+            Optional[Union[Tensor, float]],
+            "A scale factor to multiply by the image",
+            True,
+            "flux",
+        ] = 1.0,
         shape: Annotated[
             Optional[tuple[int, ...]], "The shape of the source image."
         ] = None,
@@ -121,6 +128,7 @@ class Pixelated(Source):
         self.pixelscale = Param(
             "pixelscale", pixelscale, units="arcsec/pixel", valid=(0, None)
         )
+        self.scale = Param("scale", scale, units="flux", valid=(0, None))
 
     @forward
     def brightness(
@@ -131,6 +139,7 @@ class Pixelated(Source):
         y0: Annotated[Tensor, "Param"],
         image: Annotated[Tensor, "Param"],
         pixelscale: Annotated[Tensor, "Param"],
+        scale: Annotated[Tensor, "Param"],
         padding_mode: str = "zeros",
     ):
         """
@@ -165,7 +174,7 @@ class Pixelated(Source):
         fov_x = pixelscale * image.shape[1]
         fov_y = pixelscale * image.shape[0]
         return interp2d(
-            image,
+            image * scale,
             (x - x0).view(-1) / fov_x * 2,
             (y - y0).view(-1) / fov_y * 2,  # make coordinates bounds at half the fov
             padding_mode=padding_mode,
