@@ -37,6 +37,7 @@ from .light import (
     LightStack,
     StarSource,
 )
+from .angle_mixin import Angle_Mixin
 from . import utils
 from .sims import LensSource, Microlens, build_simulator
 from .tests import test
@@ -79,6 +80,7 @@ __all__ = [
     "Sersic",
     "LightStack",
     "StarSource",
+    "Angle_Mixin",
     "utils",
     "LensSource",
     "Microlens",
