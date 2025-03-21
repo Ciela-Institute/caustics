@@ -56,7 +56,7 @@ class Multipole(ThinLens):
         ] = None,
         a_m: Annotated[
             Optional[Union[Tensor, float]], "The amplitude of the multipole", True
-        ] = None,  # TODO change to true axis ratio
+        ] = None,
         phi_m: Annotated[
             Optional[Union[Tensor, float]],
             "The orientation angle of the multipole",

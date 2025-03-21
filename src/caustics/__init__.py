@@ -1,6 +1,6 @@
 from ._version import version as VERSION  # noqa
 
-from caskade import forward, Module, Param, ValidContext
+from caskade import forward, Module, Param, ValidContext, dynamic
 
 from .cosmology import (
     Cosmology,
@@ -50,6 +50,7 @@ __all__ = [
     "Param",
     "ValidContext",
     "forward",
+    "dynamic",
     "Cosmology",
     "FlatLambdaCDM",
     "h0_default",
