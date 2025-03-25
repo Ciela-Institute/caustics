@@ -67,13 +67,19 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     """
     # Handle the case where q = 1.0, numerical instability
-    q = q - torch.where(q == 1.0, 1e-6 * torch.ones_like(q), torch.zeros_like(q))
+    # q = q - torch.where(q == 1.0, 1e-6 * torch.ones_like(q), torch.zeros_like(q))
+    q = torch.where(q == 1.0, q - 1e-6, q)
 
     x, y = translate_rotate(x, y, x0, y0, phi)
-    psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
-    f = (1 - q**2).sqrt()
-    ax = Rein * q.sqrt() / f * (f * x / (psi + s)).atan()  # fmt: skip
-    ay = Rein * q.sqrt() / f * (f * y / (psi + q**2 * s)).atanh()  # fmt: skip
+
+    # intermediary variables
+    q2_ = q ** 2
+    f = (1 - q2_).sqrt()
+    rein_q_sqrt_f_ = Rein * q.sqrt() / f
+
+    psi = (q2_ * (x ** 2 + s ** 2) + y ** 2).sqrt()
+    ax = rein_q_sqrt_f_ * (f * x / (psi + s)).atan()  # fmt: skip
+    ay = rein_q_sqrt_f_ * (f * y / (psi + q2_ * s)).atanh()  # fmt: skip
 
     return derotate(ax, ay, phi)
 
@@ -106,7 +112,7 @@ def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
         *Unit: radians*
 
-    b: Tensor
+    Rein: Tensor
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -137,15 +143,20 @@ def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     ax, ay = reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s)
     ax, ay = derotate(ax, ay, -phi)
     x, y = translate_rotate(x, y, x0, y0, phi)
-    psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
+
+    # intermediary variables
+    q2_ = q ** 2
+    x2_ = x ** 2
+    max_s_ = max(s, 1e-6)
+    rein_q_sqrt_s_ = Rein * q.sqrt() * s
+
+    psi = (q2_ * (x2_ + s ** 2) + y ** 2).sqrt()
     return (
-        x * ax
-        + y * ay
-        - Rein
-        * q.sqrt()
-        * s
-        * ((psi + max(s, 1e-6)) ** 2 + (1 - q**2) * x**2).sqrt().log()
-        + Rein * q.sqrt() * s * ((1 + q) * max(s, 1e-6)).log()
+            x * ax
+            + y * ay
+            - rein_q_sqrt_s_
+            * ((psi + max_s_) ** 2 + (1 - q2_) * x2_).sqrt().log()
+            + rein_q_sqrt_s_ * ((1 + q) * max_s_).log()
     )
 
 
@@ -205,7 +216,7 @@ def convergence_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
-    psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
+    psi = (q ** 2 * (x ** 2 + s ** 2) + y ** 2).sqrt()
     return 0.5 * q.sqrt() * Rein / psi
 
 

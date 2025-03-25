@@ -115,6 +115,7 @@ class EPL(ThinLens):
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         n_iter: Annotated[int, "Number of iterations for the iterative solver"] = 18,
+        n_chunks: Annotated[int, "Number of chunks for the iterative solver"] = 1,
         name: NameType = None,
     ):
         """
@@ -174,6 +175,9 @@ class EPL(ThinLens):
 
         n_iter: int
             Number of iterations for the iterative solver.
+
+        n_chunks: int
+            Number of chunks for the iterative solver.
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
@@ -186,6 +190,7 @@ class EPL(ThinLens):
         self.s = s
 
         self.n_iter = n_iter
+        self.n_chunks = n_chunks
 
     @forward
     def reduced_deflection_angle(
@@ -228,7 +233,7 @@ class EPL(ThinLens):
 
         """
         return func.reduced_deflection_angle_epl(
-            x0, y0, q, phi, Rein, t, x, y, self.n_iter
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.n_chunks
         )
 
     def _r_omega(self, z, t, q):
@@ -260,20 +265,34 @@ class EPL(ThinLens):
             *Unit: arcsec*
 
         """
-        # constants
         f = (1.0 - q) / (1.0 + q)
-        phi = z / torch.conj(z)
+        phi = z / torch.conj(z) * -f
 
-        # first term in series
-        omega_i = z
-        part_sum = omega_i
+        if self.n_chunks == self.n_iter:
+            # first term in series
+            omega_i = z
+            part_sum = omega_i
+            for i in range(1, self.n_iter):
+                factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
+                omega_i = factor * phi * omega_i  # fmt: skip
+                part_sum = part_sum + omega_i  # fmt: skip
 
-        for i in range(1, self.n_iter):
-            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
-            omega_i = -f * factor * phi * omega_i  # fmt: skip
-            part_sum = part_sum + omega_i  # fmt: skip
-
-        return part_sum
+            return part_sum
+        else:
+            i = torch.arange(1, self.n_iter, device=z.device, dtype=z.real.dtype)
+            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))
+            factor = factor.view(-1, *([1] * z.ndim))
+            phi_expanded = phi.unsqueeze(0)
+            cumprod_res = None
+            for i in range(self.n_chunks):
+                rec = factor[i::self.n_chunks] * phi_expanded
+                if cumprod_res is None:
+                    cumprod = torch.cumprod(rec, dim=0)
+                    cumprod_res = cumprod.sum(dim=0)
+                else:
+                    cumprod = torch.cumprod(torch.cat((cumprod[-1].unsqueeze(0), rec)), dim=0)[1:]
+                    cumprod_res = cumprod_res + cumprod.sum(dim=0)
+            return z * (1 + cumprod_res)
 
     @forward
     def potential(
@@ -310,7 +329,7 @@ class EPL(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_epl(x0, y0, q, phi, Rein, t, x, y, self.n_iter)
+        return func.potential_epl(x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.n_chunks)
 
     @forward
     def convergence(

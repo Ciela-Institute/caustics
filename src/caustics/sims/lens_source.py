@@ -16,7 +16,6 @@ from ..utils import (
 from ..lenses.base import Lens
 from ..light.base import Source
 
-
 __all__ = ("LensSource",)
 
 
@@ -115,42 +114,42 @@ class LensSource(Module):
     """  # noqa: E501
 
     def __init__(
-        self,
-        lens: Annotated[Lens, "caustics lens mass model object"],
-        source: Annotated[
-            Source, "caustics light object which defines the background source"
-        ],
-        pixelscale: Annotated[float, "pixelscale of the sampling grid"],
-        pixels_x: Annotated[
-            int, "number of pixels on the x-axis for the sampling grid"
-        ],
-        lens_light: Annotated[
-            Optional[Source],
-            "caustics light object which defines the lensing object's light",
-        ] = None,
-        pixels_y: Annotated[
-            Optional[int], "number of pixels on the y-axis for the sampling grid"
-        ] = None,
-        upsample_factor: Annotated[int, "Amount of upsampling to model the image"] = 1,
-        quad_level: Annotated[Optional[int], "sub pixel integration resolution"] = None,
-        psf_mode: Annotated[
-            Literal["fft", "conv2d"], "Mode for convolving psf"
-        ] = "fft",
-        psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
-        psf: Annotated[
-            Optional[Union[Tensor, list]], "An image to convolve with the scene", True
-        ] = [[1.0]],
-        x0: Annotated[
-            Optional[Union[Tensor, float]],
-            "center of the fov for the lens source image",
-            True,
-        ] = 0.0,
-        y0: Annotated[
-            Optional[Union[Tensor, float]],
-            "center of the fov for the lens source image",
-            True,
-        ] = 0.0,
-        name: NameType = "sim",
+            self,
+            lens: Annotated[Lens, "caustics lens mass model object"],
+            source: Annotated[
+                Source, "caustics light object which defines the background source"
+            ],
+            pixelscale: Annotated[float, "pixelscale of the sampling grid"],
+            pixels_x: Annotated[
+                int, "number of pixels on the x-axis for the sampling grid"
+            ],
+            lens_light: Annotated[
+                Optional[Source],
+                "caustics light object which defines the lensing object's light",
+            ] = None,
+            pixels_y: Annotated[
+                Optional[int], "number of pixels on the y-axis for the sampling grid"
+            ] = None,
+            upsample_factor: Annotated[int, "Amount of upsampling to model the image"] = 1,
+            quad_level: Annotated[Optional[int], "sub pixel integration resolution"] = None,
+            psf_mode: Annotated[
+                Literal["fft", "conv2d"], "Mode for convolving psf"
+            ] = "fft",
+            psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
+            psf: Annotated[
+                Optional[Union[Tensor, list]], "An image to convolve with the scene", True
+            ] = [[1.0]],
+            x0: Annotated[
+                Optional[Union[Tensor, float]],
+                "center of the fov for the lens source image",
+                True,
+            ] = 0.0,
+            y0: Annotated[
+                Optional[Union[Tensor, float]],
+                "center of the fov for the lens source image",
+                True,
+            ] = 0.0,
+            name: NameType = "sim",
     ):
         super().__init__(name)
 
@@ -181,7 +180,7 @@ class LensSource(Module):
         self._build_grid()
 
     def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+            self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
     ):
         super().to(device, dtype)
         self._grid = tuple(x.to(device, dtype) for x in self._grid)  # type: ignore[has-type]
@@ -307,20 +306,20 @@ class LensSource(Module):
             The input tensor without padding.
         """
         return torch.roll(x, (-self._psf_pad[0], -self._psf_pad[1]), dims=(-2, -1))[
-            ..., : self._s[0], : self._s[1]
-        ]
+               ..., : self._s[0], : self._s[1]
+               ]
 
     @forward
     def __call__(
-        self,
-        psf: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        source_light: bool = True,
-        lens_light: bool = True,
-        lens_source: bool = True,
-        psf_convolve: bool = True,
-        chunk_size: int = 10000,
+            self,
+            psf: Annotated[Tensor, "Param"],
+            x0: Annotated[Tensor, "Param"],
+            y0: Annotated[Tensor, "Param"],
+            source_light: bool = True,
+            lens_light: bool = True,
+            lens_source: bool = True,
+            psf_convolve: bool = True,
+            chunk_size: int = None,
     ):
         """
         forward function
@@ -404,7 +403,7 @@ class LensSource(Module):
             avg_pool2d(mu[None, None], self.upsample_factor).squeeze(0).squeeze(0)
         )
         mu_clipped = mu_native_resolution[
-            self._psf_pad[1] : self.pixels_y + self._psf_pad[1],
-            self._psf_pad[0] : self.pixels_x + self._psf_pad[0],
-        ]
+                     self._psf_pad[1]: self.pixels_y + self._psf_pad[1],
+                     self._psf_pad[0]: self.pixels_x + self._psf_pad[0],
+                     ]
         return mu_clipped
