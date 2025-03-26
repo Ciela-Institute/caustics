@@ -109,11 +109,15 @@ class Angle_Mixin:
             self.q = None
             self.phi = None
             try:
+                self.q.shape = self.e1.shape
+                self.phi.shape = self.e1.shape
                 del self.e1
                 del self.e2
             except AttributeError:
                 pass
             try:
+                self.q.shape = self.c1.shape
+                self.phi.shape = self.c1.shape
                 del self.c1
                 del self.c2
             except AttributeError:
