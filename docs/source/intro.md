@@ -15,34 +15,28 @@ The easiest way to install is to make a new virtual environment then run:
 pip install caustics
 ```
 
-this will install all the required libraries and then install caustics and you
+this will install all the required libraries and then install `caustics` and you
 are ready to go! You can check out the tutorials afterwards to see some of
-caustics' capabilities. If you want to help out with building the caustics code
-base check out the developer installation instructions instead.
+`caustics`' capabilities. If you want to help out with building the `caustics`
+code base check out the developer installation instructions instead.
 
 ## Minimal Example
 
 ```python
+# fmt: off
 import matplotlib.pyplot as plt
 import caustics
 import torch
 
 cosmology = caustics.FlatLambdaCDM()
-sie = caustics.SIE(cosmology=cosmology, name="lens", z_l=0.5, z_s=1.0)
-src = caustics.Sersic(name="source")
-lnslt = caustics.Sersic(name="lenslight")
+sie = caustics.SIE(cosmology=cosmology, name="lens", z_l=0.5, z_s=1.0, x0=-0.2, y0=0.0, q=0.4, phi=1.5708, Rein=1.7)
+src = caustics.Sersic(name="source", x0=0.0, y0=0.0, q=0.5, phi=-0.985, n=1.3, Re=1.0, Ie=5.0)
+lnslt = caustics.Sersic(name="lenslight", x0=-0.2, y0=0.0, q=0.8, phi=0.0, n=1.0, Re=1.0, Ie=10.0)
 
-x = torch.tensor([
-#    x0   y0   q    phi     Rein x0   y0   q     phi    n    Re
-    -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
-#   Ie    x0   y0   q    phi  n   Re   Ie
-    5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
-])  # fmt: skip
+sim = caustics.LensSource(lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100)
 
-sim = caustics.LensSource(
-    lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100, quad_level=3
-)
-plt.imshow(sim(x), origin="lower")
+plt.imshow(sim(), origin="lower")
+plt.axis("off")
 plt.show()
 ```
 
@@ -51,6 +45,9 @@ plt.show()
 ### Batched simulator
 
 ```python
+sim.to_dynamic(False)
+cosmology.to_static()
+x = sim.build_params_tensor()
 newx = x.repeat(20, 1)
 newx += torch.normal(mean=0, std=0.1 * torch.ones_like(newx))
 

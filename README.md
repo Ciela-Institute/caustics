@@ -14,7 +14,7 @@
 [![Zenodo](https://zenodo.org/badge/521722463.svg)](https://zenodo.org/doi/10.5281/zenodo.10806382)
 [![arXiv](https://img.shields.io/badge/arXiv-2406.15542-b31b1b.svg)](https://arxiv.org/abs/2406.15542)
 
-# caustics
+# Caustics
 
 The lensing pipeline of the future: GPU-accelerated,
 automatically-differentiable, highly modular. Currently under heavy development:
@@ -22,7 +22,7 @@ expect interface changes and some imprecise/untested calculations.
 
 ## Installation
 
-Simply install caustics from PyPI:
+Simply install `caustics` from PyPI:
 
 ```bash
 pip install caustics
@@ -31,26 +31,19 @@ pip install caustics
 ## Minimal Example
 
 ```python
+# fmt: off
 import matplotlib.pyplot as plt
 import caustics
 import torch
 
 cosmology = caustics.FlatLambdaCDM()
-sie = caustics.SIE(cosmology=cosmology, name="lens", z_l=0.5, z_s=1.0)
-src = caustics.Sersic(name="source")
-lnslt = caustics.Sersic(name="lenslight")
+sie = caustics.SIE(cosmology=cosmology, name="lens", z_l=0.5, z_s=1.0, x0=-0.2, y0=0.0, q=0.4, phi=1.5708, Rein=1.7)
+src = caustics.Sersic(name="source", x0=0.0, y0=0.0, q=0.5, phi=-0.985, n=1.3, Re=1.0, Ie=5.0)
+lnslt = caustics.Sersic(name="lenslight", x0=-0.2, y0=0.0, q=0.8, phi=0.0, n=1.0, Re=1.0, Ie=10.0)
 
-x = torch.tensor([
-#    x0   y0   q    phi     Rein x0   y0   q     phi    n    Re
-    -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0,
-#   Ie    x0   y0   q    phi  n   Re   Ie
-    5.0, -0.2, 0.0, 0.8, 0.0, 1., 1.0, 10.0
-])  # fmt: skip
+sim = caustics.LensSource(lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100)
 
-sim = caustics.LensSource(
-    lens=sie, source=src, lens_light=lnslt, pixelscale=0.05, pixels_x=100
-)
-plt.imshow(sim(x), origin="lower")
+plt.imshow(sim(), origin="lower")
 plt.axis("off")
 plt.show()
 ```
@@ -60,6 +53,9 @@ plt.show()
 ### Batched simulator
 
 ```python
+sim.to_dynamic(False)
+cosmology.to_static()
+x = sim.build_params_tensor()
 newx = x.repeat(20, 1)
 newx += torch.normal(mean=0, std=0.1 * torch.ones_like(newx))
 

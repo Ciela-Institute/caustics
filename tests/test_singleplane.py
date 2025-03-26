@@ -12,10 +12,26 @@ def test_singleplane():
     z_s = 1.0
     cosmology = FlatLambdaCDM(name="cosmo")
     sie1 = SIE(
-        name="sie1", cosmology=cosmology, x0=0.2, y0=0.1, q=0.7, phi=pi / 3, Rein=1.0
+        name="sie1",
+        cosmology=cosmology,
+        z_l=z_l,
+        z_s=z_s,
+        x0=0.2,
+        y0=0.1,
+        q=0.7,
+        phi=pi / 3,
+        Rein=1.0,
     )
     sie2 = SIE(
-        name="sie2", cosmology=cosmology, x0=-0.2, y0=-0.3, q=0.3, phi=pi / 2, Rein=1.3
+        name="sie2",
+        cosmology=cosmology,
+        z_l=z_l,
+        z_s=z_s,
+        x0=-0.2,
+        y0=-0.3,
+        q=0.3,
+        phi=pi / 2,
+        Rein=1.3,
     )
 
     sp = SinglePlane(

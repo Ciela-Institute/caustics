@@ -21,6 +21,7 @@ chapters:
       - file: tutorials/VisualizeCaustics
       - file: tutorials/MultiplaneDemo
       - file: tutorials/InvertLensEquation
+      - file: tutorials/NewModelDemo
       - file: tutorials/MultiSource
       - file: tutorials/LensZoo
   - file: examples/index

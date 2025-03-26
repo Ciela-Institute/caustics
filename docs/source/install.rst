@@ -9,7 +9,7 @@ The easiest way to install is to make a new virtual environment then run::
 
     pip install caustics
 
-this will install all the required libraries and then install caustics and you are ready to go! You can check out the tutorials afterwards to see some of caustics's capabilities.
+this will install all the required libraries and then install ``caustics`` and you are ready to go! You can check out the tutorials afterwards to see some of ``caustics``' capabilities.
 
 
 Developer Install
@@ -23,7 +23,7 @@ this will create a directory ``caustics`` wherever you ran the command. Next go 
 
    pip install -e ".[dev]"
 
-this will install all relevant libraries and then install caustics in an editable format so any changes you make to the code will be included next time you import the package. To start making changes you should immediately create a new branch::
+this will install all relevant libraries and then install ``caustics`` in an editable format so any changes you make to the code will be included next time you import the package. To start making changes you should immediately create a new branch::
 
    git checkout -b <new_branch_name>
 
