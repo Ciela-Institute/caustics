@@ -54,6 +54,12 @@ from .lenses.func import (
 )
 
 from .light.func import brightness_sersic, k_lenstronomy, k_sersic
+from .angle_mixin import (
+    e1e2_to_qphi,
+    qphi_to_e1e2,
+    c1c2_to_qphi,
+    qphi_to_c1c2,
+)
 
 __all__ = (
     "forward_raytrace",
@@ -111,4 +117,8 @@ __all__ = (
     "brightness_sersic",
     "k_lenstronomy",
     "k_sersic",
+    "e1e2_to_qphi",
+    "qphi_to_e1e2",
+    "c1c2_to_qphi",
+    "qphi_to_c1c2",
 )

@@ -6,12 +6,13 @@ from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZType
+from ..angle_mixin import Angle_Mixin
 from . import func
 
 __all__ = ("SIE",)
 
 
-class SIE(ThinLens):
+class SIE(Angle_Mixin, ThinLens):
     """
     A class representing a Singular Isothermal Ellipsoid (SIE) strong gravitational lens model.
     This model is based on Keeton 2001, which can be found at https://arxiv.org/abs/astro-ph/0102341.
@@ -86,8 +87,10 @@ class SIE(ThinLens):
             Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
         ] = None,
         q: Annotated[
-            Optional[Union[Tensor, float]], "The axis ratio of the lens", True
-        ] = None,  # TODO change to true axis ratio
+            Optional[Union[Tensor, float]],
+            "The axis ratio of the lens convergence",
+            True,
+        ] = None,
         phi: Annotated[
             Optional[Union[Tensor, float]],
             "The orientation angle of the lens (position angle)",
@@ -97,6 +100,12 @@ class SIE(ThinLens):
             Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
         ] = None,
         parametrization: Literal["Rein", "velocity_dispersion"] = "Rein",
+        sigma_v: Optional[Union[Tensor, float]] = None,
+        angle_system: str = "q_phi",
+        e1: Optional[Union[Tensor, float]] = None,
+        e2: Optional[Union[Tensor, float]] = None,
+        c1: Optional[Union[Tensor, float]] = None,
+        c2: Optional[Union[Tensor, float]] = None,
         s: Annotated[float, "The core radius of the lens"] = 0.0,
         name: NameType = None,
         **kwargs,
@@ -114,7 +123,14 @@ class SIE(ThinLens):
         self._parametrization = "Rein"
         self.parametrization = parametrization
         if self.parametrization == "velocity_dispersion":
-            self.sigma_v = kwargs.get("sigma_v", None)
+            self.sigma_v = sigma_v
+        self.angle_system = angle_system
+        if self.angle_system == "e1_e2":
+            self.e1 = e1
+            self.e2 = e2
+        elif self.angle_system == "c1_c2":
+            self.c1 = c1
+            self.c2 = c2
         self.s = s
 
     @property
