@@ -461,7 +461,7 @@ def interp1d(
     return ret
 
 
-def interp2d(
+def interp2d_old(
         im: Tensor,
         x: Tensor,
         y: Tensor,
@@ -562,7 +562,195 @@ def interp2d(
     return result
 
 
-def interp3d(
+# interp2d with all the features
+def interp2d_fully_featured(im: Tensor, x: Tensor, y: Tensor,
+                            method: Literal["linear", "nearest", "bicubic"] = "linear", padding_mode: str = "zeros",
+                            use_old=False) -> Tensor:
+    """
+    Performs 2D interpolation on the input tensor using specified method and padding mode.
+
+    The function interpolates the input tensor `im` based on the provided normalized grid
+    coordinates `x` and `y`. It provides options for interpolation methods such as linear,
+    nearest, or bicubic, and multiple padding modes. It supports both regular and forward
+    autograd computations, with certain restrictions on bicubic interpolation when forward
+    AD is enabled.
+
+    Parameters
+    ----------
+    im : Tensor
+        A 3D tensor of shape (batch_size, height, width) or a 2D tensor of shape
+        (height, width) representing input image or images to interpolate.
+    x : Tensor
+        A 0D, 1D or 2D tensor containing normalized grid coordinates along the x-axis
+        for interpolation.
+    y : Tensor
+        A 0D, 1D or 2D tensor containing normalized grid coordinates along the y-axis
+        for interpolation.
+    method : {"linear", "nearest", "bicubic"}, optional
+        Specifies the interpolation method. Default method is "linear".
+    padding_mode : str, optional
+        Specifies the padding mode to handle out-of-bound grid coordinates.
+        Options are "extrapolate", "clamp", and "zeros". Defaults to "zeros".
+    use_old: bool, optional
+        Specifies whether to use the old implementation of the function.
+
+    Returns
+    -------
+    Tensor
+        The interpolated tensor matching the shape of the input grid.
+
+    Raises
+    ------
+    ValueError
+        If an invalid `padding_mode` is provided. Also raised if bicubic interpolation
+        is used with forward AD enabled.
+
+    Notes
+    -----
+    - If `x` and `y` tensors are of the same shape as the input tensor `im`, the function
+      optimizes the execution by skipping all padding overhead.
+    - The function explicitly accounts for alignment in grid sampling based on whether
+      autograd is enabled, using the `align_corner` flag.
+    - If padding mode is set to "zeros", grid locations that fall outside the valid range
+      are replaced with zero values in the result tensor.
+    """
+    if padding_mode not in ["extrapolate", "clamp", "zeros"]:
+        raise ValueError(f"{padding_mode} is not a valid padding mode")
+
+    align_corner = False  # for faster forward pass
+    if torch.is_grad_enabled():
+        align_corner = True
+
+    if im.ndim == 2:
+        im = im.unsqueeze(0)
+    b, h, w = im.shape
+
+    if torch.autograd.forward_ad._current_level != -1:  # or use_old:
+        if method == "bicubic":
+            raise ValueError("Bicubic interpolation is not supported when using forward AD or when using_old is True.")
+        return torch.stack([interp2d_old(im[i], x.view(-1), y.view(-1), method, padding_mode) for i in range(b)], dim=0)
+
+    if (x.shape == im.shape) & (y.shape == im.shape):
+        padding_mode = "no_padding"  # skip all the padding overhead
+
+    if padding_mode == "clamp":
+        x = x.clamp(-1, 1)
+        y = y.clamp(-1, 1)
+    else:
+        idxs_out_of_bounds = (x < -1) | (x > 1) | (y < -1) | (y > 1)
+
+    grid = torch.stack((x, y), dim=-1)
+    while grid.ndim < 4:
+        grid = grid.unsqueeze(0)
+    if b != 1:
+        grid = grid.repeat(b, 1, 1, 1)
+
+    if align_corner:
+        scale = torch.tensor([w / (w - 1), h / (h - 1)], device=grid.device, dtype=grid.dtype)
+        grid = grid * scale
+
+    result = torch.nn.functional.grid_sample(
+        im.view(b, 1, h, w),
+        grid,
+        mode="bilinear" if method == "linear" else method,
+        padding_mode="zeros",  # TODO: "border" fixes the border issues, but does not like autograd
+        align_corners=align_corner,
+    )
+
+    if padding_mode == "zeros":
+        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
+
+    return result
+
+
+def interp2d(im: Tensor, x: Tensor, y: Tensor,
+             method: Literal["linear", "nearest", "bicubic"] = "linear", padding_mode: str = "zeros") -> Tensor:
+    """
+    Performs 2D interpolation on the input tensor using specified method and padding mode.
+
+    The function interpolates the input tensor `im` based on the provided normalized grid
+    coordinates `x` and `y`. It provides options for interpolation methods such as linear,
+    nearest, or bicubic, and multiple padding modes. It supports both regular and forward
+    autograd computations, with certain restrictions on bicubic interpolation when forward
+    AD is enabled.
+
+    Parameters
+    ----------
+    im : Tensor
+        A 3D tensor of shape (batch_size, height, width) or a 2D tensor of shape
+        (height, width) representing input image or images to interpolate.
+    x : Tensor
+        A 0D, 1D or 2D tensor containing normalized grid coordinates along the x-axis
+        for interpolation.
+    y : Tensor
+        A 0D, 1D or 2D tensor containing normalized grid coordinates along the y-axis
+        for interpolation.
+    method : {"linear", "nearest", "bicubic"}, optional
+        Specifies the interpolation method. Default method is "linear".
+    padding_mode : str, optional
+        Specifies the padding mode to handle out-of-bound grid coordinates.
+        Options are "extrapolate", "clamp", and "zeros". Defaults to "zeros".
+
+    Returns
+    -------
+    Tensor
+        The interpolated tensor matching the shape of the input grid.
+
+    Raises
+    ------
+    ValueError
+        If an invalid `padding_mode` is provided. Also raised if bicubic interpolation
+        is used with forward AD enabled.
+
+    Notes
+    -----
+    - If `x` and `y` tensors are of the same shape as the input tensor `im`, the function
+      optimizes the execution by skipping all padding overhead.
+    - The function explicitly accounts for alignment in grid sampling based on whether
+      autograd is enabled, using the `align_corner` flag.
+    - If padding mode is set to "zeros", grid locations that fall outside the valid range
+      are replaced with zero values in the result tensor.
+    """
+    if padding_mode not in ["extrapolate", "clamp", "zeros"]:
+        raise ValueError(f"{padding_mode} is not a valid padding mode")
+
+    if im.ndim == 2:
+        im = im.unsqueeze(0)
+    b, h, w = im.shape
+
+    if torch.autograd.forward_ad._current_level != -1 or padding_mode == "extrapolate":
+        if method == "bicubic":
+            raise ValueError(
+                "Bicubic interpolation is not supported when using forward AD or when the old interp2d implementation.")
+        # return torch.stack([interp2d_old(im[i], x.view(-1), y.view(-1), method, padding_mode).reshape(x.shape) for i in range(b)], dim=0)
+
+    if padding_mode == "clamp":
+        x = x.clamp(-1, 1)
+        y = y.clamp(-1, 1)
+    else:
+        idxs_out_of_bounds = (x < -1) | (x > 1) | (y < -1) | (y > 1)
+
+    grid = torch.stack((x, y), dim=-1)
+    while grid.ndim < 4:
+        grid = grid.unsqueeze(0)
+    if b != 1:
+        grid = grid.repeat(b, 1, 1, 1)
+
+    result = torch.nn.functional.grid_sample(
+        im.view(b, 1, h, w),
+        grid,
+        mode="bilinear" if method == "linear" else method,
+        padding_mode="zeros",
+        align_corners=False,
+    )
+
+    """if padding_mode == "zeros":
+        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)"""
+
+    return result
+
+
+def interp3d_old(
         cu: Tensor,
         x: Tensor,
         y: Tensor,
@@ -671,6 +859,101 @@ def interp3d(
         raise ValueError(f"{method} is not a valid interpolation method")
 
     if padding_mode == "zeros":  # else padding_mode == "extrapolate"
+        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
+
+    return result
+
+
+def interp3d(cu: Tensor,
+             x: Tensor,
+             y: Tensor,
+             t: Tensor,
+             method: Literal["linear", "nearest",] = "linear",
+             padding_mode: Literal["zeros", "extrapolate"] = "zeros") -> Tensor:
+    """
+    Interpolates values in a 3D tensor across given coordinates.
+
+    This function performs interpolation over a 3D tensor to compute values at
+    specific x, y, and t coordinates. Supports multiple interpolation methods
+    (linear, nearest) and padding modes. Handles single or batch
+    processing of tensors and allows adaptive adjustments when gradients
+    are enabled. Exclusions for certain conditions, such as disallowed
+    methods during forward-mode automatic differentiation, are enforced.
+
+    Parameters
+    ----------
+    cu : Tensor
+        A 3D or batched 4D tensor representing the data to be interpolated.
+        If the input is 3D, it will be unsqueezed to have a batch dimension.
+
+    x : Tensor
+        A 0D, 1D, 2D or 3D tensor containing the x-coordinates for interpolation.
+
+    y : Tensor
+        A 0D, 1D, 2D or 3D tensor containing the y-coordinates for interpolation.
+
+    t : Tensor
+        A 0D, 1D, 2D or 3D tensor containing the t-coordinates for interpolation.
+
+    method : {'linear', 'nearest''}, optional
+        Interpolation method to use. Defaults to "linear".
+
+    padding_mode : {'zeros', 'extrapolate'}, optional
+        The padding mode to use for out-of-bound coordinates. Defaults to "zeros".
+
+    Returns
+    -------
+    Tensor
+        The interpolated values computed at the specified coordinate locations.
+        The returned tensor dimension matches the input tensor batch dimension
+        and the size of the coordinate inputs.
+
+    Raises
+    ------
+    ValueError
+        If `cu` is not a 3D tensor, or `t` has a higher dimensionality than 1D.
+        If an invalid value is passed for `method` or `padding_mode`.
+        If `bicubic` interpolation is attempted during forward-mode
+        automatic differentiation.
+    """
+    if padding_mode not in ["extrapolate", "zeros"]:
+        raise ValueError(f"{padding_mode} is not a valid padding mode")
+
+    align_corner = False  # for faster forward pass
+    if torch.is_grad_enabled():
+        align_corner = True
+
+    if cu.ndim == 3:
+        cu = cu.unsqueeze(0)
+    b, d, h, w = cu.shape
+
+    if torch.autograd.forward_ad._current_level != -1:
+        return torch.stack(
+            [interp3d_old(cu[i], x.view(-1), y.view(-1), t.view(-1), method=method, padding_mode=padding_mode) for i in
+             range(b)], dim=0)
+
+    if padding_mode == "zeros":
+        idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1) | (t < -1) | (t > 1)
+
+    grid = torch.stack((x, y, t), dim=-1).unsqueeze(0)
+    while grid.ndim != 5:
+        grid = grid.unsqueeze(0)
+    if b != 1:
+        grid = grid.repeat(b, 1, 1, 1)
+
+    if align_corner:
+        scale = torch.tensor([w / (w - 1), h / (h - 1), d / (d - 1)], device=grid.device, dtype=grid.dtype)
+        grid = grid * scale
+
+    result = torch.nn.functional.grid_sample(
+        cu.view(b, 1, d, h, w),
+        grid,
+        mode="bilinear" if method == "linear" else method,
+        padding_mode="zeros",
+        align_corners=align_corner,
+    )
+
+    if padding_mode == "zeros":
         result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
 
     return result
