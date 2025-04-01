@@ -30,7 +30,7 @@ class Lens(Module):
     """
 
     def __init__(
-        self, cosmology: CosmologyType, name: NameType = None, z_s: ZType = None
+            self, cosmology: CosmologyType, name: NameType = None, z_s: ZType = None
     ):
         """
         Initializes a new instance of the Lens class.
@@ -54,12 +54,12 @@ class Lens(Module):
 
     @forward
     def jacobian_lens_equation(
-        self,
-        x: Tensor,
-        y: Tensor,
-        method="autograd",
-        pixelscale=None,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            method="autograd",
+            pixelscale=None,
+            **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the lensing equation at specified points.
@@ -83,11 +83,11 @@ class Lens(Module):
 
     @forward
     def shear(
-        self,
-        x: Tensor,
-        y: Tensor,
-        method="autograd",
-        pixelscale: Optional[Tensor] = None,
+            self,
+            x: Tensor,
+            y: Tensor,
+            method="autograd",
+            pixelscale: Optional[Tensor] = None,
     ):
         """
         General shear calculation for a lens model using the jacobian of the
@@ -102,9 +102,9 @@ class Lens(Module):
 
     @forward
     def magnification(
-        self,
-        x: Tensor,
-        y: Tensor,
+            self,
+            x: Tensor,
+            y: Tensor,
     ) -> Tensor:
         """
         Compute the gravitational magnification at the given coordinates.
@@ -133,14 +133,14 @@ class Lens(Module):
 
     @forward
     def forward_raytrace(
-        self,
-        bx: Tensor,
-        by: Tensor,
-        epsilon: float = 1e-3,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        fov: float = 5.0,
-        divisions: int = 100,
+            self,
+            bx: Tensor,
+            by: Tensor,
+            epsilon: float = 1e-3,
+            x0: Optional[Tensor] = None,
+            y0: Optional[Tensor] = None,
+            fov: float = 5.0,
+            divisions: int = 100,
     ) -> tuple[Tensor, Tensor]:
         """
         Perform a forward ray-tracing operation which maps from the source plane
@@ -211,10 +211,10 @@ class ThickLens(Lens):
 
     @forward
     def reduced_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
         ThickLens objects do not have a reduced deflection angle
@@ -246,10 +246,10 @@ class ThickLens(Lens):
 
     @forward
     def effective_reduced_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """ThickLens objects do not have a reduced deflection angle since the
         distance D_ls is undefined. Instead we define an effective
@@ -277,11 +277,11 @@ class ThickLens(Lens):
 
     @forward
     def physical_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-        *args,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            *args,
+            **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """Physical deflection angles are computed with respect to a lensing
         plane. ThickLens objects have no unique definition of a lens
@@ -321,11 +321,11 @@ class ThickLens(Lens):
     @abstractmethod
     @forward
     def raytrace(
-        self,
-        x: Tensor,
-        y: Tensor,
-        *args,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            *args,
+            **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """Performs ray tracing by computing the angular position on the
         source plance associated with a given input observed angular
@@ -361,11 +361,11 @@ class ThickLens(Lens):
     @abstractmethod
     @forward
     def surface_density(
-        self,
-        x: Tensor,
-        y: Tensor,
-        *args,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            *args,
+            **kwargs,
     ) -> Tensor:
         """
         Computes the projected mass density at given coordinates.
@@ -396,11 +396,11 @@ class ThickLens(Lens):
     @abstractmethod
     @forward
     def time_delay(
-        self,
-        x: Tensor,
-        y: Tensor,
-        *args,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            *args,
+            **kwargs,
     ) -> Tensor:
         """
         Computes the gravitational time delay at given coordinates.
@@ -429,10 +429,10 @@ class ThickLens(Lens):
 
     @forward
     def _jacobian_effective_deflection_angle_finitediff(
-        self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
+            self,
+            x: Tensor,
+            y: Tensor,
+            pixelscale: Tensor,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -449,10 +449,10 @@ class ThickLens(Lens):
 
     @forward
     def _jacobian_effective_deflection_angle_autograd(
-        self,
-        x: Tensor,
-        y: Tensor,
-        chunk_size: int = 10000,
+            self,
+            x: Tensor,
+            y: Tensor,
+            chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -471,12 +471,12 @@ class ThickLens(Lens):
 
     @forward
     def jacobian_effective_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-        method="autograd",
-        pixelscale=None,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            method="autograd",
+            pixelscale=None,
+            **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -502,11 +502,11 @@ class ThickLens(Lens):
 
     @forward
     def _jacobian_lens_equation_finitediff(
-        self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            pixelscale: Tensor,
+            **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the lensing equation at specified points.
@@ -520,10 +520,10 @@ class ThickLens(Lens):
 
     @forward
     def _jacobian_lens_equation_autograd(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the lensing equation at specified points.
@@ -535,10 +535,10 @@ class ThickLens(Lens):
 
     @forward
     def effective_convergence_div(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> Tensor:
         """
         Using the divergence of the effective reduced delfection angle
@@ -555,10 +555,10 @@ class ThickLens(Lens):
 
     @forward
     def effective_convergence_curl(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> Tensor:
         """
         Use the curl of the effective reduced deflection angle vector field
@@ -598,20 +598,21 @@ class ThinLens(Lens):
     """
 
     def __init__(
-        self,
-        cosmology: CosmologyType,
-        z_l: ZType = None,
-        z_s: ZType = None,
-        name: NameType = None,
+            self,
+            cosmology: CosmologyType,
+            z_l: ZType = None,
+            z_s: ZType = None,
+            name: NameType = None,
     ):
         super().__init__(cosmology=cosmology, name=name, z_s=z_s)
         self.z_l = Param("z_l", z_l, units="unitless", valid=(0, None))
 
     @forward
     def reduced_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
+            self,
+            x: Tensor,
+            y: Tensor,
+            chunk_size: int = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -628,6 +629,11 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
+        chunk_size: int
+            Chunk size for the autograd computation.
+
+            *Unit: None*
+
         Returns
         --------
         x_component: Tensor
@@ -641,19 +647,35 @@ class ThinLens(Lens):
             *Unit: arcsec*
 
         """
-        ax, ay = torch.vmap(
-            torch.func.grad(self.potential, (0, 1)),
-            chunk_size=10000,
-        )(x.flatten(), y.flatten())
+        x_flat, y_flat = x.flatten(), y.flatten()
+
+        if chunk_size is not None:
+            x_chunks = torch.split(x_flat, chunk_size)
+            y_chunks = torch.split(y_flat, chunk_size)
+
+            ax = None
+            ay = None
+            for x_chunk, y_chunk in zip(x_chunks, y_chunks):
+                ax_chunk, ay_chunk = \
+                torch.autograd.functional.vjp(self.potential, (x_chunk, y_chunk), torch.ones_like(x_chunk))[1]
+                if ax is None:
+                    ax = ax_chunk
+                    ay = ay_chunk
+                else:
+                    ax = torch.cat((ax, ax_chunk))
+                    ay = torch.cat((ay, ay_chunk))
+        else:
+            ax, ay = torch.autograd.functional.vjp(self.potential, (x_flat, y_flat),
+                                                   torch.ones_like(x_flat))[1]
         return ax.reshape(x.shape), ay.reshape(y.shape)
 
     @forward
     def physical_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
+            self,
+            x: Tensor,
+            y: Tensor,
+            z_s: Annotated[Tensor, "Param"],
+            z_l: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
@@ -693,11 +715,11 @@ class ThinLens(Lens):
     @abstractmethod
     @forward
     def convergence(
-        self,
-        x: Tensor,
-        y: Tensor,
-        *args,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            *args,
+            **kwargs,
     ) -> Tensor:
         """
         Computes the convergence of the lens at given coordinates.
@@ -733,11 +755,11 @@ class ThinLens(Lens):
     @abstractmethod
     @forward
     def potential(
-        self,
-        x: Tensor,
-        y: Tensor,
-        *args,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            *args,
+            **kwargs,
     ) -> Tensor:
         """
         Computes the gravitational lensing potential at given coordinates.
@@ -766,11 +788,11 @@ class ThinLens(Lens):
 
     @forward
     def surface_density(
-        self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
+            self,
+            x: Tensor,
+            y: Tensor,
+            z_s: Annotated[Tensor, "Param"],
+            z_l: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Computes the surface mass density of the lens at given coordinates.
@@ -800,10 +822,10 @@ class ThinLens(Lens):
 
     @forward
     def raytrace(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> tuple[Tensor, Tensor]:
         """
         Perform a ray-tracing operation by subtracting
@@ -839,7 +861,7 @@ class ThinLens(Lens):
 
     @forward
     def _arcsec2_to_days(
-        self, z_s: Annotated[Tensor, "Param"], z_l: Annotated[Tensor, "Param"]
+            self, z_s: Annotated[Tensor, "Param"], z_l: Annotated[Tensor, "Param"]
     ):
         """
         This method is used by :func:`caustics.lenses.ThinLens.time_delay` to
@@ -852,11 +874,11 @@ class ThinLens(Lens):
 
     @forward
     def time_delay(
-        self,
-        x: Tensor,
-        y: Tensor,
-        shapiro_time_delay: bool = True,
-        geometric_time_delay: bool = True,
+            self,
+            x: Tensor,
+            y: Tensor,
+            shapiro_time_delay: bool = True,
+            geometric_time_delay: bool = True,
     ) -> Tensor:
         """
         Computes the gravitational time delay for light passing through the lens at given coordinates.
@@ -911,7 +933,7 @@ class ThinLens(Lens):
             TD = TD - potential
         if geometric_time_delay:
             ax, ay = self.reduced_deflection_angle(x, y)
-            fp = 0.5 * (ax**2 + ay**2)
+            fp = 0.5 * (ax ** 2 + ay ** 2)
             TD = TD + fp
 
         factor = self._arcsec2_to_days()
@@ -920,10 +942,10 @@ class ThinLens(Lens):
 
     @forward
     def _jacobian_deflection_angle_finitediff(
-        self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
+            self,
+            x: Tensor,
+            y: Tensor,
+            pixelscale: Tensor,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -940,10 +962,10 @@ class ThinLens(Lens):
 
     @forward
     def _jacobian_deflection_angle_autograd(
-        self,
-        x: Tensor,
-        y: Tensor,
-        chunk_size: int = 10000,
+            self,
+            x: Tensor,
+            y: Tensor,
+            chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -961,12 +983,12 @@ class ThinLens(Lens):
 
     @forward
     def jacobian_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-        method="autograd",
-        pixelscale=None,
-        chunk_size: int = 10000,
+            self,
+            x: Tensor,
+            y: Tensor,
+            method="autograd",
+            pixelscale=None,
+            chunk_size: int = 10000,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -989,11 +1011,11 @@ class ThinLens(Lens):
 
     @forward
     def _jacobian_lens_equation_finitediff(
-        self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            pixelscale: Tensor,
+            **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the lensing equation at specified points.
@@ -1005,10 +1027,10 @@ class ThinLens(Lens):
 
     @forward
     def _jacobian_lens_equation_autograd(
-        self,
-        x: Tensor,
-        y: Tensor,
-        **kwargs,
+            self,
+            x: Tensor,
+            y: Tensor,
+            **kwargs,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the lensing equation at specified points.
