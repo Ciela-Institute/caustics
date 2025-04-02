@@ -451,7 +451,7 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -643,27 +643,9 @@ class ThinLens(Lens):
             *Unit: arcsec*
 
         """
-        x_flat, y_flat = x.flatten(), y.flatten()
-
-        if chunk_size is not None:
-            x_chunks = torch.split(x_flat, chunk_size)
-            y_chunks = torch.split(y_flat, chunk_size)
-
-            # Initialize as empty tensors
-            ax = torch.empty(0, dtype=x_flat.dtype, device=x_flat.device)
-            ay = torch.empty(0, dtype=y_flat.dtype, device=y_flat.device)
-
-            # Compute in chunks
-            for x_chunk, y_chunk in zip(x_chunks, y_chunks):
-                ax_chunk, ay_chunk = torch.autograd.functional.vjp(
-                    self.potential, (x_chunk, y_chunk), torch.ones_like(x_chunk)
-                )[1]
-                ax = torch.cat((ax, ax_chunk))
-                ay = torch.cat((ay, ay_chunk))
-        else:
-            ax, ay = torch.autograd.functional.vjp(
-                self.potential, (x_flat, y_flat), torch.ones_like(x_flat)
-            )[1]
+        ax, ay = torch.vmap(
+            torch.func.grad(self.potential, (0, 1)), chunk_size=chunk_size
+        )(x.flatten(), y.flatten())
         return ax.reshape(x.shape), ay.reshape(y.shape)
 
     @forward
@@ -715,6 +697,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
+        chunk_size: Optional[int] = None,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -733,6 +716,11 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
+        chunk_size: int
+            Chunk size for the autograd computation.
+
+            *Unit: number*
+
         Returns
         -------
         Tensor
@@ -743,7 +731,7 @@ class ThinLens(Lens):
         """
         Psi_H = torch.vmap(
             torch.func.hessian(self.potential, (0, 1)),
-            chunk_size=10000,
+            chunk_size=chunk_size,
         )(x.flatten(), y.flatten())
         Psi_H = torch.stack([torch.stack(Hrow, dim=-1) for Hrow in Psi_H], dim=-2)
         Psi_H = Psi_H.reshape(*x.shape, 2, 2)
@@ -962,7 +950,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -985,7 +973,7 @@ class ThinLens(Lens):
         y: Tensor,
         method="autograd",
         pixelscale=None,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
