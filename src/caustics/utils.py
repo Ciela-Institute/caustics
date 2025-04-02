@@ -166,7 +166,7 @@ def to_elliptical(x, y, q: Tensor):
 
 
 def meshgrid(
-        pixelscale, nx, ny=None, device=None, dtype=torch.float32
+    pixelscale, nx, ny=None, device=None, dtype=torch.float32
 ) -> Tuple[Tensor, Tensor]:
     """
     Generates a 2D meshgrid based on the provided pixelscale and dimensions.
@@ -230,10 +230,10 @@ def _quad_table(n, p, dtype, device):
 
 
 def gaussian_quadrature_grid(
-        pixelscale,
-        X,
-        Y,
-        quad_level=3,
+    pixelscale,
+    X,
+    Y,
+    quad_level=3,
 ):
     """
     Generates a 2D meshgrid for Gaussian quadrature based on the provided pixelscale and dimensions.
@@ -270,14 +270,14 @@ def gaussian_quadrature_grid(
     )
 
     # Gaussian quadrature evaluation points
-    Xs = torch.repeat_interleave(X[..., None], quad_level ** 2, -1) + abscissaX
-    Ys = torch.repeat_interleave(Y[..., None], quad_level ** 2, -1) + abscissaY
+    Xs = torch.repeat_interleave(X[..., None], quad_level**2, -1) + abscissaX
+    Ys = torch.repeat_interleave(Y[..., None], quad_level**2, -1) + abscissaY
     return Xs, Ys, weight
 
 
 def gaussian_quadrature_integrator(
-        F: Tensor,
-        weight: Tensor,
+    F: Tensor,
+    weight: Tensor,
 ):
     """
     Performs a pixel-wise integration using Gaussian quadrature.
@@ -313,12 +313,12 @@ def gaussian_quadrature_integrator(
 
 
 def quad(
-        F: Callable,
-        pixelscale: float,
-        X: Tensor,
-        Y: Tensor,
-        args: Tuple = (),
-        quad_level: int = 3,
+    F: Callable,
+    pixelscale: float,
+    X: Tensor,
+    Y: Tensor,
+    args: Tuple = (),
+    quad_level: int = 3,
 ):
     """
     Performs a pixel-wise integration on a function using Gaussian quadrature.
@@ -417,10 +417,10 @@ def _h_poly(t):
 
 
 def interp1d(
-        x: Tensor,
-        y: Tensor,
-        xs: Tensor,
-        extend: Literal["extrapolate", "const", "linear"] = "extrapolate",
+    x: Tensor,
+    y: Tensor,
+    xs: Tensor,
+    extend: Literal["extrapolate", "const", "linear"] = "extrapolate",
 ) -> Tensor:
     """Compute the 1D cubic spline interpolation for the given data points
     using PyTorch.
@@ -462,11 +462,11 @@ def interp1d(
 
 
 def interp2d(
-        im: Tensor,
-        x: Tensor,
-        y: Tensor,
-        method: Literal["linear", "nearest"] = "linear",
-        padding_mode: str = "zeros",
+    im: Tensor,
+    x: Tensor,
+    y: Tensor,
+    method: Literal["linear", "nearest"] = "linear",
+    padding_mode: str = "zeros",
 ) -> Tensor:
     """
     Interpolates a 2D image at specified coordinates. Similar to
@@ -563,12 +563,12 @@ def interp2d(
 
 
 def interp3d(
-        cu: Tensor,
-        x: Tensor,
-        y: Tensor,
-        t: Tensor,
-        method: Literal["linear", "nearest"] = "linear",
-        padding_mode: Literal["zeros", "extrapolate"] = "zeros",
+    cu: Tensor,
+    x: Tensor,
+    y: Tensor,
+    t: Tensor,
+    method: Literal["linear", "nearest"] = "linear",
+    padding_mode: Literal["zeros", "extrapolate"] = "zeros",
 ) -> Tensor:
     """
     Interpolates a 3D image at specified coordinates.
@@ -727,21 +727,21 @@ def bicubic_kernels(Z, d1, d2):
     # Second derivatives across both axes
     # d2f/dxdy = (f(x-h, y-k) - f(x-h, y+k) - f(x+h, y-k) + f(x+h, y+k)) / (4hk)
     dZ12[1:-1, 1:-1] = (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (
-            4 * d1 * d2
+        4 * d1 * d2
     )
     return dZ1, dZ2, dZ12
 
 
 def interp_bicubic(
-        x,
-        y,
-        Z,
-        dZ1=None,
-        dZ2=None,
-        dZ12=None,
-        get_Y: bool = True,
-        get_dY: bool = False,
-        get_ddY: bool = False,
+    x,
+    y,
+    Z,
+    dZ1=None,
+    dZ2=None,
+    dZ12=None,
+    get_Y: bool = True,
+    get_dY: bool = False,
+    get_ddY: bool = False,
 ):
     """
     Compute bicubic interpolation of a 2D grid at arbitrary locations. This will
@@ -892,7 +892,7 @@ def interp_bicubic(
         Y = torch.zeros_like(x)
         for i in range(4):
             for j in range(4):
-                Y = Y + c[:, i, j] * t ** i * u ** j
+                Y = Y + c[:, i, j] * t**i * u**j
         return_interp.append(Y)
     if get_dY:
         dY1 = torch.zeros_like(x)
@@ -900,9 +900,9 @@ def interp_bicubic(
         for i in range(4):
             for j in range(4):
                 if i > 0:
-                    dY1 = dY1 + i * c[:, i, j] * t ** (i - 1) * u ** j
+                    dY1 = dY1 + i * c[:, i, j] * t ** (i - 1) * u**j
                 if j > 0:
-                    dY2 = dY2 + j * c[:, i, j] * t ** i * u ** (j - 1)
+                    dY2 = dY2 + j * c[:, i, j] * t**i * u ** (j - 1)
         return_interp.append(dY1)
         return_interp.append(dY2)
     if get_ddY:
@@ -914,9 +914,9 @@ def interp_bicubic(
                 if i > 0 and j > 0:
                     dY12 = dY12 + i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
                 if i > 1:
-                    dY11 = dY11 + i * (i - 1) * c[:, i, j] * t ** (i - 2) * u ** j
+                    dY11 = dY11 + i * (i - 1) * c[:, i, j] * t ** (i - 2) * u**j
                 if j > 1:
-                    dY22 = dY22 + j * (j - 1) * c[:, i, j] * t ** i * u ** (j - 2)
+                    dY22 = dY22 + j * (j - 1) * c[:, i, j] * t**i * u ** (j - 2)
         return_interp.append(dY12)
         return_interp.append(dY11)
         return_interp.append(dY22)
@@ -924,11 +924,11 @@ def interp_bicubic(
 
 
 def vmap_n(
-        func: Callable,
-        depth: int = 1,
-        in_dims: Union[int, Tuple] = 0,
-        out_dims: Union[int, Tuple[int, ...]] = 0,
-        randomness: str = "error",
+    func: Callable,
+    depth: int = 1,
+    in_dims: Union[int, Tuple] = 0,
+    out_dims: Union[int, Tuple[int, ...]] = 0,
+    randomness: str = "error",
 ) -> Callable:
     """
     Transforms a function `depth` times using `torch.vmap` with the same arguments passed each time.
@@ -1013,12 +1013,12 @@ def _chunk_input(x, k, in_dims, chunk_size):
 
 
 def vmap_reduce(
-        func: Callable,
-        reduce_func: Callable = lambda x: x.sum(dim=0),
-        chunk_size: Optional[int] = None,
-        in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
-        out_dims: Union[int, Tuple[int, ...]] = 0,
-        **kwargs,
+    func: Callable,
+    reduce_func: Callable = lambda x: x.sum(dim=0),
+    chunk_size: Optional[int] = None,
+    in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
+    out_dims: Union[int, Tuple[int, ...]] = 0,
+    **kwargs,
 ) -> Tensor:
     """
     Applies `torch.vmap` to `func` and then reduces the output using
@@ -1131,7 +1131,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     J = jacfwd(f)(X)
     J = J.to(dtype=X.dtype)
     if Cinv.ndim == 1:
-        chi2 = (dY ** 2 * Cinv).sum(-1)
+        chi2 = (dY**2 * Cinv).sum(-1)
     else:
         chi2 = (dY @ Cinv @ dY).sum(-1)
 
@@ -1156,7 +1156,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     fYnew = f(X + h)
     dYnew = Y - fYnew
     if Cinv.ndim == 1:
-        chi2_new = (dYnew ** 2 * Cinv).sum(-1)
+        chi2_new = (dYnew**2 * Cinv).sum(-1)
     else:
         chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
@@ -1173,20 +1173,20 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
 
 
 def batch_lm(
-        X,  # B, Din
-        Y,  # B, Dout
-        f,  # Din -> Dout
-        C=None,  # B, Dout, Dout !or! B, Dout
-        epsilon=1e-1,
-        L=1e0,
-        L_dn=11.0,
-        L_up=9.0,
-        max_iter=50,
-        L_min=1e-9,
-        L_max=1e9,
-        stopping=1e-4,
-        f_args=(),
-        f_kwargs={},
+    X,  # B, Din
+    Y,  # B, Dout
+    f,  # Din -> Dout
+    C=None,  # B, Dout, Dout !or! B, Dout
+    epsilon=1e-1,
+    L=1e0,
+    L_dn=11.0,
+    L_up=9.0,
+    max_iter=50,
+    L_min=1e-9,
+    L_max=1e9,
+    stopping=1e-4,
+    f_args=(),
+    f_kwargs={},
 ):
     B, Din = X.shape
     B, Dout = Y.shape
@@ -1217,8 +1217,8 @@ def batch_lm(
     for _ in range(max_iter):
         Xnew, L, C = v_lm_step(X, Y, Cinv, L)
         if (
-                torch.all((Xnew - X).abs() < stopping)
-                and torch.sum(L < 1e-2).item() > B / 3
+            torch.all((Xnew - X).abs() < stopping)
+            and torch.sum(L < 1e-2).item() > B / 3
         ):
             break
         if torch.all(L >= L_max):
@@ -1247,7 +1247,7 @@ def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=torch.float32, device=
         indexing="xy",
     )
 
-    Z = torch.exp(-0.5 * (X ** 2 + Y ** 2) / sigma ** 2)
+    Z = torch.exp(-0.5 * (X**2 + Y**2) / sigma**2)
 
     Z = Z.reshape(ny, upsample, nx, upsample).sum(dim=(1, 3))
 
