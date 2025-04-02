@@ -30,8 +30,12 @@ def _r_omega(z, t, q, n_iter, n_chunks=1):
         factor = factor.view(-1, *([1] * z.ndim))
         phi_expanded = phi.unsqueeze(0)
         cumprod_res = None
+        chunk_size = n_iter // n_chunks
         for i in range(n_chunks):
-            rec = factor[i::n_chunks] * phi_expanded
+            rec = (
+                factor[i * chunk_size : max((i + 1) * chunk_size, n_iter)]
+                * phi_expanded
+            )
             if cumprod_res is None:
                 cumprod = torch.cumprod(rec, dim=0)
                 cumprod_res = cumprod.sum(dim=0)

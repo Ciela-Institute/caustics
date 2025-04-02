@@ -9,6 +9,7 @@ from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
 from caustics.sims import build_simulator
+from caustics.utils import meshgrid
 
 import pytest
 
@@ -101,3 +102,63 @@ def test_special_case_sie(device):
         lens, lens_ls, x, kwargs_ls, rtol=6e-5, atol=1e-100, device=device
     )
     Psi_test_helper(lens, lens_ls, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device)
+
+
+@pytest.mark.parametrize("n_chunks", [1, 2, 4, 18])
+def test_epl_n_chunks_consistency(n_chunks, device):
+    """
+    Compare results of the EPL lens model for different values of n_chunks,
+    ensuring they produce consistent results within a tolerance.
+
+    Parameters:
+        n_chunks:
+            Number of chunks for the iterative solver.
+    """
+    # Setup cosmology and lens model
+    cosmology = FlatLambdaCDM(name="cosmo")
+    lens = EPL(
+        name="epl",
+        cosmology=cosmology,
+        z_s=1.0,
+        z_l=0.5,
+        n_chunks=n_chunks,
+        **EPL._null_params,
+    ).to(device=device)
+
+    # Input Parameters
+    x, y = meshgrid(0.2, 10, 10, device=device)
+    z = lens.q.value * x + y * 1j
+
+    # Compute results for n_chunks=1 (baseline)
+    lens.n_chunks = 1
+    alpha_x_1, alpha_y_1 = lens.reduced_deflection_angle(x, y)
+    potential_1 = lens.potential(
+        x,
+        y,
+    )
+    convergence_1 = lens.convergence(x, y)
+    r_omega_1 = lens._r_omega(z, lens.t.value, lens.q.value)
+
+    # Compute results for current n_chunks
+    lens.n_chunks = n_chunks
+    alpha_x_n, alpha_y_n = lens.reduced_deflection_angle(x, y)
+    potential_n = lens.potential(x, y)
+    convergence_n = lens.convergence(x, y)
+    r_omega_n = lens._r_omega(z, lens.t.value, lens.q.value)
+
+    # Validate against baseline results
+    assert torch.allclose(
+        alpha_x_1, alpha_x_n, rtol=1e-5, atol=1e-7
+    ), "alpha_x mismatch"
+    assert torch.allclose(
+        alpha_y_1, alpha_y_n, rtol=1e-5, atol=1e-7
+    ), "alpha_y mismatch"
+    assert torch.allclose(
+        potential_1, potential_n, rtol=1e-5, atol=1e-7
+    ), "Potential mismatch"
+    assert torch.allclose(
+        convergence_1, convergence_n, rtol=1e-5, atol=1e-7
+    ), "Convergence mismatch"
+    assert torch.allclose(
+        r_omega_1, r_omega_n, rtol=1e-5, atol=1e-7
+    ), "r_omega mismatch"

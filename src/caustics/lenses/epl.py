@@ -286,8 +286,12 @@ class EPL(ThinLens):
             factor = factor.view(-1, *([1] * z.ndim))
             phi_expanded = phi.unsqueeze(0)
             cumprod_res = None
+            chunk_size = self.n_iter // self.n_chunks
             for i in range(self.n_chunks):
-                rec = factor[i :: self.n_chunks] * phi_expanded
+                rec = (
+                    factor[i * chunk_size : max((i + 1) * chunk_size, self.n_iter)]
+                    * phi_expanded
+                )
                 if cumprod_res is None:
                     cumprod = torch.cumprod(rec, dim=0)
                     cumprod_res = cumprod.sum(dim=0)
