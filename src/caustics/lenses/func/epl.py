@@ -3,7 +3,7 @@ import torch
 from ...utils import translate_rotate, derotate
 
 
-def _r_omega(z, t, q, n_iter, n_chunks=1):
+def _r_omega(z, t, q, n_iter, chunk_size=None):
     """
     Iteratively compute the omega term given in Tessore et al. 2015 equation 23.
     This is done using the approximation given in Tessore et al. 2015 equation
@@ -14,7 +14,10 @@ def _r_omega(z, t, q, n_iter, n_chunks=1):
     f = (1.0 - q) / (1.0 + q)
     phi = z / torch.conj(z) * -f
 
-    if n_chunks == n_iter:
+    # defaults to do all the iterations in parallel
+    chunk_size = n_iter if chunk_size is None else chunk_size
+
+    if chunk_size == 1:
         # first term in series
         omega_i = z
         part_sum = omega_i
@@ -30,7 +33,7 @@ def _r_omega(z, t, q, n_iter, n_chunks=1):
         factor = factor.view(-1, *([1] * z.ndim))
         phi_expanded = phi.unsqueeze(0)
         cumprod_res = None
-        chunk_size = n_iter // n_chunks
+        n_chunks = n_iter // chunk_size
         for i in range(n_chunks):
             rec = (
                 factor[i * chunk_size : max((i + 1) * chunk_size, n_iter)]
@@ -47,7 +50,9 @@ def _r_omega(z, t, q, n_iter, n_chunks=1):
         return z * (1 + cumprod_res)
 
 
-def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks=1):
+def reduced_deflection_angle_epl(
+    x0, y0, q, phi, Rein, t, x, y, n_iter, chunk_size=None
+):
     """
     Calculate the reduced deflection angle. Given in Tessore et al. 2015 equation 13.
 
@@ -99,8 +104,8 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
 
         *Unit: number*
 
-    n_chunks: int
-        Number of chunks for the iterative solver.
+    chunk_size: int
+        Number of iterations to do in parallel for the iterative solver.
 
         *Unit: number*
 
@@ -124,7 +129,7 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
     r = torch.abs(z)
 
     # Tessore et al 2015 (eq. 23)
-    r_omega = _r_omega(z, t, q, n_iter, n_chunks)
+    r_omega = _r_omega(z, t, q, n_iter, chunk_size)
     # Tessore et al 2015 (eq. 13)
     alpha_c = 2.0 / (1.0 + q) * (Rein * q.sqrt() / r) ** t * r_omega  # fmt: skip
 
@@ -133,7 +138,7 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
     return derotate(alpha_real, alpha_imag, phi)
 
 
-def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks):
+def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, chunk_size):
     """
     Calculate the potential for the EPL as defined in Tessore et al. 2015 equation 15.
 
@@ -185,8 +190,8 @@ def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks):
 
         *Unit: number*
 
-    n_chunks: int
-        Number of chunks for the iterative solver.
+    chunk_size: int
+        Number of iterations to do in parallel for the iterative solver.
 
         *Unit: number*
 
@@ -204,7 +209,7 @@ def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks):
 
     """
     ax, ay = reduced_deflection_angle_epl(
-        x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
+        x0, y0, q, phi, Rein, t, x, y, n_iter, chunk_size
     )
     ax, ay = derotate(ax, ay, -phi)
     x, y = translate_rotate(x, y, x0, y0, phi)

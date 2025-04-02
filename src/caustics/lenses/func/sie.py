@@ -67,7 +67,6 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     """
     # Handle the case where q = 1.0, numerical instability
-    # q = q - torch.where(q == 1.0, 1e-6 * torch.ones_like(q), torch.zeros_like(q))
     q = torch.where(q == 1.0, q - 1e-6, q)
 
     x, y = translate_rotate(x, y, x0, y0, phi)

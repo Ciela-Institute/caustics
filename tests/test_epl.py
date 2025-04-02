@@ -104,15 +104,15 @@ def test_special_case_sie(device):
     Psi_test_helper(lens, lens_ls, x, kwargs_ls, rtol=3e-5, atol=1e-100, device=device)
 
 
-@pytest.mark.parametrize("n_chunks", [1, 2, 4, 18])
-def test_epl_n_chunks_consistency(n_chunks, device):
+@pytest.mark.parametrize("chunk_size", [None, 1, 2, 4, 18])
+def test_epl_n_chunks_consistency(chunk_size, device):
     """
-    Compare results of the EPL lens model for different values of n_chunks,
+    Compare results of the EPL lens model for different values of chunk_size,
     ensuring they produce consistent results within a tolerance.
 
     Parameters:
-        n_chunks:
-            Number of chunks for the iterative solver.
+        chunk_size:
+            Size chunks for the iterative solver.
     """
     # Setup cosmology and lens model
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -121,30 +121,27 @@ def test_epl_n_chunks_consistency(n_chunks, device):
         cosmology=cosmology,
         z_s=1.0,
         z_l=0.5,
-        n_chunks=n_chunks,
+        chunk_size=chunk_size,
         **EPL._null_params,
     ).to(device=device)
 
     # Input Parameters
     x, y = meshgrid(0.2, 10, 10, device=device)
-    z = lens.q.value * x + y * 1j
 
-    # Compute results for n_chunks=1 (baseline)
-    lens.n_chunks = 1
+    # Compute results for chunk_size=1 (baseline)
+    lens.chunk_size = 1
     alpha_x_1, alpha_y_1 = lens.reduced_deflection_angle(x, y)
     potential_1 = lens.potential(
         x,
         y,
     )
     convergence_1 = lens.convergence(x, y)
-    r_omega_1 = lens._r_omega(z, lens.t.value, lens.q.value)
 
-    # Compute results for current n_chunks
-    lens.n_chunks = n_chunks
+    # Compute results for current chunk_size
+    lens.chunk_size = chunk_size
     alpha_x_n, alpha_y_n = lens.reduced_deflection_angle(x, y)
     potential_n = lens.potential(x, y)
     convergence_n = lens.convergence(x, y)
-    r_omega_n = lens._r_omega(z, lens.t.value, lens.q.value)
 
     # Validate against baseline results
     assert torch.allclose(
@@ -159,6 +156,3 @@ def test_epl_n_chunks_consistency(n_chunks, device):
     assert torch.allclose(
         convergence_1, convergence_n, rtol=1e-5, atol=1e-7
     ), "Convergence mismatch"
-    assert torch.allclose(
-        r_omega_1, r_omega_n, rtol=1e-5, atol=1e-7
-    ), "r_omega mismatch"

@@ -73,7 +73,6 @@ def build_window_pixelated_convergence(window, kernel_shape):
     return torch.clip((1 - r) / window, 0, 1)
 
 
-# @lru_cache(maxsize=4)
 def _fft_size(n_pix):
     pad = 2 * n_pix
     pad = next_fast_len(pad)
