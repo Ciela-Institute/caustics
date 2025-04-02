@@ -71,7 +71,7 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
         *Unit: solar mass per square kiloparsec*
 
     """
-    c_ = (1 + c)
+    c_ = 1 + c
     return DELTA / 3 * critical_density * c**3 / (c_.log() - c / c_)  # fmt: skip
 
 
@@ -188,8 +188,8 @@ def _h_nfw(x):
     x_gt1 = torch.clamp(x, min=1 + 1e-6)
     x_lt1 = torch.clamp(x, max=1 - 1e-6)
 
-    h_pos = (1 / x_gt1).arccos() / torch.sqrt(x_gt1 ** 2 - 1)
-    h_neg = (1 / x_lt1).arccosh() / torch.sqrt(1 - x_lt1 ** 2)
+    h_pos = (1 / x_gt1).arccos() / torch.sqrt(x_gt1**2 - 1)
+    h_neg = (1 / x_lt1).arccosh() / torch.sqrt(1 - x_lt1**2)
     term_2 = torch.where(x > 1, h_pos, torch.where(x < 1, h_neg, torch.ones_like(x)))
     return term_1 + term_2
 
