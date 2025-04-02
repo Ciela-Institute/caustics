@@ -284,5 +284,5 @@ def convergence_epl(x0, y0, q, phi, Rein, t, x, y, s=0.0):
 
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
-    psi = (q**2 * x**2 + y**2 + s**2).sqrt()  # fmt: skip
+    psi = (q ** 2 * x ** 2 + y ** 2 + s ** 2).sqrt()  # fmt: skip
     return (2 - t) / 2 * (Rein * q.sqrt() / psi) ** t  # fmt: skip
