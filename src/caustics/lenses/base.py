@@ -608,9 +608,7 @@ class ThinLens(Lens):
 
     @forward
     def reduced_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
+        self, x: Tensor, y: Tensor, chunk_size: Optional[int] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -627,6 +625,11 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
+        chunk_size: int
+            Chunk size for the autograd computation.
+
+            *Unit: number*
+
         Returns
         --------
         x_component: Tensor
@@ -640,10 +643,27 @@ class ThinLens(Lens):
             *Unit: arcsec*
 
         """
-        ax, ay = torch.vmap(
-            torch.func.grad(self.potential, (0, 1)),
-            chunk_size=10000,
-        )(x.flatten(), y.flatten())
+        x_flat, y_flat = x.flatten(), y.flatten()
+
+        if chunk_size is not None:
+            x_chunks = torch.split(x_flat, chunk_size)
+            y_chunks = torch.split(y_flat, chunk_size)
+
+            # Initialize as empty tensors
+            ax = torch.empty(0, dtype=x_flat.dtype, device=x_flat.device)
+            ay = torch.empty(0, dtype=y_flat.dtype, device=y_flat.device)
+
+            # Compute in chunks
+            for x_chunk, y_chunk in zip(x_chunks, y_chunks):
+                ax_chunk, ay_chunk = torch.autograd.functional.vjp(
+                    self.potential, (x_chunk, y_chunk), torch.ones_like(x_chunk)
+                )[1]
+                ax = torch.cat((ax, ax_chunk))
+                ay = torch.cat((ay, ay_chunk))
+        else:
+            ax, ay = torch.autograd.functional.vjp(
+                self.potential, (x_flat, y_flat), torch.ones_like(x_flat)
+            )[1]
         return ax.reshape(x.shape), ay.reshape(y.shape)
 
     @forward

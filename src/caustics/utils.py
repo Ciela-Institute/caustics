@@ -115,7 +115,7 @@ def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
         c_phi = phi.cos()
         s_phi = phi.sin()
         # Simultaneous assignment
-        xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi  # fmt: skip
+        return xt * c_phi + yt * s_phi, yt * c_phi - xt * s_phi  # fmt: skip
 
     return xt, yt
 

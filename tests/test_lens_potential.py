@@ -3,6 +3,7 @@ Check for internal consistency of the lensing potential for all ThinLens objects
 """
 
 import torch
+import pytest
 
 import caustics
 
@@ -177,3 +178,34 @@ def test_lens_potential_vs_convergence(device):
             assert torch.allclose(phi_kappa, kappa, rtol=1e-4, atol=1e-4)
         else:
             assert torch.allclose(phi_kappa, kappa, rtol=1e-6, atol=1e-6)
+
+
+@pytest.mark.parametrize("chunk_size", [10, 100])
+def test_base_deflection_chunks(chunk_size, device):
+    """
+    Test the chunked and unchunked computation of reduced deflection angles for
+    a lens model and ensure they produce consistent results.
+
+    Parameters:
+        chunk_size: Size of chunks for the iterative solver.
+    """
+    x, y = caustics.utils.meshgrid(0.2, 10, 10, device=device)
+
+    # Define a source redshift.
+    z_s = 1.0
+    # Define a lens redshift.
+    z_l = 0.5
+
+    # Define a cosmology.
+    cosmo = caustics.FlatLambdaCDM(name="cosmo")
+
+    # Define a lens model.
+    lens = caustics.EPL(cosmology=cosmo, z_l=z_l, z_s=z_s, **caustics.EPL._null_params)
+    # compute reduced deflections angle with and without chunks
+    phi_ax, phi_ay = super(lens.__class__, lens).reduced_deflection_angle(x, y)
+    phi_ax_chunked, phi_ay_chunked = super(
+        lens.__class__, lens
+    ).reduced_deflection_angle(x, y, chunk_size)
+
+    assert torch.allclose(phi_ax, phi_ax_chunked)
+    assert torch.allclose(phi_ay, phi_ay_chunked)

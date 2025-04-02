@@ -1,7 +1,6 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-import torch
 from torch import Tensor, pi
 from caskade import forward, Param
 
@@ -25,6 +24,8 @@ class EPL(Angle_Mixin, ThinLens):
     ----------
     n_iter: int
         Number of iterations for the iterative solver.
+    chunk_size: int
+        Number of iterations to do in parallel for the iterative solver.
     s: float
         Softening length for the elliptical power-law profile.
 
@@ -121,6 +122,9 @@ class EPL(Angle_Mixin, ThinLens):
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         n_iter: Annotated[int, "Number of iterations for the iterative solver"] = 18,
+        chunk_size: Annotated[
+            Optional[int], "Number of chunks for the iterative solver"
+        ] = None,
         name: NameType = None,
     ):
         """
@@ -180,6 +184,10 @@ class EPL(Angle_Mixin, ThinLens):
 
         n_iter: int
             Number of iterations for the iterative solver.
+
+        chunk_size: Optional[int]
+            Number of iterations to do in parallel for the iterative solver.
+            If not provided, it is set to n_iter which is fastest, but uses more memory.
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
@@ -199,6 +207,7 @@ class EPL(Angle_Mixin, ThinLens):
         self.s = s
 
         self.n_iter = n_iter
+        self.chunk_size = chunk_size
 
     @forward
     def reduced_deflection_angle(
@@ -241,52 +250,8 @@ class EPL(Angle_Mixin, ThinLens):
 
         """
         return func.reduced_deflection_angle_epl(
-            x0, y0, q, phi, Rein, t, x, y, self.n_iter
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.chunk_size
         )
-
-    def _r_omega(self, z, t, q):
-        """
-        Iteratively computes `R * omega(phi)` (eq. 23 in Tessore et al 2015).
-
-        Parameters
-        ----------
-        z: Tensor
-            `R * e^(i * phi)`, position vector in the lens plane.
-
-            *Unit: arcsec*
-
-        t: Tensor
-            Power law slow (`gamma-1`).
-
-            *Unit: unitless*
-
-        q: Tensor
-            Axis ratio.
-
-            *Unit: unitless*
-
-        Returns
-        --------
-        Tensor
-            The value of `R * omega(phi)`.
-
-            *Unit: arcsec*
-
-        """
-        # constants
-        f = (1.0 - q) / (1.0 + q)
-        phi = z / torch.conj(z)
-
-        # first term in series
-        omega_i = z
-        part_sum = omega_i
-
-        for i in range(1, self.n_iter):
-            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
-            omega_i = -f * factor * phi * omega_i  # fmt: skip
-            part_sum = part_sum + omega_i  # fmt: skip
-
-        return part_sum
 
     @forward
     def potential(
@@ -323,7 +288,9 @@ class EPL(Angle_Mixin, ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_epl(x0, y0, q, phi, Rein, t, x, y, self.n_iter)
+        return func.potential_epl(
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.chunk_size
+        )
 
     @forward
     def convergence(
