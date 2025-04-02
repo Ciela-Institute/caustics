@@ -629,7 +629,7 @@ class ThinLens(Lens):
         chunk_size: int
             Chunk size for the autograd computation.
 
-            *Unit: None*
+            *Unit: number*
 
         Returns
         --------

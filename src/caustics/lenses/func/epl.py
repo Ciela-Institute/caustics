@@ -36,7 +36,9 @@ def _r_omega(z, t, q, n_iter, n_chunks=1):
                 cumprod = torch.cumprod(rec, dim=0)
                 cumprod_res = cumprod.sum(dim=0)
             else:
-                cumprod = torch.cumprod(torch.cat((cumprod[-1].unsqueeze(0), rec)), dim=0)[1:]
+                cumprod = torch.cumprod(
+                    torch.cat((cumprod[-1].unsqueeze(0), rec)), dim=0
+                )[1:]
                 cumprod_res = cumprod_res + cumprod.sum(dim=0)
         return z * (1 + cumprod_res)
 
@@ -68,7 +70,7 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
         *Unit: radians*
 
     Rein: Tensor
-        Scale length of the lens.
+        The Einstein radius of the lens.
 
         *Unit: arcsec*
 
@@ -122,8 +124,8 @@ def reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
     # Tessore et al 2015 (eq. 13)
     alpha_c = 2.0 / (1.0 + q) * (Rein * q.sqrt() / r) ** t * r_omega  # fmt: skip
 
-    alpha_real = torch.nan_to_num(alpha_c.real, posinf=10 ** 10, neginf=-(10 ** 10))
-    alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10 ** 10, neginf=-(10 ** 10))
+    alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
+    alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
     return derotate(alpha_real, alpha_imag, phi)
 
 
@@ -197,7 +199,9 @@ def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks):
         *Unit: arcsec*
 
     """
-    ax, ay = reduced_deflection_angle_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks)
+    ax, ay = reduced_deflection_angle_epl(
+        x0, y0, q, phi, Rein, t, x, y, n_iter, n_chunks
+    )
     ax, ay = derotate(ax, ay, -phi)
     x, y = translate_rotate(x, y, x0, y0, phi)
     return (x * ax + y * ay) / (2 - t)  # fmt: skip
@@ -232,7 +236,7 @@ def convergence_epl(x0, y0, q, phi, Rein, t, x, y, s=0.0):
         *Unit: radians*
 
     Rein: Tensor
-        Einstein radius of the lens.
+        The Einstein radius of the lens.
 
         *Unit: arcsec*
 

@@ -36,7 +36,7 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
     """
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
 
-    d2 = x_mg ** 2 + y_mg ** 2
+    d2 = x_mg**2 + y_mg**2
     potential_kernel = safe_log(d2.sqrt())
     ax_kernel = safe_divide(x_mg, d2)
     ay_kernel = safe_divide(y_mg, d2)
@@ -69,7 +69,7 @@ def build_window_pixelated_convergence(window, kernel_shape):
         torch.linspace(-1, 1, kernel_shape[-2]),
         indexing="xy",
     )
-    r = (x ** 2 + y ** 2).sqrt()
+    r = (x**2 + y**2).sqrt()
     return torch.clip((1 - r) / window, 0, 1)
 
 
@@ -131,18 +131,18 @@ def _unpad_fft(x, n_pix):
 
 
 def reduced_deflection_angle_pixelated_convergence(
-        x0,
-        y0,
-        convergence_map,
-        x,
-        y,
-        ax_kernel,
-        ay_kernel,
-        pixelscale,
-        fov,
-        n_pix,
-        padding,
-        convolution_mode="fft",
+    x0,
+    y0,
+    convergence_map,
+    x,
+    y,
+    ax_kernel,
+    ay_kernel,
+    pixelscale,
+    fov,
+    n_pix,
+    padding,
+    convolution_mode="fft",
 ):
     """
     Compute the reduced deflection angle for a pixelated convergence map. This
@@ -209,18 +209,23 @@ def reduced_deflection_angle_pixelated_convergence(
         The mode of convolution to use. Either "fft" or "conv2d".
     """
     _s = _fft_size(n_pix)
-    _pixelscale_pi = pixelscale ** 2 / torch.pi
+    _pixelscale_pi = pixelscale**2 / torch.pi
     kernels = torch.stack((ax_kernel, ay_kernel), dim=0)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
-        deflection_angles = torch.fft.irfft2(convergence_tilde * kernels, _s).real * _pixelscale_pi
+        deflection_angles = (
+            torch.fft.irfft2(convergence_tilde * kernels, _s).real * _pixelscale_pi
+        )
         deflection_angle_maps = _unpad_fft(deflection_angles, n_pix)
     elif convolution_mode == "conv2d":
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
         # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
-        deflection_angle_maps = F.conv2d(
-            kernels.unsqueeze(1), convergence_map_flipped, padding="same"
-        ).squeeze() * _pixelscale_pi
+        deflection_angle_maps = (
+            F.conv2d(
+                kernels.unsqueeze(1), convergence_map_flipped, padding="same"
+            ).squeeze()
+            * _pixelscale_pi
+        )
         # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
@@ -228,23 +233,27 @@ def reduced_deflection_angle_pixelated_convergence(
     scale = fov / 2
     _x_view_scale = (x - x0).view(-1) / scale
     _y_view_scale = (y - y0).view(-1) / scale
-    deflection_angle_x = interp2d(deflection_angle_maps[0], _x_view_scale, _y_view_scale).reshape(x.shape)
-    deflection_angle_y = interp2d(deflection_angle_maps[1], _x_view_scale, _y_view_scale).reshape(x.shape)
+    deflection_angle_x = interp2d(
+        deflection_angle_maps[0], _x_view_scale, _y_view_scale
+    ).reshape(x.shape)
+    deflection_angle_y = interp2d(
+        deflection_angle_maps[1], _x_view_scale, _y_view_scale
+    ).reshape(x.shape)
     return deflection_angle_x, deflection_angle_y
 
 
 def potential_pixelated_convergence(
-        x0,
-        y0,
-        convergence_map,
-        x,
-        y,
-        potential_kernel,
-        pixelscale,
-        fov,
-        n_pix,
-        padding,
-        convolution_mode="fft",
+    x0,
+    y0,
+    convergence_map,
+    x,
+    y,
+    potential_kernel,
+    pixelscale,
+    fov,
+    n_pix,
+    padding,
+    convolution_mode="fft",
 ):
     """
     Compute the lensing potential for a pixelated convergence map. This follows
@@ -309,14 +318,14 @@ def potential_pixelated_convergence(
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
         potential = torch.fft.irfft2(convergence_tilde * potential_kernel, _s) * (
-                pixelscale ** 2 / torch.pi
+            pixelscale**2 / torch.pi
         )
         potential_map = _unpad_fft(potential, n_pix)
     elif convolution_mode == "conv2d":
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
         potential_map = F.conv2d(
             potential_kernel[None, None], convergence_map_flipped, padding="same"
-        ).squeeze() * (pixelscale ** 2 / torch.pi)
+        ).squeeze() * (pixelscale**2 / torch.pi)
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     scale = fov / 2

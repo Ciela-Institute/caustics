@@ -24,6 +24,8 @@ class EPL(ThinLens):
     ----------
     n_iter: int
         Number of iterations for the iterative solver.
+    n_chunks: int
+        Number of chunks for the iterative solver.
     s: float
         Softening length for the elliptical power-law profile.
 
@@ -285,12 +287,14 @@ class EPL(ThinLens):
             phi_expanded = phi.unsqueeze(0)
             cumprod_res = None
             for i in range(self.n_chunks):
-                rec = factor[i::self.n_chunks] * phi_expanded
+                rec = factor[i :: self.n_chunks] * phi_expanded
                 if cumprod_res is None:
                     cumprod = torch.cumprod(rec, dim=0)
                     cumprod_res = cumprod.sum(dim=0)
                 else:
-                    cumprod = torch.cumprod(torch.cat((cumprod[-1].unsqueeze(0), rec)), dim=0)[1:]
+                    cumprod = torch.cumprod(
+                        torch.cat((cumprod[-1].unsqueeze(0), rec)), dim=0
+                    )[1:]
                     cumprod_res = cumprod_res + cumprod.sum(dim=0)
             return z * (1 + cumprod_res)
 
@@ -329,7 +333,9 @@ class EPL(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_epl(x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.n_chunks)
+        return func.potential_epl(
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.n_chunks
+        )
 
     @forward
     def convergence(
