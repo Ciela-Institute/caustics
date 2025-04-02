@@ -1,6 +1,6 @@
 from ._version import version as VERSION  # noqa
 
-from caskade import forward, Module, Param, ValidContext
+from caskade import forward, Module, Param, ValidContext, dynamic
 
 from .cosmology import (
     Cosmology,
@@ -37,6 +37,7 @@ from .light import (
     LightStack,
     StarSource,
 )
+from .angle_mixin import Angle_Mixin
 from . import utils
 from .sims import LensSource, Microlens, build_simulator
 from .tests import test
@@ -50,6 +51,7 @@ __all__ = [
     "Param",
     "ValidContext",
     "forward",
+    "dynamic",
     "Cosmology",
     "FlatLambdaCDM",
     "h0_default",
@@ -79,6 +81,7 @@ __all__ = [
     "Sersic",
     "LightStack",
     "StarSource",
+    "Angle_Mixin",
     "utils",
     "LensSource",
     "Microlens",

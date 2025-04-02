@@ -7,11 +7,12 @@ from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from ..angle_mixin import Angle_Mixin
 
 __all__ = ("EPL",)
 
 
-class EPL(ThinLens):
+class EPL(Angle_Mixin, ThinLens):
     """
     Elliptical power law (EPL, aka singular power-law ellipsoid) profile.
 
@@ -113,6 +114,11 @@ class EPL(ThinLens):
             "Power law slope (`gamma-1`) of the lens",
             True,
         ] = None,
+        angle_system: str = "q_phi",
+        e1: Optional[Union[Tensor, float]] = None,
+        e2: Optional[Union[Tensor, float]] = None,
+        c1: Optional[Union[Tensor, float]] = None,
+        c2: Optional[Union[Tensor, float]] = None,
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
@@ -189,6 +195,13 @@ class EPL(ThinLens):
         self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
         self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self.t = Param("t", t, units="unitless", valid=(0, 2))
+        self.angle_system = angle_system
+        if self.angle_system == "e1_e2":
+            self.e1 = e1
+            self.e2 = e2
+        elif self.angle_system == "c1_c2":
+            self.c1 = c1
+            self.c2 = c2
         self.s = s
 
         self.n_iter = n_iter

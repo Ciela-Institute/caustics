@@ -34,7 +34,9 @@ def test(device):
     lens = Multiplane(
         name="multiplane",
         cosmology=cosmology,
-        lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
+        lenses=[
+            SIE(name=f"sie_{i}", cosmology=cosmology, z_s=z_s) for i in range(len(xs))
+        ],
         z_s=z_s,
     )
 

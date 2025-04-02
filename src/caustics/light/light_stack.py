@@ -1,5 +1,5 @@
 # mypy: disable-error-code="operator,union-attr"
-from typing import Annotated, List
+from typing import Annotated, Tuple
 
 import torch
 from caskade import forward
@@ -24,7 +24,7 @@ class LightStack(Source):
     def __init__(
         self,
         light_models: Annotated[
-            List[Source], "a list of light models to sum their brightnesses"
+            Tuple[Source], "a list of light models to sum their brightnesses"
         ],
         name: NameType = None,
     ):
@@ -41,9 +41,7 @@ class LightStack(Source):
 
         """
         super().__init__(name=name)
-        self.light_models = light_models
-        for model in light_models:
-            self.link(model.name, model)
+        self.light_models = tuple(light_models)
 
     @forward
     def brightness(

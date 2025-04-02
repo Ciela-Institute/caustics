@@ -1,6 +1,6 @@
 # mypy: disable-error-code="call-overload"
 from abc import abstractmethod
-from typing import Optional, Union, Annotated, List
+from typing import Optional, Union, Annotated
 import warnings
 
 import torch
@@ -21,7 +21,6 @@ NameType = Annotated[Optional[str], "Name of the lens model"]
 ZType = Annotated[
     Optional[Union[Tensor, float]], "The redshift of an object in the lens system", True
 ]
-LensesType = Annotated[List["ThinLens"], "A list of ThinLens objects"]
 
 
 class Lens(Module):
