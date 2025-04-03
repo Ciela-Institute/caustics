@@ -1,17 +1,17 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-import torch
 from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from ..angle_mixin import Angle_Mixin
 
 __all__ = ("EPL",)
 
 
-class EPL(ThinLens):
+class EPL(Angle_Mixin, ThinLens):
     """
     Elliptical power law (EPL, aka singular power-law ellipsoid) profile.
 
@@ -24,6 +24,8 @@ class EPL(ThinLens):
     ----------
     n_iter: int
         Number of iterations for the iterative solver.
+    chunk_size: int
+        Number of iterations to do in parallel for the iterative solver.
     s: float
         Softening length for the elliptical power-law profile.
 
@@ -111,10 +113,18 @@ class EPL(ThinLens):
             "Power law slope (`gamma-1`) of the lens",
             True,
         ] = None,
+        angle_system: str = "q_phi",
+        e1: Optional[Union[Tensor, float]] = None,
+        e2: Optional[Union[Tensor, float]] = None,
+        c1: Optional[Union[Tensor, float]] = None,
+        c2: Optional[Union[Tensor, float]] = None,
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         n_iter: Annotated[int, "Number of iterations for the iterative solver"] = 18,
+        chunk_size: Annotated[
+            Optional[int], "Number of chunks for the iterative solver"
+        ] = None,
         name: NameType = None,
     ):
         """
@@ -174,6 +184,10 @@ class EPL(ThinLens):
 
         n_iter: int
             Number of iterations for the iterative solver.
+
+        chunk_size: Optional[int]
+            Number of iterations to do in parallel for the iterative solver.
+            If not provided, it is set to n_iter which is fastest, but uses more memory.
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
@@ -183,9 +197,17 @@ class EPL(ThinLens):
         self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
         self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self.t = Param("t", t, units="unitless", valid=(0, 2))
+        self.angle_system = angle_system
+        if self.angle_system == "e1_e2":
+            self.e1 = e1
+            self.e2 = e2
+        elif self.angle_system == "c1_c2":
+            self.c1 = c1
+            self.c2 = c2
         self.s = s
 
         self.n_iter = n_iter
+        self.chunk_size = chunk_size
 
     @forward
     def reduced_deflection_angle(
@@ -228,52 +250,8 @@ class EPL(ThinLens):
 
         """
         return func.reduced_deflection_angle_epl(
-            x0, y0, q, phi, Rein, t, x, y, self.n_iter
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.chunk_size
         )
-
-    def _r_omega(self, z, t, q):
-        """
-        Iteratively computes `R * omega(phi)` (eq. 23 in Tessore et al 2015).
-
-        Parameters
-        ----------
-        z: Tensor
-            `R * e^(i * phi)`, position vector in the lens plane.
-
-            *Unit: arcsec*
-
-        t: Tensor
-            Power law slow (`gamma-1`).
-
-            *Unit: unitless*
-
-        q: Tensor
-            Axis ratio.
-
-            *Unit: unitless*
-
-        Returns
-        --------
-        Tensor
-            The value of `R * omega(phi)`.
-
-            *Unit: arcsec*
-
-        """
-        # constants
-        f = (1.0 - q) / (1.0 + q)
-        phi = z / torch.conj(z)
-
-        # first term in series
-        omega_i = z
-        part_sum = omega_i
-
-        for i in range(1, self.n_iter):
-            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
-            omega_i = -f * factor * phi * omega_i  # fmt: skip
-            part_sum = part_sum + omega_i  # fmt: skip
-
-        return part_sum
 
     @forward
     def potential(
@@ -310,7 +288,9 @@ class EPL(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_epl(x0, y0, q, phi, Rein, t, x, y, self.n_iter)
+        return func.potential_epl(
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.chunk_size
+        )
 
     @forward
     def convergence(

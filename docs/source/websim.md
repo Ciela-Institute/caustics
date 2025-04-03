@@ -1,6 +1,6 @@
 # Live Caustics Playground
 
-Here is a little online simulator run using caustics! It's slow because it's
+Here is a little online simulator run using `caustics`! It's slow because it's
 running on a free server, but it's a good way to play with the simulator without
 having to install anything.
 
@@ -17,7 +17,7 @@ For frequent simulator users (e.g., if you plan on exploring the parameter space
 of a lens), we recommend installing the simulator locally and running it in your
 browser. Follow the steps below:
 
-1. Install Caustics. Please follow the instructions on the
+1. Install `caustics`. Please follow the instructions on the
    [install page](https://caustics.readthedocs.io/en/latest/install.html).
 2. `pip install streamlit`
 3. `git clone https://github.com/Ciela-Institute/caustics-webapp.git`

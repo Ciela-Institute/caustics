@@ -50,9 +50,7 @@ def reduced_deflection_angle_mass_sheet(x0, y0, kappa, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
     # Meneghetti eq 3.84
-    ax = x * kappa
-    ay = y * kappa
-    return ax, ay
+    return x * kappa, y * kappa
 
 
 def potential_mass_sheet(x0, y0, kappa, x, y):

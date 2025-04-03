@@ -22,13 +22,17 @@ def k_sersic(n: Tensor) -> Tensor:
         *Unit: unitless*
 
     """
+    # return (2 * n - 1 / 3 + 4 / (405 * n) + 46 / (25515 * n ** 2) + 131 / (1148175 * n ** 3) - 2194697 / (
+    #             30690717750 * n ** 4))
+    x = 1 / n
     return (
         2 * n
         - 1 / 3
-        + 4 / (405 * n)
-        + 46 / (25515 * n**2)
-        + 131 / (1148175 * n**3)
-        - 2194697 / (30690717750 * n**4)
+        + x
+        * (
+            4 / 405
+            + x * (46 / 25515 + x * (131 / 1148175 - x * (2194697 / 30690717750)))
+        )
     )
 
 
@@ -55,7 +59,6 @@ def k_lenstronomy(n: Tensor) -> Tensor:
 
 
 def brightness_sersic(x0, y0, q, phi, n, Re, Ie, x, y, k, s=0.0):
-
     x, y = translate_rotate(x, y, x0, y0, phi)
     ex, ey = to_elliptical(x, y, q)
     e = (ex**2 + ey**2).sqrt() + s

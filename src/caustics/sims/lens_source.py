@@ -16,7 +16,6 @@ from ..utils import (
 from ..lenses.base import Lens
 from ..light.base import Source
 
-
 __all__ = ("LensSource",)
 
 
@@ -320,7 +319,7 @@ class LensSource(Module):
         lens_light: bool = True,
         lens_source: bool = True,
         psf_convolve: bool = True,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ):
         """
         forward function
@@ -338,6 +337,9 @@ class LensSource(Module):
 
         psf_convolve: boolean
             when true the image will be convolved with the psf
+
+        chunk_size: int
+            when not None, the image will be sampled in chunks of this size. This may help reduce memory usage.
         """
 
         # Automatically turn off light for missing objects

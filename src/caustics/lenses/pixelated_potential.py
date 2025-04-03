@@ -40,6 +40,9 @@ class PixelatedPotential(ThinLens):
             "A 2D tensor representing the potential map",
             True,
         ] = None,
+        scale: Annotated[
+            Optional[Tensor], "A scale factor to multiply by the potential map", True
+        ] = 1.0,
         shape: Annotated[
             Optional[tuple[int, ...]], "The shape of the potential map"
         ] = None,
@@ -106,6 +109,7 @@ class PixelatedPotential(ThinLens):
         self.potential_map = Param(
             "potential_map", potential_map, shape, units="unitless"
         )
+        self.scale = Param("scale", scale, units="flux", valid=(0, None))
 
         self.pixelscale = pixelscale
         if potential_map is not None:
@@ -124,6 +128,7 @@ class PixelatedPotential(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
+        scale: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -159,7 +164,7 @@ class PixelatedPotential(ThinLens):
             for alpha in interp_bicubic(
                 (x - x0).view(-1) / self.fov * 2,
                 (y - y0).view(-1) / self.fov * 2,
-                potential_map,
+                potential_map * scale,
                 get_Y=False,
                 get_dY=True,
                 get_ddY=False,
@@ -174,6 +179,7 @@ class PixelatedPotential(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
+        scale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -201,7 +207,7 @@ class PixelatedPotential(ThinLens):
         return interp_bicubic(
             (x - x0).view(-1) / self.fov * 2,
             (y - y0).view(-1) / self.fov * 2,
-            potential_map,
+            potential_map * scale,
             get_Y=True,
             get_dY=False,
             get_ddY=False,
@@ -215,6 +221,7 @@ class PixelatedPotential(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
+        scale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence at the specified positions. This method is not implemented.
@@ -243,7 +250,7 @@ class PixelatedPotential(ThinLens):
         _, dY11, dY22 = interp_bicubic(
             (x - x0).view(-1) / self.fov * 2,
             (y - y0).view(-1) / self.fov * 2,
-            potential_map,
+            potential_map * scale,
             get_Y=False,
             get_dY=False,
             get_ddY=True,

@@ -208,36 +208,35 @@ def reduced_deflection_angle_pixelated_convergence(
         The mode of convolution to use. Either "fft" or "conv2d".
     """
     _s = _fft_size(n_pix)
+    _pixelscale_pi = pixelscale**2 / torch.pi
+    kernels = torch.stack((ax_kernel, ay_kernel), dim=0)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
-        deflection_angle_x = torch.fft.irfft2(
-            convergence_tilde * ax_kernel, _s
-        ).real * (pixelscale**2 / torch.pi)
-        deflection_angle_y = torch.fft.irfft2(
-            convergence_tilde * ay_kernel, _s
-        ).real * (pixelscale**2 / torch.pi)
-        deflection_angle_x_map = _unpad_fft(deflection_angle_x, n_pix)
-        deflection_angle_y_map = _unpad_fft(deflection_angle_y, n_pix)
+        deflection_angles = (
+            torch.fft.irfft2(convergence_tilde * kernels, _s).real * _pixelscale_pi
+        )
+        deflection_angle_maps = _unpad_fft(deflection_angles, n_pix)
     elif convolution_mode == "conv2d":
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
         # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
-        deflection_angle_x_map = F.conv2d(
-            ax_kernel[None, None], convergence_map_flipped, padding="same"
-        ).squeeze() * (pixelscale**2 / torch.pi)
-        deflection_angle_y_map = F.conv2d(
-            ay_kernel[None, None], convergence_map_flipped, padding="same"
-        ).squeeze() * (
-            pixelscale**2 / torch.pi
-        )  # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
+        deflection_angle_maps = (
+            F.conv2d(
+                kernels.unsqueeze(1), convergence_map_flipped, padding="same"
+            ).squeeze()
+            * _pixelscale_pi
+        )
+        # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     # Scale is distance from center of image to center of pixel on the edge
     scale = fov / 2
+    _x_view_scale = (x - x0).view(-1) / scale
+    _y_view_scale = (y - y0).view(-1) / scale
     deflection_angle_x = interp2d(
-        deflection_angle_x_map, (x - x0).view(-1) / scale, (y - y0).view(-1) / scale
+        deflection_angle_maps[0], _x_view_scale, _y_view_scale
     ).reshape(x.shape)
     deflection_angle_y = interp2d(
-        deflection_angle_y_map, (x - x0).view(-1) / scale, (y - y0).view(-1) / scale
+        deflection_angle_maps[1], _x_view_scale, _y_view_scale
     ).reshape(x.shape)
     return deflection_angle_x, deflection_angle_y
 

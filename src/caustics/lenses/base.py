@@ -1,6 +1,6 @@
 # mypy: disable-error-code="call-overload"
 from abc import abstractmethod
-from typing import Optional, Union, Annotated, List
+from typing import Optional, Union, Annotated
 import warnings
 
 import torch
@@ -21,7 +21,6 @@ NameType = Annotated[Optional[str], "Name of the lens model"]
 ZType = Annotated[
     Optional[Union[Tensor, float]], "The redshift of an object in the lens system", True
 ]
-LensesType = Annotated[List["ThinLens"], "A list of ThinLens objects"]
 
 
 class Lens(Module):
@@ -452,7 +451,7 @@ class ThickLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -609,9 +608,7 @@ class ThinLens(Lens):
 
     @forward
     def reduced_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
+        self, x: Tensor, y: Tensor, chunk_size: Optional[int] = None
     ) -> tuple[Tensor, Tensor]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -628,6 +625,11 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
+        chunk_size: int
+            Chunk size for the autograd computation.
+
+            *Unit: number*
+
         Returns
         --------
         x_component: Tensor
@@ -642,8 +644,7 @@ class ThinLens(Lens):
 
         """
         ax, ay = torch.vmap(
-            torch.func.grad(self.potential, (0, 1)),
-            chunk_size=10000,
+            torch.func.grad(self.potential, (0, 1)), chunk_size=chunk_size
         )(x.flatten(), y.flatten())
         return ax.reshape(x.shape), ay.reshape(y.shape)
 
@@ -696,6 +697,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
+        chunk_size: Optional[int] = None,
         *args,
         **kwargs,
     ) -> Tensor:
@@ -714,6 +716,11 @@ class ThinLens(Lens):
 
             *Unit: arcsec*
 
+        chunk_size: int
+            Chunk size for the autograd computation.
+
+            *Unit: number*
+
         Returns
         -------
         Tensor
@@ -724,7 +731,7 @@ class ThinLens(Lens):
         """
         Psi_H = torch.vmap(
             torch.func.hessian(self.potential, (0, 1)),
-            chunk_size=10000,
+            chunk_size=chunk_size,
         )(x.flatten(), y.flatten())
         Psi_H = torch.stack([torch.stack(Hrow, dim=-1) for Hrow in Psi_H], dim=-2)
         Psi_H = Psi_H.reshape(*x.shape, 2, 2)
@@ -943,7 +950,7 @@ class ThinLens(Lens):
         self,
         x: Tensor,
         y: Tensor,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -966,7 +973,7 @@ class ThinLens(Lens):
         y: Tensor,
         method="autograd",
         pixelscale=None,
-        chunk_size: int = 10000,
+        chunk_size: Optional[int] = None,
     ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
         """
         Return the jacobian of the deflection angle vector.

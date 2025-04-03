@@ -39,7 +39,7 @@ def scale_radius_nfw(critical_density, mass, c, DELTA=200.0):
 
     """
     r_delta = (3 * mass / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
-    return 1 / c * r_delta
+    return r_delta / c
 
 
 def scale_density_nfw(critical_density, c, DELTA=200.0):
@@ -71,7 +71,8 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
         *Unit: solar mass per square kiloparsec*
 
     """
-    return DELTA / 3 * critical_density * c**3 / ((1 + c).log() - c / (1 + c))  # fmt: skip
+    c_ = 1 + c
+    return DELTA / 3 * critical_density * c**3 / (c_.log() - c / c_)  # fmt: skip
 
 
 def convergence_s_nfw(critical_surface_density, critical_density, mass, c, DELTA):
@@ -134,15 +135,10 @@ def _f_nfw(x):
     # fmt: off
     x_gt1 = torch.clamp(x, min=1 + 1e-6)
     x_lt1 = torch.clamp(x, max=1 - 1e-6)
-    return torch.where(
-        x > 1,
-        1 - 2 / (x_gt1**2 - 1).sqrt() * ((x_gt1 - 1) / (x_gt1 + 1)).sqrt().arctan(),
-        torch.where(
-            x < 1,
-            1 - 2 / (1 - x_lt1**2).sqrt() * ((1 - x_lt1) / (1 + x_lt1)).sqrt().arctanh(),
-            torch.zeros_like(x),  # where: x == 1
-        ),
-    )
+
+    f_pos = 1 - 2 * torch.atan(torch.sqrt((x_gt1 - 1) / (x_gt1 + 1))) / torch.sqrt(x_gt1 ** 2 - 1)
+    f_neg = 1 - 2 * torch.atanh(torch.sqrt((1 - x_lt1) / (1 + x_lt1))) / torch.sqrt(1 - x_lt1 ** 2)
+    return torch.where(x > 1, f_pos, torch.where(x < 1, f_neg, torch.zeros_like(x)))
     # fmt: on
 
 
@@ -165,15 +161,10 @@ def _g_nfw(x):
     term_1 = (x / 2).log() ** 2
     x_gt1 = torch.clamp(x, min=1 + 1e-6)
     x_lt1 = torch.clamp(x, max=1 - 1e-6)
-    term_2 = torch.where(
-        x > 1,
-        (1 / x_gt1).arccos() ** 2,
-        torch.where(
-            x < 1,
-            -(1 / x_lt1).arccosh() ** 2,
-            torch.zeros_like(x),  # where: x == 1
-        ),
-    )
+
+    g_pos = (1 / x_gt1).arccos().pow(2)
+    g_neg = -(1 / x_lt1).arccosh().pow(2)
+    term_2 = torch.where(x > 1, g_pos, torch.where(x < 1, g_neg, torch.zeros_like(x)))
     return term_1 + term_2
 
 
@@ -196,13 +187,10 @@ def _h_nfw(x):
     term_1 = (x / 2).log()
     x_gt1 = torch.clamp(x, min=1 + 1e-6)
     x_lt1 = torch.clamp(x, max=1 - 1e-6)
-    term_2 = torch.where(
-        x > 1,
-        (1 / x_gt1).arccos() * 1 / (x_gt1**2 - 1).sqrt(),  # fmt: skip
-        torch.where(
-            x < 1, (1 / x_lt1).arccosh() * 1 / (1 - x_lt1**2).sqrt(), torch.ones_like(x)  # fmt: skip
-        ),
-    )
+
+    h_pos = (1 / x_gt1).arccos() / torch.sqrt(x_gt1**2 - 1)
+    h_neg = (1 / x_lt1).arccosh() / torch.sqrt(1 - x_lt1**2)
+    term_2 = torch.where(x > 1, h_pos, torch.where(x < 1, h_neg, torch.ones_like(x)))
     return term_1 + term_2
 
 
