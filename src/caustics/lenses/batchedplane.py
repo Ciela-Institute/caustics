@@ -95,9 +95,12 @@ class BatchedPlane(ThinLens):
         """
 
         # Collect the dynamic parameters to vmap over
-        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        params = dict(
+            (p.name, p.value) for p in self.lens.local_dynamic_params.values()
+        )
         batchdims = dict(
-            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+            (p.name, -(len(p.shape) + 1))
+            for p in self.lens.local_dynamic_params.values()
         )
         batchdims["x"] = None
         batchdims["y"] = None
@@ -141,9 +144,12 @@ class BatchedPlane(ThinLens):
 
         """
         # Collect the dynamic parameters to vmap over
-        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        params = dict(
+            (p.name, p.value) for p in self.lens.local_dynamic_params.values()
+        )
         batchdims = dict(
-            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+            (p.name, -(len(p.shape) + 1))
+            for p in self.lens.local_dynamic_params.values()
         )
         convergence = torch.vmap(
             lambda p: self.lens.convergence(x, y, **p),
@@ -183,9 +189,12 @@ class BatchedPlane(ThinLens):
 
         """
         # Collect the dynamic parameters to vmap over
-        params = dict((p.name, p.value) for p in self.lens.local_dynamic_params)
+        params = dict(
+            (p.name, p.value) for p in self.lens.local_dynamic_params.values()
+        )
         batchdims = dict(
-            (p.name, -(len(p.shape) + 1)) for p in self.lens.local_dynamic_params
+            (p.name, -(len(p.shape) + 1))
+            for p in self.lens.local_dynamic_params.values()
         )
         potential = torch.vmap(
             lambda p: self.lens.potential(x, y, **p),
