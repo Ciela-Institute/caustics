@@ -368,7 +368,7 @@ class PixelatedConvergence(ThinLens):
         scale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
-        Compute the convergence at the specified positions. This method is not implemented.
+        Compute the convergence at the specified positions.
 
         Parameters
         ----------
