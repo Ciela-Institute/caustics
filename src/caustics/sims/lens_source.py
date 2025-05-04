@@ -1,5 +1,3 @@
-from copy import copy
-
 from scipy.fft import next_fast_len
 from torch.nn.functional import avg_pool2d, conv2d
 from typing import Optional, Annotated, Literal, Union
@@ -194,6 +192,8 @@ class LensSource(Module):
 
     @upsample_factor.setter
     def upsample_factor(self, value):
+        value = int(value)
+        assert value > 0, f"upsample_factor should be > 0, not {value}"
         self._upsample_factor = value
         self._build_grid()
 
@@ -221,6 +221,10 @@ class LensSource(Module):
 
     @quad_level.setter
     def quad_level(self, value):
+        value = None if value is None else int(value)
+        assert (
+            value is None or value > 0
+        ), f"quad_level should be None or > 0, not {value}"
         self._quad_level = value
         self._build_grid()
 
@@ -248,20 +252,29 @@ class LensSource(Module):
 
     @psf_mode.setter
     def psf_mode(self, value):
+        assert value in (
+            "fft",
+            "conv2d",
+        ), f"psf_mode should be one of 'fft' or 'conv2d', not {value}"
         self._psf_mode = value
         self._build_grid()
 
     def _build_grid(self):
-        self._psf_pad = (self.psf_shape[1] // 2, self.psf_shape[0] // 2)
+        self._psf_pad = (
+            (self.psf_shape[1] * self.upsample_factor) // 2,  # img pixels
+            (self.psf_shape[0] * self.upsample_factor) // 2,  # img pixels
+        )
 
         self._n_pix = (
-            self.pixels_x + self._psf_pad[0] * 2,
-            self.pixels_y + self._psf_pad[1] * 2,
+            (self.pixels_x + self._psf_pad[0] * 2)
+            * self.upsample_factor,  # upsample pixels
+            (self.pixels_y + self._psf_pad[1] * 2)
+            * self.upsample_factor,  # upsample pixels
         )
         self._grid = meshgrid(
-            self.pixelscale / self.upsample_factor,
-            self._n_pix[0] * self.upsample_factor,
-            self._n_pix[1] * self.upsample_factor,
+            self.pixelscale / self.upsample_factor,  # upsample pixelscale
+            self._n_pix[0],  # upsample pixels
+            self._n_pix[1],  # upsample pixels
         )
         self._weights = torch.ones(
             (1, 1), dtype=self._grid[0].dtype, device=self._grid[0].device
@@ -275,6 +288,9 @@ class LensSource(Module):
         else:
             self._grid = (self._grid[0].unsqueeze(-1), self._grid[1].unsqueeze(-1))
 
+        # FFT convolution fastest when the image is padded to the next power of 2
+        self._s = (next_fast_len(self._n_pix[0]), next_fast_len(self._n_pix[1]))
+
     def _fft2_padded(self, x):
         """
         Compute the 2D Fast Fourier Transform (FFT) of a tensor with zero-padding.
@@ -285,10 +301,6 @@ class LensSource(Module):
         Returns:
             Tensor: The 2D FFT of the input tensor with zero-padding.
         """
-        npix = copy(self._n_pix)
-        npix = (next_fast_len(npix[0]), next_fast_len(npix[1]))
-        self._s = npix
-
         return torch.fft.rfft2(x, self._s)
 
     def _unpad_fft(self, x):
@@ -305,9 +317,14 @@ class LensSource(Module):
         Tensor
             The input tensor without padding.
         """
-        return torch.roll(x, (-self._psf_pad[0], -self._psf_pad[1]), dims=(-2, -1))[
-            ..., : self._s[0], : self._s[1]
-        ]
+        return torch.roll(
+            x,
+            (
+                -self._psf_pad[0] * self.upsample_factor,
+                -self._psf_pad[1] * self.upsample_factor,
+            ),
+            dims=(-2, -1),
+        )[..., : self._s[0], : self._s[1]]
 
     @forward
     def __call__(
@@ -395,10 +412,6 @@ class LensSource(Module):
                     )
                     .squeeze(0)
                     .squeeze(0)
-                )
-            else:
-                raise ValueError(
-                    f"psf_mode should be one of 'fft' or 'conv2d', not {self.psf_mode}"
                 )
 
         # Return to the desired image
