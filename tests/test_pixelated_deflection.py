@@ -1,6 +1,8 @@
 import torch
 import caustics
 
+import pytest
+
 
 def test_pixelated_deflection():
 
@@ -32,3 +34,9 @@ def test_pixelated_deflection():
     assert torch.allclose(bx, torch.zeros_like(bx), atol=1e-5)
     assert torch.all(torch.isfinite(by))
     assert torch.allclose(by, torch.zeros_like(by), atol=1e-5)
+
+    with pytest.raises(NotImplementedError):
+        model.potential(X, Y)
+
+    with pytest.raises(NotImplementedError):
+        model.convergence(X, Y)
