@@ -4,16 +4,17 @@ import caustics
 
 def test_pixelated_deflection():
 
-    n = 64
+    n = 65
 
+    # deflect all rays to the center
     dX, dY = torch.meshgrid(
-        torch.linspace(1, -1, n), torch.linspace(1, -1, n), indexing="ij"
+        -torch.linspace(1, -1, n), -torch.linspace(1, -1, n), indexing="xy"
     )
 
     cosmology = caustics.FlatLambdaCDM(name="cosmo")
     model = caustics.PixelatedDeflection(
         deflection_map=torch.stack((dX, dY)),
-        pixelscale=2 / n,
+        pixelscale=2 / (n - 1),
         cosmology=cosmology,
         x0=0.0,
         y0=0.0,
@@ -22,12 +23,12 @@ def test_pixelated_deflection():
     )
 
     X, Y = torch.meshgrid(
-        torch.linspace(-0.9, 0.9, 32), torch.linspace(-0.9, 0.9, 32), indexing="ij"
+        torch.linspace(-0.9, 0.9, 32), torch.linspace(-0.9, 0.9, 32), indexing="xy"
     )
 
     bx, by = model.raytrace(X, Y)
-    print(bx)
+
     assert torch.all(torch.isfinite(bx))
-    assert torch.allclose(bx, torch.zeros_like(bx))
+    assert torch.allclose(bx, torch.zeros_like(bx), atol=1e-5)
     assert torch.all(torch.isfinite(by))
-    assert torch.allclose(by, torch.zeros_like(by))
+    assert torch.allclose(by, torch.zeros_like(by), atol=1e-5)

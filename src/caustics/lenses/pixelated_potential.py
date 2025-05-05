@@ -112,13 +112,6 @@ class PixelatedPotential(ThinLens):
         self.scale = Param("scale", scale, units="flux", valid=(0, None))
 
         self.pixelscale = pixelscale
-        if potential_map is not None:
-            self.n_pix = potential_map.shape[0]
-        elif shape is not None:
-            self.n_pix = shape[0]
-        else:
-            raise ValueError("Either potential_map or shape must be provided")
-        self.fov = self.n_pix * self.pixelscale
 
     @forward
     def reduced_deflection_angle(
@@ -158,12 +151,13 @@ class PixelatedPotential(ThinLens):
             *Unit: arcsec*
 
         """
-        # TODO: rescale from fov units to arcsec
+        fov_x = potential_map.shape[1] * self.pixelscale
+        fov_y = potential_map.shape[0] * self.pixelscale
         return tuple(
             alpha.reshape(x.shape) / self.pixelscale
             for alpha in interp_bicubic(
-                (x - x0).view(-1) / self.fov * 2,
-                (y - y0).view(-1) / self.fov * 2,
+                (x - x0).view(-1) / fov_x * 2,
+                (y - y0).view(-1) / fov_y * 2,
                 potential_map * scale,
                 get_Y=False,
                 get_dY=True,
@@ -204,9 +198,11 @@ class PixelatedPotential(ThinLens):
             *Unit: arcsec^2*
 
         """
+        fov_x = potential_map.shape[1] * self.pixelscale
+        fov_y = potential_map.shape[0] * self.pixelscale
         return interp_bicubic(
-            (x - x0).view(-1) / self.fov * 2,
-            (y - y0).view(-1) / self.fov * 2,
+            (x - x0).view(-1) / fov_x * 2,
+            (y - y0).view(-1) / fov_y * 2,
             potential_map * scale,
             get_Y=True,
             get_dY=False,
@@ -246,10 +242,11 @@ class PixelatedPotential(ThinLens):
             *Unit: unitless*
 
         """
-        # TODO: rescale from fov units to arcsec
+        fov_x = potential_map.shape[1] * self.pixelscale
+        fov_y = potential_map.shape[0] * self.pixelscale
         _, dY11, dY22 = interp_bicubic(
-            (x - x0).view(-1) / self.fov * 2,
-            (y - y0).view(-1) / self.fov * 2,
+            (x - x0).view(-1) / fov_x * 2,
+            (y - y0).view(-1) / fov_y * 2,
             potential_map * scale,
             get_Y=False,
             get_dY=False,

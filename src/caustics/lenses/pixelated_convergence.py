@@ -156,10 +156,10 @@ class PixelatedConvergence(ThinLens):
         )
         self.scale = Param("scale", scale, units="flux", valid=(0, None))
 
-        if convergence_map is not None:
-            self.n_pix = convergence_map.shape[0]
-        elif shape is not None:
-            self.n_pix = shape[0]
+        assert (
+            self.convergence_map.shape[0] == self.convergence_map.shape[1]
+        ), f"Convergence map must be square, not {self.convergence_map.shape}"
+        self.n_pix = self.convergence_map.shape[0]
         self.pixelscale = pixelscale
         self.fov = self.n_pix * self.pixelscale
         self.use_next_fast_len = use_next_fast_len
@@ -390,8 +390,10 @@ class PixelatedConvergence(ThinLens):
             *Unit: unitless*
 
         """
+        fov_x = convergence_map.shape[1] * self.pixelscale
+        fov_y = convergence_map.shape[0] * self.pixelscale
         return interp2d(
             convergence_map * scale,
-            (x - x0).view(-1) / self.fov * 2,
-            (y - y0).view(-1) / self.fov * 2,
+            (x - x0).view(-1) / fov_x * 2,
+            (y - y0).view(-1) / fov_y * 2,
         ).reshape(x.shape)

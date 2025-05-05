@@ -149,16 +149,18 @@ class PixelatedDeflection(ThinLens):
             *Unit: unitless*
 
         """
+        fov_x = deflection_map.shape[2] * self.pixelscale
+        fov_y = deflection_map.shape[1] * self.pixelscale
         return (
             interp2d(
                 deflection_map[0] * scale,
-                (x - x0).view(-1) / self.fov * 2,
-                (y - y0).view(-1) / self.fov * 2,
+                (x - x0).view(-1) / fov_x * 2,
+                (y - y0).view(-1) / fov_y * 2,
             ).reshape(x.shape),
             interp2d(
                 deflection_map[1] * scale,
-                (x - x0).view(-1) / self.fov * 2,
-                (y - y0).view(-1) / self.fov * 2,
+                (x - x0).view(-1) / fov_x * 2,
+                (y - y0).view(-1) / fov_y * 2,
             ).reshape(x.shape),
         )
 
