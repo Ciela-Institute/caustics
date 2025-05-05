@@ -40,3 +40,18 @@ def test_pixelated_deflection():
 
     with pytest.raises(NotImplementedError):
         model.convergence(X, Y)
+
+    with pytest.raises(ValueError):
+        caustics.PixelatedDeflection(
+            cosmology=cosmology,
+            pixelscale=2 / (n - 1),
+            deflection_map=torch.ones((n, n)),
+        )
+
+    with pytest.raises(ValueError):
+        caustics.PixelatedDeflection(
+            cosmology=cosmology,
+            pixelscale=2 / (n - 1),
+            deflection_map=None,
+            shape=(n, n),
+        )

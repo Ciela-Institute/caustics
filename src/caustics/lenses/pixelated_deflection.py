@@ -109,12 +109,7 @@ class PixelatedDeflection(ThinLens):
         )
         self.scale = Param("scale", scale, units="flux", valid=(0, None))
 
-        if deflection_map is not None:
-            self.n_pix = deflection_map.shape[0]
-        elif shape is not None:
-            self.n_pix = shape[0]
         self.pixelscale = pixelscale
-        self.fov = self.n_pix * self.pixelscale
 
     @forward
     def reduced_deflection_angle(
