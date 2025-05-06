@@ -261,15 +261,15 @@ class LensSource(Module):
 
     def _build_grid(self):
         self._psf_pad = (
-            (self.psf_shape[1] * self.upsample_factor) // 2,  # img pixels
-            (self.psf_shape[0] * self.upsample_factor) // 2,  # img pixels
+            self.psf_shape[1] // 2,  # upsample pixels
+            self.psf_shape[0] // 2,  # upsample pixels
         )
 
         self._n_pix = (
-            (self.pixels_x + self._psf_pad[0] * 2)
-            * self.upsample_factor,  # upsample pixels
-            (self.pixels_y + self._psf_pad[1] * 2)
-            * self.upsample_factor,  # upsample pixels
+            self.pixels_x * self.upsample_factor
+            + self._psf_pad[0] * 2,  # upsample pixels
+            self.pixels_y * self.upsample_factor
+            + self._psf_pad[1] * 2,  # upsample pixels
         )
         self._grid = meshgrid(
             self.pixelscale / self.upsample_factor,  # upsample pixelscale
@@ -319,10 +319,7 @@ class LensSource(Module):
         """
         return torch.roll(
             x,
-            (
-                -self._psf_pad[0] * self.upsample_factor,
-                -self._psf_pad[1] * self.upsample_factor,
-            ),
+            (-self._psf_pad[0], -self._psf_pad[1]),
             dims=(-2, -1),
         )[..., : self._s[0], : self._s[1]]
 
@@ -415,11 +412,13 @@ class LensSource(Module):
                 )
 
         # Return to the desired image
-        mu_native_resolution = (
-            avg_pool2d(mu[None, None], self.upsample_factor).squeeze(0).squeeze(0)
-        )
-        mu_clipped = mu_native_resolution[
-            self._psf_pad[1] : self.pixels_y + self._psf_pad[1],
-            self._psf_pad[0] : self.pixels_x + self._psf_pad[0],
+        mu_clipped = mu[
+            self._psf_pad[1] : self.pixels_y * self.upsample_factor + self._psf_pad[1],
+            self._psf_pad[0] : self.pixels_x * self.upsample_factor + self._psf_pad[0],
         ]
-        return mu_clipped
+        mu_native_resolution = (
+            avg_pool2d(mu_clipped[None, None], self.upsample_factor)
+            .squeeze(0)
+            .squeeze(0)
+        )
+        return mu_native_resolution
