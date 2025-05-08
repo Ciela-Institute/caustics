@@ -1,6 +1,5 @@
 import torch
 
-from ...utils import translate_rotate
 from ...constants import G_over_c2, rad_to_arcsec
 
 
@@ -54,10 +53,10 @@ def reduced_deflection_angle_point(x0, y0, Rein, x, y, s=0.0):
         *Unit: arcsec*
 
     """
-    x, y = translate_rotate(x, y, x0, y0)
-    th = (x**2 + y**2).sqrt() + s
-    ax = x * Rein**2 / th**2
-    ay = y * Rein**2 / th**2
+    x, y = x - x0, y - y0
+    th2 = x**2 + y**2 + s**2
+    ax = x * Rein**2 / th2
+    ay = y * Rein**2 / th2
     return ax, ay
 
 
@@ -106,7 +105,7 @@ def potential_point(x0, y0, Rein, x, y, s=0.0):
         *Unit: arcsec^2*
 
     """
-    x, y = translate_rotate(x, y, x0, y0)
+    x, y = x - x0, y - y0
     th = (x**2 + y**2).sqrt() + s
     return Rein**2 * th.log()
 
@@ -146,7 +145,7 @@ def convergence_point(x0, y0, x, y):
         *Unit: unitless*
 
     """
-    x, y = translate_rotate(x, y, x0, y0)
+    x, y = x - x0, y - y0
     return torch.where((x == 0) & (y == 0), torch.inf, 0.0)
 
 
