@@ -1,7 +1,6 @@
 from typing import Optional
 from warnings import warn
 
-import torch
 from torch import Tensor
 from caskade import forward
 
@@ -144,19 +143,18 @@ class BatchedPlane(ThinLens):
 
         """
         # Collect the dynamic parameters to vmap over
-        params = dict(
-            (p.name, p.value) for p in self.lens.local_dynamic_params.values()
-        )
+        params = dict((n, p.value) for n, p in self.lens.local_dynamic_params.items())
         batchdims = dict(
-            (p.name, -(len(p.shape) + 1))
-            for p in self.lens.local_dynamic_params.values()
+            (n, -(len(p.shape) + 1)) for n, p in self.lens.local_dynamic_params.items()
         )
-        convergence = torch.vmap(
-            lambda p: self.lens.convergence(x, y, **p),
-            in_dims=(batchdims,),
+        batchdims["x"] = None
+        batchdims["y"] = None
+        vr_convergence = vmap_reduce(
+            lambda p: self.lens.convergence(**p),
             chunk_size=self.chunk_size,
-        )(params)
-        return convergence.sum(dim=0)
+            in_dims=batchdims,
+        )
+        return vr_convergence(x=x, y=y, **params)
 
     @forward
     def potential(
@@ -189,16 +187,15 @@ class BatchedPlane(ThinLens):
 
         """
         # Collect the dynamic parameters to vmap over
-        params = dict(
-            (p.name, p.value) for p in self.lens.local_dynamic_params.values()
-        )
+        params = dict((n, p.value) for n, p in self.lens.local_dynamic_params.items())
         batchdims = dict(
-            (p.name, -(len(p.shape) + 1))
-            for p in self.lens.local_dynamic_params.values()
+            (n, -(len(p.shape) + 1)) for n, p in self.lens.local_dynamic_params.items()
         )
-        potential = torch.vmap(
-            lambda p: self.lens.potential(x, y, **p),
-            in_dims=(batchdims,),
+        batchdims["x"] = None
+        batchdims["y"] = None
+        vr_potential = vmap_reduce(
+            lambda p: self.lens.potential(**p),
             chunk_size=self.chunk_size,
-        )(params)
-        return potential.sum(dim=0)
+            in_dims=batchdims,
+        )
+        return vr_potential(x=x, y=y, **params)
