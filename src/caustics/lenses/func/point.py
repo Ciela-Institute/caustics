@@ -149,7 +149,7 @@ def convergence_point(x0, y0, x, y):
     return torch.where((x == 0) & (y == 0), torch.inf, 0.0)
 
 
-def magnification_point(x0, y0, x, y):
+def magnification_point(x0, y0, x, y, s=0.0):
     """
     Compute the magnification. This follows essenitally by definition.
 
@@ -182,7 +182,7 @@ def magnification_point(x0, y0, x, y):
 
     """
     x, y = x - x0, y - y0
-    th2 = x**2 + y**2
+    th2 = x**2 + y**2 + s**2
     return 1 / (1 - 1 / th2**2)  # 1 / (1 - 1/ r^4)
 
 
