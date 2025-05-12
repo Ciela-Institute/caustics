@@ -58,6 +58,31 @@ class BatchedPlane(ThinLens):
         self.lens.z_s = self.z_s
         self.chunk_size = chunk_size
 
+    @property
+    def s(self) -> float:
+        """
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
+
+        """
+        return self.lens.s
+
+    @s.setter
+    def s(self, value: float) -> None:
+        """
+        Set the softening parameter to prevent numerical instabilities.
+
+        Parameters
+        ----------
+        value: float
+            The softening parameter.
+
+            *Unit: arcsec*
+
+        """
+        self.lens.s = value
+
     @forward
     def reduced_deflection_angle(
         self,

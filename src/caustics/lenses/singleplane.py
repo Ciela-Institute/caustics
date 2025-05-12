@@ -54,6 +54,40 @@ class SinglePlane(ThinLens):
                     f"Lens model {lens.name} has a static source redshift. This is now overwritten by the SinglePlane ({self.name}) source redshift. To prevent this warning, set the source redshift of the lens model to be dynamic before adding to the system."
                 )
             lens.z_s = self.z_s
+            self._s = 0.0
+
+    @property
+    def s(self) -> float:
+        """
+        Softening parameter to prevent numerical instabilities.
+
+        *Unit: arcsec*
+
+        """
+        return self._s
+
+    @s.setter
+    def s(self, value: float) -> None:
+        """
+        Set the softening parameter.
+
+        Parameters
+        ----------
+        value: float
+            The softening parameter to set.
+
+            *Unit: arcsec*
+
+        """
+        self._s = value
+        for lens in self.lenses:
+            try:
+                lens.s  # check if lens has a softening parameter
+                lens.s = value
+            except AttributeError:
+                warn(
+                    f"Lens model {lens.name} does not have a softening parameter. Unable to set s for {lens.name}."
+                )
 
     @forward
     def reduced_deflection_angle(
