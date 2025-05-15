@@ -155,19 +155,18 @@ class PixelatedConvergence(ThinLens):
             "convergence_map", convergence_map, shape, units="unitless"
         )
         self.scale = Param("scale", scale, units="flux", valid=(0, None))
-
-        if convergence_map is not None:
-            self.n_pix = convergence_map.shape[0]
-        elif shape is not None:
-            self.n_pix = shape[0]
         self.pixelscale = pixelscale
-        self.fov = self.n_pix * self.pixelscale
+
+        assert (
+            self.convergence_map.shape[0] == self.convergence_map.shape[1]
+        ), f"Convergence map must be square, not {self.convergence_map.shape}"
+        self.n_pix = self.convergence_map.shape[0]
         self.use_next_fast_len = use_next_fast_len
         self.padding = padding
 
         # Construct kernels
         self.ax_kernel, self.ay_kernel, self.potential_kernel = (
-            func.build_kernels_pixelated_convergence(self.pixelscale, self.n_pix)
+            func.build_kernels_pixelated_convergence(pixelscale, self.n_pix)
         )
         # Window the kernels if needed
         if padding != "zero" and convolution_mode == "fft" and window_kernel > 0:
@@ -303,7 +302,7 @@ class PixelatedConvergence(ThinLens):
             self.ax_kernel_tilde,
             self.ay_kernel_tilde,
             self.pixelscale,
-            self.fov,
+            self.n_pix * self.pixelscale,
             self.n_pix,
             self.padding,
             self.convolution_mode,
@@ -351,7 +350,7 @@ class PixelatedConvergence(ThinLens):
             y,
             self.potential_kernel_tilde,
             self.pixelscale,
-            self.fov,
+            self.n_pix * self.pixelscale,
             self.n_pix,
             self.padding,
             self.convolution_mode,
@@ -368,7 +367,7 @@ class PixelatedConvergence(ThinLens):
         scale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
-        Compute the convergence at the specified positions. This method is not implemented.
+        Compute the convergence at the specified positions.
 
         Parameters
         ----------
@@ -390,8 +389,10 @@ class PixelatedConvergence(ThinLens):
             *Unit: unitless*
 
         """
+        fov_x = convergence_map.shape[1] * self.pixelscale
+        fov_y = convergence_map.shape[0] * self.pixelscale
         return interp2d(
             convergence_map * scale,
-            (x - x0).view(-1) / self.fov * 2,
-            (y - y0).view(-1) / self.fov * 2,
+            (x - x0).view(-1) / fov_x * 2,
+            (y - y0).view(-1) / fov_y * 2,
         ).reshape(x.shape)
