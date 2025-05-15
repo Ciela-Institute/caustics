@@ -72,6 +72,10 @@ class MassSheet(ThinLens):
         kappa: Annotated[
             Optional[Union[Tensor, float]], "Surface density", True
         ] = None,
+        s: Annotated[
+            float,
+            "Softening length for the mass sheet profile. Not used, just here for consistency.",
+        ] = 0.0,
         name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
@@ -79,6 +83,7 @@ class MassSheet(ThinLens):
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
         self.kappa = Param("kappa", kappa, units="unitless")
+        self.s = s
 
     @forward
     def reduced_deflection_angle(

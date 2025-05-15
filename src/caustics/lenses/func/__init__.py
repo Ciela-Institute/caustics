@@ -21,7 +21,6 @@ from .point import (
     reduced_deflection_angle_point,
     potential_point,
     convergence_point,
-    magnification_point,
     mass_to_rein_point,
     rein_to_mass_point,
 )
@@ -103,7 +102,6 @@ __all__ = (
     "reduced_deflection_angle_point",
     "potential_point",
     "convergence_point",
-    "magnification_point",
     "mass_to_rein_point",
     "rein_to_mass_point",
     "reduced_deflection_angle_mass_sheet",

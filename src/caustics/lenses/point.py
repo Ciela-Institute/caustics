@@ -341,36 +341,3 @@ class Point(ThinLens):
 
         """
         return func.convergence_point(x0, y0, x, y)
-
-    @forward
-    def magnification(
-        self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "param"],
-        y0: Annotated[Tensor, "param"],
-        Rein: Annotated[Tensor, "param"],
-    ) -> Tensor:
-        """
-        Compute the magnification for a point mass lens.
-
-        Parameters
-        ----------
-        x: Tensor
-            x-coordinates in the lens plane.
-
-            *Unit: arcsec*
-        y: Tensor
-            y-coordinates in the lens plane.
-
-            *Unit: arcsec*
-
-        Returns
-        -------
-        Tensor
-            The magnification.
-
-            *Unit: unitless*
-
-        """
-        return func.magnification_point(x0, y0, Rein, x, y, self.s)

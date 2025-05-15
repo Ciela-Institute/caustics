@@ -149,43 +149,6 @@ def convergence_point(x0, y0, x, y):
     return torch.where((x == 0) & (y == 0), torch.inf, 0.0)
 
 
-def magnification_point(x0, y0, Rein, x, y, s=0.0):
-    """
-    Compute the magnification. This follows essenitally by definition.
-
-    Parameters
-    ----------
-    x0: Tensor
-        x-coordinate of the center of the lens.
-
-        *Unit: arcsec*
-
-    y0: Tensor
-        y-coordinate of the center of the lens.
-
-        *Unit: arcsec*
-
-    x: Tensor
-        x-coordinates in the lens plane.
-
-        *Unit: arcsec*
-
-    y: Tensor
-        y-coordinates in the lens plane.
-
-    Returns
-    -------
-    Tensor
-        The magnification.
-
-        *Unit: unitless*
-
-    """
-    x, y = x - x0, y - y0
-    th2 = x**2 + y**2 + s**2
-    return 1 / (1 - Rein**4 / th2**2)  # 1 / (1 - 1/ r^4)
-
-
 def mass_to_rein_point(M, d_ls, d_l, d_s):
     """
     Compute the Einstein radius of a point mass. See Meneghetti lecture notes equation 1.39

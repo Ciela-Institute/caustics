@@ -127,16 +127,14 @@ class BatchedPlane(ThinLens):
             (p.name, -(len(p.shape) + 1))
             for p in self.lens.local_dynamic_params.values()
         )
-        batchdims["x"] = None
-        batchdims["y"] = None
         vr_deflection_angle = vmap_reduce(
-            lambda p: self.lens.reduced_deflection_angle(**p),
+            lambda p: self.lens.reduced_deflection_angle(x, y, **p),
             reduce_func=lambda x: (x[0].sum(dim=0), x[1].sum(dim=0)),
             chunk_size=self.chunk_size,
             in_dims=batchdims,
             out_dims=(0, 0),
         )
-        return vr_deflection_angle(x=x, y=y, **params)
+        return vr_deflection_angle(**params)
 
     @forward
     def convergence(

@@ -80,7 +80,8 @@ class ExternalShear(ThinLens):
         ] = None,
         parametrization: Literal["cartesian", "angular"] = "cartesian",
         s: Annotated[
-            float, "Softening length for the elliptical power-law profile"
+            float,
+            "Softening length for the external shear profile. Not used, just here for consistency.",
         ] = 0.0,
         name: NameType = None,
         **kwargs,
