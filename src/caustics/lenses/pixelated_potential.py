@@ -21,7 +21,7 @@ class PixelatedPotential(ThinLens):
 
     def __init__(
         self,
-        pixelscale: Annotated[float, "pixelscale"],
+        pixelscale: Annotated[float, "pixelscale", True],
         cosmology: CosmologyType,
         z_l: ZType = None,
         z_s: ZType = None,
@@ -40,9 +40,6 @@ class PixelatedPotential(ThinLens):
             "A 2D tensor representing the potential map",
             True,
         ] = None,
-        scale: Annotated[
-            Optional[Tensor], "A scale factor to multiply by the potential map", True
-        ] = 1.0,
         shape: Annotated[
             Optional[tuple[int, ...]], "The shape of the potential map"
         ] = None,
@@ -109,9 +106,7 @@ class PixelatedPotential(ThinLens):
         self.potential_map = Param(
             "potential_map", potential_map, shape, units="unitless"
         )
-        self.scale = Param("scale", scale, units="flux", valid=(0, None))
-
-        self.pixelscale = pixelscale
+        self.pixelscale = Param("pixelscale", pixelscale)
 
     @forward
     def reduced_deflection_angle(
@@ -121,7 +116,7 @@ class PixelatedPotential(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -151,14 +146,14 @@ class PixelatedPotential(ThinLens):
             *Unit: arcsec*
 
         """
-        fov_x = potential_map.shape[1] * self.pixelscale
-        fov_y = potential_map.shape[0] * self.pixelscale
+        fov_x = potential_map.shape[1] * pixelscale
+        fov_y = potential_map.shape[0] * pixelscale
         return tuple(
-            alpha.reshape(x.shape) / self.pixelscale
+            alpha.reshape(x.shape) / pixelscale
             for alpha in interp_bicubic(
                 (x - x0).view(-1) / fov_x * 2,
                 (y - y0).view(-1) / fov_y * 2,
-                potential_map * scale,
+                potential_map,
                 get_Y=False,
                 get_dY=True,
                 get_ddY=False,
@@ -173,7 +168,7 @@ class PixelatedPotential(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -198,12 +193,12 @@ class PixelatedPotential(ThinLens):
             *Unit: arcsec^2*
 
         """
-        fov_x = potential_map.shape[1] * self.pixelscale
-        fov_y = potential_map.shape[0] * self.pixelscale
+        fov_x = potential_map.shape[1] * pixelscale
+        fov_y = potential_map.shape[0] * pixelscale
         return interp_bicubic(
             (x - x0).view(-1) / fov_x * 2,
             (y - y0).view(-1) / fov_y * 2,
-            potential_map * scale,
+            potential_map,
             get_Y=True,
             get_dY=False,
             get_ddY=False,
@@ -217,7 +212,7 @@ class PixelatedPotential(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         potential_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence at the specified positions.
@@ -242,14 +237,14 @@ class PixelatedPotential(ThinLens):
             *Unit: unitless*
 
         """
-        fov_x = potential_map.shape[1] * self.pixelscale
-        fov_y = potential_map.shape[0] * self.pixelscale
+        fov_x = potential_map.shape[1] * pixelscale
+        fov_y = potential_map.shape[0] * pixelscale
         _, dY11, dY22 = interp_bicubic(
             (x - x0).view(-1) / fov_x * 2,
             (y - y0).view(-1) / fov_y * 2,
-            potential_map * scale,
+            potential_map,
             get_Y=False,
             get_dY=False,
             get_ddY=True,
         )
-        return (dY11 + dY22).reshape(x.shape) / (2 * self.pixelscale**2)
+        return (dY11 + dY22).reshape(x.shape) / (2 * pixelscale**2)

@@ -22,7 +22,7 @@ class PixelatedConvergence(ThinLens):
 
     def __init__(
         self,
-        pixelscale: Annotated[float, "pixelscale"],
+        pixelscale: Annotated[float, "pixelscale", True],
         cosmology: CosmologyType,
         z_l: ZType = None,
         z_s: ZType = None,
@@ -155,19 +155,19 @@ class PixelatedConvergence(ThinLens):
             "convergence_map", convergence_map, shape, units="unitless"
         )
         self.scale = Param("scale", scale, units="flux", valid=(0, None))
+        self.pixelscale = Param("pixelscale", pixelscale, units="arcsec/pixel")
 
         assert (
             self.convergence_map.shape[0] == self.convergence_map.shape[1]
         ), f"Convergence map must be square, not {self.convergence_map.shape}"
         self.n_pix = self.convergence_map.shape[0]
-        self.pixelscale = pixelscale
-        self.fov = self.n_pix * self.pixelscale
+        self.fov = self.n_pix * pixelscale
         self.use_next_fast_len = use_next_fast_len
         self.padding = padding
 
         # Construct kernels
         self.ax_kernel, self.ay_kernel, self.potential_kernel = (
-            func.build_kernels_pixelated_convergence(self.pixelscale, self.n_pix)
+            func.build_kernels_pixelated_convergence(1.0, self.n_pix)
         )
         # Window the kernels if needed
         if padding != "zero" and convolution_mode == "fft" and window_kernel > 0:
@@ -265,6 +265,7 @@ class PixelatedConvergence(ThinLens):
         y0: Annotated[Tensor, "Param"],
         convergence_map: Annotated[Tensor, "Param"],
         scale: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -300,9 +301,9 @@ class PixelatedConvergence(ThinLens):
             convergence_map * scale,
             x,
             y,
-            self.ax_kernel_tilde,
-            self.ay_kernel_tilde,
-            self.pixelscale,
+            self.ax_kernel_tilde / pixelscale**2,
+            self.ay_kernel_tilde / pixelscale**2,
+            pixelscale,
             self.fov,
             self.n_pix,
             self.padding,
@@ -318,6 +319,7 @@ class PixelatedConvergence(ThinLens):
         y0: Annotated[Tensor, "Param"],
         convergence_map: Annotated[Tensor, "Param"],
         scale: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -343,14 +345,16 @@ class PixelatedConvergence(ThinLens):
             *Unit: arcsec^2*
 
         """
+        potential = self.potential_kernel_tilde.clone()  # type: ignore[union-attr]
+        potential[0, 0] += pixelscale.log()
         return func.potential_pixelated_convergence(
             x0,
             y0,
             convergence_map * scale,
             x,
             y,
-            self.potential_kernel_tilde,
-            self.pixelscale,
+            potential,
+            pixelscale,
             self.fov,
             self.n_pix,
             self.padding,
@@ -366,6 +370,7 @@ class PixelatedConvergence(ThinLens):
         y0: Annotated[Tensor, "Param"],
         convergence_map: Annotated[Tensor, "Param"],
         scale: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence at the specified positions.
@@ -390,8 +395,8 @@ class PixelatedConvergence(ThinLens):
             *Unit: unitless*
 
         """
-        fov_x = convergence_map.shape[1] * self.pixelscale
-        fov_y = convergence_map.shape[0] * self.pixelscale
+        fov_x = convergence_map.shape[1] * pixelscale
+        fov_y = convergence_map.shape[0] * pixelscale
         return interp2d(
             convergence_map * scale,
             (x - x0).view(-1) / fov_x * 2,

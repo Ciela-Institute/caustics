@@ -21,7 +21,7 @@ class PixelatedDeflection(ThinLens):
 
     def __init__(
         self,
-        pixelscale: Annotated[float, "pixelscale"],
+        pixelscale: Annotated[float, "pixelscale", True],
         cosmology: CosmologyType,
         z_l: ZType = None,
         z_s: ZType = None,
@@ -40,9 +40,6 @@ class PixelatedDeflection(ThinLens):
             "A 3D tensor (2, nx, ny) representing the reduced deflection angle map",
             True,
         ] = None,
-        scale: Annotated[
-            Optional[Tensor], "A scale factor to multiply by the deflection map", True
-        ] = 1.0,
         shape: Annotated[
             Optional[tuple[int, ...]], "The shape of the deflection map"
         ] = None,
@@ -107,9 +104,7 @@ class PixelatedDeflection(ThinLens):
         self.deflection_map = Param(
             "deflection_map", deflection_map, shape, units="unitless"
         )
-        self.scale = Param("scale", scale, units="flux", valid=(0, None))
-
-        self.pixelscale = pixelscale
+        self.pixelscale = Param("pixelscale", pixelscale, units="arcsec/pixel")
 
     @forward
     def reduced_deflection_angle(
@@ -119,8 +114,8 @@ class PixelatedDeflection(ThinLens):
         x0: Annotated[Tensor, "Param"],
         y0: Annotated[Tensor, "Param"],
         deflection_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        pixelscale: Annotated[Tensor, "Param"],
+    ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection at the specified positions.
 
@@ -144,19 +139,14 @@ class PixelatedDeflection(ThinLens):
             *Unit: unitless*
 
         """
-        fov_x = deflection_map.shape[2] * self.pixelscale
-        fov_y = deflection_map.shape[1] * self.pixelscale
+        fov_x = deflection_map.shape[2] * pixelscale
+        fov_y = deflection_map.shape[1] * pixelscale
+        shape = x.shape
+        x = (x - x0).view(-1) / fov_x * 2
+        y = (y - y0).view(-1) / fov_y * 2
         return (
-            interp2d(
-                deflection_map[0] * scale,
-                (x - x0).view(-1) / fov_x * 2,
-                (y - y0).view(-1) / fov_y * 2,
-            ).reshape(x.shape),
-            interp2d(
-                deflection_map[1] * scale,
-                (x - x0).view(-1) / fov_x * 2,
-                (y - y0).view(-1) / fov_y * 2,
-            ).reshape(x.shape),
+            interp2d(deflection_map[0], x, y).reshape(shape),
+            interp2d(deflection_map[1], x, y).reshape(shape),
         )
 
     @forward
