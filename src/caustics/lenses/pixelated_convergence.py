@@ -22,7 +22,7 @@ class PixelatedConvergence(ThinLens):
 
     def __init__(
         self,
-        pixelscale: Annotated[float, "pixelscale", True],
+        pixelscale: Annotated[float, "pixelscale"],
         cosmology: CosmologyType,
         z_l: ZType = None,
         z_s: ZType = None,

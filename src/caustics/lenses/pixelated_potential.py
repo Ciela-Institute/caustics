@@ -106,7 +106,7 @@ class PixelatedPotential(ThinLens):
         self.potential_map = Param(
             "potential_map", potential_map, shape, units="unitless"
         )
-        self.pixelscale = Param("pixelscale", pixelscale)
+        self.pixelscale = Param("pixelscale", pixelscale, units="arcsec/pixel")
 
     @forward
     def reduced_deflection_angle(
