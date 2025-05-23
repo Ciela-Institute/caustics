@@ -7,6 +7,7 @@ from functools import partial, lru_cache
 import torch
 from torch import Tensor
 from torch.func import jacfwd
+from torch.nn.functional import grid_sample
 from scipy.special import roots_legendre
 
 from .constants import rad_to_deg, deg_to_rad
@@ -873,8 +874,9 @@ def interp2d(
     im: Tensor,
     x: Tensor,
     y: Tensor,
-    method: Literal["linear", "nearest"] = "linear",
+    mode: Literal["bilinear", "nearest"] = "bilinear",
     padding_mode: str = "zeros",
+    align_corners: bool = False,
 ) -> Tensor:
     """
     Interpolates a 2D image at specified coordinates. Similar to
@@ -918,38 +920,60 @@ def interp2d(
         Tensor with the same shape as `x` and `y` containing the interpolated
         values.
     """
-    if im.ndim != 2:
-        raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
-    if x.ndim > 1:
-        raise ValueError(f"x must be 0 or 1D (received {x.ndim}D tensor)")
-    if y.ndim > 1:
-        raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
-    if padding_mode not in ["extrapolate", "clamp", "zeros"]:
+
+    if im.ndim != 3:
+        raise ValueError(f"im must be 3D (received {im.ndim}D tensor)")
+    if padding_mode not in ["border", "reflection", "zeros"]:
         raise ValueError(f"{padding_mode} is not a valid padding mode")
+
+    shape = x.shape
+    x = x.flatten()
+    y = y.flatten()
+    if not x.requires_grad and torch.autograd.forward_ad._current_level == -1:
+        return grid_sample(
+            im.unsqueeze(0),
+            torch.stack((x, y), dim=1).unsqueeze(0).unsqueeze(0),
+            mode=mode,
+            padding_mode=padding_mode,
+            align_corners=align_corners,
+        ).reshape(im.shape[0], *shape)
 
     if padding_mode == "clamp":
         x = x.clamp(-1, 1)
         y = y.clamp(-1, 1)
-    else:
-        idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
 
     # Convert coordinates to pixel indices
-    h, w = im.shape
-    x = 0.5 * ((x + 1) * w - 1)
-    y = 0.5 * ((y + 1) * h - 1)
+    _, h, w = im.shape
+    if align_corners:
+        x = 0.5 * ((x + 1) * (w - 1))
+        y = 0.5 * ((y + 1) * (h - 1))
+    else:
+        x = 0.5 * ((x + 1) * w - 1)
+        y = 0.5 * ((y + 1) * h - 1)
 
-    if method == "nearest":
-        result = im[y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)]
-    elif method == "linear":
-        x0 = x.floor().long().clamp(0, w - 2)
-        y0 = y.floor().long().clamp(0, h - 2)
+    if mode == "nearest":
+        result = im[
+            ..., y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)
+        ]
+    elif mode == "bilinear":
+        x = x.clamp(-1, w)
+        y = y.clamp(-1, h)
+        x0 = x.floor().long()
+        y0 = y.floor().long()
         x1 = x0 + 1
         y1 = y0 + 1
 
-        fa = im[y0, x0]
-        fb = im[y1, x0]
-        fc = im[y0, x1]
-        fd = im[y1, x1]
+        def get_val(ix, iy):
+            valid = (ix >= 0) & (ix < w) & (iy >= 0) & (iy < h)
+            ix_clip = ix.clamp(0, w - 1)
+            iy_clip = iy.clamp(0, h - 1)
+            val = im[..., iy_clip, ix_clip]
+            return val * valid.float()
+
+        fa = get_val(x0, y0)
+        fb = get_val(x0, y1)
+        fc = get_val(x1, y0)
+        fd = get_val(x1, y1)
 
         dx1 = x1 - x
         dx0 = x - x0
@@ -958,12 +982,9 @@ def interp2d(
 
         result = fa * dx1 * dy1 + fb * dx1 * dy0 + fc * dx0 * dy1 + fd * dx0 * dy0  # fmt: skip
     else:
-        raise ValueError(f"{method} is not a valid interpolation method")
+        raise ValueError(f"{mode} is not a valid interpolation method")
 
-    if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
-
-    return result
+    return result.reshape(im.shape[0], *shape)
 
 
 def interp3d(
