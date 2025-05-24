@@ -3,10 +3,10 @@ from typing import Optional, Annotated, Union, Literal
 
 import torch
 from torch import Tensor
+from torch.nn.functional import grid_sample
 import numpy as np
 from caskade import forward, Param
 
-from ..utils import interp2d
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -17,7 +17,7 @@ class PixelatedConvergence(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "convergence_map": np.logspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
+        "convergence_map": np.random.normal(size=(10, 10)).astype(np.float32),
     }
 
     def __init__(
@@ -391,8 +391,12 @@ class PixelatedConvergence(ThinLens):
         """
         fov_x = convergence_map.shape[1] * self.pixelscale
         fov_y = convergence_map.shape[0] * self.pixelscale
-        return interp2d(
-            convergence_map * scale,
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
+        return grid_sample(
+            convergence_map.reshape(1, 1, *convergence_map.shape) * scale,
+            torch.stack(
+                ((x - x0).view(-1) / fov_x * 2, (y - y0).view(-1) / fov_y * 2), dim=1
+            ).reshape(1, 1, -1, 2),
+            mode="bilinear",
+            padding_mode="zeros",
+            align_corners=False,
         ).reshape(x.shape)
