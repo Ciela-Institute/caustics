@@ -929,7 +929,11 @@ def interp2d(
     shape = x.shape
     x = x.flatten()
     y = y.flatten()
-    if not x.requires_grad and torch.autograd.forward_ad._current_level == -1:
+    if (
+        not (x.requires_grad or y.requires_grad)
+        and torch.autograd.forward_ad._current_level == -1
+    ):
+        print("using torch grid sample")
         return grid_sample(
             im.unsqueeze(0),
             torch.stack((x, y), dim=1).unsqueeze(0).unsqueeze(0),
@@ -938,6 +942,7 @@ def interp2d(
             align_corners=align_corners,
         ).reshape(im.shape[0], *shape)
 
+    print("using custom interp2d")
     if padding_mode == "clamp":
         x = x.clamp(-1, 1)
         y = y.clamp(-1, 1)
@@ -955,6 +960,9 @@ def interp2d(
         result = im[
             ..., y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)
         ]
+        if padding_mode == "zeros":
+            valid = ((x.abs() <= 1) & (y.abs() <= 1)).float()
+            result = result * valid
     elif mode == "bilinear":
         x = x.clamp(-1, w)
         y = y.clamp(-1, h)
@@ -964,11 +972,14 @@ def interp2d(
         y1 = y0 + 1
 
         def get_val(ix, iy):
-            valid = (ix >= 0) & (ix < w) & (iy >= 0) & (iy < h)
             ix_clip = ix.clamp(0, w - 1)
             iy_clip = iy.clamp(0, h - 1)
             val = im[..., iy_clip, ix_clip]
-            return val * valid.float()
+            if padding_mode == "zeros":
+                valid = (ix >= 0) & (ix < w) & (iy >= 0) & (iy < h)
+                return val * valid.float()
+            elif padding_mode == "border":
+                return val
 
         fa = get_val(x0, y0)
         fb = get_val(x0, y1)

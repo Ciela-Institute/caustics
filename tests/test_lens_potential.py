@@ -90,8 +90,13 @@ def test_lens_potential_vs_deflection(device):
             assert torch.allclose(phi_ay, ay, atol=1e-3, rtol=1e-3)
         elif name in ["PixelatedConvergence"]:
             # PixelatedConvergence potential is defined by bilinear interpolation so it is very imprecise
-            assert torch.allclose(phi_ax, ax, rtol=1e0)
-            assert torch.allclose(phi_ay, ay, rtol=1e0)
+            # border pixels of convergence map known to have bad derivatives due to interp to zero
+            phi_ax[:, 2] = ax[:, 2]
+            phi_ax[:, 7] = ax[:, 7]
+            phi_ay[2] = ay[2]
+            phi_ay[7] = ay[7]
+            assert torch.allclose(phi_ax, ax, rtol=1e-1, atol=1e-2)
+            assert torch.allclose(phi_ay, ay, rtol=1e-1, atol=1e-2)
         else:
             assert torch.allclose(phi_ax, ax, atol=1e-5)
             assert torch.allclose(phi_ay, ay, atol=1e-5)

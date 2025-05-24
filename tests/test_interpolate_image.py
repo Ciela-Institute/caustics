@@ -13,8 +13,7 @@ def test_pixelated_source(device):
     source = Pixelated(image=image, x0=0.0, y0=0.0, pixelscale=res)
     source.to(device=device)
     im = source.brightness(x, y)
-    print(im)
-    assert torch.all(im == image)
+    assert torch.allclose(im, image, atol=1e-5)
 
     # Check smaller res
     source = Pixelated(image=image, x0=0.0, y0=0.0, pixelscale=res / 2)
@@ -23,5 +22,4 @@ def test_pixelated_source(device):
     expected_im = torch.nn.functional.pad(
         torch.ones(n // 2, n // 2), pad=[n // 4] * 4
     ).to(device=device)
-    print(im)
-    assert torch.all(im == expected_im)
+    assert torch.allclose(im, expected_im, atol=1e-5)

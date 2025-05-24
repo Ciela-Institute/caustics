@@ -17,7 +17,7 @@ class PixelatedConvergence(ThinLens):
     _null_params = {
         "x0": 0.0,
         "y0": 0.0,
-        "convergence_map": np.logspace(0, 1, 100, dtype=np.float32).reshape(10, 10),
+        "convergence_map": np.random.normal(size=(10, 10)).astype(np.float32),
     }
 
     def __init__(
