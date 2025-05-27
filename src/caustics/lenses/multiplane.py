@@ -95,13 +95,11 @@ class Multiplane(ThickLens):
             D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next)
             D_is = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_s)
             D_next = self.cosmology.transverse_comoving_distance(z_next)
-            print(X.shape)
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
                 X * rad_to_arcsec / D_l,
                 Y * rad_to_arcsec / D_l,
             )
 
-            print(alpha_x.shape, theta_x.shape)
             # Update angle of rays after passing through lens (sum in eq 18)
             theta_x = theta_x - alpha_x
             theta_y = theta_y - alpha_y
@@ -200,15 +198,6 @@ class Multiplane(ThickLens):
             geometric_time_delay=False,
             ray_coords=True,
         )
-
-    # @forward
-    # def effective_reduced_deflection_angle(
-    #     self,
-    #     x: Tensor,
-    #     y: Tensor,
-    # ) -> tuple[Tensor, Tensor]:
-    #     bx, by = self.raytrace(x, y)
-    #     return x - bx, y - by
 
     @forward
     def surface_density(

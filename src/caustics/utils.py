@@ -933,7 +933,6 @@ def interp2d(
         not (x.requires_grad or y.requires_grad)
         and torch.autograd.forward_ad._current_level == -1
     ):
-        print("using torch grid sample")
         return grid_sample(
             im.unsqueeze(0),
             torch.stack((x, y), dim=1).unsqueeze(0).unsqueeze(0),
@@ -942,7 +941,6 @@ def interp2d(
             align_corners=align_corners,
         ).reshape(im.shape[0], *shape)
 
-    print("using custom interp2d")
     if padding_mode == "clamp":
         x = x.clamp(-1, 1)
         y = y.clamp(-1, 1)

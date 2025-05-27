@@ -167,8 +167,7 @@ def test_params(device):
     # Test out the computation of a few quantities to make sure params are passed correctly
 
     # First case, params as list of tensors
-    with torch.autograd.set_detect_anomaly(True):
-        kappa_eff = multiplane_lens.effective_convergence_div(x, y, params)
+    kappa_eff = multiplane_lens.effective_convergence_div(x, y, params)
     assert kappa_eff.shape == torch.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, params)
     assert alphax.shape == torch.Size([32, 32])
