@@ -875,44 +875,43 @@ def interp2d(
     x: Tensor,
     y: Tensor,
     mode: Literal["bilinear", "nearest"] = "bilinear",
-    padding_mode: str = "zeros",
+    padding_mode: Literal["zeros", "border"] = "zeros",
     align_corners: bool = False,
 ) -> Tensor:
     """
-    Interpolates a 2D image at specified coordinates. Similar to
-    `torch.nn.functional.grid_sample` with `align_corners=False`.
+    Sample a 2-D image at arbitrary normalized coordinates.
 
     Parameters
     ----------
-    im: Tensor
-        A 2D tensor representing the image.
-    x: Tensor
-        A 0D or 1D tensor of x coordinates at which to interpolate.
-    y: Tensor
-        A 0D or 1D tensor of y coordinates at which to interpolate.
-    method: (str, optional)
-        Interpolation method. Either 'nearest' or 'linear'. Defaults to
-        'linear'.
-    padding_mode:  (str, optional)
-        Defines the padding mode when out-of-bound indices are encountered.
-        Either 'zeros', 'clamp', or 'extrapolate'. Defaults to 'zeros' which
-        fills padded coordinates with zeros. The 'clamp' mode clamps the
-        coordinates to the image boundaries (essentially taking the border
-        values out to infinity). The 'extrapolate' mode extrapolates the outer
-        linear interpolation beyond the last pixel boundary.
+    im : Tensor
+        Input image of shape ``(C, H, W)`` where ``C`` is the number of channels,
+        ``H`` the height and ``W`` the width.  The tensor must be 3-dimensional.
+    x : Tensor
+        0-D or 1-D tensor containing the *x* coordinates in the normalized device
+        coordinate (NDC) system, i.e. ``−1`` maps to the center of the leftmost
+        pixel and ``+1`` to the center of the rightmost pixel.
+    y : Tensor
+        0-D or 1-D tensor with the *y* coordinates in NDC.  Must have the same shape
+        as ``x``.
+    mode : {"bilinear", "nearest"}, default "bilinear"
+        Interpolation algorithm.  Behaves exactly like the ``mode`` argument of
+        ``grid_sample``.
+    padding_mode : {"zeros", "border"}, default "zeros"
+        How coordinates that fall outside the image are handled:
+          • ``"zeros"`` — out-of-range samples are filled with zeros.
+          • ``"border"`` — coordinates are clamped to the valid range (border values
+            are repeated to infinity).
+    align_corners : bool, default ``False``
+        Forwarded to ``grid_sample``.  When ``True``, the extrema of the NDC system
+        (−1 and +1) are mapped exactly to the image corners; otherwise they map to
+        the centers of the corner pixels.
 
     Raises
     ------
     ValueError
-        If `im` is not a 2D tensor.
+        If ``im`` is not 3-D or if its shape is not ``(C, H, W)``.
     ValueError
-        If `x` is not a 0D or 1D tensor.
-    ValueError
-        If `y` is not a 0D or 1D tensor.
-    ValueError
-        If `padding_mode` is not 'extrapolate' or 'zeros'.
-    ValueError
-        If `method` is not 'nearest' or 'linear'.
+        If ``mode`` or ``padding_mode`` is not one of the supported options.
 
     Returns
     -------
@@ -923,7 +922,7 @@ def interp2d(
 
     if im.ndim != 3:
         raise ValueError(f"im must be 3D (received {im.ndim}D tensor)")
-    if padding_mode not in ["border", "reflection", "zeros"]:
+    if padding_mode not in ["border", "zeros"]:
         raise ValueError(f"{padding_mode} is not a valid padding mode")
 
     shape = x.shape
@@ -940,10 +939,6 @@ def interp2d(
             padding_mode=padding_mode,
             align_corners=align_corners,
         ).reshape(im.shape[0], *shape)
-
-    if padding_mode == "clamp":
-        x = x.clamp(-1, 1)
-        y = y.clamp(-1, 1)
 
     # Convert coordinates to pixel indices
     _, h, w = im.shape
