@@ -7,6 +7,7 @@ from functools import partial, lru_cache
 import torch
 from torch import Tensor
 from torch.func import jacfwd
+from torch.nn.functional import grid_sample
 from scipy.special import roots_legendre
 
 from .constants import rad_to_deg, deg_to_rad
@@ -873,44 +874,44 @@ def interp2d(
     im: Tensor,
     x: Tensor,
     y: Tensor,
-    method: Literal["linear", "nearest"] = "linear",
-    padding_mode: str = "zeros",
+    mode: Literal["bilinear", "nearest"] = "bilinear",
+    padding_mode: Literal["zeros", "border"] = "zeros",
+    align_corners: bool = False,
 ) -> Tensor:
     """
-    Interpolates a 2D image at specified coordinates. Similar to
-    `torch.nn.functional.grid_sample` with `align_corners=False`.
+    Sample a 2-D image at arbitrary normalized coordinates.
 
     Parameters
     ----------
-    im: Tensor
-        A 2D tensor representing the image.
-    x: Tensor
-        A 0D or 1D tensor of x coordinates at which to interpolate.
-    y: Tensor
-        A 0D or 1D tensor of y coordinates at which to interpolate.
-    method: (str, optional)
-        Interpolation method. Either 'nearest' or 'linear'. Defaults to
-        'linear'.
-    padding_mode:  (str, optional)
-        Defines the padding mode when out-of-bound indices are encountered.
-        Either 'zeros', 'clamp', or 'extrapolate'. Defaults to 'zeros' which
-        fills padded coordinates with zeros. The 'clamp' mode clamps the
-        coordinates to the image boundaries (essentially taking the border
-        values out to infinity). The 'extrapolate' mode extrapolates the outer
-        linear interpolation beyond the last pixel boundary.
+    im : Tensor
+        Input image of shape ``(C, H, W)`` where ``C`` is the number of channels,
+        ``H`` the height and ``W`` the width.  The tensor must be 3-dimensional.
+    x : Tensor
+        0-D or 1-D tensor containing the *x* coordinates in the normalized device
+        coordinate (NDC) system, i.e. ``−1`` maps to the center of the leftmost
+        pixel and ``+1`` to the center of the rightmost pixel.
+    y : Tensor
+        0-D or 1-D tensor with the *y* coordinates in NDC.  Must have the same shape
+        as ``x``.
+    mode : {"bilinear", "nearest"}, default "bilinear"
+        Interpolation algorithm.  Behaves exactly like the ``mode`` argument of
+        ``grid_sample``.
+    padding_mode : {"zeros", "border"}, default "zeros"
+        How coordinates that fall outside the image are handled:
+          • ``"zeros"`` — out-of-range samples are filled with zeros.
+          • ``"border"`` — coordinates are clamped to the valid range (border values
+            are repeated to infinity).
+    align_corners : bool, default ``False``
+        Forwarded to ``grid_sample``.  When ``True``, the extrema of the NDC system
+        (−1 and +1) are mapped exactly to the image corners; otherwise they map to
+        the centers of the corner pixels.
 
     Raises
     ------
     ValueError
-        If `im` is not a 2D tensor.
+        If ``im`` is not 3-D or if its shape is not ``(C, H, W)``.
     ValueError
-        If `x` is not a 0D or 1D tensor.
-    ValueError
-        If `y` is not a 0D or 1D tensor.
-    ValueError
-        If `padding_mode` is not 'extrapolate' or 'zeros'.
-    ValueError
-        If `method` is not 'nearest' or 'linear'.
+        If ``mode`` or ``padding_mode`` is not one of the supported options.
 
     Returns
     -------
@@ -918,38 +919,65 @@ def interp2d(
         Tensor with the same shape as `x` and `y` containing the interpolated
         values.
     """
-    if im.ndim != 2:
-        raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
-    if x.ndim > 1:
-        raise ValueError(f"x must be 0 or 1D (received {x.ndim}D tensor)")
-    if y.ndim > 1:
-        raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
-    if padding_mode not in ["extrapolate", "clamp", "zeros"]:
+
+    if im.ndim != 3:
+        raise ValueError(f"im must be 3D (received {im.ndim}D tensor)")
+    if padding_mode not in ["border", "zeros"]:
         raise ValueError(f"{padding_mode} is not a valid padding mode")
 
-    if padding_mode == "clamp":
-        x = x.clamp(-1, 1)
-        y = y.clamp(-1, 1)
-    else:
-        idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+    shape = x.shape
+    x = x.flatten()
+    y = y.flatten()
+    if (
+        not (x.requires_grad or y.requires_grad)
+        and torch.autograd.forward_ad._current_level == -1
+    ):
+        return grid_sample(
+            im.unsqueeze(0),
+            torch.stack((x, y), dim=1).unsqueeze(0).unsqueeze(0),
+            mode=mode,
+            padding_mode=padding_mode,
+            align_corners=align_corners,
+        ).reshape(im.shape[0], *shape)
 
     # Convert coordinates to pixel indices
-    h, w = im.shape
-    x = 0.5 * ((x + 1) * w - 1)
-    y = 0.5 * ((y + 1) * h - 1)
+    _, h, w = im.shape
+    if align_corners:
+        x = 0.5 * ((x + 1) * (w - 1))
+        y = 0.5 * ((y + 1) * (h - 1))
+    else:
+        x = 0.5 * ((x + 1) * w - 1)
+        y = 0.5 * ((y + 1) * h - 1)
 
-    if method == "nearest":
-        result = im[y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)]
-    elif method == "linear":
-        x0 = x.floor().long().clamp(0, w - 2)
-        y0 = y.floor().long().clamp(0, h - 2)
+    if mode == "nearest":
+        result = im[
+            ..., y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)
+        ]
+        if padding_mode == "zeros":
+            valid = ((x.abs() <= 1) & (y.abs() <= 1)).float()
+            result = result * valid
+    elif mode == "bilinear":
+        x = x.clamp(-1, w)
+        y = y.clamp(-1, h)
+        x0 = x.floor().long()
+        y0 = y.floor().long()
         x1 = x0 + 1
         y1 = y0 + 1
 
-        fa = im[y0, x0]
-        fb = im[y1, x0]
-        fc = im[y0, x1]
-        fd = im[y1, x1]
+        def get_val(ix, iy):
+            ix_clip = ix.clamp(0, w - 1)
+            iy_clip = iy.clamp(0, h - 1)
+            val = im[..., iy_clip, ix_clip]
+            if padding_mode == "zeros":
+                valid = (ix >= 0) & (ix < w) & (iy >= 0) & (iy < h)
+                return val * valid.float()
+            elif padding_mode == "border":
+                return val
+
+        fa = get_val(x0, y0)
+        fb = get_val(x0, y1)
+        fc = get_val(x1, y0)
+        fd = get_val(x1, y1)
 
         dx1 = x1 - x
         dx0 = x - x0
@@ -958,12 +986,9 @@ def interp2d(
 
         result = fa * dx1 * dy1 + fb * dx1 * dy0 + fc * dx0 * dy1 + fd * dx0 * dy0  # fmt: skip
     else:
-        raise ValueError(f"{method} is not a valid interpolation method")
+        raise ValueError(f"{mode} is not a valid interpolation method")
 
-    if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
-
-    return result
+    return result.reshape(im.shape[0], *shape)
 
 
 def interp3d(
