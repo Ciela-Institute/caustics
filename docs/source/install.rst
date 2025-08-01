@@ -5,7 +5,7 @@ Installation
 Regular Install
 ---------------
 
-The easiest way to install is to make a new virtual environment then run::
+The easiest way to install is to make a new ``Python`` virtual environment (``Python 3.9`` through ``3.12`` are recommended; compatibility with versions ``>=3.13`` is currently untested). Then run::
 
     pip install caustics
 
