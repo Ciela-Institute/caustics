@@ -43,8 +43,8 @@ Issues = "https://github.com/Ciela-Institute/caustics/issues"
 
 [project.optional-dependencies]
 dev = [
-    "numba>=0.58.1,<0.59.0",
-    "lenstronomy==1.11.1",
+    "numba>=0.58.1",
+    "lenstronomy>1.13.0",
     "pytest>=8.0,<9",
     "pytest-cov>=4.1,<5",
     "pytest-mock>=3.12,<4",
