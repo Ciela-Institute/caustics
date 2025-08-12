@@ -2,11 +2,10 @@
 from typing import Optional, Union, Annotated
 
 from torch import Tensor
+from caskade import forward, Param
 
 from ..utils import interp3d
 from .base import Source, NameType
-from ..parametrized import unpack
-from ..packed import Packed
 
 __all__ = ("PixelatedTime",)
 
@@ -60,6 +59,7 @@ class PixelatedTime(Source):
             Optional[Tensor],
             "The source image cube from which brightness values will be interpolated.",
             True,
+            "flux",
         ] = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
@@ -83,6 +83,12 @@ class PixelatedTime(Source):
             False,
             "seconds",
         ] = None,
+        scale: Annotated[
+            Optional[Union[Tensor, float]],
+            "A scale factor to multiply by the image",
+            True,
+            "flux",
+        ] = 1.0,
         shape: Annotated[
             Optional[tuple[int, ...]], "The shape of the source image."
         ] = None,
@@ -127,24 +133,23 @@ class PixelatedTime(Source):
                 f"shape must be specify 3D or 4D tensors. Received shape={shape}"
             )
         super().__init__(name=name)
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("cube", cube, shape)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.cube = Param("cube", cube, shape, units="flux")
+        self.scale = Param("scale", scale, units="flux", valid=(0, None))
         self.pixelscale = pixelscale
         self.t_end = t_end
 
-    @unpack
+    @forward
     def brightness(
         self,
         x,
         y,
         t,
-        *args,
-        params: Optional["Packed"] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        cube: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        cube: Annotated[Tensor, "Param"],
+        scale: Annotated[Tensor, "Param"],
     ):
         """
         Implements the `brightness` method for `Pixelated`.
@@ -171,10 +176,6 @@ class PixelatedTime(Source):
 
             *Unit: seconds*
 
-        params : Packed, optional
-            A dictionary containing additional parameters that might be required to
-            calculate the brightness.
-
         Returns
         -------
         Tensor
@@ -188,7 +189,7 @@ class PixelatedTime(Source):
         fov_x = self.pixelscale * cube.shape[2]
         fov_y = self.pixelscale * cube.shape[1]
         return interp3d(
-            cube,
+            cube * scale,
             (x - x0).view(-1) / fov_x * 2,
             (y - y0).view(-1) / fov_y * 2,
             (t - self.t_end / 2).view(-1) / self.t_end * 2,

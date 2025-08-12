@@ -1,18 +1,17 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-import torch
-from torch import Tensor
+from torch import Tensor, pi
+from caskade import forward, Param
 
-from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
+from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from ..angle_mixin import Angle_Mixin
 
 __all__ = ("EPL",)
 
 
-class EPL(ThinLens):
+class EPL(Angle_Mixin, ThinLens):
     """
     Elliptical power law (EPL, aka singular power-law ellipsoid) profile.
 
@@ -25,6 +24,8 @@ class EPL(ThinLens):
     ----------
     n_iter: int
         Number of iterations for the iterative solver.
+    chunk_size: int
+        Number of iterations to do in parallel for the iterative solver.
     s: float
         Softening length for the elliptical power-law profile.
 
@@ -62,10 +63,8 @@ class EPL(ThinLens):
 
         *Unit: radians*
 
-    b: Optional[Union[Tensor, float]]
-        This is the scale length of the lens,
-        which sets the overall scale of the lensing effect.
-        In some contexts, this is referred to as the Einstein radius.
+    Rein: Optional[Union[Tensor, float]]
+        The Einstein radius of the lens, exact at q=1.0.
 
         *Unit: arcsec*
 
@@ -85,14 +84,15 @@ class EPL(ThinLens):
         "y0": 0.0,
         "q": 0.5,
         "phi": 0.0,
-        "b": 1.0,
+        "Rein": 1.0,
         "t": 1.0,
     }
 
     def __init__(
         self,
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]], "X coordinate of the lens center", True
         ] = None,
@@ -105,18 +105,26 @@ class EPL(ThinLens):
         phi: Annotated[
             Optional[Union[Tensor, float]], "Position angle of the lens", True
         ] = None,
-        b: Annotated[
-            Optional[Union[Tensor, float]], "Scale length of the lens", True
+        Rein: Annotated[
+            Optional[Union[Tensor, float]], "Einstein radius of the lens", True
         ] = None,
         t: Annotated[
             Optional[Union[Tensor, float]],
             "Power law slope (`gamma-1`) of the lens",
             True,
         ] = None,
+        angle_system: str = "q_phi",
+        e1: Optional[Union[Tensor, float]] = None,
+        e2: Optional[Union[Tensor, float]] = None,
+        c1: Optional[Union[Tensor, float]] = None,
+        c2: Optional[Union[Tensor, float]] = None,
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         n_iter: Annotated[int, "Number of iterations for the iterative solver"] = 18,
+        chunk_size: Annotated[
+            Optional[int], "Number of chunks for the iterative solver"
+        ] = None,
         name: NameType = None,
     ):
         """
@@ -158,9 +166,8 @@ class EPL(ThinLens):
 
             *Unit: radians*
 
-        b: Optional[Tensor]
-            Scale length of the lens.
-            If not provided, it is considered as a free parameter.
+        Rein: Optional[Tensor]
+            Einstein radius of the lens.
 
             *Unit: arcsec*
 
@@ -177,35 +184,42 @@ class EPL(ThinLens):
 
         n_iter: int
             Number of iterations for the iterative solver.
-        """
-        super().__init__(cosmology, z_l, name=name)
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("q", q)
-        self.add_param("phi", phi)
-        self.add_param("b", b)
-        self.add_param("t", t)
+        chunk_size: Optional[int]
+            Number of iterations to do in parallel for the iterative solver.
+            If not provided, it is set to n_iter which is fastest, but uses more memory.
+        """
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
+
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
+        self.t = Param("t", t, units="unitless", valid=(0, 2))
+        self.angle_system = angle_system
+        if self.angle_system == "e1_e2":
+            self.e1 = e1
+            self.e2 = e2
+        elif self.angle_system == "c1_c2":
+            self.c1 = c1
+            self.c2 = c2
         self.s = s
 
         self.n_iter = n_iter
+        self.chunk_size = chunk_size
 
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the reduced deflection angles of the lens.
@@ -222,14 +236,6 @@ class EPL(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model.
-
         Returns
         --------
         x_component: Tensor
@@ -244,69 +250,20 @@ class EPL(ThinLens):
 
         """
         return func.reduced_deflection_angle_epl(
-            x0, y0, q, phi, b, t, x, y, self.n_iter
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.chunk_size
         )
 
-    def _r_omega(self, z, t, q):
-        """
-        Iteratively computes `R * omega(phi)` (eq. 23 in Tessore et al 2015).
-
-        Parameters
-        ----------
-        z: Tensor
-            `R * e^(i * phi)`, position vector in the lens plane.
-
-            *Unit: arcsec*
-
-        t: Tensor
-            Power law slow (`gamma-1`).
-
-            *Unit: unitless*
-
-        q: Tensor
-            Axis ratio.
-
-            *Unit: unitless*
-
-        Returns
-        --------
-        Tensor
-            The value of `R * omega(phi)`.
-
-            *Unit: arcsec*
-
-        """
-        # constants
-        f = (1.0 - q) / (1.0 + q)
-        phi = z / torch.conj(z)
-
-        # first term in series
-        omega_i = z
-        part_sum = omega_i
-
-        for i in range(1, self.n_iter):
-            factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))  # fmt: skip
-            omega_i = -f * factor * phi * omega_i  # fmt: skip
-            part_sum = part_sum + omega_i  # fmt: skip
-
-        return part_sum
-
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ):
         """
         Compute the lensing potential of the lens.
@@ -323,14 +280,6 @@ class EPL(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model.
-
         Returns
         -------
         Tensor
@@ -339,24 +288,21 @@ class EPL(ThinLens):
             *Unit: arcsec^2*
 
         """
-        return func.potential_epl(x0, y0, q, phi, b, t, x, y, self.n_iter)
+        return func.potential_epl(
+            x0, y0, q, phi, Rein, t, x, y, self.n_iter, self.chunk_size
+        )
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        q: Optional[Tensor] = None,
-        phi: Optional[Tensor] = None,
-        b: Optional[Tensor] = None,
-        t: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        q: Annotated[Tensor, "Param"],
+        phi: Annotated[Tensor, "Param"],
+        Rein: Annotated[Tensor, "Param"],
+        t: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the convergence of the lens, which describes the local density of the lens.
@@ -373,14 +319,6 @@ class EPL(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            Source redshifts.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            Dynamic parameter container for the lens model.
-
         Returns
         -------
         Tensor
@@ -389,4 +327,4 @@ class EPL(ThinLens):
             *Unit: unitless*
 
         """
-        return func.convergence_epl(x0, y0, q, phi, b, t, x, y, self.s)
+        return func.convergence_epl(x0, y0, q, phi, Rein, t, x, y, self.s)

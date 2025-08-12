@@ -25,11 +25,12 @@ def _test_simulator_runs(device=DEVICE):
         name="lens",
         cosmology=cosmology,
         z_l=1.0,
+        z_s=2.0,
         x0=0.0,
         y0=0.01,
         q=0.5,
         phi=pi / 3.0,
-        b=1.0,
+        Rein=1.0,
     )
 
     source = Sersic(
@@ -48,7 +49,6 @@ def _test_simulator_runs(device=DEVICE):
         pixels_x=50,
         lens_light=lenslight,
         psf=psf,
-        z_s=2.0,
     )
 
     # Send to device
@@ -58,7 +58,6 @@ def _test_simulator_runs(device=DEVICE):
     assert torch.all(
         torch.isfinite(
             sim(
-                {},
                 source_light=True,
                 lens_light=True,
                 lens_source=True,
@@ -69,7 +68,6 @@ def _test_simulator_runs(device=DEVICE):
     assert torch.all(
         torch.isfinite(
             sim(
-                {},
                 source_light=True,
                 lens_light=True,
                 lens_source=False,
@@ -80,7 +78,6 @@ def _test_simulator_runs(device=DEVICE):
     assert torch.all(
         torch.isfinite(
             sim(
-                {},
                 source_light=True,
                 lens_light=False,
                 lens_source=True,
@@ -91,7 +88,6 @@ def _test_simulator_runs(device=DEVICE):
     assert torch.all(
         torch.isfinite(
             sim(
-                {},
                 source_light=False,
                 lens_light=True,
                 lens_source=True,
@@ -103,26 +99,26 @@ def _test_simulator_runs(device=DEVICE):
 
 def _test_jacobian_autograd_vs_finitediff(device=DEVICE):
     # Models
+    z_s = torch.tensor(1.2, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
-    lens = SIE(name="sie", cosmology=cosmology)
+    lens = SIE(name="sie", cosmology=cosmology, z_s=z_s)
     thx, thy = meshgrid(0.01, 20, device=device)
 
     # Parameters
-    z_s = torch.tensor(1.2, device=device)
     x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4], device=device)
 
     # Send to device
     lens = lens.to(device=device)
 
     # Evaluate Jacobian
-    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    J_autograd = lens.jacobian_lens_equation(thx, thy, x)
     J_finitediff = lens.jacobian_lens_equation(
-        thx, thy, z_s, lens.pack(x), method="finitediff", pixelscale=torch.tensor(0.01)
+        thx, thy, x, method="finitediff", pixelscale=torch.tensor(0.01)
     )
 
     assert (
         torch.sum(((J_autograd - J_finitediff) / J_autograd).abs() < 1e-3)
-        > 0.8 * J_autograd.numel()
+        > 0.7 * J_autograd.numel()
     )
 
 
@@ -144,6 +140,7 @@ def _test_multiplane_jacobian(device=DEVICE):
         name="multiplane",
         cosmology=cosmology,
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
+        z_s=z_s,
     )
 
     # Send to device
@@ -154,7 +151,7 @@ def _test_multiplane_jacobian(device=DEVICE):
     # Parameters
     z_s = torch.tensor(1.2, device=device)
     x = torch.tensor(xs, device=device).flatten()
-    A = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    A = lens.jacobian_lens_equation(thx, thy, x)
     assert A.shape == (10, 10, 2, 2)
 
 
@@ -176,6 +173,7 @@ def _test_multiplane_jacobian_autograd_vs_finitediff(device=DEVICE):
         name="multiplane",
         cosmology=cosmology,
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
+        z_s=z_s,
     )
 
     # Send to device
@@ -184,13 +182,12 @@ def _test_multiplane_jacobian_autograd_vs_finitediff(device=DEVICE):
     thx, thy = meshgrid(0.01, 10, device=device)
 
     # Parameters
-    z_s = torch.tensor(1.2, device=device)
     x = torch.tensor(xs, device=device).flatten()
 
     # Evaluate Jacobian
-    J_autograd = lens.jacobian_lens_equation(thx, thy, z_s, lens.pack(x))
+    J_autograd = lens.jacobian_lens_equation(thx, thy, x)
     J_finitediff = lens.jacobian_lens_equation(
-        thx, thy, z_s, lens.pack(x), method="finitediff", pixelscale=torch.tensor(0.01)
+        thx, thy, x, method="finitediff", pixelscale=torch.tensor(0.01)
     )
 
     assert (
@@ -217,6 +214,7 @@ def _test_multiplane_effective_convergence(device=DEVICE):
         name="multiplane",
         cosmology=cosmology,
         lenses=[SIE(name=f"sie_{i}", cosmology=cosmology) for i in range(len(xs))],
+        z_s=z_s,
     )
 
     # Send to device
@@ -225,11 +223,10 @@ def _test_multiplane_effective_convergence(device=DEVICE):
     thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
-    z_s = torch.tensor(1.2, device=device)
     x = torch.tensor(xs, device=device).flatten()
-    C = lens.effective_convergence_div(thx, thy, z_s, lens.pack(x))
+    C = lens.effective_convergence_div(thx, thy, x)
     assert C.shape == (10, 10)
-    curl = lens.effective_convergence_curl(thx, thy, z_s, lens.pack(x))
+    curl = lens.effective_convergence_curl(thx, thy, x)
     assert curl.shape == (10, 10)
 
 

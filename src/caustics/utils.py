@@ -1,14 +1,15 @@
 # mypy: disable-error-code="misc", disable-error-code="attr-defined"
-from math import pi
-from typing import Callable, Optional, Tuple, Union, Any, Literal
+from math import pi, ceil
+from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
 from importlib import import_module
 from functools import partial, lru_cache
 
 import torch
 from torch import Tensor
 from torch.func import jacfwd
-import numpy as np
 from scipy.special import roots_legendre
+
+from .constants import rad_to_deg, deg_to_rad
 
 
 def _import_func_or_class(module_path: str) -> Any:
@@ -114,7 +115,7 @@ def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
         c_phi = phi.cos()
         s_phi = phi.sin()
         # Simultaneous assignment
-        xt, yt = xt * c_phi + yt * s_phi, -xt * s_phi + yt * c_phi  # fmt: skip
+        return xt * c_phi + yt * s_phi, yt * c_phi - xt * s_phi  # fmt: skip
 
     return xt, yt
 
@@ -195,6 +196,412 @@ def meshgrid(
     xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2  # fmt: skip
     ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2  # fmt: skip
     return torch.meshgrid([xs, ys], indexing="xy")
+
+
+def plane_to_world_gnomonic(px, py, crval):
+    """
+    Perform a gnomonic projection from a tangent plane to the celestial sphere
+    world coordinates.
+
+    Parameters
+    ----------
+    px: Tensor
+        The x-coordinate of the point on the tangent plane in degrees.
+    py: Tensor
+        The y-coordinate of the point on the tangent plane in degrees.
+    crval: Tensor
+        The celestial sphere world coordinates in degrees where the tangent
+        plane meets the celestial sphere, should be a shape (2,) tensor. It is
+        assumed that the tangent plane is centered at (0,0) for these
+        coordinates. Thus ``crval`` matches the standard FITS convention.
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the right ascension and declination in degrees.
+    """
+    plane = torch.stack((px, py), -1) * deg_to_rad
+    rho = torch.sqrt(torch.sum(plane**2, dim=-1))
+    c = torch.arctan(rho)
+
+    # Convert to sky coordinates
+    ra = crval[0] + rad_to_deg * torch.arctan2(
+        plane[..., 0] * torch.sin(c),
+        rho * torch.cos(crval[1] * deg_to_rad) * torch.cos(c)
+        - plane[..., 1] * torch.sin(crval[1] * deg_to_rad) * torch.sin(c),
+    )
+
+    dec = torch.where(
+        rho == 0,
+        crval[1],
+        rad_to_deg
+        * torch.arcsin(
+            torch.cos(c) * torch.sin(crval[1] * deg_to_rad)
+            + plane[..., 1] * torch.sin(c) * torch.cos(crval[1] * deg_to_rad) / rho
+        ),
+    )
+    return ra, dec
+
+
+def pixel_to_plane(i, j, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None):
+    """
+    Convert pixel coordinates to a tangent plane using the WCS information. This
+    matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    i: Tensor
+        The first coordinate of the pixel in pixel units. The origin may be
+        either 0 indexed (python convention) or 1 indexed (FITS convention),
+        simply ensure that ``crpix`` has the same convention.
+    j: Tensor
+        The second coordinate of the pixel in pixel units. The origin may be
+        either 0 indexed (python convention) or 1 indexed (FITS convention),
+        simply ensure that ``crpix`` has the same convention.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), simply ensure that ``i`` and ``j`` have the same
+        convention.
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to degree units and also handles rotation/skew.
+    sip_powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``i,
+        j``.
+    sip_coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+    crplane: Optional[Tensor], optional
+        The reference plane coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates. If None, it is assumed to be (0, 0). Defaults to None.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``plane_to_pixel`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the x and y tangent plane coordinates in degrees.
+    """
+    if crplane is None:
+        crplane = torch.zeros_like(crpix)
+
+    pixel = torch.stack((i, j), -1) - crpix
+    delta_p = torch.zeros_like(pixel)
+    for p in range(len(sip_powers)):
+        delta_p += sip_coefs[p] * torch.prod(pixel ** sip_powers[p], dim=-1).unsqueeze(
+            -1
+        )
+    plane = torch.einsum("ij,...j->...i", CD, pixel + delta_p) + crplane
+    return plane[..., 0], plane[..., 1]
+
+
+def pixel_to_world(
+    i,
+    j,
+    crpix,
+    crval,
+    CD,
+    sip_powers=[],
+    sip_coefs=[],
+    crplane=None,
+):
+    """
+    Convert pixel coordinates to world coordinates using the WCS information.
+    This matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    i: Tensor
+        The first coordinate of the pixel in pixel units. The origin may be either 0
+        indexed (python convention) or 1 indexed (FITS convention), simply
+        ensure that ``crpix`` has the same convention.
+    j: Tensor
+        The second coordinate of the pixel in pixel units. The origin may be either 0
+        indexed (python convention) or 1 indexed (FITS convention), simply
+        ensure that ``crpix`` has the same convention.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), simply ensure that ``i`` and ``j`` have the same
+        convention.
+    crval: Tensor
+        The reference world coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates.
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to world units and also handles rotation/skew.
+    sip_powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``i,
+        j``.
+    sip_coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+    crplane: Optional[Tensor], optional
+        The reference plane coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates. If None, it is assumed to be (0, 0). Defaults to None.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``world_to_pixel`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the right ascension and declination in degrees.
+    """
+
+    px, py = pixel_to_plane(i, j, crpix, CD, sip_powers, sip_coefs, crplane)
+    ra, dec = plane_to_world_gnomonic(px, py, crval)
+    return ra, dec
+
+
+def world_to_plane_gnomonic(ra, dec, crval):
+    """
+    Perform a gnomonic projection from the celestial sphere
+    world coordinates to a tangent plane.
+
+    Parameters
+    ----------
+    ra: Tensor
+        The right ascension in degrees.
+    dec: Tensor
+        The declination in degrees.
+    crval: Tensor
+        The celestial sphere world coordinates in degrees where the tangent
+        plane meets the celestial sphere, should be a shape (2,) tensor. It is
+        assumed that the tangent plane is centered at (0,0) for these
+        coordinates. Thus ``crval`` matches the standard FITS convention.
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the x and y tangent plane coordinates in degrees.
+    """
+    ra = ra * deg_to_rad
+    dec = dec * deg_to_rad
+
+    cosc = torch.sin(crval[1] * deg_to_rad) * torch.sin(dec) + torch.cos(
+        crval[1] * deg_to_rad
+    ) * torch.cos(dec) * torch.cos(ra - crval[0] * deg_to_rad)
+
+    x = torch.cos(dec) * torch.sin(ra - crval[0] * deg_to_rad) / cosc
+
+    y = (
+        torch.cos(crval[1] * deg_to_rad) * torch.sin(dec)
+        - torch.sin(crval[1] * deg_to_rad)
+        * torch.cos(dec)
+        * torch.cos(ra - crval[0] * deg_to_rad)
+    ) / cosc
+
+    return x * rad_to_deg, y * rad_to_deg
+
+
+def plane_to_pixel(px, py, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None):
+    """
+    Convert tangent plane coordinates to pixel coordinates using the WCS
+    information. This matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    px: Tensor
+        The x-coordinate of the point on the tangent plane in degrees.
+    py: Tensor
+        The y-coordinate of the point on the tangent plane in degrees.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), ``i`` and ``j`` will have the same convention.
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to world units and also handles rotation/skew.
+    sip_powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``px,
+        py``.
+    sip_coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+    crplane: Optional[Tensor], optional
+        The reference plane coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates. If None, it is assumed to be (0, 0). Defaults to None.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``pixel_to_plane`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the ``i`` and ``j`` pixel coordinates (in pixel units).
+
+    """
+    if crplane is None:
+        crplane = torch.zeros_like(crpix)
+
+    plane = torch.stack((px, py), -1) - crplane
+    iCD = torch.linalg.inv(CD)
+    pixel = torch.einsum("ij,...j->...i", iCD, plane)
+    delta_w = torch.zeros_like(plane)
+    for i in range(len(sip_powers)):
+        delta_w += sip_coefs[i] * torch.prod(pixel ** sip_powers[i], dim=-1).unsqueeze(
+            -1
+        )
+    pixel += delta_w + crpix
+    return pixel[..., 0], pixel[..., 1]
+
+
+def world_to_pixel(
+    ra,
+    dec,
+    crpix,
+    crval,
+    CD,
+    sip_powers=[],
+    sip_coefs=[],
+    crplane=None,
+):
+    """
+    Convert world coordinates to pixel coordinates using the WCS information.
+    This matches the FITS convention for SIP transformations.
+
+    For more information see:
+
+    * FITS World Coordinate System (WCS):
+      https://fits.gsfc.nasa.gov/fits_wcs.html
+    * Representations of world coordinates in FITS, 2002, by Geisen and
+      Calabretta
+    * The SIP Convention for Representing Distortion in FITS Image Headers,
+      2008, by Shupe and Hook
+
+    Parameters
+    ----------
+    ra: Tensor
+        The right ascension in degrees.
+    dec: Tensor
+        The declination in degrees.
+    crpix: Tensor
+        The reference pixel in pixel units, should be a shape (2,) tensor. This
+        is the point that will be placed at ``crval`` in the world coordinates.
+        The origin may be either 0 indexed (python convention) or 1 indexed
+        (FITS convention), ``i`` and ``j`` will have the same convention.
+    crval: Tensor
+        The reference world coordinates in degrees, should be a shape (2,)
+        tensor. This is the point that will be placed at ``crpix`` in the pixel
+        coordinates (unless ``crplane`` is non-zero).
+    CD: Tensor
+        The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
+        from pixel to world units and also handles rotation/skew.
+    powers: Tensor
+        The powers of the pixel coordinates for the SIP distortion, should be a
+        shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the powers in order ``i,
+        j``.
+    coefs: Tensor
+        The coefficients of the pixel coordinates for the SIP distortion, should
+        be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
+        polynomial coefficients. The second axis has the coefficients in order
+        ``delta_x, delta_y``.
+
+    Note
+    ----
+    The representation of the SIP powers and coefficients assumes that the SIP
+    polynomial will use the same orders for both the x and y coordinates. If
+    this is not the case you may use zeros for the coefficients to ensure all
+    polynomial combinations are evaluated. However, it is very common to have
+    the same orders for both.
+
+    Note
+    ----
+    While it is not perfect, an approximate inverse for the SIP distortion can
+    be determined by taking the negative of the coefficients (and using the
+    ``pixel_to_world`` function).
+
+    Returns
+    -------
+    Tuple: [Tensor, Tensor]
+        Tuple containing the x and y pixel coordinates (in pixels).
+    """
+    px, py = world_to_plane_gnomonic(ra, dec, crval)
+    i, j = plane_to_pixel(px, py, crpix, CD, sip_powers, sip_coefs, crplane)
+    return i, j
 
 
 @lru_cache(maxsize=32)
@@ -470,8 +877,8 @@ def interp2d(
     padding_mode: str = "zeros",
 ) -> Tensor:
     """
-    Interpolates a 2D image at specified coordinates.
-    Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
+    Interpolates a 2D image at specified coordinates. Similar to
+    `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Parameters
     ----------
@@ -482,10 +889,15 @@ def interp2d(
     y: Tensor
         A 0D or 1D tensor of y coordinates at which to interpolate.
     method: (str, optional)
-        Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
+        Interpolation method. Either 'nearest' or 'linear'. Defaults to
+        'linear'.
     padding_mode:  (str, optional)
         Defines the padding mode when out-of-bound indices are encountered.
-        Either 'zeros' or 'extrapolate'. Defaults to 'zeros'.
+        Either 'zeros', 'clamp', or 'extrapolate'. Defaults to 'zeros' which
+        fills padded coordinates with zeros. The 'clamp' mode clamps the
+        coordinates to the image boundaries (essentially taking the border
+        values out to infinity). The 'extrapolate' mode extrapolates the outer
+        linear interpolation beyond the last pixel boundary.
 
     Raises
     ------
@@ -503,7 +915,8 @@ def interp2d(
     Returns
     -------
     Tensor
-        Tensor with the same shape as `x` and `y` containing the interpolated values.
+        Tensor with the same shape as `x` and `y` containing the interpolated
+        values.
     """
     if im.ndim != 2:
         raise ValueError(f"im must be 2D (received {im.ndim}D tensor)")
@@ -511,10 +924,15 @@ def interp2d(
         raise ValueError(f"x must be 0 or 1D (received {x.ndim}D tensor)")
     if y.ndim > 1:
         raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
-    if padding_mode not in ["extrapolate", "zeros"]:
+    if padding_mode not in ["extrapolate", "clamp", "zeros"]:
         raise ValueError(f"{padding_mode} is not a valid padding mode")
 
-    idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+    if padding_mode == "clamp":
+        x = x.clamp(-1, 1)
+        y = y.clamp(-1, 1)
+    else:
+        idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+
     # Convert coordinates to pixel indices
     h, w = im.shape
     x = 0.5 * ((x + 1) * w - 1)
@@ -523,26 +941,22 @@ def interp2d(
     if method == "nearest":
         result = im[y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)]
     elif method == "linear":
-        x0 = x.floor().long()
-        y0 = y.floor().long()
+        x0 = x.floor().long().clamp(0, w - 2)
+        y0 = y.floor().long().clamp(0, h - 2)
         x1 = x0 + 1
         y1 = y0 + 1
-        x0 = x0.clamp(0, w - 2)
-        x1 = x1.clamp(1, w - 1)
-        y0 = y0.clamp(0, h - 2)
-        y1 = y1.clamp(1, h - 1)
 
         fa = im[y0, x0]
         fb = im[y1, x0]
         fc = im[y0, x1]
         fd = im[y1, x1]
 
-        wa = (x1 - x) * (y1 - y)
-        wb = (x1 - x) * (y - y0)
-        wc = (x - x0) * (y1 - y)
-        wd = (x - x0) * (y - y0)
+        dx1 = x1 - x
+        dx0 = x - x0
+        dy1 = y1 - y
+        dy0 = y - y0
 
-        result = fa * wa + fb * wb + fc * wc + fd * wd
+        result = fa * dx1 * dy1 + fb * dx1 * dy0 + fc * dx0 * dy1 + fd * dx0 * dy0  # fmt: skip
     else:
         raise ValueError(f"{method} is not a valid interpolation method")
 
@@ -622,18 +1036,12 @@ def interp3d(
             x.round().long().clamp(0, w - 1),
         ]
     elif method == "linear":
-        x0 = x.floor().long()
-        y0 = y.floor().long()
-        t0 = t.floor().long()
+        x0 = x.floor().long().clamp(0, w - 2)
+        y0 = y.floor().long().clamp(0, h - 2)
+        t0 = t.floor().long().clamp(0, d - 2)
         x1 = x0 + 1
         y1 = y0 + 1
         t1 = t0 + 1
-        x0 = x0.clamp(0, w - 2)
-        x1 = x1.clamp(1, w - 1)
-        y0 = y0.clamp(0, h - 2)
-        y1 = y1.clamp(1, h - 1)
-        t0 = t0.clamp(0, d - 2)
-        t1 = t1.clamp(1, d - 1)
 
         fa = cu[t0, y0, x0]
         fb = cu[t0, y1, x0]
@@ -960,6 +1368,120 @@ def vmap_n(
     return vmapd_func
 
 
+def _chunk_input(x, k, in_dims, chunk_size):
+    if isinstance(in_dims, tuple):
+        if chunk_size is None:
+            n_chunks = 1
+        else:
+            i = 0
+            while in_dims[i] is None:
+                i += 1
+            B = x[i].shape[in_dims[i]]
+            n_chunks = ceil(B / chunk_size)
+
+        # Break data into chunks
+        chunks = [[] for _ in range(n_chunks)]
+        for subx, in_dim in zip(x, in_dims):
+            if in_dim is None:
+                subchunking = [subx] * n_chunks
+            else:
+                subchunking = subx.chunk(n_chunks, dim=in_dim)
+            for j, subchunk in enumerate(subchunking):
+                chunks[j].append(subchunk)
+    else:  # isinstance(in_dims, dict)
+        if chunk_size is None:
+            n_chunks = 1
+        else:
+            for key, value in in_dims.items():
+                if value is not None:
+                    B = k[key].shape[value]
+                    n_chunks = ceil(B / chunk_size)
+                    break
+
+        # Break data into chunks
+        chunks = [{} for _ in range(n_chunks)]
+        for key, value in in_dims.items():
+            if value is None:
+                subchunking = [k[key]] * n_chunks
+            else:
+                subchunking = k[key].chunk(n_chunks, dim=value)
+            for j, subchunk in enumerate(subchunking):
+                chunks[j][key] = subchunk
+    return chunks
+
+
+def vmap_reduce(
+    func: Callable,
+    reduce_func: Callable = lambda x: x.sum(dim=0),
+    chunk_size: Optional[int] = None,
+    in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
+    out_dims: Union[int, Tuple[int, ...]] = 0,
+    **kwargs,
+) -> Tensor:
+    """
+    Applies `torch.vmap` to `func` and then reduces the output using
+    `reduce_func` along the appropriate dimensions. This saves on memory
+    management if the dimension being reduced can cause the intermediate tensor
+    (before reduction) to be large.
+
+    Note
+    ----
+    The chunking and reduction is only "one level deep". If the output of `func`
+    is still large even after chunking, this function will not completely solve
+    the problem. Essentially if the batch dimension divided by chunk_size is
+    still larger than chunk_size, then you will still have a large intermediate
+    tensor.
+
+    Parameters
+    ----------
+    func: Callable
+        The function to transform.
+    reduce_func: Callable
+        The function to reduce the output of `func`.
+    in_dims: Tuple[int,...]
+        The dimensions to vectorize over in the input.
+    out_dims: Tuple[int,...]
+        The dimension to stack the output over.
+    chunk_size: (Optional[int])
+        The size of the chunks to process. If None, the entire input is
+        processed at once.
+    kwargs: Dict
+        Additional keyword arguments to pass to `torch.vmap`.
+
+    Returns
+    -------
+    Tensor
+        The reduced output.
+    """
+    if isinstance(in_dims, tuple):
+        vfunc = torch.vmap(func, in_dims, **kwargs)
+    else:  # isinstance(in_dims, dict)
+        vfunc = torch.vmap(func, (in_dims,), **kwargs)
+
+    def wrapped(*x, **k):
+        # Determine chunks
+        chunks = _chunk_input(x, k, in_dims, chunk_size)
+
+        # Process and reduce the chunks
+        if isinstance(in_dims, tuple):
+            out = tuple(reduce_func(vfunc(*chunk)) for chunk in chunks)
+        else:  # isinstance(in_dims, dict)
+            out = tuple(reduce_func(vfunc(chunk)) for chunk in chunks)
+
+        # Stack the output
+        if isinstance(out_dims, int):
+            out = torch.stack(out, dim=out_dims)
+        else:
+            out = tuple(
+                torch.stack([o[i] for o in out], dim=d) for i, d in enumerate(out_dims)
+            )
+
+        # Reduce the output
+        return reduce_func(out)
+
+    return wrapped
+
+
 def cluster_means(xs: Tensor, k: int):
     """
     Computes cluster means using the k-means++ initialization algorithm.
@@ -1037,7 +1559,8 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
         chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
 
     # Test
-    rho = (chi2 - chi2_new) / torch.abs(h @ (L * torch.dot(torch.diag(hess), h) + grad))  # fmt: skip
+    expected_improvement = torch.dot(h, hess @ h) + 2 * torch.dot(h, grad)
+    rho = (chi2 - chi2_new) / torch.abs(expected_improvement)  # fmt: skip
 
     # Update
     X = torch.where(rho >= epsilon, X + h, X)
@@ -1075,6 +1598,7 @@ def batch_lm(
         Cinv = 1 / C
     else:
         Cinv = torch.linalg.inv(C)
+    Cinv = Cinv.to(dtype=X.dtype)
 
     v_lm_step = torch.vmap(
         partial(
@@ -1103,22 +1627,26 @@ def batch_lm(
 
 
 def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=torch.float32, device=None):
-    X, Y = np.meshgrid(
-        np.linspace(
+    X, Y = torch.meshgrid(
+        torch.linspace(
             -(nx * upsample - 1) * pixelscale / 2,
             (nx * upsample - 1) * pixelscale / 2,
             nx * upsample,
+            dtype=dtype,
+            device=device,
         ),
-        np.linspace(
+        torch.linspace(
             -(ny * upsample - 1) * pixelscale / 2,
             (ny * upsample - 1) * pixelscale / 2,
             ny * upsample,
+            dtype=dtype,
+            device=device,
         ),
         indexing="xy",
     )
 
-    Z = np.exp(-0.5 * (X**2 + Y**2) / sigma**2)
+    Z = torch.exp(-0.5 * (X**2 + Y**2) / sigma**2)
 
-    Z = Z.reshape(ny, upsample, nx, upsample).sum(axis=(1, 3))
+    Z = Z.reshape(ny, upsample, nx, upsample).sum(dim=(1, 3))
 
-    return torch.tensor(Z / np.sum(Z), dtype=dtype, device=device)
+    return Z / Z.sum()

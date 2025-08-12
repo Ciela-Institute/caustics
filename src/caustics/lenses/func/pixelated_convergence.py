@@ -35,19 +35,42 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
 
     """
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
-    # Shift to center kernels within pixel at index n_pix
-    x_mg = x_mg - pixelscale / 2
-    y_mg = y_mg - pixelscale / 2
+
     d2 = x_mg**2 + y_mg**2
     potential_kernel = safe_log(d2.sqrt())
     ax_kernel = safe_divide(x_mg, d2)
     ay_kernel = safe_divide(y_mg, d2)
-    # Set centers of kernels to zero
-    potential_kernel[..., n_pix, n_pix] = 0
-    ax_kernel[..., n_pix, n_pix] = 0
-    ay_kernel[..., n_pix, n_pix] = 0
 
     return ax_kernel, ay_kernel, potential_kernel
+
+
+def build_window_pixelated_convergence(window, kernel_shape):
+    """
+    Window the kernel for stable FFT.
+
+    Parameters
+    ----------
+    window: float
+        The window to apply as a fraction of the image width. For example a
+        window of 1/4 will set the kernel to start decreasing at 1/4 of the
+        image width, and then linearly go to zero.
+
+    kernel_shape: tuple
+        The shape of the kernel to be windowed.
+
+    Returns
+    -------
+    Tensor
+        The window to multiply with the kernel.
+
+    """
+    x, y = torch.meshgrid(
+        torch.linspace(-1, 1, kernel_shape[-1]),
+        torch.linspace(-1, 1, kernel_shape[-2]),
+        indexing="xy",
+    )
+    r = (x**2 + y**2).sqrt()
+    return torch.clip((1 - r) / window, 0, 1)
 
 
 def _fft_size(n_pix):
@@ -185,36 +208,35 @@ def reduced_deflection_angle_pixelated_convergence(
         The mode of convolution to use. Either "fft" or "conv2d".
     """
     _s = _fft_size(n_pix)
+    _pixelscale_pi = pixelscale**2 / torch.pi
+    kernels = torch.stack((ax_kernel, ay_kernel), dim=0)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
-        deflection_angle_x = torch.fft.irfft2(
-            convergence_tilde * ax_kernel, _s
-        ).real * (pixelscale**2 / torch.pi)
-        deflection_angle_y = torch.fft.irfft2(
-            convergence_tilde * ay_kernel, _s
-        ).real * (pixelscale**2 / torch.pi)
-        deflection_angle_x_map = _unpad_fft(deflection_angle_x, n_pix)
-        deflection_angle_y_map = _unpad_fft(deflection_angle_y, n_pix)
+        deflection_angles = (
+            torch.fft.irfft2(convergence_tilde * kernels, _s).real * _pixelscale_pi
+        )
+        deflection_angle_maps = _unpad_fft(deflection_angles, n_pix)
     elif convolution_mode == "conv2d":
         convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
         # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
-        deflection_angle_x_map = F.conv2d(
-            ax_kernel[None, None], convergence_map_flipped, padding="same"
-        ).squeeze() * (pixelscale**2 / torch.pi)
-        deflection_angle_y_map = F.conv2d(
-            ay_kernel[None, None], convergence_map_flipped, padding="same"
-        ).squeeze() * (
-            pixelscale**2 / torch.pi
-        )  # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
+        deflection_angle_maps = (
+            F.conv2d(
+                kernels.unsqueeze(1), convergence_map_flipped, padding="same"
+            ).squeeze()
+            * _pixelscale_pi
+        )
+        # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     # Scale is distance from center of image to center of pixel on the edge
     scale = fov / 2
+    _x_view_scale = (x - x0).view(-1) / scale
+    _y_view_scale = (y - y0).view(-1) / scale
     deflection_angle_x = interp2d(
-        deflection_angle_x_map, (x - x0).view(-1) / scale, (y - y0).view(-1) / scale
+        deflection_angle_maps[0], _x_view_scale, _y_view_scale
     ).reshape(x.shape)
     deflection_angle_y = interp2d(
-        deflection_angle_y_map, (x - x0).view(-1) / scale, (y - y0).view(-1) / scale
+        deflection_angle_maps[1], _x_view_scale, _y_view_scale
     ).reshape(x.shape)
     return deflection_angle_x, deflection_angle_y
 

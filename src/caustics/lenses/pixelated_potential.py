@@ -4,11 +4,10 @@ from typing import Optional, Annotated, Union
 import torch
 from torch import Tensor
 import numpy as np
+from caskade import forward, Param
 
 from ..utils import interp_bicubic
-from .base import ThinLens, CosmologyType, NameType, ZLType
-from ..parametrized import unpack
-from ..packed import Packed
+from .base import ThinLens, CosmologyType, NameType, ZType
 
 __all__ = ("PixelatedPotential",)
 
@@ -22,9 +21,10 @@ class PixelatedPotential(ThinLens):
 
     def __init__(
         self,
-        pixelscale: Annotated[float, "pixelscale"],
+        pixelscale: Annotated[float, "pixelscale", True],
         cosmology: CosmologyType,
-        z_l: ZLType = None,
+        z_l: ZType = None,
+        z_s: ZType = None,
         x0: Annotated[
             Optional[Union[Tensor, float]],
             "The x-coordinate of the center of the grid",
@@ -92,7 +92,7 @@ class PixelatedPotential(ThinLens):
 
         """
 
-        super().__init__(cosmology, z_l, name=name)
+        super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
         if potential_map is not None and potential_map.ndim != 2:
             raise ValueError(
@@ -101,32 +101,22 @@ class PixelatedPotential(ThinLens):
         elif shape is not None and len(shape) != 2:
             raise ValueError(f"shape must specify a 2D tensor. Received shape={shape}")
 
-        self.add_param("x0", x0)
-        self.add_param("y0", y0)
-        self.add_param("potential_map", potential_map, shape)
+        self.x0 = Param("x0", x0, units="arcsec")
+        self.y0 = Param("y0", y0, units="arcsec")
+        self.potential_map = Param(
+            "potential_map", potential_map, shape, units="unitless"
+        )
+        self.pixelscale = Param("pixelscale", pixelscale, units="arcsec/pixel")
 
-        self.pixelscale = pixelscale
-        if potential_map is not None:
-            self.n_pix = potential_map.shape[0]
-        elif shape is not None:
-            self.n_pix = shape[0]
-        else:
-            raise ValueError("Either potential_map or shape must be provided")
-        self.fov = self.n_pix * self.pixelscale
-
-    @unpack
+    @forward
     def reduced_deflection_angle(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        potential_map: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        potential_map: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> tuple[Tensor, Tensor]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
@@ -143,14 +133,6 @@ class PixelatedPotential(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: Packed, optional
-            A dictionary containing additional parameters.
-
         Returns
         -------
         x_component: Tensor
@@ -164,12 +146,13 @@ class PixelatedPotential(ThinLens):
             *Unit: arcsec*
 
         """
-        # TODO: rescale from fov units to arcsec
+        fov_x = potential_map.shape[1] * pixelscale
+        fov_y = potential_map.shape[0] * pixelscale
         return tuple(
-            alpha.reshape(x.shape) / self.pixelscale
+            alpha.reshape(x.shape) / pixelscale
             for alpha in interp_bicubic(
-                (x - x0).view(-1) / self.fov * 2,
-                (y - y0).view(-1) / self.fov * 2,
+                (x - x0).view(-1) / fov_x * 2,
+                (y - y0).view(-1) / fov_y * 2,
                 potential_map,
                 get_Y=False,
                 get_dY=True,
@@ -177,19 +160,15 @@ class PixelatedPotential(ThinLens):
             )
         )
 
-    @unpack
+    @forward
     def potential(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        potential_map: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        potential_map: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
@@ -206,14 +185,6 @@ class PixelatedPotential(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            A dictionary containing additional parameters.
-
         Returns
         -------
         Tensor
@@ -222,31 +193,29 @@ class PixelatedPotential(ThinLens):
             *Unit: arcsec^2*
 
         """
+        fov_x = potential_map.shape[1] * pixelscale
+        fov_y = potential_map.shape[0] * pixelscale
         return interp_bicubic(
-            (x - x0).view(-1) / self.fov * 2,
-            (y - y0).view(-1) / self.fov * 2,
+            (x - x0).view(-1) / fov_x * 2,
+            (y - y0).view(-1) / fov_y * 2,
             potential_map,
             get_Y=True,
             get_dY=False,
             get_ddY=False,
         )[0].reshape(x.shape)
 
-    @unpack
+    @forward
     def convergence(
         self,
         x: Tensor,
         y: Tensor,
-        z_s: Tensor,
-        *args,
-        params: Optional["Packed"] = None,
-        z_l: Optional[Tensor] = None,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
-        potential_map: Optional[Tensor] = None,
-        **kwargs,
+        x0: Annotated[Tensor, "Param"],
+        y0: Annotated[Tensor, "Param"],
+        potential_map: Annotated[Tensor, "Param"],
+        pixelscale: Annotated[Tensor, "Param"],
     ) -> Tensor:
         """
-        Compute the convergence at the specified positions. This method is not implemented.
+        Compute the convergence at the specified positions.
 
         Parameters
         ----------
@@ -260,14 +229,6 @@ class PixelatedPotential(ThinLens):
 
             *Unit: arcsec*
 
-        z_s: Tensor
-            The source redshift.
-
-            *Unit: unitless*
-
-        params: (Packed, optional)
-            A dictionary containing additional parameters.
-
         Returns
         -------
         Tensor
@@ -276,13 +237,14 @@ class PixelatedPotential(ThinLens):
             *Unit: unitless*
 
         """
-        # TODO: rescale from fov units to arcsec
+        fov_x = potential_map.shape[1] * pixelscale
+        fov_y = potential_map.shape[0] * pixelscale
         _, dY11, dY22 = interp_bicubic(
-            (x - x0).view(-1) / self.fov * 2,
-            (y - y0).view(-1) / self.fov * 2,
+            (x - x0).view(-1) / fov_x * 2,
+            (y - y0).view(-1) / fov_y * 2,
             potential_map,
             get_Y=False,
             get_dY=False,
             get_ddY=True,
         )
-        return (dY11 + dY22).reshape(x.shape) / (2 * self.pixelscale**2)
+        return (dY11 + dY22).reshape(x.shape) / (2 * pixelscale**2)

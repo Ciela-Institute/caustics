@@ -3,9 +3,9 @@ import torch
 from ...utils import translate_rotate
 
 
-def reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y):
+def reduced_deflection_angle_mass_sheet(x0, y0, kappa, x, y):
     """
-    Compute the reduced deflection angles. Here we use the Meneeghetti lecture
+    Compute the reduced deflection angles. Here we use the Meneghetti lecture
     notes equation 3.84.
 
     Parameters
@@ -20,8 +20,8 @@ def reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y):
 
         *Unit: arcsec*
 
-    surface_density: Optional[Union[Tensor, float]]
-        Surface density normalized by the critical surface density.
+    kappa: Optional[Union[Tensor, float]]
+        Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
 
@@ -50,12 +50,10 @@ def reduced_deflection_angle_mass_sheet(x0, y0, surface_density, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
     # Meneghetti eq 3.84
-    ax = x * surface_density
-    ay = y * surface_density
-    return ax, ay
+    return x * kappa, y * kappa
 
 
-def potential_mass_sheet(x0, y0, surface_density, x, y):
+def potential_mass_sheet(x0, y0, kappa, x, y):
     """
     Compute the lensing potential. Here we use the Meneghetti lecture notes
     equation 3.81.
@@ -72,8 +70,8 @@ def potential_mass_sheet(x0, y0, surface_density, x, y):
 
         *Unit: arcsec*
 
-    surface_density: Optional[Union[Tensor, float]]
-        Surface density normalized by the critical surface density.
+    kappa: Optional[Union[Tensor, float]]
+        Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
 
@@ -97,18 +95,18 @@ def potential_mass_sheet(x0, y0, surface_density, x, y):
     """
     x, y = translate_rotate(x, y, x0, y0)
     # Meneghetti eq 3.81
-    return (surface_density / 2) * (x**2 + y**2)
+    return (kappa / 2) * (x**2 + y**2)
 
 
-def convergence_mass_sheet(surface_density, x):
+def convergence_mass_sheet(kappa, x):
     """
     Compute the lensing convergence. In the case of a mass sheet, this is just
     the convergence value mapped to the input shape.
 
     Parameters
     ----------
-    surface_density: Optional[Union[Tensor, float]]
-        Surface density normalized by the critical surface density.
+    kappa: Optional[Union[Tensor, float]]
+        Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
 
@@ -126,4 +124,4 @@ def convergence_mass_sheet(surface_density, x):
 
     """
     # By definition
-    return surface_density * torch.ones_like(x)
+    return kappa * torch.ones_like(x)

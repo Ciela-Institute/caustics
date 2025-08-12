@@ -1,8 +1,9 @@
-from typing import Optional, Annotated, Union, Literal
+from typing import Annotated, Literal
 import torch
 from torch import Tensor
+from caskade import Module, forward
 
-from .simulator import Simulator, NameType
+from .simulator import NameType
 from ..lenses.base import Lens
 from ..light.base import Source
 
@@ -10,7 +11,7 @@ from ..light.base import Source
 __all__ = ("Microlens",)
 
 
-class Microlens(Simulator):
+class Microlens(Module):
     """Computes the total flux from a microlens system within an fov.
 
     Straightforward simulator to compute the total flux a lensed image of a
@@ -35,10 +36,10 @@ class Microlens(Simulator):
     ----------
     lens: Lens
         caustics lens mass model object
+
     source: Source
         caustics light object which defines the background source
-    z_s: optional
-        redshift of the source
+
     name: string (default "sim")
         a name for this simulator in the parameter DAG.
 
@@ -50,9 +51,6 @@ class Microlens(Simulator):
         source: Annotated[
             Source, "caustics light object which defines the background source"
         ],
-        z_s: Annotated[
-            Optional[Union[Tensor, float]], "Redshift of the source", True
-        ] = None,
         name: NameType = "sim",
     ):
         super().__init__(name)
@@ -60,11 +58,9 @@ class Microlens(Simulator):
         self.lens = lens
         self.source = source
 
-        self.add_param("z_s", z_s)
-
-    def forward(
+    @forward
+    def __call__(
         self,
-        params,
         fov: Tensor,
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
@@ -74,14 +70,15 @@ class Microlens(Simulator):
 
         Parameters
         ----------
-        params: dict
-            Dictionary of parameters for the simulator
         fov: Tensor
             Field of view box of the simulation in arcseconds indexed as (x_min, x_max, y_min, y_max)
+
         method: str (default "mcmc")
             Method for sampling the image. Choose from "mcmc" or "grid"
+
         N_mcmc: int
             Number of sample points for the source sampling if method is "mcmc"
+
         N_grid: int
             Number of sample points for the sampling grid on each axis if method is "grid"
 
@@ -94,14 +91,13 @@ class Microlens(Simulator):
             Error estimate on the total flux
 
         """
-        (z_s,) = self.unpack(params)
 
         if method == "mcmc":
             # Sample the source using MCMC
             sample_x = torch.rand(N_mcmc) * (fov[1] - fov[0]) + fov[0]
             sample_y = torch.rand(N_mcmc) * (fov[3] - fov[2]) + fov[2]
-            bx, by = self.lens.raytrace(sample_x, sample_y, z_s, params)
-            mu = self.source.brightness(bx, by, params)
+            bx, by = self.lens.raytrace(sample_x, sample_y)
+            mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
             return mu.mean() * A, mu.std() * A / N_mcmc**0.5
         elif method == "grid":
@@ -109,8 +105,8 @@ class Microlens(Simulator):
             x = torch.linspace(fov[0], fov[1], N_grid)
             y = torch.linspace(fov[2], fov[3], N_grid)
             sample_x, sample_y = torch.meshgrid(x, y, indexing="ij")
-            bx, by = self.lens.raytrace(sample_x, sample_y, z_s, params)
-            mu = self.source.brightness(bx, by, params)
+            bx, by = self.lens.raytrace(sample_x, sample_y)
+            mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
             return mu.mean() * A, mu.std() * A / N_grid
         else:

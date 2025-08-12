@@ -1,35 +1,98 @@
-cff-version: 1.0.0
-message: "If you use this software, please cite it as below."
+cff-version: "1.2.0"
 authors:
-- family-names: "Stone"
-  given-names: "Connor"
+- family-names: Stone
+  given-names: Connor
   orcid: "https://orcid.org/0000-0002-9086-6398"
-- family-names: "Adam"
-  given-names: "Alexandre"
+- family-names: Adam
+  given-names: Alexandre
   orcid: "https://orcid.org/0000-0001-8806-7936"
-- family-names: "Perreault-Levasseur"
-  given-names: "Laurence"
-  orcid: "https://orcid.org/0000-0003-3544-3939"
-- family-names: "Hezaveh"
-  given-names: "Yashar"
-  orcid: "https://orcid.org/0000-0002-8669-5733"
-- family-names: "Core"
-  given-names: "Cordero"
-  orcid: "https://orcid.org/0000-0002-3531-3221"
-- family-names: "Setiawan"
-  given-names: "Landung"
+- family-names: Coogan
+  given-names: Adam
+  orcid: "https://orcid.org/0000-0002-0055-1780"
+- family-names: Yantovski-Barth
+  given-names: M. J.
+  orcid: "https://orcid.org/0000-0001-5200-4095"
+- family-names: Filipp
+  given-names: Andreas
+  orcid: "https://orcid.org/0000-0003-4701-3469"
+- family-names: Setiawan
+  given-names: Landung
   orcid: "https://orcid.org/0000-0002-1624-2667"
-- family-names: "Coogan"
-  given-names: "Adam"
-- family-names: "Filipp"
-  given-names: "Andreas"
-- family-names: "Wilson"
-  given-names: "Charles"
-- family-names: "Yantovski-Barth"
-  given-names: "Misha"
-- family-names: "Legin"
-  given-names: "Ronan"
-title: "caustics"
+- family-names: Core
+  given-names: Cordero
+  orcid: "https://orcid.org/0000-0002-3531-3221"
+- family-names: Legin
+  given-names: Ronan
+  orcid: "https://orcid.org/0000-0001-9459-6316"
+- family-names: Wilson
+  given-names: Charles
+  orcid: "https://orcid.org/0000-0001-7071-5528"
+- family-names: Barco
+  given-names: Gabriel Missael
+  orcid: "https://orcid.org/0009-0008-5839-5937"
+- family-names: Hezaveh
+  given-names: Yashar
+  orcid: "https://orcid.org/0000-0002-8669-5733"
+- family-names: Perreault-Levasseur
+  given-names: Laurence
+  orcid: "https://orcid.org/0000-0003-3544-3939"
+contact:
+- family-names: Stone
+  given-names: Connor
+  orcid: "https://orcid.org/0000-0002-9086-6398"
 doi: 10.5281/zenodo.10806382
-abstract: "The lensing pipeline of the future: GPU-accelerated, automatically-differentiable, highly modular. Currently under heavy development: expect interface changes and some imprecise/untested calculations."
-repository-code: "https://github.com/Ciela-Institute/caustics"
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Stone
+    given-names: Connor
+    orcid: "https://orcid.org/0000-0002-9086-6398"
+  - family-names: Adam
+    given-names: Alexandre
+    orcid: "https://orcid.org/0000-0001-8806-7936"
+  - family-names: Coogan
+    given-names: Adam
+    orcid: "https://orcid.org/0000-0002-0055-1780"
+  - family-names: Yantovski-Barth
+    given-names: M. J.
+    orcid: "https://orcid.org/0000-0001-5200-4095"
+  - family-names: Filipp
+    given-names: Andreas
+    orcid: "https://orcid.org/0000-0003-4701-3469"
+  - family-names: Setiawan
+    given-names: Landung
+    orcid: "https://orcid.org/0000-0002-1624-2667"
+  - family-names: Core
+    given-names: Cordero
+    orcid: "https://orcid.org/0000-0002-3531-3221"
+  - family-names: Legin
+    given-names: Ronan
+    orcid: "https://orcid.org/0000-0001-9459-6316"
+  - family-names: Wilson
+    given-names: Charles
+    orcid: "https://orcid.org/0000-0001-7071-5528"
+  - family-names: Barco
+    given-names: Gabriel Missael
+    orcid: "https://orcid.org/0009-0008-5839-5937"
+  - family-names: Hezaveh
+    given-names: Yashar
+    orcid: "https://orcid.org/0000-0002-8669-5733"
+  - family-names: Perreault-Levasseur
+    given-names: Laurence
+    orcid: "https://orcid.org/0000-0003-3544-3939"
+  date-published: 2024-11-22
+  doi: 10.21105/joss.07081
+  issn: 2475-9066
+  issue: 103
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 7081
+  title: "Caustics: A Python Package for Accelerated Strong
+    Gravitational Lensing Simulations"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.07081"
+  volume: 9
+title: "Caustics: A Python Package for Accelerated Strong Gravitational
+  Lensing Simulations"

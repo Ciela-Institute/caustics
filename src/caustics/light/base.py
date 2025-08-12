@@ -2,22 +2,20 @@ from abc import abstractmethod
 from typing import Optional, Annotated
 
 from torch import Tensor
-
-from ..parametrized import Parametrized, unpack
-from ..packed import Packed
+from caskade import Module, forward
 
 __all__ = ("Source",)
 
 NameType = Annotated[Optional[str], "Name of the source"]
 
 
-class Source(Parametrized):
+class Source(Module):
     """
     This is an abstract base class used to represent a source
     in a strong gravitational lensing system.
     It provides the basic structure and required methods
     that any derived source class should implement.
-    The Source class inherits from the Parametrized class,
+    The Source class inherits from the Module class,
     implying that it contains parameters that can
     be optimized or manipulated.
 
@@ -28,46 +26,40 @@ class Source(Parametrized):
     """
 
     @abstractmethod
-    @unpack
-    def brightness(
-        self, x: Tensor, y: Tensor, *args, params: Optional["Packed"] = None, **kwargs
-    ) -> Tensor:
+    @forward
+    def brightness(self, x: Tensor, y: Tensor, *args, **kwargs) -> Tensor:
         """
-        Abstract method that calculates the brightness of the source at the given coordinates.
-        This method is expected to be implemented in any class that derives from Source.
+        Abstract method that calculates the brightness of the source at the
+        given coordinates. This method is expected to be implemented in any
+        class that derives from Source.
 
         Parameters
         ----------
         x: Tensor
-            The x-coordinate(s) at which to calculate
-            the source brightness.
+            The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
         y: Tensor
-            The y-coordinate(s) at which to calculate
-            the source brightness.
+            The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        params: Packed, optional
-            Dynamic parameter container that might be required
-            to calculate the brightness.
-            The exact contents will depend on the specific
-            implementation in derived classes.
-
         Returns
         -------
         Tensor
-            The brightness of the source at the given coordinate(s).
-            The exact form of the output will depend on
-            the specific implementation in the derived class.
+            The brightness of the source at the given coordinate(s). The exact
+            form of the output will depend on the specific implementation in the
+            derived class.
 
         Notes
         -----
-        This method must be overridden in any class
-        that inherits from `Source`.
+        This method must be overridden in any class that inherits from `Source`.
+
+        Note that the source redshift z_s is not included as an argument since
+        most sources don't need to know their redshift, it is instead held by
+        the lens object.
         """
         ...
