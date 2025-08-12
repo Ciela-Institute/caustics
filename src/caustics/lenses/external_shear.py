@@ -94,8 +94,8 @@ class ExternalShear(ThinLens):
         self._parametrization = "cartesian"
         self.parametrization = parametrization
         if self.parametrization == "angular":
-            self.gamma = kwargs.get("gamma", None)
-            self.phi = kwargs.get("phi", None)
+            self.gamma.value = kwargs.get("gamma", None)
+            self.phi.value = kwargs.get("phi", None)
         self.s = s
 
     @property
@@ -138,8 +138,8 @@ class ExternalShear(ThinLens):
             self.gamma_2.link(self.gamma)
             self.gamma_2.link(self.phi)
         if value == "cartesian" and self._parametrization != "cartesian":
-            self.gamma_1 = None
-            self.gamma_2 = None
+            self.gamma_1.value = None
+            self.gamma_2.value = None
             try:
                 if self.gamma.static:
                     warn(
