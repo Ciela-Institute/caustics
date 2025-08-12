@@ -1,3 +1,4 @@
+# mypy: disable-error-code="union-attr"
 from scipy.fft import next_fast_len
 from torch.nn.functional import avg_pool2d, conv2d
 from typing import Optional, Annotated, Literal, Union
