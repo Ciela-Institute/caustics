@@ -49,6 +49,10 @@ dev = [
     "pytest-cov>=4.1,<5",
     "pytest-mock>=3.12,<4",
     "pre-commit>=3.6,<4",
+    "nbconvert",
+    "ipywidgets",
+    "matplotlib",
+    "pyro-ppl",
 ]
 
 [tool.hatch.metadata.hooks.requirements_txt]
