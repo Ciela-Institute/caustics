@@ -138,7 +138,7 @@ def test_multiplane_time_delay(device):
 
 
 def test_params(device):
-    z_s = 1
+    z_s = 1.5
     n_planes = 10
     cosmology = FlatLambdaCDM()
     pixel_size = 0.04
@@ -156,10 +156,10 @@ def test_params(device):
             shape=(pixels, pixels),
             padding="tile",
         )
-        lens.to(device=device)
+        lens.to(device=device, dtype=torch.float32)
         planes.append(lens)
     multiplane_lens = Multiplane(cosmology=cosmology, lenses=planes, z_s=z_s)
-    multiplane_lens.to(device=device)
+    multiplane_lens.to(device=device, dtype=torch.float32)
     z_s = torch.tensor(z_s)
     x, y = meshgrid(pixel_size, 32, device=device)
     params = [torch.randn(pixels, pixels, device=device) for i in range(10)]

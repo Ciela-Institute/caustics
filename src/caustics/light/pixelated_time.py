@@ -1,10 +1,11 @@
 # mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union, Annotated
 
+import torch
 from torch import Tensor
+from torch.nn.functional import grid_sample
 from caskade import forward, Param
 
-from ..utils import interp3d
 from .base import Source, NameType
 
 __all__ = ("PixelatedTime",)
@@ -188,9 +189,14 @@ class PixelatedTime(Source):
         """
         fov_x = self.pixelscale * cube.shape[2]
         fov_y = self.pixelscale * cube.shape[1]
-        return interp3d(
-            cube * scale,
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
-            (t - self.t_end / 2).view(-1) / self.t_end * 2,
-        ).reshape(x.shape)
+        shape = x.shape
+        x = (x - x0).view(-1) / fov_x * 2
+        y = (y - y0).view(-1) / fov_y * 2
+        t = (t - self.t_end / 2).view(-1) / self.t_end * 2
+        return grid_sample(
+            cube.reshape(1, 1, *cube.shape),
+            torch.stack((x, y, t), dim=1).reshape(1, 1, 1, -1, 3),
+            mode="bilinear",
+            padding_mode="zeros",
+            align_corners=False,
+        ).reshape(shape)

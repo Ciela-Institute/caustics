@@ -81,7 +81,6 @@ class Multiplane(ThickLens):
         # Compute physical position on first lens plane
         D = self.cosmology.transverse_comoving_distance(z_ls[lens_planes[0]])
         X, Y = x * arcsec_to_rad * D, y * arcsec_to_rad * D  # fmt: skip
-
         # Initial angles are observation angles
         theta_x, theta_y = x, y
 
@@ -199,15 +198,6 @@ class Multiplane(ThickLens):
             geometric_time_delay=False,
             ray_coords=True,
         )
-
-    @forward
-    def effective_reduced_deflection_angle(
-        self,
-        x: Tensor,
-        y: Tensor,
-    ) -> tuple[Tensor, Tensor]:
-        bx, by = self.raytrace(x, y)
-        return x - bx, y - by
 
     @forward
     def surface_density(
