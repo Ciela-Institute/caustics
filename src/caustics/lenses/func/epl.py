@@ -1,6 +1,5 @@
-import torch
-
 from ...utils import translate_rotate, derotate
+from ...backend_obj import backend
 
 
 def _r_omega(z, t, q, n_iter, chunk_size=None):
@@ -12,7 +11,7 @@ def _r_omega(z, t, q, n_iter, chunk_size=None):
     """
     # constants
     f = (1.0 - q) / (1.0 + q)
-    phi = z / torch.conj(z) * -f
+    phi = z / backend.conj(z) * -f
 
     # defaults to do all the iterations in parallel
     chunk_size = n_iter if chunk_size is None else chunk_size
@@ -28,10 +27,10 @@ def _r_omega(z, t, q, n_iter, chunk_size=None):
 
         return part_sum
     else:
-        i = torch.arange(1, n_iter, device=z.device, dtype=z.real.dtype)
+        i = backend.arange(1, n_iter, device=z.device, dtype=z.real.dtype)
         factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))
         factor = factor.view(-1, *([1] * z.ndim))
-        phi_expanded = phi.unsqueeze(0)
+        phi_expanded = phi[None]
         cumprod_res = None
         n_chunks = n_iter // chunk_size
         for i in range(n_chunks):
@@ -40,13 +39,13 @@ def _r_omega(z, t, q, n_iter, chunk_size=None):
                 * phi_expanded
             )
             if cumprod_res is None:
-                cumprod = torch.cumprod(rec, dim=0)
-                cumprod_res = cumprod.sum(dim=0)
+                cumprod = backend.cumprod(rec, dim=0)
+                cumprod_res = backend.sum(cumprod, dim=0)
             else:
-                cumprod = torch.cumprod(
-                    torch.cat((cumprod[-1].unsqueeze(0), rec)), dim=0
+                cumprod = backend.cumprod(
+                    backend.concatenate((cumprod[-1][None], rec)), dim=0
                 )[1:]
-                cumprod_res = cumprod_res + cumprod.sum(dim=0)
+                cumprod_res = cumprod_res + backend.sum(cumprod, dim=0)
         return z * (1 + cumprod_res)
 
 
@@ -126,15 +125,15 @@ def reduced_deflection_angle_epl(
 
     # follow Tessore et al 2015 (eq. 5)
     z = q * x + y * 1j
-    r = torch.abs(z)
+    r = backend.abs(z)
 
     # Tessore et al 2015 (eq. 23)
     r_omega = _r_omega(z, t, q, n_iter, chunk_size)
     # Tessore et al 2015 (eq. 13)
-    alpha_c = 2.0 / (1.0 + q) * (Rein * q.sqrt() / r) ** t * r_omega  # fmt: skip
+    alpha_c = 2.0 / (1.0 + q) * (Rein * backend.sqrt(q) / r) ** t * r_omega  # fmt: skip
 
-    alpha_real = torch.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
-    alpha_imag = torch.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
+    alpha_real = backend.nan_to_num(alpha_c.real, posinf=10**10, neginf=-(10**10))
+    alpha_imag = backend.nan_to_num(alpha_c.imag, posinf=10**10, neginf=-(10**10))
     return derotate(alpha_real, alpha_imag, phi)
 
 
@@ -284,5 +283,5 @@ def convergence_epl(x0, y0, q, phi, Rein, t, x, y, s=0.0):
 
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
-    psi = (q ** 2 * x ** 2 + y ** 2 + s ** 2).sqrt()  # fmt: skip
-    return (2 - t) / 2 * (Rein * q.sqrt() / psi) ** t  # fmt: skip
+    psi = backend.sqrt(q ** 2 * x ** 2 + y ** 2 + s ** 2)  # fmt: skip
+    return (2 - t) / 2 * (Rein * backend.sqrt(q) / psi) ** t  # fmt: skip

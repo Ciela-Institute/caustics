@@ -1,6 +1,5 @@
-import torch
-
 from ...utils import batch_lm
+from ...backend_obj import backend
 from ...constants import arcsec_to_rad, c_Mpc_s, days_to_seconds
 
 
@@ -45,7 +44,7 @@ def triangle_neighbors(p):
     p02 = p[2] - p[0]
     p12 = p[2] - p[1]
     pref = -(p - p[0]) + p[0]
-    return torch.stack(
+    return backend.stack(
         (
             p,
             p + p01,
@@ -73,12 +72,12 @@ def triangle_upsample(p):
     p01 = (p[1] + p[0]) / 2
     p02 = (p[2] + p[0]) / 2
     p12 = (p[2] + p[1]) / 2
-    return torch.stack(
+    return backend.stack(
         (
-            torch.stack((p[0], p01, p02), dim=0),
-            torch.stack((p01, p[1], p12), dim=0),
-            torch.stack((p02, p12, p[2]), dim=0),
-            torch.stack((p01, p12, p02), dim=0),
+            backend.stack((p[0], p01, p02), dim=0),
+            backend.stack((p01, p[1], p12), dim=0),
+            backend.stack((p02, p12, p[2]), dim=0),
+            backend.stack((p01, p12, p02), dim=0),
         ),
         dim=0,
     )
@@ -88,17 +87,19 @@ def triangle_equals(p1, p2):
     """
     Determine if two triangles are equal. Where p1 and p2 are (3,2) tensors.
     """
-    return torch.all((p1 - p2).abs() < 1e-6)
+    return backend.all(backend.abs(p1 - p2) < 1e-6)
 
 
 def remove_triangle_duplicates(p):
-    unique_triangles = torch.zeros((0, 3, 2))
+    unique_triangles = backend.zeros((0, 3, 2))
     B = p.shape[0]
-    batch_triangle_equals = torch.vmap(triangle_equals, in_dims=(None, 0))
+    batch_triangle_equals = backend.vmap(triangle_equals, in_dims=(None, 0))
     for i in range(B):
         # Compare current triangle with all triangles in the unique list
-        if i == 0 or not batch_triangle_equals(p[i], unique_triangles).any():
-            unique_triangles = torch.cat((unique_triangles, p[i].unsqueeze(0)), dim=0)
+        if i == 0 or not backend.any(batch_triangle_equals(p[i], unique_triangles)):
+            unique_triangles = backend.concatenate(
+                (unique_triangles, p[i].unsqueeze(0)), dim=0
+            )
 
     return unique_triangles
 
@@ -146,13 +147,15 @@ def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
 
         *Unit: arcsec*
     """
-    ixy = torch.stack((ix, iy), dim=1)  # has shape (B, Din:2)
-    bxy = torch.stack((bx, by)).repeat(ix.shape[0], 1)  # has shape (B, Dout:2)
+    ixy = backend.stack((ix, iy), dim=1)  # has shape (B, Din:2)
+    bxy = backend.stack((bx, by)) * backend.ones(
+        (ix.shape[0], 1)
+    )  # has shape (B, Dout:2)
     # Optimize guesses in image plane
     x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
         ixy,
         bxy,
-        lambda *a, **k: torch.stack(
+        lambda *a, **k: backend.stack(
             raytrace(a[0][..., 0], a[0][..., 1], *a[1:], **k), dim=-1
         ),
     )
@@ -163,13 +166,13 @@ def remove_duplicate_points(x, epsilon):
     """
     Remove duplicate points from the coordinates list.
     """
-    unique_points = torch.zeros((0, 2))
+    unique_points = backend.zeros((0, 2))
     for i in range(x.shape[0]):
         # Compare current point with all points in the unique list
-        if i == 0 or not torch.any(
-            torch.linalg.norm(x[i] - unique_points, dim=1) < epsilon
+        if i == 0 or not backend.any(
+            backend.linalg.norm(x[i] - unique_points, dim=1) < epsilon
         ):
-            unique_points = torch.cat((unique_points, x[i].unsqueeze(0)), dim=0)
+            unique_points = backend.concatenate((unique_points, x[i][None]), dim=0)
 
     return unique_points
 
@@ -177,17 +180,17 @@ def remove_duplicate_points(x, epsilon):
 def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
 
     # Construct a tiling of the image plane (squares at this point)
-    X, Y = torch.meshgrid(
-        torch.linspace(x0 - fov / 2, x0 + fov / 2, n),
-        torch.linspace(y0 - fov / 2, y0 + fov / 2, n),
+    X, Y = backend.meshgrid(
+        backend.linspace(x0 - fov / 2, x0 + fov / 2, n),
+        backend.linspace(y0 - fov / 2, y0 + fov / 2, n),
         indexing="ij",
     )
-    E = torch.stack((X, Y), dim=-1)
+    E = backend.stack((X, Y), dim=-1)
     # build the upper and lower triangles within the squares of the grid
-    E = torch.cat(
+    E = backend.concatenate(
         (
-            torch.stack((E[:-1, :-1], E[:-1, 1:], E[1:, 1:]), dim=-2),
-            torch.stack((E[:-1, :-1], E[1:, :-1], E[1:, 1:]), dim=-2),
+            backend.stack((E[:-1, :-1], E[:-1, 1:], E[1:, 1:]), dim=-2),
+            backend.stack((E[:-1, :-1], E[1:, :-1], E[1:, 1:]), dim=-2),
         ),
         dim=0,
     ).reshape(-1, 3, 2)
@@ -197,18 +200,18 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
 
         # Expand the search to neighboring triangles
         if i > 0:  # no need for neighbors in the first iteration
-            E = torch.vmap(triangle_neighbors)(E)
+            E = backend.vmap(triangle_neighbors)(E)
             E = E.reshape(-1, 3, 2)
             E = remove_triangle_duplicates(E)
             # Upsample the triangles
-            E = torch.vmap(triangle_upsample)(E)
+            E = backend.vmap(triangle_upsample)(E)
             E = E.reshape(-1, 3, 2)
 
         S = raytrace(E[..., 0], E[..., 1])
-        S = torch.stack(S, dim=-1)
+        S = backend.stack(S, dim=-1)
 
         # Identify triangles that contain the source plane point
-        locate = torch.vmap(triangle_contains, in_dims=(0, None))(S, s)
+        locate = backend.vmap(triangle_contains, in_dims=(0, None))(S, s)
         E = E[locate]
         i += 1
 
@@ -220,15 +223,15 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
                 Emid[..., 0], Emid[..., 1], s[0], s[1], raytrace
             )
             Smid = raytrace(Emid[..., 0], Emid[..., 1])
-            Smid = torch.stack(Smid, dim=-1)
-            if torch.all(torch.vmap(triangle_contains)(E, Emid)) and torch.allclose(
-                Smid, s, atol=epsilon
-            ):
+            Smid = backend.stack(Smid, dim=-1)
+            if backend.all(
+                backend.vmap(triangle_contains)(E, Emid)
+            ) and backend.allclose(Smid, s, atol=epsilon):
                 break
 
     # Remove duplicates
     unique = remove_duplicate_points(
-        torch.stack((Emid[..., 0], Emid[..., 1]), dim=1), epsilon
+        backend.stack((Emid[..., 0], Emid[..., 1]), dim=1), epsilon
     )
     return unique[..., 0], unique[..., 1]
 
