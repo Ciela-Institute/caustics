@@ -48,7 +48,7 @@ jobs:
         CUDA_VERSION: ["11.8.0"]
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Get registry and org
         id: registry_org
