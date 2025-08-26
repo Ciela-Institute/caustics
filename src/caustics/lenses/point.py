@@ -126,7 +126,7 @@ class Point(ThinLens):
         self._parametrization = "Rein"
         self.parametrization = parametrization
         if self.parametrization == "mass":
-            self.mass = kwargs.get("mass", None)
+            self.mass.value = kwargs.get("mass", None)
         self.s = s
 
     @property
@@ -163,7 +163,7 @@ class Point(ThinLens):
             self.Rein.link("cosmology", self.cosmology)
         if value == "Rein" and self.parametrization != "Rein":
             try:
-                self.Rein = None
+                self.Rein.value = None
                 if self.mass.static:
                     warn(
                         f"Parameter {self.mass.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.mass.name} be dynamic when changing parametrizations.",
