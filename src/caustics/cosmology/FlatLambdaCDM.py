@@ -8,6 +8,7 @@ from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
 
 from ..utils import interp1d
+from ..backend_obj import backend
 from ..constants import c_Mpc_s, km_to_Mpc
 from .base import Cosmology, NameType
 
@@ -19,16 +20,18 @@ _Om0_default = float(default_cosmology.get().Om0)
 
 # Set up interpolator to speed up comoving distance calculations in Lambda-CDM
 # cosmologies. Construct with float64 precision.
-_comoving_distance_helper_x_grid = 10 ** torch.linspace(-3, 1, 500, dtype=torch.float64)
-_comoving_distance_helper_y_grid = torch.as_tensor(
+_comoving_distance_helper_x_grid = 10 ** backend.linspace(
+    -3, 1, 500, dtype=backend.float64
+)
+_comoving_distance_helper_y_grid = backend.as_array(
     _comoving_distance_helper_x_grid
     * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_distance_helper_x_grid**3)),
-    dtype=torch.float64,
+    dtype=backend.float64,
 )
 
-h0_default = torch.tensor(_h0_default)
-critical_density_0_default = torch.tensor(_critical_density_0_default)
-Om0_default = torch.tensor(_Om0_default)
+h0_default = backend.as_array(_h0_default)
+critical_density_0_default = backend.as_array(_critical_density_0_default)
+Om0_default = backend.as_array(_Om0_default)
 
 
 class FlatLambdaCDM(Cosmology):
@@ -150,7 +153,7 @@ class FlatLambdaCDM(Cosmology):
         return interp1d(
             self._comoving_distance_helper_x_grid,
             self._comoving_distance_helper_y_grid,
-            torch.atleast_1d(x),
+            backend.atleast_1d(x),
         ).reshape(x.shape)
 
     @forward

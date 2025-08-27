@@ -1,6 +1,7 @@
 from ...utils import translate_rotate, derotate
+from ...backend_obj import backend
 from ...constants import G_over_c2
-import torch
+import numpy as np
 
 
 def physical_deflection_angle_enclosed_mass(x0, y0, q, phi, enclosed_mass, x, y, s=0.0):
@@ -50,7 +51,7 @@ def physical_deflection_angle_enclosed_mass(x0, y0, q, phi, enclosed_mass, x, y,
         The physical deflection angle.
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
-    r = (x**2 / q + q * y**2).sqrt() + s
+    r = backend.sqrt(x**2 / q + q * y**2) + s
     alpha = 4 * G_over_c2 * enclosed_mass(r) / r**2
     ax = alpha * x / (q * r)
     ay = alpha * y * q / r
@@ -106,9 +107,9 @@ def convergence_enclosed_mass(
         The convergence.
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
-    r = (x**2 / q + q * y**2).sqrt() + s
+    r = backend.sqrt(x**2 / q + q * y**2) + s
     return (
         0.5
-        * torch.vmap(torch.func.grad(enclosed_mass))(r.reshape(-1)).reshape(r.shape)
-        / (r * torch.pi * critical_surface_density)
+        * backend.vmap(backend.grad(enclosed_mass))(r.reshape(-1)).reshape(r.shape)
+        / (r * np.pi * critical_surface_density)
     )
