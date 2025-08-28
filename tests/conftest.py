@@ -2,6 +2,8 @@ import sys
 import os
 import torch
 import pytest
+import matplotlib
+import matplotlib.pyplot as plt
 
 # Add the helpers directory to the path so we can import the helpers
 sys.path.append(os.path.join(os.path.dirname(__file__), "utils"))
@@ -29,3 +31,15 @@ def sim_source(request):
 )
 def device(request):
     return torch.device(request.param)
+
+
+@pytest.fixture(autouse=True)
+def no_block_show(monkeypatch):
+    def close_show(*args, **kwargs):
+        # plt.savefig("/dev/null")  # or do nothing
+        plt.close("all")
+
+    monkeypatch.setattr(plt, "show", close_show)
+
+    # Also ensure we are in a non-GUI backend
+    matplotlib.use("Agg")
