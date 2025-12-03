@@ -95,11 +95,11 @@ class BatchedPlane(ThinLens):
 
         # Collect the dynamic parameters to vmap over
         params = dict(
-            (p.name, p.value) for p in self.lens.local_dynamic_params.values()
+            (p.name, p.value) for p in self.lens.child_dynamic_params.values()
         )
         batchdims = dict(
             (p.name, -(len(p.shape) + 1))
-            for p in self.lens.local_dynamic_params.values()
+            for p in self.lens.child_dynamic_params.values()
         )
         batchdims["x"] = None
         batchdims["y"] = None
@@ -143,9 +143,9 @@ class BatchedPlane(ThinLens):
 
         """
         # Collect the dynamic parameters to vmap over
-        params = dict((n, p.value) for n, p in self.lens.local_dynamic_params.items())
+        params = dict((n, p.value) for n, p in self.lens.child_dynamic_params.items())
         batchdims = dict(
-            (n, -(len(p.shape) + 1)) for n, p in self.lens.local_dynamic_params.items()
+            (n, -(len(p.shape) + 1)) for n, p in self.lens.child_dynamic_params.items()
         )
         batchdims["x"] = None
         batchdims["y"] = None
@@ -187,9 +187,9 @@ class BatchedPlane(ThinLens):
 
         """
         # Collect the dynamic parameters to vmap over
-        params = dict((n, p.value) for n, p in self.lens.local_dynamic_params.items())
+        params = dict((n, p.value) for n, p in self.lens.child_dynamic_params.items())
         batchdims = dict(
-            (n, -(len(p.shape) + 1)) for n, p in self.lens.local_dynamic_params.items()
+            (n, -(len(p.shape) + 1)) for n, p in self.lens.child_dynamic_params.items()
         )
         batchdims["x"] = None
         batchdims["y"] = None

@@ -73,10 +73,8 @@ def test_external_shear_parametrization():
     assert np.allclose(lens.gamma_2.value.item(), 1.0, atol=1e-5)
 
     # Check reset to cartesian
-    del lens.phi
     lens.parametrization = "cartesian"
     lens.parametrization = "angular"
-    del lens.gamma
     lens.parametrization = "cartesian"
     assert lens.parametrization == "cartesian"
     assert lens.gamma_1.value is None
