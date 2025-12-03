@@ -145,6 +145,8 @@ class ExternalShear(ThinLens):
                     warn(
                         f"Parameter {self.gamma.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma.name} be dynamic when changing parametrizations.",
                     )
+                self.gamma_1.unlink(self.gamma)
+                self.gamma_2.unlink(self.gamma)
                 del self.gamma
             except AttributeError:
                 pass
@@ -153,6 +155,8 @@ class ExternalShear(ThinLens):
                     warn(
                         f"Parameter {self.phi.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.phi.name} be dynamic when changing parametrizations.",
                     )
+                self.gamma_1.unlink(self.phi)
+                self.gamma_2.unlink(self.phi)
                 del self.phi
             except AttributeError:
                 pass
