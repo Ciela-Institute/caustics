@@ -82,6 +82,10 @@ class Angle_Mixin:
             self.phi.link(self.e1)
             self.phi.link(self.e2)
             try:
+                self.q.unlink(self.c1)
+                self.phi.unlink(self.c1)
+                self.q.unlink(self.c2)
+                self.phi.unlink(self.c2)
                 del self.c1
                 del self.c2
             except AttributeError:
@@ -101,6 +105,10 @@ class Angle_Mixin:
             self.phi.link(self.c1)
             self.phi.link(self.c2)
             try:
+                self.q.unlink(self.e1)
+                self.phi.unlink(self.e1)
+                self.q.unlink(self.e2)
+                self.phi.unlink(self.e2)
                 del self.e1
                 del self.e2
             except AttributeError:
@@ -111,6 +119,10 @@ class Angle_Mixin:
             try:
                 self.q.shape = self.e1.shape
                 self.phi.shape = self.e1.shape
+                self.q.unlink(self.e1)
+                self.phi.unlink(self.e1)
+                self.q.unlink(self.e2)
+                self.phi.unlink(self.e2)
                 del self.e1
                 del self.e2
             except AttributeError:
@@ -118,6 +130,10 @@ class Angle_Mixin:
             try:
                 self.q.shape = self.c1.shape
                 self.phi.shape = self.c1.shape
+                self.q.unlink(self.c1)
+                self.phi.unlink(self.c1)
+                self.q.unlink(self.c2)
+                self.phi.unlink(self.c2)
                 del self.c1
                 del self.c2
             except AttributeError:
