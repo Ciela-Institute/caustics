@@ -10,19 +10,23 @@ def test_stack_sersic(device):
     thx, thy = caustics.utils.meshgrid(res, nx, ny, device=device)
 
     models = []
-    params = []
     for i in range(3):
         sersic = caustics.Sersic(
             name=f"sersic_{i}",
+            x0=0.2 * i,
+            y0=0.0,
+            q=0.5,
+            phi=3.14 / 2,
+            n=2.0,
+            Re=1.0 + 0.5 * i,
+            Ie=10.0,
         )
         sersic.to(device=device)
         models.append(sersic)
-        params.append(
-            torch.tensor([0.0 + 0.2 * i, 0.0, 0.5, 3.14 / 2, 2.0, 1.0 + 0.5 * i, 10.0])
-        )
 
     stack = caustics.LightStack(light_models=models, name="stack")
 
+    params = stack.get_values()
     brightness = stack.brightness(thx, thy, params=params)
 
     assert brightness.shape == (nx, ny)
