@@ -6,8 +6,8 @@ from torch import Tensor
 import numpy as np
 from caskade import forward, Param
 
-from ..utils import interp2d
 from .base import ThinLens, CosmologyType, NameType, ZType
+from ..utils import interp2d
 
 __all__ = ("PixelatedDeflection",)
 
@@ -141,13 +141,17 @@ class PixelatedDeflection(ThinLens):
         """
         fov_x = deflection_map.shape[2] * pixelscale
         fov_y = deflection_map.shape[1] * pixelscale
-        shape = x.shape
-        x = (x - x0).view(-1) / fov_x * 2
-        y = (y - y0).view(-1) / fov_y * 2
-        return (
-            interp2d(deflection_map[0], x, y).reshape(shape),
-            interp2d(deflection_map[1], x, y).reshape(shape),
+        x = (x - x0) * (2 / fov_x)
+        y = (y - y0) * (2 / fov_y)
+        deflection_angle = interp2d(
+            deflection_map,
+            x,
+            y,
+            mode="bilinear",
+            padding_mode="zeros",
+            align_corners=False,
         )
+        return deflection_angle[0], deflection_angle[1]
 
     @forward
     def potential(self, x, y, **kwargs):

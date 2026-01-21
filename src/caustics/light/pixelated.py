@@ -1,10 +1,11 @@
 # mypy: disable-error-code="union-attr"
 from typing import Optional, Union, Annotated
 
+import torch
 from torch import Tensor
+from torch.nn.functional import grid_sample
 from caskade import forward, Param
 
-from ..utils import interp2d
 from .base import Source, NameType
 
 __all__ = ("Pixelated",)
@@ -173,9 +174,13 @@ class Pixelated(Source):
         """
         fov_x = pixelscale * image.shape[1]
         fov_y = pixelscale * image.shape[0]
-        return interp2d(
-            image * scale,
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,  # make coordinates bounds at half the fov
+        shape = x.shape
+        x = (x - x0).view(-1) / fov_x * 2
+        y = (y - y0).view(-1) / fov_y * 2
+        return grid_sample(
+            image.reshape(1, 1, *image.shape) * scale,
+            torch.stack((x, y), dim=1).reshape(1, 1, -1, 2),
+            mode="bilinear",
             padding_mode=padding_mode,
-        ).reshape(x.shape)
+            align_corners=False,
+        ).reshape(shape)
