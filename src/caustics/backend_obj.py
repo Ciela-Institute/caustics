@@ -90,6 +90,7 @@ class Backend:
         self.avg_pool2d = self._avg_pool2d_torch
         self.rand = self._rand_torch
         self.randint = self._randint_torch
+        self.split_key = self._split_key_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -139,6 +140,7 @@ class Backend:
         self.avg_pool2d = self._avg_pool2d_jax
         self.rand = self._rand_jax
         self.randint = self._randint_jax
+        self.split_key = self._split_key_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**32 - 1)
@@ -460,23 +462,33 @@ class Backend:
         )
         return array / kernel**2
 
-    def _rand_torch(self, size):
+    def _rand_torch(self, size, key=None):
         return self.module.rand(size)
 
-    def _rand_jax(self, size):
-        self.key, subkey = self.jax.random.split(self.key)  # update key
-        return self.jax.random.uniform(subkey, shape=size)
+    def _rand_jax(self, size, key=None):
+        if key is not None:
+            self.key, key = self.jax.random.split(self.key)  # update key
+        return self.jax.random.uniform(key, shape=size)
 
-    def _randint_torch(self, high, size, low=0, dtype=None, device=None):
+    def _randint_torch(self, high, size, low=0, dtype=None, device=None, key=None):
         return self.module.randint(
             low=low, high=high, size=size, dtype=dtype, device=device
         )
 
-    def _randint_jax(self, high, size, low=0, dtype=None, device=None):
-        self.key, subkey = self.jax.random.split(self.key)  # update key
+    def _randint_jax(self, high, size, low=0, dtype=None, device=None, key=None):
+        if key is not None:
+            self.key, key = self.jax.random.split(self.key)  # update key
         return self.jax.random.randint(
-            subkey, minval=low, maxval=high, shape=size, dtype=dtype
+            key, minval=low, maxval=high, shape=size, dtype=dtype
         )
+
+    def _split_key_torch(self, key):
+        raise NotImplementedError(
+            "`split_key` should not be used with the `torch` backend."
+        )
+
+    def _split_key_jax(self, key):
+        return self.jax.random.split(key)
 
     def arange(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype, device=device)

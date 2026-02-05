@@ -1478,7 +1478,7 @@ def vmap_reduce(
     return wrapped
 
 
-def cluster_means(xs: ArrayLike, k: int):
+def cluster_means(xs: ArrayLike, k: int, key=None):
     """
     Computes cluster means using the k-means++ initialization algorithm.
 
@@ -1488,6 +1488,8 @@ def cluster_means(xs: ArrayLike, k: int):
         A tensor of data points.
     k: int
         The number of clusters.
+    key: Optional[Union[None, jax.random.key]]
+        A jax.random.key if using the Jax backend.
 
     Returns
     -------
@@ -1495,7 +1497,9 @@ def cluster_means(xs: ArrayLike, k: int):
         A tensor of cluster means.
     """
     b = len(xs)
-    mean_idxs = [int(backend.randint(high=b, size=(), device=xs.device).item())]
+    mean_idxs = [
+        int(backend.randint(high=b, size=(), device=xs.device, key=key).item())
+    ]
     means = [xs[mean_idxs[0]]]
     for _ in range(1, k):
         unselected_xs = backend.stack(

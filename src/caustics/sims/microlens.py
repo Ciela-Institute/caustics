@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 from caskade import Module, forward
 
@@ -65,6 +65,7 @@ class Microlens(Module):
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
         N_grid: int = 100,
+        key: Optional[ArrayLike] = None,
     ):
         """Forward pass of the simulator.
 
@@ -82,6 +83,9 @@ class Microlens(Module):
         N_grid: int
             Number of sample points for the sampling grid on each axis if method is "grid"
 
+        key: Optional[ArrayLike]
+            A jax.random.key to be used when the Jax backend is used
+
         Returns
         -------
         ArrayLike
@@ -94,8 +98,12 @@ class Microlens(Module):
 
         if method == "mcmc":
             # Sample the source using MCMC
-            sample_x = backend.rand(N_mcmc) * (fov[1] - fov[0]) + fov[0]
-            sample_y = backend.rand(N_mcmc) * (fov[3] - fov[2]) + fov[2]
+            if key is not None:
+                key_x, key_y = backend.split_key(key)
+            else:
+                key_x, key_y = None, None
+            sample_x = backend.rand(N_mcmc, key=key_x) * (fov[1] - fov[0]) + fov[0]
+            sample_y = backend.rand(N_mcmc, key=key_y) * (fov[3] - fov[2]) + fov[2]
             bx, by = self.lens.raytrace(sample_x, sample_y)
             mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
