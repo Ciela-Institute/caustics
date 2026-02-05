@@ -2,10 +2,9 @@
 from math import pi
 from typing import Optional, Union, Annotated
 
-import torch
-from torch import Tensor
 from caskade import forward, Param
 
+from ..backend_obj import backend, ArrayLike
 from ..constants import arcsec_to_rad
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
@@ -25,37 +24,37 @@ class PseudoJaffe(ThinLens):
         The name of the Pseudo Jaffe lens.
     cosmology: Cosmology
         The cosmology used for calculations.
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         Redshift of the lens.
 
         *Unit: unitless*
 
-    z_s: Optional[Union[Tensor, float]]
+    z_s: Optional[Union[ArrayLike, float]]
         Redshift of the source.
 
         *Unit: unitless*
 
-    x0: Optional[Union[Tensor, float]]
+    x0: Optional[Union[ArrayLike, float]]
         x-coordinate of the center of the lens (arcsec).
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Optional[Union[ArrayLike, float]]
         y-coordinate of the center of the lens (arcsec).
 
         *Unit: arcsec*
 
-    mass: Optional[Union[Tensor, float]]
+    mass: Optional[Union[ArrayLike, float]]
         Total mass of the lens (Msun).
 
         *Unit: Msun*
 
-    Rc: Optional[Union[Tensor, float]]
+    Rc: Optional[Union[ArrayLike, float]]
         Core radius of the lens (arcsec).
 
         *Unit: arcsec*
 
-    Rs: Optional[Union[Tensor, float]]
+    Rs: Optional[Union[ArrayLike, float]]
         Scaling radius of the lens (arcsec).
 
         *Unit: arcsec*
@@ -81,23 +80,23 @@ class PseudoJaffe(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "X coordinate of the center of the lens",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "Y coordinate of the center of the lens",
             True,
         ] = None,
         mass: Annotated[
-            Optional[Union[Tensor, float]], "Total mass of the lens", True, "Msol"
+            Optional[Union[ArrayLike, float]], "Total mass of the lens", True, "Msol"
         ] = None,
         Rc: Annotated[
-            Optional[Union[Tensor, float]], "Core radius of the lens", True, "arcsec"
+            Optional[Union[ArrayLike, float]], "Core radius of the lens", True, "arcsec"
         ] = None,
         Rs: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "Scaling radius of the lens",
             True,
             "arcsec",
@@ -118,32 +117,32 @@ class PseudoJaffe(ThinLens):
         cosmology: Cosmology
             The cosmology used for calculations.
 
-        z_l: Optional[Tensor]
+        z_l: Optional[ArrayLike]
             Redshift of the lens.
 
             *Unit: unitless*
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             x-coordinate of the center of the lens.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             y-coordinate of the center of the lens.
 
             *Unit: arcsec*
 
-        mass: Optional[Tensor]
+        mass: Optional[ArrayLike]
             Total mass of the lens (Msun).
 
             *Unit: Msun*
 
-        Rc: Optional[Tensor]
+        Rc: Optional[ArrayLike]
             Core radius of the lens.
 
             *Unit: arcsec*
 
-        Rs: Optional[Tensor]
+        Rs: Optional[ArrayLike]
             Scaling radius of the lens.
 
             *Unit: arcsec*
@@ -166,37 +165,37 @@ class PseudoJaffe(ThinLens):
     @forward
     def get_convergence_0(
         self,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        Rc: Annotated[Tensor, "Param"],
-        Rs: Annotated[Tensor, "Param"],
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        Rc: Annotated[ArrayLike, "Param"],
+        Rs: Annotated[ArrayLike, "Param"],
     ):
         d_l = self.cosmology.angular_diameter_distance(z_l)
         sigma_crit = self.cosmology.critical_surface_density(z_l, z_s)
-        return mass / (2 * torch.pi * sigma_crit * Rc * Rs * (d_l * arcsec_to_rad) ** 2)  # fmt: skip
+        return mass / (2 * backend.pi * sigma_crit * Rc * Rs * (d_l * arcsec_to_rad) ** 2)  # fmt: skip
 
     @forward
     def mass_enclosed_2d(
         self,
         theta,
-        mass: Annotated[Tensor, "Param"],
-        Rc: Annotated[Tensor, "Param"],
-        Rs: Annotated[Tensor, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        Rc: Annotated[ArrayLike, "Param"],
+        Rs: Annotated[ArrayLike, "Param"],
     ):
         """
         Calculate the mass enclosed within a two-dimensional radius. Using equation A10 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_.
 
         Parameters
         ----------
-        theta: Tensor
+        theta: ArrayLike
             Radius at which to calculate enclosed mass (arcsec).
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The mass enclosed within the given radius.
 
             *Unit: Msun*
@@ -216,17 +215,17 @@ class PseudoJaffe(ThinLens):
 
         Parameters
         -----------
-        rho_0: Tensor
+        rho_0: ArrayLike
             Central mass density.
 
             *Unit: Msun/Mpc^3*
 
-        Rc: Tensor
+        Rc: ArrayLike
             Core radius of the lens (must be in Mpc).
 
             *Unit: Mpc*
 
-        Rs: Tensor
+        Rs: ArrayLike
             Scaling radius of the lens (must be in Mpc).
 
             *Unit: Mpc*
@@ -236,7 +235,7 @@ class PseudoJaffe(ThinLens):
 
         Returns
         --------
-        Tensor
+        ArrayLike
             The central convergence.
 
             *Unit: unitless*
@@ -247,38 +246,38 @@ class PseudoJaffe(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        Rc: Annotated[Tensor, "Param"],
-        Rs: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        Rc: Annotated[ArrayLike, "Param"],
+        Rs: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """Calculate the deflection angle.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         --------
-        x_component: Tensor
+        x_component: ArrayLike
             x-component of the deflection angle.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             y-component of the deflection angle.
 
             *Unit: arcsec*
@@ -291,34 +290,34 @@ class PseudoJaffe(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        Rc: Annotated[Tensor, "Param"],
-        Rs: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        Rc: Annotated[ArrayLike, "Param"],
+        Rs: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential. This calculation is based on equation A18 from `Eliasdottir et al 2007 <https://arxiv.org/abs/0710.5636>`_.
 
         Parameters
         --------
-        x: Tensor
+        x: ArrayLike
             x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         --------
-        Tensor
+        ArrayLike
             The lensing potential (arcsec^2).
 
             *Unit: arcsec^2*
@@ -334,34 +333,34 @@ class PseudoJaffe(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        Rc: Annotated[Tensor, "Param"],
-        Rs: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        Rc: Annotated[ArrayLike, "Param"],
+        Rs: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the projected mass density, based on equation A6.
 
         Parameters
         -----------
-        x: Tensor
+        x: ArrayLike
             x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The projected mass density.
 
             *Unit: unitless*

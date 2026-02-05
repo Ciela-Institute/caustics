@@ -1,13 +1,12 @@
 # mypy: disable-error-code="index,dict-item"
 from typing import Optional, Annotated, Union
 
-import torch
-from torch import Tensor
 import numpy as np
 from caskade import forward, Param
 
-from ..utils import interp2d
 from .base import ThinLens, CosmologyType, NameType, ZType
+from ..backend_obj import backend, ArrayLike
+from ..utils import interp2d
 
 __all__ = ("PixelatedDeflection",)
 
@@ -26,17 +25,17 @@ class PixelatedDeflection(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the center of the grid",
             True,
-        ] = torch.tensor(0.0),
+        ] = backend.make_array(0.0),
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the center of the grid",
             True,
-        ] = torch.tensor(0.0),
+        ] = backend.make_array(0.0),
         deflection_map: Annotated[
-            Optional[Tensor],
+            Optional[ArrayLike],
             "A 3D tensor (2, nx, ny) representing the reduced deflection angle map",
             True,
         ] = None,
@@ -58,27 +57,27 @@ class PixelatedDeflection(ThinLens):
         cosmology: Cosmology
             An instance of the cosmological parameters.
 
-        z_l: Optional[Tensor]
+        z_l: Optional[ArrayLike]
             The redshift of the lens.
 
             *Unit: unitless*
 
-        z_s: Optional[Tensor]
+        z_s: Optional[ArrayLike]
             The redshift of the source.
 
             *Unit: unitless*
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             The x-coordinate of the center of the grid.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             The y-coordinate of the center of the grid.
 
             *Unit: arcsec*
 
-        deflection_map: Optional[Tensor]
+        deflection_map: Optional[ArrayLike]
             A 2D tensor representing the deflection map.
 
             *Unit: unitless*
@@ -109,31 +108,31 @@ class PixelatedDeflection(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        deflection_map: Annotated[Tensor, "Param"],
-        pixelscale: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        deflection_map: Annotated[ArrayLike, "Param"],
+        pixelscale: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Compute the deflection at the specified positions.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The deflection at the specified positions.
 
             *Unit: unitless*

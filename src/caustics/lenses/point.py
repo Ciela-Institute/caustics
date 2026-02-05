@@ -2,9 +2,9 @@
 from typing import Optional, Union, Annotated, Literal
 from warnings import warn
 
-from torch import Tensor
 from caskade import forward, Param
 
+from ..backend_obj import ArrayLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -23,22 +23,22 @@ class Point(ThinLens):
     cosmology: Cosmology
         The cosmology used for calculations.
 
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         Redshift of the lens.
 
         *Unit: unitless*
 
-    x0: Optional[Union[Tensor, float]]
+    x0: Optional[Union[ArrayLike, float]]
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Optional[Union[ArrayLike, float]]
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    Rein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[ArrayLike, float]]
         Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -62,17 +62,17 @@ class Point(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "X coordinate of the center of the lens",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "Y coordinate of the center of the lens",
             True,
         ] = None,
         Rein: Annotated[
-            Optional[Union[Tensor, float]], "Einstein radius of the lens", True
+            Optional[Union[ArrayLike, float]], "Einstein radius of the lens", True
         ] = None,
         parametrization: Literal["Rein", "mass"] = "Rein",
         s: Annotated[
@@ -92,22 +92,22 @@ class Point(ThinLens):
         cosmology: Cosmology
             The cosmology used for calculations.
 
-        z_l: Optional[Tensor]
+        z_l: Optional[ArrayLike]
             Redshift of the lens.
 
             *Unit: unitless*
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             x-coordinate of the center of the lens.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             y-coordinate of the center of the lens.
 
             *Unit: arcsec*
 
-        Rein: Optional[Tensor]
+        Rein: Optional[ArrayLike]
             Einstein radius of the lens.
 
             *Unit: arcsec*
@@ -177,23 +177,23 @@ class Point(ThinLens):
     @forward
     def mass_to_rein(
         self,
-        mass: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        mass: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Convert mass to the Einstein radius.
 
         Parameters
         ----------
-        mass: Tensor
+        mass: ArrayLike
             The mass of the lens
 
             *Unit: solar mass*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The Einstein radius.
 
             *Unit: arcsec*
@@ -208,23 +208,23 @@ class Point(ThinLens):
     @forward
     def rein_to_mass(
         self,
-        r: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        r: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Convert Einstein radius to mass.
 
         Parameters
         ----------
-        r: Tensor
+        r: ArrayLike
             The Einstein radius.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The mass of the lens
 
             *Unit: solar mass*
@@ -239,35 +239,35 @@ class Point(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Compute the deflection angles.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in the x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in the y-direction.
 
             *Unit: arcsec*
@@ -278,30 +278,30 @@ class Point(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*
@@ -312,29 +312,29 @@ class Point(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the convergence (dimensionless surface mass density).
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         --------
-        Tensor
+        ArrayLike
             The convergence (dimensionless surface mass density).
 
             *Unit: unitless*

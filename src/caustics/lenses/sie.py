@@ -2,12 +2,12 @@
 from typing import Optional, Union, Annotated, Literal
 from warnings import warn
 
-from torch import Tensor, pi
 from caskade import forward, Param
 
+from . import func
 from .base import ThinLens, CosmologyType, NameType, ZType
 from ..angle_mixin import Angle_Mixin
-from . import func
+from ..backend_obj import ArrayLike, backend
 
 __all__ = ("SIE",)
 
@@ -25,37 +25,37 @@ class SIE(Angle_Mixin, ThinLens):
     cosmology: Cosmology
         An instance of the Cosmology class.
 
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         The redshift of the lens.
 
         *Unit: unitless*
 
-    z_s: Optional[Union[Tensor, float]]
+    z_s: Optional[Union[ArrayLike, float]]
         The redshift of the source.
 
         *Unit: unitless*
 
-    x0: Optional[Union[Tensor, float]]
+    x0: Optional[Union[ArrayLike, float]]
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Optional[Union[ArrayLike, float]]
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Optional[Union[ArrayLike, float]]
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Optional[Union[ArrayLike, float]]
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[ArrayLike, float]]
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -81,31 +81,35 @@ class SIE(Angle_Mixin, ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The x-coordinate of the lens center",
+            True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The y-coordinate of the lens center",
+            True,
         ] = None,
         q: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The axis ratio of the lens convergence",
             True,
         ] = None,
         phi: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The orientation angle of the lens (position angle)",
             True,
         ] = None,
         Rein: Annotated[
-            Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
+            Optional[Union[ArrayLike, float]], "The Einstein radius of the lens", True
         ] = None,
         parametrization: Literal["Rein", "velocity_dispersion"] = "Rein",
-        sigma_v: Optional[Union[Tensor, float]] = None,
+        sigma_v: Optional[Union[ArrayLike, float]] = None,
         angle_system: str = "q_phi",
-        e1: Optional[Union[Tensor, float]] = None,
-        e2: Optional[Union[Tensor, float]] = None,
-        c1: Optional[Union[Tensor, float]] = None,
-        c2: Optional[Union[Tensor, float]] = None,
+        e1: Optional[Union[ArrayLike, float]] = None,
+        e2: Optional[Union[ArrayLike, float]] = None,
+        c1: Optional[Union[ArrayLike, float]] = None,
+        c2: Optional[Union[ArrayLike, float]] = None,
         s: Annotated[float, "The core radius of the lens"] = 0.0,
         name: NameType = None,
         **kwargs,
@@ -118,7 +122,9 @@ class SIE(Angle_Mixin, ThinLens):
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
         self.q = Param("q", q, units="unitless", valid=(0, 1))
-        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.phi = Param(
+            "phi", phi, units="radians", valid=(0, backend.pi), cyclic=True
+        )
         self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
         self._parametrization = "Rein"
         self.parametrization = parametrization
@@ -186,37 +192,37 @@ class SIE(Angle_Mixin, ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the physical deflection angle.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         --------
-        x_component: Tensor
+        x_component: ArrayLike
             The x-component of the deflection angle.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             The y-component of the deflection angle.
 
             *Unit: arcsec*
@@ -227,32 +233,32 @@ class SIE(Angle_Mixin, ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*
@@ -263,32 +269,32 @@ class SIE(Angle_Mixin, ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the projected mass density.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The projected mass density.
 
             *Unit: unitless*

@@ -57,43 +57,43 @@ def reduced_deflection_angle_epl(
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens. Semi-minor over semi-major axis lengths.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Tensor
+    Rein: ArrayLike
         The Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    t: Tensor
+    t: ArrayLike
         Power law slope (`gamma-1`) of the lens.
         If not provided, it is considered as a free parameter.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
@@ -110,12 +110,12 @@ def reduced_deflection_angle_epl(
 
     Returns
     --------
-    x_component: Tensor
+    x_component: ArrayLike
         The x-component of the deflection angle.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         The y-component of the deflection angle.
 
         *Unit: arcsec*
@@ -143,43 +143,43 @@ def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, chunk_size):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens. Semi-minor over semi-major axis lengths.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Tensor
+    Rein: ArrayLike
         The Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    t: Tensor
+    t: ArrayLike
         Power law slope (`gamma-1`) of the lens.
         If not provided, it is considered as a free parameter.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
@@ -196,12 +196,12 @@ def potential_epl(x0, y0, q, phi, Rein, t, x, y, n_iter, chunk_size):
 
     Returns
     --------
-    x_component: Tensor
+    x_component: ArrayLike
         The x-component of the deflection angle.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         The y-component of the deflection angle.
 
         *Unit: arcsec*
@@ -223,43 +223,43 @@ def convergence_epl(x0, y0, q, phi, Rein, t, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens. Semi-minor over semi-major axis lengths.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Tensor
+    Rein: ArrayLike
         The Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    t: Tensor
+    t: ArrayLike
         Power law slope (`gamma-1`) of the lens.
         If not provided, it is considered as a free parameter.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
@@ -271,12 +271,12 @@ def convergence_epl(x0, y0, q, phi, Rein, t, x, y, s=0.0):
 
     Returns
     --------
-    x_component: Tensor
+    x_component: ArrayLike
         The x-component of the deflection angle.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         The y-component of the deflection angle.
 
         *Unit: arcsec*

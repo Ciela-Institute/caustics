@@ -12,22 +12,22 @@ def physical_deflection_angle_enclosed_mass(x0, y0, q, phi, enclosed_mass, x, y,
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens. ratio of semi-minor to semi-major axis (b/a).
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The position angle of the lens. The angle relative to the positive x-axis.
 
         *Unit: radians*
@@ -35,19 +35,19 @@ def physical_deflection_angle_enclosed_mass(x0, y0, q, phi, enclosed_mass, x, y,
     enclosed_mass: Callable
         The enclosed mass profile function, solely a function of r.
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
 
     Returns
     -------
-    tuple[Tensor, Tensor]
+    tuple[ArrayLike, ArrayLike]
         The physical deflection angle.
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
@@ -68,22 +68,22 @@ def convergence_enclosed_mass(
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens. ratio of semi-minor to semi-major axis (b/a).
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The position angle of the lens. The angle relative to the positive x-axis.
 
         *Unit: radians*
@@ -91,19 +91,19 @@ def convergence_enclosed_mass(
     enclosed_mass: Callable
         The enclosed mass profile function, solely a function of r.
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The convergence.
     """
     x, y = translate_rotate(x, y, x0, y0, phi)

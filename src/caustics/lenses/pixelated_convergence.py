@@ -1,11 +1,10 @@
 # mypy: disable-error-code="index,dict-item"
 from typing import Optional, Annotated, Union, Literal
 
-import torch
-from torch import Tensor
 import numpy as np
 from caskade import forward, Param
 
+from ..backend_obj import backend, ArrayLike, deviceLike, dtypeLike
 from ..utils import interp2d
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
@@ -27,22 +26,24 @@ class PixelatedConvergence(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the center of the grid",
             True,
-        ] = torch.tensor(0.0),
+        ] = backend.make_array(0.0),
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the center of the grid",
             True,
-        ] = torch.tensor(0.0),
+        ] = backend.make_array(0.0),
         convergence_map: Annotated[
-            Optional[Tensor],
+            Optional[ArrayLike],
             "A 2D tensor representing the convergence map",
             True,
         ] = None,
         scale: Annotated[
-            Optional[Tensor], "A scale factor to multiply by the convergence map", True
+            Optional[ArrayLike],
+            "A scale factor to multiply by the convergence map",
+            True,
         ] = 1.0,
         shape: Annotated[
             Optional[tuple[int, ...]], "The shape of the convergence map"
@@ -83,27 +84,27 @@ class PixelatedConvergence(ThinLens):
         cosmology: Cosmology
             An instance of the cosmological parameters.
 
-        z_l: Optional[Tensor]
+        z_l: Optional[ArrayLike]
             The redshift of the lens.
 
             *Unit: unitless*
 
-        z_s: Optional[Tensor]
+        z_s: Optional[ArrayLike]
             The redshift of the source.
 
             *Unit: unitless*
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             The x-coordinate of the center of the grid.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             The y-coordinate of the center of the grid.
 
             *Unit: arcsec*
 
-        convergence_map: Optional[Tensor]
+        convergence_map: Optional[ArrayLike]
             A 2D tensor representing the convergence map.
 
             *Unit: unitless*
@@ -185,30 +186,34 @@ class PixelatedConvergence(ThinLens):
         self.convolution_mode = convolution_mode
 
     def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+        self, device: Optional[deviceLike] = None, dtype: Optional[dtypeLike] = None
     ):
         """
         Move the ConvergenceGrid object and all its tensors to the specified device and dtype.
 
         Parameters
         ----------
-        device: Optional[torch.device]
+        device: Optional[deviceLike]
             The target device to move the tensors to.
 
-        dtype: Optional[torch.dtype]
+        dtype: Optional[dtypeLike]
             The target data type to cast the tensors to.
 
         """
         super().to(device, dtype)
-        self.potential_kernel = self.potential_kernel.to(device=device, dtype=dtype)
-        self.ax_kernel = self.ax_kernel.to(device=device, dtype=dtype)
-        self.ay_kernel = self.ay_kernel.to(device=device, dtype=dtype)
+        self.potential_kernel = backend.to(
+            self.potential_kernel, device=device, dtype=dtype
+        )
+        self.ax_kernel = backend.to(self.ax_kernel, device=device, dtype=dtype)
+        self.ay_kernel = backend.to(self.ay_kernel, device=device, dtype=dtype)
         if self.potential_kernel_tilde is not None:
-            self.potential_kernel_tilde = self.potential_kernel_tilde.to(device=device)
+            self.potential_kernel_tilde = backend.to(
+                self.potential_kernel_tilde, device=device
+            )
         if self.ax_kernel_tilde is not None:
-            self.ax_kernel_tilde = self.ax_kernel_tilde.to(device=device)
+            self.ax_kernel_tilde = backend.to(self.ax_kernel_tilde, device=device)
         if self.ay_kernel_tilde is not None:
-            self.ay_kernel_tilde = self.ay_kernel_tilde.to(device=device)
+            self.ay_kernel_tilde = backend.to(self.ay_kernel_tilde, device=device)
 
     @property
     def convolution_mode(self):
@@ -236,13 +241,13 @@ class PixelatedConvergence(ThinLens):
         """
         if convolution_mode == "fft":
             # Create FFTs of kernels
-            self.potential_kernel_tilde = torch.fft.rfft2(
+            self.potential_kernel_tilde = backend.fft.rfft2(
                 self.potential_kernel, func._fft_size(self.n_pix)
             )
-            self.ax_kernel_tilde = torch.fft.rfft2(
+            self.ax_kernel_tilde = backend.fft.rfft2(
                 self.ax_kernel, func._fft_size(self.n_pix)
             )
-            self.ay_kernel_tilde = torch.fft.rfft2(
+            self.ay_kernel_tilde = backend.fft.rfft2(
                 self.ay_kernel, func._fft_size(self.n_pix)
             )
         elif convolution_mode == "conv2d":
@@ -258,36 +263,36 @@ class PixelatedConvergence(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        convergence_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        convergence_map: Annotated[ArrayLike, "Param"],
+        scale: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the deflection angles for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the deflection angles for.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in the x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in the y-direction.
 
             *Unit: arcsec*
@@ -311,24 +316,24 @@ class PixelatedConvergence(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        convergence_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        convergence_map: Annotated[ArrayLike, "Param"],
+        scale: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the lensing potential for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the lensing potential for.
 
             *Unit: arcsec*
@@ -336,7 +341,7 @@ class PixelatedConvergence(ThinLens):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential at the specified positions.
 
             *Unit: arcsec^2*
@@ -359,31 +364,31 @@ class PixelatedConvergence(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        convergence_map: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        convergence_map: Annotated[ArrayLike, "Param"],
+        scale: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the convergence at the specified positions.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The convergence at the specified positions.
 
             *Unit: unitless*

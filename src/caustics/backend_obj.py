@@ -83,6 +83,9 @@ class Backend:
         self.fill_at_indices = self._fill_at_indices_torch
         self.add_at_indices = self._add_at_indices_torch
         self.and_at_indices = self._and_at_indices_torch
+        self.unsqueeze = self._unsqueeze_torch
+        self.gradient = self._gradient_torch
+        self.detach = self._detach_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -125,6 +128,9 @@ class Backend:
         self.fill_at_indices = self._fill_at_indices_jax
         self.add_at_indices = self._add_at_indices_jax
         self.and_at_indices = self._and_at_indices_jax
+        self.unsqueeze = self._unsqueeze_jax
+        self.gradient = self._gradient_jax
+        self.detach = self._detach_jax
 
     @property
     def array_type(self):
@@ -398,6 +404,25 @@ class Backend:
         new_shape = shape[:start_dim] + (-1,) + shape[end_dim:]
         return self.module.reshape(array, new_shape)
 
+    def _unsqueeze_torch(self, array, dim):
+        return self.module.unsqueeze(array, dim)
+
+    def _unsqueeze_jax(self, array, dim):
+        return self.module.expand_dims(array, axis=dim)
+
+    def _gradient_torch(self, array, spacing=1, dim=None):
+        return self.module.gradient(array, spacing=spacing, dim=dim, edge_order=1)
+
+    def _gradient_jax(self, array, spacing=1, dim=None):
+        # spacing is a positional argument in jax and edge_order is not implemented
+        return self.module.gradient(array, spacing, axis=dim, edge_order=None)
+
+    def _detach_torch(self, array):
+        return array.detach()
+
+    def _detach_jax(self, array):
+        return self.jax.lax.stop_gradient(array)
+
     def arange(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype, device=device)
 
@@ -418,6 +443,9 @@ class Backend:
 
     def log(self, array):
         return self.module.log(array)
+
+    def safe_log(self, array):
+        return self.module.safe_log(array)
 
     def log10(self, array):
         return self.module.log10(array)
@@ -458,11 +486,26 @@ class Backend:
     def arctan(self, array):
         return self.module.arctan(array)
 
+    def atan(self, array):
+        return self.module.atan(array)
+
+    def atanh(self, array):
+        return self.module.atanh(array)
+
     def arctan2(self, y, x):
         return self.module.arctan2(y, x)
 
     def arcsin(self, array):
         return self.module.arcsin(array)
+
+    def arcsinh(self, array):
+        return self.module.arcsinh(array)
+
+    def arccos(self, array):
+        return self.module.arccos(array)
+
+    def arccosh(self, array):
+        return self.module.arccosh(array)
 
     def round(self, array):
         return self.module.round(array)
@@ -509,6 +552,12 @@ class Backend:
     def allclose(self, a, b, rtol=1e-5, atol=1e-8):
         return self.module.allclose(a, b, rtol=rtol, atol=atol)
 
+    def tile(self, array, dims):
+        return self.module.tile(array, dims)
+
+    def flip(self, array, dims):
+        return self.module.flip(array, dims)
+
     @property
     def linalg(self):
         return self.module.linalg
@@ -536,6 +585,10 @@ class Backend:
     @property
     def float64(self):
         return self.module.float64
+
+    @property
+    def pi(self):
+        return self.module.pi
 
 
 backend = Backend()

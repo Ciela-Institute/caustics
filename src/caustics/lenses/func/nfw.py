@@ -1,5 +1,4 @@
-import torch
-
+from ...backend_obj import backend
 from ...utils import translate_rotate
 from ...constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 
@@ -10,17 +9,17 @@ def scale_radius_nfw(critical_density, mass, c, DELTA=200.0):
 
     Parameters
     ----------
-    critical_density: Tensor
+    critical_density: ArrayLike
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    mass: Tensor
+    mass: ArrayLike
         The mass of the halo.
 
         *Unit: Msun*
 
-    c: Tensor
+    c: ArrayLike
         The concentration parameter of the halo.
 
         *Unit: unitless*
@@ -32,13 +31,13 @@ def scale_radius_nfw(critical_density, mass, c, DELTA=200.0):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The scale radius of the NFW profile.
 
         *Unit: Mpc*
 
     """
-    r_delta = (3 * mass / (4 * torch.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
+    r_delta = (3 * mass / (4 * backend.pi * DELTA * critical_density)) ** (1 / 3)  # fmt: skip
     return r_delta / c
 
 
@@ -48,12 +47,12 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
 
     Parameters
     ----------
-    critical_density: Tensor
+    critical_density: ArrayLike
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    c: Tensor
+    c: ArrayLike
         The concentration parameter of the halo.
 
         *Unit: unitless*
@@ -65,36 +64,36 @@ def scale_density_nfw(critical_density, c, DELTA=200.0):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The scale density of the NFW profile.
 
         *Unit: solar mass per square kiloparsec*
 
     """
     c_ = 1 + c
-    return DELTA / 3 * critical_density * c**3 / (c_.log() - c / c_)  # fmt: skip
+    return DELTA / 3 * critical_density * c**3 / (backend.log(c_) - c / c_)  # fmt: skip
 
 
 def convergence_s_nfw(critical_surface_density, critical_density, mass, c, DELTA):
     """
     Compute the dimensionaless surface mass density of the lens.
 
-    critical_surface_density: Tensor
+    critical_surface_density: ArrayLike
         The critical surface density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^2*
 
-    critical_density: Tensor
+    critical_density: ArrayLike
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    mass: Tensor
+    mass: ArrayLike
         The mass of the halo.
 
         *Unit: Msun*
 
-    c: Tensor
+    c: ArrayLike
         The concentration parameter of the halo.
 
         *Unit: unitless*
@@ -106,7 +105,7 @@ def convergence_s_nfw(critical_surface_density, critical_density, mass, c, DELTA
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The dimensionless surface mass density of the lens.
 
         *Unit: unitless*
@@ -123,22 +122,22 @@ def _f_nfw(x):
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         The input to the function.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The value of the function f(x).
 
     """
     # fmt: off
-    x_gt1 = torch.clamp(x, min=1 + 1e-6)
-    x_lt1 = torch.clamp(x, max=1 - 1e-6)
+    x_gt1 = backend.clamp(x, min=1 + 1e-6)
+    x_lt1 = backend.clamp(x, max=1 - 1e-6)
 
-    f_pos = 1 - 2 * torch.atan(torch.sqrt((x_gt1 - 1) / (x_gt1 + 1))) / torch.sqrt(x_gt1 ** 2 - 1)
-    f_neg = 1 - 2 * torch.atanh(torch.sqrt((1 - x_lt1) / (1 + x_lt1))) / torch.sqrt(1 - x_lt1 ** 2)
-    return torch.where(x > 1, f_pos, torch.where(x < 1, f_neg, torch.zeros_like(x)))
+    f_pos = 1 - 2 * backend.atan(backend.sqrt((x_gt1 - 1) / (x_gt1 + 1))) / backend.sqrt(x_gt1 ** 2 - 1)
+    f_neg = 1 - 2 * backend.atanh(backend.sqrt((1 - x_lt1) / (1 + x_lt1))) / backend.sqrt(1 - x_lt1 ** 2)
+    return backend.where(x > 1, f_pos, backend.where(x < 1, f_neg, backend.zeros_like(x)))
     # fmt: on
 
 
@@ -149,22 +148,24 @@ def _g_nfw(x):
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         The input to the function.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The value of the function g(x).
 
     """
-    term_1 = (x / 2).log() ** 2
-    x_gt1 = torch.clamp(x, min=1 + 1e-6)
-    x_lt1 = torch.clamp(x, max=1 - 1e-6)
+    term_1 = backend.log(x / 2) ** 2
+    x_gt1 = backend.clamp(x, min=1 + 1e-6)
+    x_lt1 = backend.clamp(x, max=1 - 1e-6)
 
-    g_pos = (1 / x_gt1).arccos().pow(2)
-    g_neg = -(1 / x_lt1).arccosh().pow(2)
-    term_2 = torch.where(x > 1, g_pos, torch.where(x < 1, g_neg, torch.zeros_like(x)))
+    g_pos = backend.arccos(1 / x_gt1) ** 2
+    g_neg = backend.arccosh(-(1 / x_lt1)) ** 2
+    term_2 = backend.where(
+        x > 1, g_pos, backend.where(x < 1, g_neg, backend.zeros_like(x))
+    )
     return term_1 + term_2
 
 
@@ -175,22 +176,24 @@ def _h_nfw(x):
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         The input to the function.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The value of the function h(x).
 
     """
-    term_1 = (x / 2).log()
-    x_gt1 = torch.clamp(x, min=1 + 1e-6)
-    x_lt1 = torch.clamp(x, max=1 - 1e-6)
+    term_1 = backend.log(x / 2)
+    x_gt1 = backend.clamp(x, min=1 + 1e-6)
+    x_lt1 = backend.clamp(x, max=1 - 1e-6)
 
-    h_pos = (1 / x_gt1).arccos() / torch.sqrt(x_gt1**2 - 1)
-    h_neg = (1 / x_lt1).arccosh() / torch.sqrt(1 - x_lt1**2)
-    term_2 = torch.where(x > 1, h_pos, torch.where(x < 1, h_neg, torch.ones_like(x)))
+    h_pos = backend.arccos(1 / x_gt1) / backend.sqrt(x_gt1**2 - 1)
+    h_neg = backend.arccosh(1 / x_lt1) / backend.sqrt(1 - x_lt1**2)
+    term_2 = backend.where(
+        x > 1, h_pos, backend.where(x < 1, h_neg, backend.ones_like(x))
+    )
     return term_1 + term_2
 
 
@@ -212,32 +215,32 @@ def physical_deflection_angle_nfw(
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    mass: Tensor
+    mass: ArrayLike
         Mass of the lens. Default is None.
 
         *Unit: Msun*
 
-    c: Tensor
+    c: ArrayLike
         Concentration parameter of the lens. Default is None.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
@@ -249,12 +252,12 @@ def physical_deflection_angle_nfw(
         *Unit: arcsec*
     """
     x, y = translate_rotate(x, y, x0, y0)
-    th = (x**2 + y**2).sqrt() + s
+    th = backend.sqrt(x**2 + y**2) + s
     scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius
 
-    deflection_angle = 16 * torch.pi * G_over_c2 * scale_density_nfw(critical_density, c, DELTA) * scale_radius**3 * _h_nfw(r) * rad_to_arcsec / xi  # fmt: skip
+    deflection_angle = 16 * backend.pi * G_over_c2 * scale_density_nfw(critical_density, c, DELTA) * scale_radius**3 * _h_nfw(r) * rad_to_arcsec / xi  # fmt: skip
 
     ax = deflection_angle * x / th
     ay = deflection_angle * y / th
@@ -280,30 +283,30 @@ def convergence_nfw(
 
     Parameters
     ----------
-    critical_surface_density: Tensor
+    critical_surface_density: ArrayLike
         The critical surface density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^2*
 
-    critical_density: Tensor
+    critical_density: ArrayLike
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    mass: Tensor
+    mass: ArrayLike
         The mass of the halo
 
-    c: Optional[Tensor]
+    c: Optional[ArrayLike]
         Concentration parameter of the lens. Default is None.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
@@ -314,7 +317,7 @@ def convergence_nfw(
         *Unit: arcsec*
     """
     x, y = translate_rotate(x, y, x0, y0)
-    th = (x**2 + y**2).sqrt() + s
+    th = backend.sqrt(x**2 + y**2) + s
     scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius  # xi / xi_0
@@ -343,30 +346,30 @@ def potential_nfw(
 
     Parameters
     ----------
-    critical_surface_density: Tensor
+    critical_surface_density: ArrayLike
         The critical surface density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^2*
 
-    critical_density: Tensor
+    critical_density: ArrayLike
         The critical density of the Universe at the appropriate redshift.
 
         *Unit: Msun/Mpc^3*
 
-    mass: Tensor
+    mass: ArrayLike
         The mass of the halo
 
-    c: Optional[Tensor]
+    c: Optional[ArrayLike]
         Concentration parameter of the lens. Default is None.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
@@ -377,7 +380,7 @@ def potential_nfw(
         *Unit: arcsec*
     """
     x, y = translate_rotate(x, y, x0, y0)
-    th = (x**2 + y**2).sqrt() + s
+    th = backend.sqrt(x**2 + y**2) + s
     scale_radius = scale_radius_nfw(critical_density, mass, c, DELTA)
     xi = d_l * th * arcsec_to_rad
     r = xi / scale_radius  # xi / xi_0

@@ -24,13 +24,10 @@ def triangle_area(p):
     """
     Determine the area of triangle p where p is a (3,2) tensor.
     """
-    return (
-        0.5
-        * (
-            p[0][0] * (p[1][1] - p[2][1])
-            + p[1][0] * (p[2][1] - p[0][1])
-            + p[2][0] * (p[0][1] - p[1][1])
-        ).abs()
+    return 0.5 * backend.abs(
+        p[0][0] * (p[1][1] - p[2][1])
+        + p[1][0] * (p[2][1] - p[0][1])
+        + p[2][0] * (p[0][1] - p[1][1])
     )
 
 
@@ -111,23 +108,23 @@ def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
 
     Parameters
     ----------
-    ix: Tensor
-        Tensor of x coordinate in the image plane. This initializes the
+    ix: ArrayLike
+        ArrayLike of x coordinate in the image plane. This initializes the
         ray-tracing optimization. Should have shape (B, 2).
 
         *Unit: arcsec*
 
-    iy: Tensor
-        Tensor of y coordinate in the image plane. This initializes the
+    iy: ArrayLike
+        ArrayLike of y coordinate in the image plane. This initializes the
         ray-tracing optimization. Should have shape (B, 2).
 
-    bx: Tensor
-        Tensor of x coordinate in the source plane. Should be a scalar.
+    bx: ArrayLike
+        ArrayLike of x coordinate in the source plane. Should be a scalar.
 
         *Unit: arcsec*
 
-    by: Tensor
-        Tensor of y coordinate in the source plane. Should be a scalar.
+    by: ArrayLike
+        ArrayLike of y coordinate in the source plane. Should be a scalar.
 
         *Unit: arcsec*
 
@@ -137,13 +134,13 @@ def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
 
     Returns
     -------
-    x_component: Tensor
-        x-coordinate Tensor of the ray-traced light rays
+    x_component: ArrayLike
+        x-coordinate ArrayLike of the ray-traced light rays
 
         *Unit: arcsec*
 
-    y_component: Tensor
-        y-coordinate Tensor of the ray-traced light rays
+    y_component: ArrayLike
+        y-coordinate ArrayLike of the ray-traced light rays
 
         *Unit: arcsec*
     """
@@ -242,13 +239,13 @@ def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
 
     Parameters
     ----------
-    ax: Tensor
-        Tensor of x axis reduced deflection angles in the lens plane.
+    ax: ArrayLike
+        ArrayLike of x axis reduced deflection angles in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
-        Tensor of y axis reduced deflection angles in the lens plane.
+    y: ArrayLike
+        ArrayLike of y axis reduced deflection angles in the lens plane.
 
         *Unit: arcsec*
 
@@ -264,12 +261,12 @@ def physical_from_reduced_deflection_angle(ax, ay, d_s, d_ls):
 
     Returns
     --------
-    x_component: Tensor
+    x_component: ArrayLike
         Physical deflection Angle in the x-direction.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         Physical deflection Angle in the y-direction.
 
         *Unit: arcsec*
@@ -285,13 +282,13 @@ def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
 
     Parameters
     ----------
-    ax: Tensor
-        Tensor of x axis physical deflection angles in the lens plane.
+    ax: ArrayLike
+        ArrayLike of x axis physical deflection angles in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
-        Tensor of y axis physical deflection angles in the lens plane.
+    y: ArrayLike
+        ArrayLike of y axis physical deflection angles in the lens plane.
 
         *Unit: arcsec*
 
@@ -307,12 +304,12 @@ def reduced_from_physical_deflection_angle(ax, ay, d_s, d_ls):
 
     Returns
     --------
-    x_component: Tensor
+    x_component: ArrayLike
         Reduced deflection Angle in the x-direction.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         Reduced deflection Angle in the y-direction.
 
         *Unit: arcsec*

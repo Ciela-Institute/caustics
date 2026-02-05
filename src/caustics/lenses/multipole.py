@@ -1,10 +1,9 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-import torch
-from torch import Tensor, pi
 from caskade import forward, Param
 
+from ..backend_obj import backend, ArrayLike, dtypeLike, deviceLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -23,19 +22,19 @@ class Multipole(ThinLens):
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
 
-    m: Union[Tensor, int, tuple[int]]
+    m: Union[ArrayLike, int, tuple[int]]
         Order of multipole(s).
 
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         The redshift of the lens.
 
-    x0, y0: Optional[Union[Tensor, float]]
+    x0, y0: Optional[Union[ArrayLike, float]]
         Coordinates of the shear center in the lens plane.
 
-    a_m: Optional[Union[Tensor, float]]
+    a_m: Optional[Union[ArrayLike, float]]
         Strength of multipole.
 
-    phi_m: Optional[Union[Tensor, float]]
+    phi_m: Optional[Union[ArrayLike, float]]
         Orientation of multipole.
 
     """
@@ -45,20 +44,24 @@ class Multipole(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        m: Annotated[Union[Tensor, int, tuple[int]], "The Multipole moment(s) m"],
+        m: Annotated[Union[ArrayLike, int, tuple[int]], "The Multipole moment(s) m"],
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The x-coordinate of the lens center",
+            True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The y-coordinate of the lens center",
+            True,
         ] = None,
         a_m: Annotated[
-            Optional[Union[Tensor, float]], "The amplitude of the multipole", True
+            Optional[Union[ArrayLike, float]], "The amplitude of the multipole", True
         ] = None,
         phi_m: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The orientation angle of the multipole",
             True,
         ] = None,
@@ -68,28 +71,28 @@ class Multipole(ThinLens):
 
         self.x0 = Param("x0", x0, units="arcsec")
         self.y0 = Param("y0", y0, units="arcsec")
-        self.m = torch.as_tensor(m, dtype=torch.int32)
-        assert torch.all(self.m >= 2).item(), "Multipole order must be >= 2"
+        self.m = backend.as_array(m, dtype=backend.int32)
+        assert backend.all(self.m >= 2).item(), "Multipole order must be >= 2"
         self.a_m = Param("a_m", a_m, self.m.shape, units="unitless")
         self.phi_m = Param(
             "phi_m",
             phi_m,
             self.m.shape,
             units="radians",
-            valid=(0, 2 * pi),
+            valid=(0, 2 * backend.pi),
             cyclic=True,
         )
 
-    def to(self, device: torch.device = None, dtype: torch.dtype = None):
+    def to(self, device: deviceLike = None, dtype: dtypeLike = None):
         """
         Move the lens to the specified device.
 
         Parameters
         ----------
-        device: torch.device
+        device: deviceLike
             The device to move the lens to.
 
-        dtype: torch.dtype
+        dtype: dtypeLike
             The data type to cast the lens to.
 
         Returns
@@ -99,42 +102,42 @@ class Multipole(ThinLens):
 
         """
         super().to(device, dtype)
-        self.m = self.m.to(device, torch.int32)
+        self.m = backend.to(self.m, device=device, dtype=backend.int32)
         return self
 
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        a_m: Annotated[Tensor, "Param"],
-        phi_m: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        a_m: Annotated[ArrayLike, "Param"],
+        phi_m: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the deflection angle of the multipole.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle
 
             *Unit: arcsec*
@@ -147,31 +150,31 @@ class Multipole(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        a_m: Annotated[Tensor, "Param"],
-        phi_m: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        a_m: Annotated[ArrayLike, "Param"],
+        phi_m: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential of the multiplane.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*
@@ -184,31 +187,31 @@ class Multipole(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        a_m: Annotated[Tensor, "Param"],
-        phi_m: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        a_m: Annotated[ArrayLike, "Param"],
+        phi_m: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the projected mass density of the multipole.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The projected mass density.
 
             *Unit: unitless*

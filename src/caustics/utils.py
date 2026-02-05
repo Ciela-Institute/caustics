@@ -1417,7 +1417,7 @@ def vmap_reduce(
     in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
     out_dims: Union[int, Tuple[int, ...]] = 0,
     **kwargs,
-) -> Tensor:
+) -> Callable:
     """
     Applies `torch.vmap` to `func` and then reduces the output using
     `reduce_func` along the appropriate dimensions. This saves on memory
