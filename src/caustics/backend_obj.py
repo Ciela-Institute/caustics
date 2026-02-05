@@ -466,7 +466,7 @@ class Backend:
         return self.module.rand(size)
 
     def _rand_jax(self, size, key=None):
-        if key is not None:
+        if key is None:
             self.key, key = self.jax.random.split(self.key)  # update key
         return self.jax.random.uniform(key, shape=size)
 
@@ -476,7 +476,7 @@ class Backend:
         )
 
     def _randint_jax(self, high, size, low=0, dtype=None, device=None, key=None):
-        if key is not None:
+        if key is None:
             self.key, key = self.jax.random.split(self.key)  # update key
         return self.jax.random.randint(
             key, minval=low, maxval=high, shape=size, dtype=dtype
