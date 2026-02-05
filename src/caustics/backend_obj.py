@@ -68,6 +68,7 @@ class Backend:
         self.flatten = self._flatten_torch
         self.conv2d = self._conv2d_torch
         self.mean = self._mean_torch
+        self.std = self._std_torch
         self.sum = self._sum_torch
         self.max = self._max_torch
         self.topk = self._topk_torch
@@ -86,6 +87,9 @@ class Backend:
         self.unsqueeze = self._unsqueeze_torch
         self.gradient = self._gradient_torch
         self.detach = self._detach_torch
+        self.avg_pool2d = self._avg_pool2d_torch
+        self.rand = self._rand_torch
+        self.randint = self._randint_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -113,6 +117,7 @@ class Backend:
         self.flatten = self._flatten_jax
         self.conv2d = self._conv2d_jax
         self.mean = self._mean_jax
+        self.std = self._std_jax
         self.sum = self._sum_jax
         self.max = self._max_jax
         self.topk = self._topk_jax
@@ -131,6 +136,13 @@ class Backend:
         self.unsqueeze = self._unsqueeze_jax
         self.gradient = self._gradient_jax
         self.detach = self._detach_jax
+        self.avg_pool2d = self._avg_pool2d_jax
+        self.rand = self._rand_jax
+        self.randint = self._randint_jax
+
+        self.key = self.jax.random.key(
+            np.random.randint(0, 2**32 - 1)
+        )  # random initial state
 
     @property
     def array_type(self):
@@ -287,6 +299,12 @@ class Backend:
     def _mean_jax(self, array, dim=None):
         return self.module.mean(array, axis=dim)
 
+    def _std_torch(self, array, dim=None):
+        return self.module.std(array, dim=dim)
+
+    def _std_jax(self, array, dim=None):
+        return self.module.std(array, axis=dim)
+
     def _sum_torch(self, array, dim=None):
         return self.module.sum(array, dim=dim)
 
@@ -423,6 +441,43 @@ class Backend:
     def _detach_jax(self, array):
         return self.jax.lax.stop_gradient(array)
 
+    def _avg_pool2d_torch(self, array, kernel, stride=None, padding=0):
+        return self.module.nn.functional.avg_pool2d(
+            array,
+            kernel,
+            padding=padding,
+            stride=stride,
+        )
+
+    def _avg_pool2d_jax(self, array, kernel, stride, padding=0):
+        array = self.jax.lax.reduce_window(
+            array,
+            init_value=0,
+            computation=self.jax.lax.add,
+            window_dimensions=(1, 1, kernel, kernel),
+            window_strides=(1, 1, stride, stride),
+            padding="VALID",
+        )
+        return array / kernel**2
+
+    def _rand_torch(self, size):
+        return self.module.rand(size)
+
+    def _rand_jax(self, size):
+        self.key, subkey = self.jax.random.split(self.key)  # update key
+        return self.jax.random.uniform(subkey, shape=size)
+
+    def _randint_torch(self, high, size, low=0, dtype=None, device=None):
+        return self.module.randint(
+            low=low, high=high, size=size, dtype=dtype, device=device
+        )
+
+    def _randint_jax(self, high, size, low=0, dtype=None, device=None):
+        self.key, subkey = self.jax.random.split(self.key)  # update key
+        return self.jax.random.randint(
+            subkey, minval=low, maxval=high, shape=size, dtype=dtype
+        )
+
     def arange(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype, device=device)
 
@@ -557,6 +612,21 @@ class Backend:
 
     def flip(self, array, dims):
         return self.module.flip(array, dims)
+
+    def is_finite(self, array):
+        return self.module.isfinite(array)
+
+    def prod(self, array, dim=None):
+        return self.module.prod(array, dim)
+
+    def einsum(self, equation, *operands):
+        return self.module.einsum(equation, *operands)
+
+    def argmax(self, array, dim=None):
+        return self.module.argmax(array, dim)
+
+    def dot(self, *arrays):
+        return self.module.dot(*arrays)
 
     @property
     def linalg(self):

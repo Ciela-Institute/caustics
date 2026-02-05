@@ -1,15 +1,16 @@
 # mypy: disable-error-code="has-type,attr-defined,assignment"
-import torch
 from caskade import Param
+
+from .backend_obj import backend
 
 
 def e1e2_to_q(e1, e2):
-    c = torch.clamp((e1**2 + e2**2).sqrt(), 0, 1)
+    c = backend.clamp(backend.sqrt(e1**2 + e2**2), 0, 1)
     return (1 - c) / (1 + c)
 
 
 def e1e2_to_phi(e1, e2):
-    phi = 0.5 * torch.arctan2(e2, e1)
+    phi = 0.5 * backend.arctan2(e2, e1)
     return phi
 
 
@@ -20,18 +21,18 @@ def e1e2_to_qphi(e1, e2):
 
 
 def qphi_to_e1e2(q, phi):
-    e1 = (1 - q) * torch.cos(2 * phi) / (1 + q)
-    e2 = (1 - q) * torch.sin(2 * phi) / (1 + q)
+    e1 = (1 - q) * backend.cos(2 * phi) / (1 + q)
+    e2 = (1 - q) * backend.sin(2 * phi) / (1 + q)
     return e1, e2
 
 
 def c1c2_to_q(c1, c2):
-    c = (c1**2 + c2**2).sqrt()  # torch.clamp(, 0, 1)
+    c = backend.sqrt(c1**2 + c2**2)  # torch.clamp(, 0, 1)
     return 1 - c / (1 + c)
 
 
 def c1c2_to_phi(c1, c2):
-    phi = 0.5 * torch.arctan2(c2, c1)
+    phi = 0.5 * backend.arctan2(c2, c1)
     return phi
 
 
@@ -42,8 +43,8 @@ def c1c2_to_qphi(c1, c2):
 
 
 def qphi_to_c1c2(q, phi):
-    c1 = (1 - q) * torch.cos(2 * phi) / q
-    c2 = (1 - q) * torch.sin(2 * phi) / q
+    c1 = (1 - q) * backend.cos(2 * phi) / q
+    c2 = (1 - q) * backend.sin(2 * phi) / q
     return c1, c2
 
 
