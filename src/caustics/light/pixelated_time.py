@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
 from caskade import forward, Param
 
 from ..utils import interp3d
 from .base import Source, NameType
+from ..backend_obj import ArrayLike
 
 __all__ = ("PixelatedTime",)
 
@@ -22,27 +22,27 @@ class PixelatedTime(Source):
 
     Attributes
     ----------
-    x0 : Tensor, optional
+    x0 : ArrayLike, optional
         The x-coordinate of the source image's center.
 
        *Unit: arcsec*
 
-    y0 : Tensor, optional
+    y0 : ArrayLike, optional
         The y-coordinate of the source image's center.
 
         *Unit: arcsec*
 
-    cube : Tensor, optional
+    cube : ArrayLike, optional
         The source image cube from which brightness values will be interpolated.
 
         *Unit: flux*
 
-    pixelscale : Tensor, optional
+    pixelscale : ArrayLike, optional
         The pixelscale of the source image in the lens plane.
 
         *Unit: arcsec/pixel*
 
-    t_end : Tensor, optional
+    t_end : ArrayLike, optional
         The end time of the source image cube. Time in the cube is assumed to be
         in the range (0, t_end) in seconds.
 
@@ -56,35 +56,35 @@ class PixelatedTime(Source):
     def __init__(
         self,
         cube: Annotated[
-            Optional[Tensor],
+            Optional[ArrayLike],
             "The source image cube from which brightness values will be interpolated.",
             True,
             "flux",
         ] = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the source image's center.",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the source image's center.",
             True,
         ] = None,
         pixelscale: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The pixelscale of the source image in the lens plane",
             False,
             "arcsec/pixel",
         ] = None,
         t_end: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The end time of the source image cube.",
             False,
             "seconds",
         ] = None,
         scale: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "A scale factor to multiply by the image",
             True,
             "flux",
@@ -102,20 +102,20 @@ class PixelatedTime(Source):
         name : str
             The name of the source.
 
-        x0 : Tensor, optional
+        x0 : ArrayLike, optional
             The x-coordinate of the source image's center.
 
             *Unit: arcsec*
 
-        y0 : Tensor, optional
+        y0 : ArrayLike, optional
             The y-coordinate of the source image's center.
 
             *Unit: arcsec*
 
-        cube : Tensor, optional
+        cube : ArrayLike, optional
             The source cube from which brightness values will be interpolated. Note the indexing of the cube should be cube[time][y][x]
 
-        pixelscale : Tensor, optional
+        pixelscale : ArrayLike, optional
             The pixelscale of the source image in the lens plane.
 
             *Unit: arcsec/pixel*
@@ -146,10 +146,10 @@ class PixelatedTime(Source):
         x,
         y,
         t,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        cube: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        cube: Annotated[ArrayLike, "Param"],
+        scale: Annotated[ArrayLike, "Param"],
     ):
         """
         Implements the `brightness` method for `Pixelated`.
@@ -158,19 +158,19 @@ class PixelatedTime(Source):
 
         Parameters
         ----------
-        x : Tensor
+        x : ArrayLike
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        y : Tensor
+        y : ArrayLike
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        t : Tensor
+        t : ArrayLike
             The time coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
@@ -178,7 +178,7 @@ class PixelatedTime(Source):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The brightness of the source at the given coordinate(s).
             The brightness is determined by interpolating values
             from the source image.

@@ -1,8 +1,9 @@
 from abc import abstractmethod
 from typing import Optional, Annotated
 
-from torch import Tensor
 from caskade import Module, forward
+
+from ..backend_obj import ArrayLike
 
 __all__ = ("Source",)
 
@@ -27,7 +28,7 @@ class Source(Module):
 
     @abstractmethod
     @forward
-    def brightness(self, x: Tensor, y: Tensor, *args, **kwargs) -> Tensor:
+    def brightness(self, x: ArrayLike, y: ArrayLike, *args, **kwargs) -> ArrayLike:
         """
         Abstract method that calculates the brightness of the source at the
         given coordinates. This method is expected to be implemented in any
@@ -35,13 +36,13 @@ class Source(Module):
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
@@ -49,7 +50,7 @@ class Source(Module):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The brightness of the source at the given coordinate(s). The exact
             form of the output will depend on the specific implementation in the
             derived class.

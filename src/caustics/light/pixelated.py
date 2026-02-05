@@ -1,11 +1,11 @@
 # mypy: disable-error-code="union-attr"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
 from caskade import forward, Param
 
-from ..utils import interp2d
 from .base import Source, NameType
+from ..backend_obj import ArrayLike
+from ..utils import interp2d
 
 __all__ = ("Pixelated",)
 
@@ -23,22 +23,22 @@ class Pixelated(Source):
 
     Attributes
     ----------
-    x0 : Tensor, optional
+    x0 : ArrayLike, optional
         The x-coordinate of the source image's center.
 
        *Unit: arcsec*
 
-    y0 : Tensor, optional
+    y0 : ArrayLike, optional
         The y-coordinate of the source image's center.
 
         *Unit: arcsec*
 
-    image : Tensor, optional
+    image : ArrayLike, optional
         The source image from which brightness values will be interpolated.
 
         *Unit: flux*
 
-    pixelscale : Tensor, optional
+    pixelscale : ArrayLike, optional
         The pixelscale of the source image in the lens plane.
 
         *Unit: arcsec/pixel*
@@ -51,29 +51,29 @@ class Pixelated(Source):
     def __init__(
         self,
         image: Annotated[
-            Optional[Tensor],
+            Optional[ArrayLike],
             "The source image from which brightness values will be interpolated.",
             True,
             "flux",
         ] = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the source image's center.",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the source image's center.",
             True,
         ] = None,
         pixelscale: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The pixelscale of the source image in the lens plane",
             True,
             "arcsec/pixel",
         ] = None,
         scale: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "A scale factor to multiply by the image",
             True,
             "flux",
@@ -91,20 +91,20 @@ class Pixelated(Source):
         name : str
             The name of the source.
 
-        x0 : Tensor, optional
+        x0 : ArrayLike, optional
             The x-coordinate of the source image's center.
 
             *Unit: arcsec*
 
-        y0 : Tensor, optional
+        y0 : ArrayLike, optional
             The y-coordinate of the source image's center.
 
             *Unit: arcsec*
 
-        image : Tensor, optional
+        image : ArrayLike, optional
             The source image from which brightness values will be interpolated.
 
-        pixelscale : Tensor, optional
+        pixelscale : ArrayLike, optional
             The pixelscale of the source image in the lens plane.
 
             *Unit: arcsec/pixel*
@@ -135,11 +135,11 @@ class Pixelated(Source):
         self,
         x,
         y,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        image: Annotated[Tensor, "Param"],
-        pixelscale: Annotated[Tensor, "Param"],
-        scale: Annotated[Tensor, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        image: Annotated[ArrayLike, "Param"],
+        pixelscale: Annotated[ArrayLike, "Param"],
+        scale: Annotated[ArrayLike, "Param"],
         padding_mode: str = "zeros",
     ):
         """
@@ -149,13 +149,13 @@ class Pixelated(Source):
 
         Parameters
         ----------
-        x : Tensor
+        x : ArrayLike
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        y : Tensor
+        y : ArrayLike
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
@@ -163,7 +163,7 @@ class Pixelated(Source):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The brightness of the source at the given coordinate(s).
             The brightness is determined by interpolating values
             from the source image.
