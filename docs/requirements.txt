@@ -1,6 +1,6 @@
 emcee
 ipywidgets
-jupyter-book
+jupyter-book<2.0
 matplotlib
 pydantic>=2.6.1,<3
 pyro-ppl

@@ -98,8 +98,8 @@ class ExternalShear(ThinLens):
         self._parametrization = "cartesian"
         self.parametrization = parametrization
         if self.parametrization == "angular":
-            self.gamma = kwargs.get("gamma", None)
-            self.phi = kwargs.get("phi", None)
+            self.gamma.value = kwargs.get("gamma", None)
+            self.phi.value = kwargs.get("phi", None)
         self.s = s
 
     @property
@@ -142,13 +142,15 @@ class ExternalShear(ThinLens):
             self.gamma_2.link(self.gamma)
             self.gamma_2.link(self.phi)
         if value == "cartesian" and self._parametrization != "cartesian":
-            self.gamma_1 = None
-            self.gamma_2 = None
+            self.gamma_1.value = None
+            self.gamma_2.value = None
             try:
                 if self.gamma.static:
                     warn(
                         f"Parameter {self.gamma.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.gamma.name} be dynamic when changing parametrizations.",
                     )
+                self.gamma_1.unlink(self.gamma)
+                self.gamma_2.unlink(self.gamma)
                 del self.gamma
             except AttributeError:
                 pass
@@ -157,6 +159,8 @@ class ExternalShear(ThinLens):
                     warn(
                         f"Parameter {self.phi.name} was static, value now overridden by new {value} parametrization. To remove this warning, have {self.phi.name} be dynamic when changing parametrizations.",
                     )
+                self.gamma_1.unlink(self.phi)
+                self.gamma_2.unlink(self.phi)
                 del self.phi
             except AttributeError:
                 pass

@@ -1,3 +1,4 @@
+# mypy: disable-error-code="union-attr"
 from scipy.fft import next_fast_len
 from typing import Optional, Annotated, Literal, Union
 
