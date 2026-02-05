@@ -85,6 +85,7 @@ class Backend:
         self.add_at_indices = self._add_at_indices_torch
         self.and_at_indices = self._and_at_indices_torch
         self.unsqueeze = self._unsqueeze_torch
+        self.cat = self._cat_torch
         self.gradient = self._gradient_torch
         self.detach = self._detach_torch
         self.avg_pool2d = self._avg_pool2d_torch
@@ -135,6 +136,7 @@ class Backend:
         self.add_at_indices = self._add_at_indices_jax
         self.and_at_indices = self._and_at_indices_jax
         self.unsqueeze = self._unsqueeze_jax
+        self.cat = self._cat_jax
         self.gradient = self._gradient_jax
         self.detach = self._detach_jax
         self.avg_pool2d = self._avg_pool2d_jax
@@ -429,6 +431,12 @@ class Backend:
 
     def _unsqueeze_jax(self, array, dim):
         return self.module.expand_dims(array, axis=dim)
+
+    def _cat_torch(self, array, dim=0):
+        return self.module.cat(array, dim=dim)
+
+    def _cat_jax(self, array, dim=0):
+        return self.module.concatenate(array, axis=dim)
 
     def _gradient_torch(self, array, spacing=1, dim=None):
         return self.module.gradient(array, spacing=spacing, dim=dim, edge_order=1)
