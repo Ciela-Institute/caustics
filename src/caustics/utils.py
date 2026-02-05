@@ -808,7 +808,7 @@ def _h_poly(t):
     """
 
     tt = t[None, :] ** (backend.arange(4, device=t.device)[:, None])
-    A = backend.as_tensor(
+    A = backend.as_array(
         [[1, 0, -3, 2], [0, 1, -2, 1], [0, 0, 3, -2], [0, 0, -1, 1]],
         dtype=t.dtype,
         device=t.device,
@@ -932,12 +932,12 @@ def interp2d(
 
     if method == "nearest":
         result = im[
-            backend.clamp(backend.to(backend.round(y), dtype=backend.long), 0, h - 1),
-            backend.clamp(backend.to(backend.round(x), dtype=backend.long), 0, w - 1),
+            backend.clamp(backend.long(backend.round(y)), 0, h - 1),
+            backend.clamp(backend.long(backend.round(x)), 0, w - 1),
         ]
     elif method == "linear":
-        x0 = backend.clamp(backend.to(backend.floor(x), dtype=backend.long), 0, w - 2)
-        y0 = backend.clamp(backend.to(backend.floor(y), dtype=backend.long), 0, h - 2)
+        x0 = backend.clamp(backend.long(backend.floor(x)), 0, w - 2)
+        y0 = backend.clamp(backend.long(backend.floor(y)), 0, h - 2)
         x1 = x0 + 1
         y1 = y0 + 1
 
@@ -1026,14 +1026,14 @@ def interp3d(
 
     if method == "nearest":
         result = cu[
-            backend.clamp(backend.to(backend.round(t), dtype=backend.long), 0, d - 1),
-            backend.clamp(backend.to(backend.round(y), dtype=backend.long), 0, h - 1),
-            backend.clamp(backend.to(backend.round(x), dtype=backend.long), 0, w - 1),
+            backend.clamp(backend.long(backend.round(t)), 0, d - 1),
+            backend.clamp(backend.long(backend.round(y)), 0, h - 1),
+            backend.clamp(backend.long(backend.round(x)), 0, w - 1),
         ]
     elif method == "linear":
-        x0 = backend.clamp(backend.to(backend.floor(x), dtype=backend.long), 0, w - 2)
-        y0 = backend.clamp(backend.to(backend.floor(y), dtype=backend.long), 0, h - 2)
-        t0 = backend.clamp(backend.to(backend.floor(t), dtype=backend.long), 0, d - 2)
+        x0 = backend.clamp(backend.long(backend.floor(x)), 0, w - 2)
+        y0 = backend.clamp(backend.long(backend.floor(y)), 0, h - 2)
+        t0 = backend.clamp(backend.long(backend.floor(t)), 0, d - 2)
         x1 = x0 + 1
         y1 = y0 + 1
         t1 = t0 + 1
@@ -1241,8 +1241,8 @@ def interp_bicubic(
         dZ12 = _dZ12
 
     # Extract pixel values
-    x0 = backend.to(backend.floor(x), dtype=backend.long)
-    y0 = backend.to(backend.floor(y), dtype=backend.long)
+    x0 = backend.long(backend.floor(x))
+    y0 = backend.long(backend.floor(y))
     x1 = x0 + 1
     y1 = y0 + 1
     x0 = x0.clamp(0, w - 2)
@@ -1272,7 +1272,7 @@ def interp_bicubic(
 
     # Compute interpolation coefficients
     c = (
-        backend.as_tensor(BC, dtype=v.dtype, device=v.device) @ backend.unsqueeze(v, -1)
+        backend.as_array(BC, dtype=v.dtype, device=v.device) @ backend.unsqueeze(v, -1)
     ).reshape(-1, 4, 4)
 
     # Compute interpolated values

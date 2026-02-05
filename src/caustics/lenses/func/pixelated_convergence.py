@@ -69,7 +69,7 @@ def build_window_pixelated_convergence(window, kernel_shape):
         indexing="xy",
     )
     r = backend.sqrt(x**2 + y**2)
-    return backend.clip((1 - r) / window, 0, 1)
+    return backend.clamp((1 - r) / window, 0, 1)
 
 
 def _fft_size(n_pix):

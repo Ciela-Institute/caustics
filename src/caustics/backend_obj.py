@@ -272,10 +272,10 @@ class Backend:
     def _roll_jax(self, array, shifts, dims):
         return self.module.roll(array, shifts, axis=dims)
 
-    def _clamp_torch(self, array, min, max):
+    def _clamp_torch(self, array, min=None, max=None):
         return self.module.clamp(array, min, max)
 
-    def _clamp_jax(self, array, min, max):
+    def _clamp_jax(self, array, min=None, max=None):
         return self.module.clip(array, min, max)
 
     def _long_torch(self, array):
@@ -351,11 +351,11 @@ class Backend:
     def _lgamma_jax(self, array):
         return self.jax.lax.lgamma(array)
 
-    def _grad_torch(self, func):
-        return self.module.func.grad(func)
+    def _grad_torch(self, func, argnums=0):
+        return self.module.func.grad(func, argnums=argnums)
 
-    def _grad_jax(self, func):
-        return self.jax.grad(func)
+    def _grad_jax(self, func, argnums=0):
+        return self.jax.grad(func, argnums=argnums)
 
     def _jacobian_torch(
         self, func, x, strategy="forward-mode", vectorize=True, create_graph=False
@@ -375,17 +375,17 @@ class Backend:
             return self.jax.jacfwd(func)(x)
         return self.jax.jacrev(func)(x)
 
-    def _jacfwd_torch(self, func):
-        return self.module.func.jacfwd(func)
+    def _jacfwd_torch(self, func, argnums=0, randomness="error"):
+        return self.module.func.jacfwd(func, argnums=argnums, randomness=randomness)
 
-    def _jacfwd_jax(self, func):
-        return self.jax.jacfwd(func)
+    def _jacfwd_jax(self, func, argnums=0, randomness="error"):
+        return self.jax.jacfwd(func, argnums=argnums)
 
-    def _hessian_torch(self, func):
-        return self.module.func.hessian(func)
+    def _hessian_torch(self, func, argnums=0):
+        return self.module.func.hessian(func, argnums=argnums)
 
-    def _hessian_jax(self, func):
-        return self.jax.hessian(func)
+    def _hessian_jax(self, func, argnums=0):
+        return self.jax.hessian(func, argnums=argnums)
 
     def _vmap_torch(self, *args, **kwargs):
         return self.module.vmap(*args, **kwargs)
@@ -638,6 +638,9 @@ class Backend:
 
     def prod(self, array, dim=None):
         return self.module.prod(array, dim)
+
+    def cumprod(self, array, dim=None):
+        return self.module.cumprod(array, dim)
 
     def einsum(self, equation, *operands):
         return self.module.einsum(equation, *operands)

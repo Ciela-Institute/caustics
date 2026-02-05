@@ -162,7 +162,7 @@ def _g_nfw(x):
     x_lt1 = backend.clamp(x, max=1 - 1e-6)
 
     g_pos = backend.arccos(1 / x_gt1) ** 2
-    g_neg = backend.arccosh(-(1 / x_lt1)) ** 2
+    g_neg = -backend.arccosh(1 / x_lt1) ** 2
     term_2 = backend.where(
         x > 1, g_pos, backend.where(x < 1, g_neg, backend.zeros_like(x))
     )
