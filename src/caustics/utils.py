@@ -672,7 +672,7 @@ def gaussian_quadrature_grid(
 
     # collect gaussian quadrature weights
     abscissaX, abscissaY, weight = _quad_table(
-        quad_level, pixelscale, dtype=X.dtype, device=X.device
+        quad_level, pixelscale, dtype=X.dtype, device=backend.device(X)
     )
 
     # Gaussian quadrature evaluation points
@@ -807,11 +807,11 @@ def _h_poly(t):
 
     """
 
-    tt = t[None, :] ** (backend.arange(4, device=t.device)[:, None])
+    tt = t[None, :] ** (backend.arange(4, device=backend.device(t))[:, None])
     A = backend.as_array(
         [[1, 0, -3, 2], [0, 1, -2, 1], [0, 0, 3, -2], [0, 0, -1, 1]],
         dtype=t.dtype,
-        device=t.device,
+        device=backend.device(t),
     )
     return A @ tt
 
@@ -848,7 +848,7 @@ def interp1d(
 
     """
     m = (y[1:] - y[:-1]) / (x[1:] - x[:-1])
-    m = backend.cat([m[[0]], (m[1:] + m[:-1]) / 2, m[[-1]]])
+    m = backend.cat([m[0:1], (m[1:] + m[:-1]) / 2, m[-1:]])
     idxs = backend.searchsorted(x[:-1], xs) - 1
     dx = x[idxs + 1] - x[idxs]
     hh = _h_poly((xs - x[idxs]) / dx)
@@ -1108,19 +1108,23 @@ def bicubic_kernels(Z, d1, d2):
 
     # First derivatives on first axis
     # df/dx = (f(x+h, y) - f(x-h, y)) / 2h
-    dZ1[1:-1] = (Z[:-2] - Z[2:]) / (2 * d1)
-    dZ1[0] = (Z[0] - Z[1]) / d1
-    dZ1[-1] = (Z[-2] - Z[-1]) / d1
+    dZ1 = backend.fill_at_indices(dZ1, slice(1, -1), (Z[:-2] - Z[2:]) / (2 * d1))
+    dZ1 = backend.fill_at_indices(dZ1, 0, (Z[0] - Z[1]) / d1)
+    dZ1 = backend.fill_at_indices(dZ1, -1, (Z[-2] - Z[-1]) / d1)
     # First derivatives on second axis
     # df/dy = (f(x,y+h) - f(x,y-h)) / h
-    dZ2[:, 1:-1] = (Z[:, :-2] - Z[:, 2:]) / (2 * d2)
-    dZ2[:, 0] = (Z[:, 0] - Z[:, 1]) / d2
-    dZ2[:, -1] = (Z[:, -2] - Z[:, -1]) / d2
+    dZ2 = backend.fill_at_indices(
+        dZ2, (slice(None), slice(1, -1)), (Z[:, :-2] - Z[:, 2:]) / (2 * d2)
+    )
+    dZ2 = backend.fill_at_indices(dZ2, (slice(None), 0), (Z[:, 0] - Z[:, 1]) / d2)
+    dZ2 = backend.fill_at_indices(dZ2, (slice(None), -1), (Z[:, -2] - Z[:, -1]) / d2)
 
     # Second derivatives across both axes
     # d2f/dxdy = (f(x-h, y-k) - f(x-h, y+k) - f(x+h, y-k) + f(x+h, y+k)) / (4hk)
-    dZ12[1:-1, 1:-1] = (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (
-        4 * d1 * d2
+    dZ12 = backend.fill_at_indices(
+        dZ12,
+        (slice(1, -1), slice(1, -1)),
+        (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (4 * d1 * d2),
     )
     return dZ1, dZ2, dZ12
 
@@ -1245,10 +1249,10 @@ def interp_bicubic(
     y0 = backend.long(backend.floor(y))
     x1 = x0 + 1
     y1 = y0 + 1
-    x0 = x0.clamp(0, w - 2)
-    x1 = x1.clamp(1, w - 1)
-    y0 = y0.clamp(0, h - 2)
-    y1 = y1.clamp(1, h - 1)
+    x0 = backend.clamp(x0, 0, w - 2)
+    x1 = backend.clamp(x1, 1, w - 1)
+    y0 = backend.clamp(y0, 0, h - 2)
+    y1 = backend.clamp(y1, 1, h - 1)
 
     # Build interpolation vector
     v = []
@@ -1272,7 +1276,8 @@ def interp_bicubic(
 
     # Compute interpolation coefficients
     c = (
-        backend.as_array(BC, dtype=v.dtype, device=v.device) @ backend.unsqueeze(v, -1)
+        backend.as_array(BC, dtype=v.dtype, device=backend.device(v))
+        @ backend.unsqueeze(v, -1)
     ).reshape(-1, 4, 4)
 
     # Compute interpolated values
@@ -1498,7 +1503,7 @@ def cluster_means(xs: ArrayLike, k: int, key=None):
     """
     b = len(xs)
     mean_idxs = [
-        int(backend.randint(high=b, size=(), device=xs.device, key=key).item())
+        int(backend.randint(high=b, size=(), device=backend.device(xs), key=key).item())
     ]
     means = [xs[mean_idxs[0]]]
     for _ in range(1, k):
@@ -1533,9 +1538,9 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     J = backend.jacfwd(f)(X)
     J = backend.to(J, dtype=X.dtype)
     if Cinv.ndim == 1:
-        chi2 = (dY**2 * Cinv).sum(-1)
+        chi2 = backend.sum(dY**2 * Cinv, -1)
     else:
-        chi2 = (dY @ Cinv @ dY).sum(-1)
+        chi2 = backend.sum(dY @ Cinv @ dY, -1)
 
     # Gradient
     if Cinv.ndim == 1:
@@ -1548,7 +1553,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
         hess = J.T @ (J * Cinv.reshape(-1, 1))
     else:
         hess = J.T @ Cinv @ J
-    hess_perturb = L * backend.eye(hess.shape[0], device=hess.device)
+    hess_perturb = L * backend.eye(hess.shape[0], device=backend.device(hess))
     hess = hess + hess_perturb
 
     # Step
@@ -1558,9 +1563,9 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     fYnew = f(X + h)
     dYnew = Y - fYnew
     if Cinv.ndim == 1:
-        chi2_new = (dYnew**2 * Cinv).sum(-1)
+        chi2_new = backend.sum(dYnew**2 * Cinv, -1)
     else:
-        chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
+        chi2_new = backend.sum(dYnew @ Cinv @ dYnew, -1)
 
     # Test
     expected_improvement = backend.dot(h, hess @ h) + 2 * backend.dot(h, grad)
@@ -1602,7 +1607,7 @@ def batch_lm(
         Cinv = 1 / C
     else:
         Cinv = backend.linalg.inv(C)
-    Cinv = Cinv.to(dtype=X.dtype)
+    Cinv = backend.to(Cinv, dtype=X.dtype)
 
     v_lm_step = backend.vmap(
         partial(
@@ -1615,11 +1620,11 @@ def batch_lm(
             L_max=L_max,
         )
     )
-    L = L * backend.ones(B, device=X.device, dtype=X.dtype)
+    L = L * backend.ones(B, device=backend.device(X), dtype=X.dtype)
     for _ in range(max_iter):
         Xnew, L, C = v_lm_step(X, Y, Cinv, L)
         if (
-            backend.all((Xnew - X).abs() < stopping)
+            backend.all(backend.abs(Xnew - X) < stopping)
             and backend.sum(L < 1e-2).item() > B / 3
         ):
             break

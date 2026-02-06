@@ -1,14 +1,19 @@
-import torch
 import numpy as np
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics import test as mini_test
+from caustics.backend_obj import backend
+
+import pytest
 
 
 def test(device):
-    z_l = torch.tensor(0.5, dtype=torch.float32, device=device)
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
+    if backend.backend == "jax":
+        pytest.skip("")
+
+    z_l = backend.as_array(0.5, dtype=backend.float32, device=device)
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
 
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -17,18 +22,18 @@ def test(device):
         cosmology=cosmology,
         z_l=z_l,
         z_s=z_s,
-        x0=torch.tensor(0.0),
-        y0=torch.tensor(0.0),
-        q=torch.tensor(0.4),
-        phi=torch.tensor(np.pi / 5),
-        Rein=torch.tensor(1.0),
+        x0=backend.as_array(0.0),
+        y0=backend.as_array(0.0),
+        q=backend.as_array(0.4),
+        phi=backend.as_array(np.pi / 5),
+        Rein=backend.as_array(1.0),
     )
     # Send to device
     lens = lens.to(device)
 
     # Point in the source plane
-    sp_x = torch.tensor(0.2, device=device)
-    sp_y = torch.tensor(0.2, device=device)
+    sp_x = backend.as_array(0.2, device=device)
+    sp_y = backend.as_array(0.2, device=device)
 
     # Points in image plane
     x, y = lens.forward_raytrace(sp_x, sp_y)
@@ -36,13 +41,13 @@ def test(device):
     # Raytrace to check
     bx, by = lens.raytrace(x, y)
 
-    assert torch.all((sp_x - bx).abs() < 1e-3)
-    assert torch.all((sp_y - by).abs() < 1e-3)
+    assert backend.all(backend.abs(sp_x - bx) < 1e-3)
+    assert backend.all(backend.abs(sp_y - by) < 1e-3)
 
 
 def test_magnification(device):
-    z_l = torch.tensor(0.5, dtype=torch.float32, device=device)
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
+    z_l = backend.as_array(0.5, dtype=backend.float32, device=device)
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
 
     # Model
     cosmology = FlatLambdaCDM(name="cosmo")
@@ -51,18 +56,18 @@ def test_magnification(device):
         cosmology=cosmology,
         z_l=z_l,
         z_s=z_s,
-        x0=torch.tensor(0.0),
-        y0=torch.tensor(0.0),
-        q=torch.tensor(0.4),
-        phi=torch.tensor(np.pi / 5),
-        Rein=torch.tensor(1.0),
+        x0=backend.as_array(0.0),
+        y0=backend.as_array(0.0),
+        q=backend.as_array(0.4),
+        phi=backend.as_array(np.pi / 5),
+        Rein=backend.as_array(1.0),
     )
     # Send to device
     lens = lens.to(device)
 
     # Point in image plane
-    x = torch.tensor(0.1, device=device)
-    y = torch.tensor(0.1, device=device)
+    x = backend.as_array(0.1, device=device)
+    y = backend.as_array(0.1, device=device)
 
     mag = lens.magnification(x, y)
 
@@ -70,14 +75,14 @@ def test_magnification(device):
     assert mag.item() > 0
 
     # grid in image plane
-    x = torch.linspace(-0.1, 0.1, 10, device=device)
-    y = torch.linspace(-0.1, 0.1, 10, device=device)
-    x, y = torch.meshgrid(x, y, indexing="ij")
+    x = backend.linspace(-0.1, 0.1, 10, device=device)
+    y = backend.linspace(-0.1, 0.1, 10, device=device)
+    x, y = backend.meshgrid(x, y, indexing="ij")
 
     mag = lens.magnification(x, y)
 
-    assert np.all(np.isfinite(mag.detach().cpu().numpy()))
-    assert np.all(mag.detach().cpu().numpy() > 0)
+    assert np.all(np.isfinite(backend.to_numpy(mag)))
+    assert np.all(backend.to_numpy(mag) > 0)
 
 
 def test_quicktest(device):

@@ -1,9 +1,9 @@
-import torch
 import numpy as np
 import lenstronomy.Util.param_util as param_util
 from lenstronomy.LensModel.lens_model import LensModel
 
 import caustics
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -12,12 +12,14 @@ import pytest
 @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi / 2])
 @pytest.mark.parametrize("bx,by", [(0.1, -0.05), (0.2, 0.1), (0.0, 0.0)])
 def test_time_delay_pointsource(q, phi, bx, by):
+    if backend.backend == "jax":
+        pytest.skip("")
 
     # configuration parameters
-    bx = torch.tensor(bx)
-    by = torch.tensor(by)
-    z_l = torch.tensor(0.5)
-    z_s = torch.tensor(1.0)
+    bx = backend.as_array(bx)
+    by = backend.as_array(by)
+    z_l = backend.as_array(0.5)
+    z_s = backend.as_array(1.0)
 
     # Define caustics lens
     cosmo = caustics.FlatLambdaCDM(name="cosmo")
@@ -35,14 +37,14 @@ def test_time_delay_pointsource(q, phi, bx, by):
     kwargs_ls = [{"theta_E": 1.0, "e1": e1, "e2": e2, "center_x": 0.0, "center_y": 0.0}]
 
     # Compute time delay caustics
-    tdc = lens.time_delay(x, y).detach().cpu().numpy()
+    tdc = backend.to_numpy(lens.time_delay(x, y))
     tdc = tdc - np.min(tdc)
     np.sort(tdc)
 
     # Compute time delay lenstronomy
     time_delays = lens_ls.arrival_time(
-        x.detach().cpu().numpy(),
-        y.detach().cpu().numpy(),
+        backend.to_numpy(x),
+        backend.to_numpy(y),
         kwargs_ls,
     )
     time_delays = time_delays - np.min(time_delays)

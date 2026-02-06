@@ -95,7 +95,7 @@ def remove_triangle_duplicates(p):
         # Compare current triangle with all triangles in the unique list
         if i == 0 or not backend.any(batch_triangle_equals(p[i], unique_triangles)):
             unique_triangles = backend.concatenate(
-                (unique_triangles, p[i].unsqueeze(0)), dim=0
+                (unique_triangles, backend.unsqueeze(p[i], 0)), dim=0
             )
 
     return unique_triangles
@@ -215,7 +215,7 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
         # Triangles now smaller than resolution, try to find exact points
         if triangle_area(E[0]) < epsilon**2:
             # Rootfind the source plane point in the triangle
-            Emid = E.sum(dim=1) / 3
+            Emid = backend.sum(E, dim=1) / 3
             Emid = forward_raytrace_rootfind(
                 Emid[..., 0], Emid[..., 1], s[0], s[1], raytrace
             )

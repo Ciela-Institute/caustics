@@ -1,22 +1,21 @@
 from math import pi
 
-import torch
-
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane
 from caustics.utils import meshgrid
+from caustics.backend_obj import backend
 
 
 def test_jacobian_autograd_vs_finitediff(device):
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
-    z_s = torch.tensor(1.2, device=device)
+    z_s = backend.as_array(1.2, device=device)
     lens = SIE(name="sie", cosmology=cosmology, z_s=z_s)
     lens.to(device=device)
     thx, thy = meshgrid(0.01, 20, device=device)
 
     # Parameters
-    x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4], device=device)
+    x = backend.as_array([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4], device=device)
 
     # Evaluate Jacobian
     J_autograd = lens.jacobian_lens_equation(thx, thy, x)
@@ -25,20 +24,19 @@ def test_jacobian_autograd_vs_finitediff(device):
         thy,
         x,
         method="finitediff",
-        pixelscale=torch.tensor(0.01, device=device),
+        pixelscale=backend.as_array(0.01, device=device),
     )
 
-    assert (
-        torch.sum(((J_autograd - J_finitediff) / J_autograd).abs() < 1e-3)
-        > 0.8 * J_autograd.numel()
-    )
+    assert backend.sum(
+        backend.abs((J_autograd - J_finitediff) / J_autograd) < 1e-3
+    ) > 0.8 * backend.numel(J_autograd)
 
 
 def test_multiplane_jacobian(device):
     # Setup
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
-    cosmology.to(dtype=torch.float32, device=device)
+    cosmology.to(dtype=backend.float32, device=device)
 
     # Parameters
     xs = [
@@ -46,7 +44,9 @@ def test_multiplane_jacobian(device):
         [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
         [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
     ]
-    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32, device=device)
+    x = backend.as_array(
+        [p for _xs in xs for p in _xs], dtype=backend.float32, device=device
+    )
 
     lens = Multiplane(
         name="multiplane",
@@ -58,16 +58,16 @@ def test_multiplane_jacobian(device):
     thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
-    x = torch.tensor(xs, device=device).flatten()
+    x = backend.flatten(backend.as_array(xs, device=device))
     A = lens.jacobian_lens_equation(thx, thy, x)
     assert A.shape == (10, 10, 2, 2)
 
 
 def test_multiplane_jacobian_autograd_vs_finitediff(device):
     # Setup
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
-    cosmology.to(dtype=torch.float32, device=device)
+    cosmology.to(dtype=backend.float32, device=device)
 
     # Parameters
     xs = [
@@ -75,7 +75,9 @@ def test_multiplane_jacobian_autograd_vs_finitediff(device):
         [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
         [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
     ]
-    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32, device=device)
+    x = backend.as_array(
+        [p for _xs in xs for p in _xs], dtype=backend.float32, device=device
+    )
 
     lens = Multiplane(
         name="multiplane",
@@ -87,25 +89,24 @@ def test_multiplane_jacobian_autograd_vs_finitediff(device):
     thx, thy = meshgrid(0.01, 10, device=device)
 
     # Parameters
-    x = torch.tensor(xs, device=device).flatten()
+    x = backend.flatten(backend.as_array(xs, device=device))
 
     # Evaluate Jacobian
     J_autograd = lens.jacobian_lens_equation(thx, thy, x)
     J_finitediff = lens.jacobian_lens_equation(
-        thx, thy, x, method="finitediff", pixelscale=torch.tensor(0.01)
+        thx, thy, x, method="finitediff", pixelscale=backend.as_array(0.01)
     )
 
-    assert (
-        torch.sum(((J_autograd - J_finitediff) / J_autograd).abs() < 1e-2)
-        > 0.5 * J_autograd.numel()
-    )
+    assert backend.sum(
+        backend.abs((J_autograd - J_finitediff) / J_autograd) < 1e-2
+    ) > 0.5 * backend.numel(J_autograd)
 
 
 def test_multiplane_effective_convergence(device):
     # Setup
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
-    cosmology.to(dtype=torch.float32, device=device)
+    cosmology.to(dtype=backend.float32, device=device)
 
     # Parameters
     xs = [
@@ -113,7 +114,9 @@ def test_multiplane_effective_convergence(device):
         [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
         [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
     ]
-    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32, device=device)
+    x = backend.as_array(
+        [p for _xs in xs for p in _xs], dtype=backend.float32, device=device
+    )
 
     lens = Multiplane(
         name="multiplane",
@@ -125,7 +128,7 @@ def test_multiplane_effective_convergence(device):
     thx, thy = meshgrid(0.1, 10, device=device)
 
     # Parameters
-    x = torch.tensor(xs, device=device).flatten()
+    x = backend.flatten(backend.as_array(xs, device=device))
     C = lens.effective_convergence_div(thx, thy, x)
     assert C.shape == (10, 10)
     curl = lens.effective_convergence_curl(thx, thy, x)

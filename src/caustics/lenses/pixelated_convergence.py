@@ -398,6 +398,6 @@ class PixelatedConvergence(ThinLens):
         fov_y = convergence_map.shape[0] * self.pixelscale
         return interp2d(
             convergence_map * scale,
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1) / fov_y * 2,
         ).reshape(x.shape)

@@ -5,7 +5,7 @@ from caskade import forward, Param
 
 from ..utils import interp3d
 from .base import Source, NameType
-from ..backend_obj import ArrayLike
+from ..backend_obj import ArrayLike, backend
 
 __all__ = ("PixelatedTime",)
 
@@ -190,7 +190,7 @@ class PixelatedTime(Source):
         fov_y = self.pixelscale * cube.shape[1]
         return interp3d(
             cube * scale,
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
-            (t - self.t_end / 2).view(-1) / self.t_end * 2,
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1) / fov_y * 2,
+            backend.view(t - self.t_end / 2, -1) / self.t_end * 2,
         ).reshape(x.shape)

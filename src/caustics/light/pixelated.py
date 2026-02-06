@@ -4,7 +4,7 @@ from typing import Optional, Union, Annotated
 from caskade import forward, Param
 
 from .base import Source, NameType
-from ..backend_obj import ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..utils import interp2d
 
 __all__ = ("Pixelated",)
@@ -175,7 +175,9 @@ class Pixelated(Source):
         fov_y = pixelscale * image.shape[0]
         return interp2d(
             image * scale,
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,  # make coordinates bounds at half the fov
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1)
+            / fov_y
+            * 2,  # make coordinates bounds at half the fov
             padding_mode=padding_mode,
         ).reshape(x.shape)

@@ -150,8 +150,8 @@ class PixelatedPotential(ThinLens):
         return tuple(
             alpha.reshape(x.shape) / pixelscale
             for alpha in interp_bicubic(
-                (x - x0).view(-1) / fov_x * 2,
-                (y - y0).view(-1) / fov_y * 2,
+                backend.view(x - x0, -1) / fov_x * 2,
+                backend.view(y - y0, -1) / fov_y * 2,
                 potential_map,
                 get_Y=False,
                 get_dY=True,
@@ -195,8 +195,8 @@ class PixelatedPotential(ThinLens):
         fov_x = potential_map.shape[1] * pixelscale
         fov_y = potential_map.shape[0] * pixelscale
         return interp_bicubic(
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1) / fov_y * 2,
             potential_map,
             get_Y=True,
             get_dY=False,
@@ -239,8 +239,8 @@ class PixelatedPotential(ThinLens):
         fov_x = potential_map.shape[1] * pixelscale
         fov_y = potential_map.shape[0] * pixelscale
         _, dY11, dY22 = interp_bicubic(
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1) / fov_y * 2,
             potential_map,
             get_Y=False,
             get_dY=False,

@@ -230,8 +230,8 @@ def potential_pseudo_jaffe(x0, y0, mass, Rc, Rs, x, y, d_l, d_s, d_ls, s=0.0):
         / (Rs - Rc)
     )  # arcsec
 
-    scale_a = (Rs**2 + R_squared).sqrt()  # arcsec
-    scale_b = (Rc**2 + R_squared).sqrt()  # arcsec
+    scale_a = backend.sqrt(Rs**2 + R_squared)  # arcsec
+    scale_b = backend.sqrt(Rc**2 + R_squared)  # arcsec
     scale_c = Rc * backend.log(Rc + backend.sqrt(Rc**2 + R_squared))  # arcsec
     scale_d = Rs * backend.log(Rs + backend.sqrt(Rs**2 + R_squared))  # arcsec
     scale_factor = scale_a - scale_b + scale_c - scale_d  # arcsec

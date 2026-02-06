@@ -27,9 +27,9 @@ def _r_omega(z, t, q, n_iter, chunk_size=None):
 
         return part_sum
     else:
-        i = backend.arange(1, n_iter, device=z.device, dtype=z.real.dtype)
+        i = backend.arange(1, n_iter, device=backend.device(z), dtype=z.real.dtype)
         factor = (2.0 * i - (2.0 - t)) / (2.0 * i + (2.0 - t))
-        factor = factor.view(-1, *([1] * z.ndim))
+        factor = backend.view(factor, (-1, *([1] * z.ndim)))
         phi_expanded = phi[None]
         cumprod_res = None
         n_chunks = n_iter // chunk_size

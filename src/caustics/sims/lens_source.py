@@ -288,7 +288,10 @@ class LensSource(Module):
             self._grid = (finegrid_x, finegrid_y)
             self._weights = weights
         else:
-            self._grid = (self._grid[0].unsqueeze(-1), self._grid[1].unsqueeze(-1))
+            self._grid = (
+                backend.unsqueeze(self._grid[0], -1),
+                backend.unsqueeze(self._grid[1], -1),
+            )
 
         # FFT convolution fastest when the image is padded to the next power of 2
         self._s = (next_fast_len(self._n_pix[0]), next_fast_len(self._n_pix[1]))

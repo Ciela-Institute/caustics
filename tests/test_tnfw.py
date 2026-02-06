@@ -1,6 +1,5 @@
 from io import StringIO
 
-import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from astropy.cosmology import default_cosmology
 
@@ -12,6 +11,8 @@ from utils import lens_test_helper, setup_grids
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustics.lenses import TNFW
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
+
 import pytest
 
 
@@ -28,8 +29,8 @@ Ob0_default = float(default_cosmology.get().Ob0)
 def test(sim_source, device, m, c, t):
     atol = 1e-2
     rtol = 3e-2
-    z_l = torch.tensor(0.1)
-    z_s = torch.tensor(0.5)
+    z_l = backend.as_array(0.1)
+    z_s = backend.as_array(0.5)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -65,13 +66,13 @@ def test(sim_source, device, m, c, t):
 
     thx0 = 0.457
     thy0 = 0.141
-    x = torch.tensor([thx0, thy0, m, c, t])
+    x = backend.as_array([thx0, thy0, m, c, t])
 
     # Lenstronomy
     cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
     lens_cosmo = LensCosmo(z_lens=z_l.item(), z_source=z_s.item(), cosmo=cosmo)
     Rs_angle, alpha_Rs = lens_cosmo.nfw_physical2angle(M=m, c=c)
-    x[3] = Rs_angle
+    x = backend.fill_at_indices(x, 3, Rs_angle)
 
     # lenstronomy params ['Rs', 'alpha_Rs', 'center_x', 'center_y']
     kwargs_ls = [
@@ -102,8 +103,8 @@ def test(sim_source, device, m, c, t):
 
 def test_runs(device):
     cosmology = CausticFlatLambdaCDM(name="cosmo")
-    z_l = torch.tensor(0.1)
-    z_s = torch.tensor(0.5)
+    z_l = backend.as_array(0.1)
+    z_s = backend.as_array(0.5)
     lens = TNFW(name="tnfw", cosmology=cosmology, z_l=z_l, z_s=z_s)
     lens.to(device=device)
     # Parameters
@@ -113,12 +114,12 @@ def test_runs(device):
     m = 1e12
     rs = 8.0
     t = 3.0
-    x = torch.tensor([thx0, thy0, m, rs, t])
+    x = backend.as_array([thx0, thy0, m, rs, t])
 
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
     Psi = lens.potential(thx, thy, x)
-    assert torch.all(torch.isfinite(Psi))
+    assert backend.all(backend.isfinite(Psi))
 
     Rt = lens.get_truncation_radius(x)
 

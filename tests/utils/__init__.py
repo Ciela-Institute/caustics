@@ -11,6 +11,7 @@ from lenstronomy.LensModel.lens_model import LensModel
 import matplotlib.pyplot as plt
 
 import caustics
+from caustics.backend_obj import backend
 
 import pytest
 import textwrap
@@ -78,8 +79,8 @@ def setup_grids(res=0.05, n_pix=100, device=None):
     # Caustics setup
     thx, thy = caustics.utils.meshgrid(res, n_pix, device=device)
     if device is not None:
-        thx = thx.to(device=device)
-        thy = thy.to(device=device)
+        thx = backend.to(thx, device=device)
+        thy = backend.to(thy, device=device)
 
     # Lenstronomy setup
     fov = res * n_pix
@@ -101,8 +102,8 @@ def alpha_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     alpha_x, alpha_y = lens.reduced_deflection_angle(thx, thy, x)
     alpha_x_ls, alpha_y_ls = lens_ls.alpha(thx_ls, thy_ls, kwargs_ls)
-    assert np.allclose(alpha_x.cpu().numpy(), alpha_x_ls, rtol, atol)
-    assert np.allclose(alpha_y.cpu().numpy(), alpha_y_ls, rtol, atol)
+    assert np.allclose(backend.to_numpy(alpha_x), alpha_x_ls, rtol, atol)
+    assert np.allclose(backend.to_numpy(alpha_y), alpha_y_ls, rtol, atol)
 
 
 def Psi_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
@@ -112,14 +113,14 @@ def Psi_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
     # Potential is only defined up to a constant
     Psi -= Psi.min()
     Psi_ls -= Psi_ls.min()
-    assert np.allclose(Psi.cpu().numpy(), Psi_ls, rtol, atol)
+    assert np.allclose(backend.to_numpy(Psi), Psi_ls, rtol, atol)
 
 
 def kappa_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=None):
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
     kappa = lens.convergence(thx, thy, x)
     kappa_ls = lens_ls.kappa(thx_ls, thy_ls, kwargs_ls)
-    assert np.allclose(kappa.cpu().numpy(), kappa_ls, rtol, atol)
+    assert np.allclose(backend.to_numpy(kappa), kappa_ls, rtol, atol)
 
 
 def shear_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, just_egregious=False, device=None):
@@ -133,12 +134,12 @@ def shear_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, just_egregious=Fa
     )
     gamma1_ls, gamma2_ls = lens_ls.gamma(thx_ls, thy_ls, kwargs_ls)
     if just_egregious:  # only for NFW and TNFW, this needs more attention
-        print(np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1))
-        assert np.sum(np.abs(np.log10(np.abs(1 - gamma1.cpu().numpy() / gamma1_ls))) < 1) < 100000
-        assert np.sum(np.abs(np.log10(np.abs(1 - gamma2.cpu().numpy() / gamma2_ls))) < 1) < 100000
+        print(np.sum(np.abs(np.log10(np.abs(1 - backend.to_numpy(gamma1) / gamma1_ls))) < 1))
+        assert np.sum(np.abs(np.log10(np.abs(1 - backend.to_numpy(gamma1) / gamma1_ls))) < 1) < 100000
+        assert np.sum(np.abs(np.log10(np.abs(1 - backend.to_numpy(gamma2) / gamma2_ls))) < 1) < 100000
     else:
-        assert np.allclose(gamma1.cpu().numpy(), gamma1_ls, rtol, atol)
-        assert np.allclose(gamma2.cpu().numpy(), gamma2_ls, rtol, atol)
+        assert np.allclose(backend.to_numpy(gamma1), gamma1_ls, rtol, atol)
+        assert np.allclose(backend.to_numpy(gamma2), gamma2_ls, rtol, atol)
 
 
 def lens_test_helper(
@@ -157,7 +158,7 @@ def lens_test_helper(
 ):
     if device is not None:
         lens = lens.to(device=device)
-        x = x.to(device=device)
+        x = backend.to(x, device=device)
 
     if test_alpha:
         alpha_test_helper(lens, lens_ls, x, kwargs_ls, atol, rtol, device=device)

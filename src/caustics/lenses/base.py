@@ -448,8 +448,12 @@ class ThickLens(Lens):
 
         # Build Jacobian
         J = backend.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
-        J[..., 0, 1], J[..., 0, 0] = backend.gradient(ax, spacing=pixelscale)
-        J[..., 1, 1], J[..., 1, 0] = backend.gradient(ay, spacing=pixelscale)
+        grad_ax = backend.gradient(ax, spacing=pixelscale)
+        grad_ay = backend.gradient(ay, spacing=pixelscale)
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 1), grad_ax[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 0), grad_ax[1])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 1), grad_ay[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 0), grad_ay[1])
         return J
 
     @forward
@@ -947,8 +951,12 @@ class ThinLens(Lens):
 
         # Build Jacobian
         J = backend.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
-        J[..., 0, 1], J[..., 0, 0] = backend.gradient(ax, spacing=pixelscale)
-        J[..., 1, 1], J[..., 1, 0] = backend.gradient(ay, spacing=pixelscale)
+        grad_ax = backend.gradient(ax, spacing=pixelscale)
+        grad_ay = backend.gradient(ay, spacing=pixelscale)
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 1), grad_ax[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 0), grad_ax[1])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 1), grad_ay[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 0), grad_ay[1])
         return J
 
     @forward

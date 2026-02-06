@@ -1,18 +1,17 @@
 from io import StringIO
 
-import torch
-
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import MassSheet
 from caustics.utils import meshgrid
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
 
 import pytest
 
 
 @pytest.mark.parametrize("convergence", [-1.0, 0.0, 1.0])
 def test_masssheet(sim_source, device, convergence):
-    z_s = torch.tensor(1.2)
+    z_s = backend.as_array(1.2)
     if sim_source == "yaml":
         yaml_str = f"""\
         cosmology: &cosmology
@@ -35,7 +34,7 @@ def test_masssheet(sim_source, device, convergence):
     lens.to(device=device)
 
     # Parameters
-    x = torch.tensor([0.5, 0.0, 0.0, convergence])
+    x = backend.as_array([0.5, 0.0, 0.0, convergence])
 
     thx, thy = meshgrid(0.01, 10, device=device)
 
@@ -45,7 +44,7 @@ def test_masssheet(sim_source, device, convergence):
 
     c = lens.convergence(thx, thy, x)
 
-    assert torch.all(torch.isfinite(ax))
-    assert torch.all(torch.isfinite(ay))
-    assert torch.all(torch.isfinite(p))
-    assert torch.all(torch.isfinite(c))
+    assert backend.all(backend.isfinite(ax))
+    assert backend.all(backend.isfinite(ay))
+    assert backend.all(backend.isfinite(p))
+    assert backend.all(backend.isfinite(c))

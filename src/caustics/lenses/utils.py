@@ -69,7 +69,7 @@ def pixel_magnification(raytrace, x, y) -> ArrayLike:
 
     """
     jac = pixel_jacobian(raytrace, x, y)
-    return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()  # fmt: skip
+    return 1 / backend.abs(jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0])  # fmt: skip
 
 
 def magnification(raytrace, x, y) -> ArrayLike:

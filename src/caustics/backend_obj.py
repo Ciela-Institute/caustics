@@ -90,8 +90,13 @@ class Backend:
         self.detach = self._detach_torch
         self.avg_pool2d = self._avg_pool2d_torch
         self.rand = self._rand_torch
+        self.randn = self._randn_torch
         self.randint = self._randint_torch
         self.split_key = self._split_key_torch
+        self.meshgrid = self._meshgrid_torch
+        self.device = self._device_torch
+        self.numel = self._numel_torch
+        self.Size = self._size_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -141,8 +146,13 @@ class Backend:
         self.detach = self._detach_jax
         self.avg_pool2d = self._avg_pool2d_jax
         self.rand = self._rand_jax
+        self.randn = self._randn_jax
         self.randint = self._randint_jax
         self.split_key = self._split_key_jax
+        self.meshgrid = self._meshgrid_jax
+        self.device = self._device_jax
+        self.numel = self._numel_jax
+        self.Size = self._size_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**32 - 1)
@@ -257,14 +267,27 @@ class Backend:
         new_shape[-1] = array.shape[-1] * scale_factor
         return self.jax.image.resize(array, new_shape, method=method)
 
-    def _pad_torch(self, array, padding, mode):
+    def _pad_torch(self, array, padding, mode="constant"):
         return self.module.nn.functional.pad(array, padding, mode=mode)
 
-    def _pad_jax(self, array, padding, mode):
+    def _pad_jax(self, array, padding, mode="constant"):
         if mode == "replicate":
             mode = "edge"
-        padding = np.array(padding).reshape(-1, 2)
-        return self.module.pad(array, padding, mode=mode)
+        elif mode == "circular":
+            mode = "wrap"
+
+        ndim = array.ndim
+        pad_width = [(0, 0)] * ndim
+        for i in range(0, len(padding), 2):
+            pad_left = padding[i]
+            pad_right = padding[i + 1]
+
+            dim_idx = -(i // 2 + 1)
+
+            if abs(dim_idx) <= ndim:
+                pad_width[dim_idx] = (pad_left, pad_right)
+
+        return self.module.pad(array, pad_width, mode=mode)
 
     def _roll_torch(self, array, shifts, dims):
         return self.module.roll(array, shifts, dims=dims)
@@ -284,17 +307,18 @@ class Backend:
     def _long_jax(self, array):
         return self.module.astype(array, self.module.int64)
 
-    def _conv2d_torch(self, input, kernel, padding, stride=1):
+    def _conv2d_torch(self, array, kernel, padding, stride=1):
         return self.module.nn.functional.conv2d(
-            input,
+            array,
             kernel,
             padding=padding,
             stride=stride,
         )
 
-    def _conv2d_jax(self, input, kernel, padding, stride=1):
+    def _conv2d_jax(self, array, kernel, padding, stride=1):
+        # kernel = self.module.flip(kernel, (-1, -2))
         return self.jax.lax.conv_general_dilated(
-            input, kernel, window_strides=(stride, stride), padding=padding
+            array, kernel, window_strides=(stride, stride), padding=padding
         )
 
     def _mean_torch(self, array, dim=None):
@@ -387,11 +411,21 @@ class Backend:
     def _hessian_jax(self, func, argnums=0):
         return self.jax.hessian(func, argnums=argnums)
 
-    def _vmap_torch(self, *args, **kwargs):
-        return self.module.vmap(*args, **kwargs)
+    def _vmap_torch(
+        self, func, in_dims=0, out_dims=0, randomness="error", chunk_size=None
+    ):
+        return self.module.vmap(
+            func,
+            in_dims=in_dims,
+            out_dims=out_dims,
+            randomness=randomness,
+            chunk_size=chunk_size,
+        )
 
-    def _vmap_jax(self, *args, **kwargs):
-        return self.jax.vmap(*args, **kwargs)
+    def _vmap_jax(
+        self, func, in_dims=0, out_dims=0, randomness="error", chunk_size=None
+    ):
+        return self.jax.vmap(func, in_axes=in_dims, out_axes=out_dims)
 
     def _fill_at_indices_torch(self, array, indices, values):
         array[indices] = values
@@ -459,7 +493,9 @@ class Backend:
             stride=stride,
         )
 
-    def _avg_pool2d_jax(self, array, kernel, stride, padding=0):
+    def _avg_pool2d_jax(self, array, kernel, stride=None, padding=0):
+        if stride is None:
+            stride = kernel
         array = self.jax.lax.reduce_window(
             array,
             init_value=0,
@@ -470,13 +506,29 @@ class Backend:
         )
         return array / kernel**2
 
-    def _rand_torch(self, size, key=None):
-        return self.module.rand(size)
+    def _rand_torch(self, *size, key=None):
+        return self.module.rand(*size)
 
-    def _rand_jax(self, size, key=None):
+    def _rand_jax(self, *size, key=None):
         if key is None:
             self.key, key = self.jax.random.split(self.key)  # update key
-        return self.jax.random.uniform(key, shape=size)
+        if len(size) == 1 and isinstance(size[0], (tuple, list)):
+            shape = size[0]
+        else:
+            shape = size
+        return self.jax.random.uniform(key, shape=shape)
+
+    def _randn_torch(self, *size, dtype=None, device=None, key=None):
+        return self.module.randn(*size, dtype=dtype, device=device)
+
+    def _randn_jax(self, *size, dtype=None, device=None, key=None):
+        if key is None:
+            self.key, key = self.jax.random.split(self.key)
+        if len(size) == 1 and isinstance(size[0], (tuple, list)):
+            shape = size[0]
+        else:
+            shape = size
+        return self.jax.random.normal(key, shape=shape, dtype=dtype)
 
     def _randint_torch(self, high, size, low=0, dtype=None, device=None, key=None):
         return self.module.randint(
@@ -498,14 +550,40 @@ class Backend:
     def _split_key_jax(self, key):
         return self.jax.random.split(key)
 
+    def _meshgrid_torch(self, *arrays, indexing="ij"):
+        return self.module.meshgrid(*arrays, indexing=indexing)
+
+    def _meshgrid_jax(self, *arrays, indexing="ij"):
+        if len(arrays) == 1 and isinstance(arrays[0], (list, tuple)):
+            arrays = arrays[0]
+        return self.module.meshgrid(*arrays, indexing=indexing)
+
+    def _device_torch(self, array):
+        return array.device
+
+    def _device_jax(self, array):
+        # JAX Tracers (used during jit/vmap) do NOT have a device.
+        # JAX Arrays have .device(), but we usually don't need to pass it explicitly.
+        # Returning None tells JAX to use the default/current device context.
+        return None
+
+    def _numel_torch(self, array):
+        return array.numel()
+
+    def _numel_jax(self, array):
+        return array.size
+
+    def _size_torch(self, shape):
+        return self.module.Size(shape)
+
+    def _size_jax(self, shape):
+        return tuple(shape)
+
     def arange(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype, device=device)
 
     def linspace(self, start, end, steps, dtype=None, device=None):
         return self.module.linspace(start, end, steps, dtype=dtype, device=device)
-
-    def meshgrid(self, *arrays, indexing="ij"):
-        return self.module.meshgrid(*arrays, indexing=indexing)
 
     def searchsorted(self, array, value):
         return self.module.searchsorted(array, value)

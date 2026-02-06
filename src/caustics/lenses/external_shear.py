@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated, Literal
 from warnings import warn
 
-import torch
 from caskade import forward, Param
 
-from ..backend_obj import ArrayLike
+from ..backend_obj import ArrayLike, backend
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -278,4 +277,4 @@ class ExternalShear(ThinLens):
             This method is not implemented as the convergence is not defined
             for an external shear.
         """
-        return torch.zeros_like(x)
+        return backend.zeros_like(x)

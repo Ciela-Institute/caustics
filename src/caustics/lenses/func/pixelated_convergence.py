@@ -231,8 +231,8 @@ def reduced_deflection_angle_pixelated_convergence(
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     # Scale is distance from center of image to center of pixel on the edge
     scale = fov / 2
-    _x_view_scale = (x - x0).view(-1) / scale
-    _y_view_scale = (y - y0).view(-1) / scale
+    _x_view_scale = backend.view(x - x0, -1) / scale
+    _y_view_scale = backend.view(y - y0, -1) / scale
     deflection_angle_x = interp2d(
         deflection_angle_maps[0], _x_view_scale, _y_view_scale
     ).reshape(x.shape)
@@ -330,5 +330,7 @@ def potential_pixelated_convergence(
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     scale = fov / 2
     return interp2d(
-        potential_map, (x - x0).view(-1) / scale, (y - y0).view(-1) / scale
+        potential_map,
+        backend.view(x - x0, -1) / scale,
+        backend.view(y - y0, -1) / scale,
     ).reshape(x.shape)
