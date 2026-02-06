@@ -66,8 +66,8 @@ class Multipole(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self.m = torch.as_tensor(m, dtype=torch.int32)
         assert torch.all(self.m >= 2).item(), "Multipole order must be >= 2"
         self.a_m = Param("a_m", a_m, self.m.shape, units="unitless")

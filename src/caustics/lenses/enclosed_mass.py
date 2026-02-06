@@ -118,10 +118,12 @@ class EnclosedMass(ThinLens):
         super().__init__(cosmology, z_l, name=name, z_s=z_s, **kwargs)
         self.enclosed_mass = enclosed_mass
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.q = Param("q", q, units="unitless", valid=(0, 1))
-        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.q = Param("q", q, shape=(), units="unitless", valid=(0, 1))
+        self.phi = Param(
+            "phi", phi, shape=(), units="radians", valid=(0, pi), cyclic=True
+        )
         self.p = Param("p", p, units="user-defined")
 
         self.s = s

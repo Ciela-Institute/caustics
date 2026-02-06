@@ -133,10 +133,10 @@ class PixelatedTime(Source):
                 f"shape must be specify 3D or 4D tensors. Received shape={shape}"
             )
         super().__init__(name=name)
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self.cube = Param("cube", cube, shape, units="flux")
-        self.scale = Param("scale", scale, units="flux", valid=(0, None))
+        self.scale = Param("scale", scale, shape=(), units="flux", valid=(0, None))
         self.pixelscale = pixelscale
         self.t_end = t_end
 

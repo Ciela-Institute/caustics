@@ -155,10 +155,10 @@ class NFW(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.mass = Param("mass", mass, units="Msun")
-        self.c = Param("c", c, units="unitless")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.mass = Param("mass", mass, shape=(), units="Msun")
+        self.c = Param("c", c, shape=(), units="unitless")
         self.s = s
 
     @forward

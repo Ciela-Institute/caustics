@@ -76,8 +76,8 @@ class MassSheet(ThinLens):
     ):
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self.kappa = Param("kappa", kappa, units="unitless")
 
     @forward

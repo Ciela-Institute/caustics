@@ -160,8 +160,8 @@ class LensSource(Module):
 
         # Build parameters
         self.psf = Param("psf", psf, self.psf_shape, units="unitless")
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self._pixelscale = pixelscale
 
         # Lensing models
