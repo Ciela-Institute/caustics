@@ -7,7 +7,6 @@ from .simulator import NameType
 from ..lenses.base import Lens
 from ..light.base import Source
 
-
 __all__ = ("Microlens",)
 
 

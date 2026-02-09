@@ -17,7 +17,6 @@ from .multiplane import Multiplane
 from .multipole import Multipole
 from .enclosed_mass import EnclosedMass
 
-
 __all__ = [
     "ThinLens",
     "ThickLens",
