@@ -88,7 +88,7 @@ def triangle_equals(p1, p2):
 
 
 def remove_triangle_duplicates(p):
-    unique_triangles = backend.zeros((0, 3, 2))
+    unique_triangles = backend.zeros((0, 3, 2), device=p.device, dtype=p.dtype)
     B = p.shape[0]
     batch_triangle_equals = backend.vmap(triangle_equals, in_dims=(None, 0))
     for i in range(B):
@@ -146,7 +146,7 @@ def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
     """
     ixy = backend.stack((ix, iy), dim=1)  # has shape (B, Din:2)
     bxy = backend.stack((bx, by)) * backend.ones(
-        (ix.shape[0], 1)
+        (ix.shape[0], 1), device=bx.device
     )  # has shape (B, Dout:2)
     # Optimize guesses in image plane
     x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
@@ -163,7 +163,7 @@ def remove_duplicate_points(x, epsilon):
     """
     Remove duplicate points from the coordinates list.
     """
-    unique_points = backend.zeros((0, 2))
+    unique_points = backend.zeros((0, 2), device=x.device, dtype=x.dtype)
     for i in range(x.shape[0]):
         # Compare current point with all points in the unique list
         if i == 0 or not backend.any(
@@ -182,7 +182,11 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
         backend.linspace(y0 - fov / 2, y0 + fov / 2, n),
         indexing="ij",
     )
+
     E = backend.stack((X, Y), dim=-1)
+
+    E = backend.to(E, device=x0.device)
+
     # build the upper and lower triangles within the squares of the grid
     E = backend.concatenate(
         (

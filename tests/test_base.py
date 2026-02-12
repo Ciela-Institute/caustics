@@ -22,11 +22,11 @@ def test(device):
         cosmology=cosmology,
         z_l=z_l,
         z_s=z_s,
-        x0=backend.as_array(0.0),
-        y0=backend.as_array(0.0),
-        q=backend.as_array(0.4),
-        phi=backend.as_array(np.pi / 5),
-        Rein=backend.as_array(1.0),
+        x0=backend.as_array(0.0, device=device),
+        y0=backend.as_array(0.0, device=device),
+        q=backend.as_array(0.4, device=device),
+        phi=backend.as_array(np.pi / 5, device=device),
+        Rein=backend.as_array(1.0, device=device),
     )
     # Send to device
     lens = lens.to(device)
