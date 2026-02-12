@@ -44,7 +44,7 @@ class BatchedPlane(ThinLens):
         Initialize the SinglePlane lens model.
         """
         super().__init__(cosmology, z_l=z_l, name=name, z_s=z_s)
-        self.lens = lens
+        self.hierarchical_link("lens", lens)
         if lens.z_l.static:
             warn(
                 f"Lens model {lens.name} has a static lens redshift. This is now overwritten by the BatchedPlane ({self.name}) lens redshift. To prevent this warning, set the lens redshift of the lens model to be dynamic before adding to the system."
@@ -62,6 +62,8 @@ class BatchedPlane(ThinLens):
         self,
         x: ArrayLike,
         y: ArrayLike,
+        lens_params,
+        lens_dims,
     ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the total deflection angle by summing
@@ -92,31 +94,25 @@ class BatchedPlane(ThinLens):
             *Unit: arcsec*
 
         """
-
-        # Collect the dynamic parameters to vmap over
-        params = dict(
-            (p.name, p.value) for p in self.lens.child_dynamic_params.values()
-        )
-        batchdims = dict(
-            (p.name, -(len(p.shape) + 1))
-            for p in self.lens.child_dynamic_params.values()
-        )
-        batchdims["x"] = None
-        batchdims["y"] = None
+        print(lens_dims)
         vr_deflection_angle = vmap_reduce(
-            lambda p: self.lens.reduced_deflection_angle(**p),
+            lambda *args: self.lens.reduced_deflection_angle(
+                args[0], args[1], args[2:]
+            ),
             reduce_func=lambda x: (backend.sum(x[0], dim=0), backend.sum(x[1], dim=0)),
             chunk_size=self.chunk_size,
-            in_dims=batchdims,
+            in_dims=(None, None) + tuple(lens_dims),
             out_dims=(0, 0),
         )
-        return vr_deflection_angle(x=x, y=y, **params)
+        return vr_deflection_angle(x, y, *lens_params)
 
     @forward
     def convergence(
         self,
         x: ArrayLike,
         y: ArrayLike,
+        lens_params,
+        lens_dims,
     ) -> ArrayLike:
         """
         Calculate the total projected mass density by
@@ -142,25 +138,20 @@ class BatchedPlane(ThinLens):
             *Unit: unitless*
 
         """
-        # Collect the dynamic parameters to vmap over
-        params = dict((n, p.value) for n, p in self.lens.child_dynamic_params.items())
-        batchdims = dict(
-            (n, -(len(p.shape) + 1)) for n, p in self.lens.child_dynamic_params.items()
-        )
-        batchdims["x"] = None
-        batchdims["y"] = None
         vr_convergence = vmap_reduce(
-            lambda p: self.lens.convergence(**p),
+            lambda *args: self.lens.convergence(args[0], args[1], args[2:]),
             chunk_size=self.chunk_size,
-            in_dims=batchdims,
+            in_dims=(None, None) + tuple(lens_dims),
         )
-        return vr_convergence(x=x, y=y, **params)
+        return vr_convergence(x, y, *lens_params)
 
     @forward
     def potential(
         self,
         x: ArrayLike,
         y: ArrayLike,
+        lens_params,
+        lens_dims,
     ) -> ArrayLike:
         """
         Compute the total lensing potential by summing
@@ -186,16 +177,9 @@ class BatchedPlane(ThinLens):
             *Unit: arcsec^2*
 
         """
-        # Collect the dynamic parameters to vmap over
-        params = dict((n, p.value) for n, p in self.lens.child_dynamic_params.items())
-        batchdims = dict(
-            (n, -(len(p.shape) + 1)) for n, p in self.lens.child_dynamic_params.items()
-        )
-        batchdims["x"] = None
-        batchdims["y"] = None
         vr_potential = vmap_reduce(
-            lambda p: self.lens.potential(**p),
+            lambda *args: self.lens.potential(args[0], args[1], args[2:]),
             chunk_size=self.chunk_size,
-            in_dims=batchdims,
+            in_dims=(None, None) + tuple(lens_dims),
         )
-        return vr_potential(x=x, y=y, **params)
+        return vr_potential(x, y, *lens_params)

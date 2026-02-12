@@ -90,10 +90,10 @@ class ExternalShear(ThinLens):
     ):
         super().__init__(cosmology=cosmology, z_l=z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.gamma_1 = Param("gamma_1", gamma_1, units="unitless")
-        self.gamma_2 = Param("gamma_2", gamma_2, units="unitless")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.gamma_1 = Param("gamma_1", gamma_1, shape=(), units="unitless")
+        self.gamma_2 = Param("gamma_2", gamma_2, shape=(), units="unitless")
         self._parametrization = "cartesian"
         self.parametrization = parametrization
         if self.parametrization == "angular":

@@ -98,12 +98,14 @@ class PixelatedDeflection(ThinLens):
                 f"shape must specify a 3D tensor (2, nx, ny). Received shape={shape}"
             )
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self.deflection_map = Param(
             "deflection_map", deflection_map, shape, units="unitless"
         )
-        self.pixelscale = Param("pixelscale", pixelscale, units="arcsec/pixel")
+        self.pixelscale = Param(
+            "pixelscale", pixelscale, shape=(), units="arcsec/pixel"
+        )
 
     @forward
     def reduced_deflection_angle(

@@ -172,15 +172,15 @@ class Sersic(Angle_Mixin, Source):
 
         """
         super().__init__(name=name)
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.q = Param("q", q, shape=(), units="unitless", valid=(0, 1))
         self.phi = Param(
-            "phi", phi, units="radians", valid=(0, backend.pi), cyclic=True
+            "phi", phi, shape=(), units="radians", valid=(0, backend.pi), cyclic=True
         )
-        self.n = Param("n", n, units="unitless", valid=(0.36, 10))
-        self.Re = Param("Re", Re, units="arcsec", valid=(0, None))
-        self.Ie = Param("Ie", Ie, units="flux", valid=(0, None))
+        self.n = Param("n", n, shape=(), units="unitless", valid=(0.36, 10))
+        self.Re = Param("Re", Re, shape=(), units="arcsec", valid=(0, None))
+        self.Ie = Param("Ie", Ie, shape=(), units="flux", valid=(0, None))
         self.s = s
 
         self.lenstronomy_k_mode = use_lenstronomy_k

@@ -119,13 +119,13 @@ class SIE(Angle_Mixin, ThinLens):
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.q = Param("q", q, units="unitless", valid=(0, 1))
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.q = Param("q", q, shape=(), units="unitless", valid=(0, 1))
         self.phi = Param(
-            "phi", phi, units="radians", valid=(0, backend.pi), cyclic=True
+            "phi", phi, shape=(), units="radians", valid=(0, backend.pi), cyclic=True
         )
-        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
+        self.Rein = Param("Rein", Rein, shape=(), units="arcsec", valid=(0, None))
         self._parametrization = "Rein"
         self.parametrization = parametrization
         if self.parametrization == "velocity_dispersion":

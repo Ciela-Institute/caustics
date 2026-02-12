@@ -155,11 +155,11 @@ class PseudoJaffe(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.mass = Param("mass", mass, units="Msun", valid=(0, None))
-        self.Rc = Param("Rc", Rc, units="arcsec", valid=(0, None))
-        self.Rs = Param("Rs", Rs, units="arcsec", valid=(0, None))
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.mass = Param("mass", mass, shape=(), units="Msun", valid=(0, None))
+        self.Rc = Param("Rc", Rc, shape=(), units="arcsec", valid=(0, None))
+        self.Rs = Param("Rs", Rs, shape=(), units="arcsec", valid=(0, None))
         self.s = s
 
     @forward
