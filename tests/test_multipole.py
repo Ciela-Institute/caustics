@@ -50,7 +50,7 @@ def test_multipole_lenstronomy(sim_source, device, m_order):
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters  m, a_m ,phi_m
-    x = backend.as_array([-0.342, 0.51, 0.1, 3.14 / 4])
+    x = backend.as_array([-0.342, 0.51, 0.1, 3.14 / 4], device=device)
     kwargs_ls = [
         {
             "center_x": x[0].item(),
