@@ -146,6 +146,7 @@ class Lens(Module):
         y0: Optional[ArrayLike] = None,
         fov: float = 5.0,
         divisions: int = 100,
+        max_depth: int = 25,
     ) -> tuple[ArrayLike, ArrayLike]:
         """
         Perform a forward ray-tracing operation which maps from the source plane
@@ -196,7 +197,14 @@ class Lens(Module):
             y0 = backend.zeros((), device=by.device, dtype=by.dtype)
 
         return func.forward_raytrace(
-            backend.stack((bx, by)), self.raytrace, x0, y0, fov, divisions, epsilon
+            backend.stack((bx, by)),
+            self.raytrace,
+            x0,
+            y0,
+            fov,
+            divisions,
+            epsilon,
+            max_depth,
         )
 
 

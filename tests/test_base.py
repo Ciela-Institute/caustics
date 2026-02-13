@@ -10,7 +10,7 @@ from caustics import test as mini_test
 from caustics.backend_obj import backend
 
 
-def test(device):
+def test_forward_raytrace(device):
 
     z_l = backend.as_array(0.5, dtype=backend.float32, device=device)
     z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
@@ -22,11 +22,12 @@ def test(device):
         cosmology=cosmology,
         z_l=z_l,
         z_s=z_s,
-        x0=backend.as_array(0.0, device=device),
-        y0=backend.as_array(0.0, device=device),
-        q=backend.as_array(0.4, device=device),
-        phi=backend.as_array(np.pi / 5, device=device),
-        Rein=backend.as_array(1.0, device=device),
+        x0=0.0,
+        y0=0.0,
+        q=0.4,
+        phi=np.pi / 5,
+        Rein=1.0,
+        s=1e-3,
     )
     # Send to device
     lens = lens.to(device)
@@ -41,6 +42,7 @@ def test(device):
     # Raytrace to check
     bx, by = lens.raytrace(x, y)
 
+    assert bx.shape[0] == 5
     assert backend.all(backend.abs(sp_x - bx) < 1e-3)
     assert backend.all(backend.abs(sp_y - by) < 1e-3)
 

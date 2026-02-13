@@ -94,7 +94,6 @@ class BatchedPlane(ThinLens):
             *Unit: arcsec*
 
         """
-        print(lens_dims)
         vr_deflection_angle = vmap_reduce(
             lambda *args: self.lens.reduced_deflection_angle(
                 args[0], args[1], args[2:]

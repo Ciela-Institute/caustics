@@ -1,6 +1,7 @@
 from ...utils import batch_lm
 from ...backend_obj import backend
 from ...constants import arcsec_to_rad, c_Mpc_s, days_to_seconds
+from warnings import warn
 
 
 def triangle_contains(p, v):
@@ -174,7 +175,7 @@ def remove_duplicate_points(x, epsilon):
     return unique_points
 
 
-def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
+def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon, max_depth=25):
     # Construct a tiling of the image plane (squares at this point)
     X, Y = backend.meshgrid(
         backend.linspace(x0 - fov / 2, x0 + fov / 2, n),
@@ -205,7 +206,6 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
             # Upsample the triangles
             E = backend.vmap(triangle_upsample)(E)
             E = E.reshape(-1, 3, 2)
-            E = backend.where(backend.abs(E) < 1e-15, 0, E)
 
         S = raytrace(E[..., 0], E[..., 1])
         S = backend.stack(S, dim=-1)
@@ -228,6 +228,14 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
                 backend.vmap(triangle_contains)(E, Emid)
             ) and backend.allclose(Smid, s, atol=epsilon):
                 break
+            Emid = Emid[
+                backend.norm(Smid - s, dim=1) < epsilon
+            ]  # ensure only good points are returned if max_depth reached
+        if i > max_depth:
+            warn(
+                "Forward raytrace unable to converge reliably, reached maximum depth of 25 iterations. There may be singularities in the lens, or other numerical challenges."
+            )
+            break
 
     # Remove duplicates
     unique = remove_duplicate_points(
