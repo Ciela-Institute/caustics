@@ -53,7 +53,7 @@ dev = [
     "ipywidgets",
     "matplotlib",
     "pyro-ppl",
-    "jax>=0.6.2"
+    "jax"
 ]
 
 [tool.hatch.metadata.hooks.requirements_txt]

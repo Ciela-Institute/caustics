@@ -166,7 +166,7 @@ class Backend:
         self.norm = self._norm_jax
 
         self.key = self.jax.random.key(
-            np.random.randint(0, 2**32 - 1)
+            np.random.randint(0, 2**31 - 1)
         )  # random initial state
 
     @property
@@ -617,8 +617,11 @@ class Backend:
     def _norm_jax(self, array, dim=None, **kwargs):
         return self.linalg.norm(array, axis=dim, **kwargs)
 
-    def arange(self, *args, dtype=None, device=None):
+    def _arange_torch(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype, device=device)
+
+    def _arange_jax(self, *args, dtype=None, device=None):
+        return self.module.arange(*args, dtype=dtype)
 
     def linspace(self, start, end, steps, dtype=None, device=None):
         return self.module.linspace(start, end, steps, dtype=dtype, device=device)
