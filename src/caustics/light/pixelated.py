@@ -79,8 +79,11 @@ class Pixelated(Source):
             "flux",
         ] = 1.0,
         shape: Annotated[
-            Optional[tuple[int, ...]], "The shape of the source image."
-        ] = None,
+            tuple[Optional[int], ...], "The shape of the source image."
+        ] = (
+            None,
+            None,
+        ),
         name: NameType = None,
     ):
         """

@@ -40,8 +40,11 @@ class PixelatedPotential(ThinLens):
             True,
         ] = None,
         shape: Annotated[
-            Optional[tuple[int, ...]], "The shape of the potential map"
-        ] = None,
+            tuple[Optional[int], ...], "The shape of the potential map"
+        ] = (
+            None,
+            None,
+        ),
         name: NameType = None,
     ):
         """Strong lensing with user provided kappa map

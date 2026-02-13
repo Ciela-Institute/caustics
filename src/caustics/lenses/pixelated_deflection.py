@@ -40,8 +40,11 @@ class PixelatedDeflection(ThinLens):
             True,
         ] = None,
         shape: Annotated[
-            Optional[tuple[int, ...]], "The shape of the deflection map"
-        ] = None,
+            tuple[Optional[int], ...], "The shape of the deflection map"
+        ] = (
+            None,
+            None,
+        ),
         name: NameType = None,
     ):
         """Strong lensing with user provided deflection map
