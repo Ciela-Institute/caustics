@@ -101,7 +101,7 @@ def test_simulator_runs(sim_source, device):
         )
 
         psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
-        psf = backend.to(psf, dtype=backend.float64, device=device)
+        psf = backend.to(psf, dtype=backend.float32, device=device)
 
         sim = LensSource(
             name="simulator",
@@ -124,9 +124,6 @@ def test_simulator_runs(sim_source, device):
             quad_level=3,
         )
 
-    sim.to(device=device)
-    sim_q3.to(device=device)
-
     # Test setters
     sim.pixelscale = 0.05
     sim.pixels_x = 50
@@ -135,6 +132,9 @@ def test_simulator_runs(sim_source, device):
     sim.upsample_factor = 1
     sim.psf_shape = (11, 11)
     sim.psf_mode = "conv2d"
+
+    sim.to(device=device)
+    sim_q3.to(device=device)
 
     assert backend.all(backend.isfinite(sim()))
     assert backend.all(
@@ -233,7 +233,11 @@ def test_fft_vs_conv2d():
         quad_level=3,
     )
 
-    print(backend.max(backend.abs((sim_fft() - sim_conv2d()) / sim_fft())))
+    print(
+        backend.max(
+            backend.flatten(backend.abs((sim_fft() - sim_conv2d()) / sim_fft())), dim=0
+        )
+    )
     assert backend.allclose(sim_fft(), sim_conv2d(), rtol=1e-1)
 
 

@@ -1385,7 +1385,7 @@ def _chunk_input(x, k, in_dims, chunk_size):
             if in_dim is None:
                 subchunking = [subx] * n_chunks
             else:
-                subchunking = subx.chunk(n_chunks, dim=in_dim)
+                subchunking = backend.chunk(subx, n_chunks, dim=in_dim)
             for j, subchunk in enumerate(subchunking):
                 chunks[j].append(subchunk)
     else:  # isinstance(in_dims, dict)
@@ -1404,7 +1404,7 @@ def _chunk_input(x, k, in_dims, chunk_size):
             if value is None:
                 subchunking = [k[key]] * n_chunks
             else:
-                subchunking = k[key].chunk(n_chunks, dim=value)
+                subchunking = backend.chunk(k[key], n_chunks, dim=value)
             for j, subchunk in enumerate(subchunking):
                 chunks[j][key] = subchunk
     return chunks

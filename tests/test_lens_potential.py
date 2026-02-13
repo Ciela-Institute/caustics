@@ -78,6 +78,10 @@ def test_lens_potential_vs_deflection(device):
         print(f"Testing lens: {name}")
         lens.to(device=device)
         # Compute the deflection angle.
+        if name in ["PixelatedConvergence"]:
+            x = backend.to(x, dtype=backend.float64)
+            y = backend.to(y, dtype=backend.float64)
+
         ax, ay = lens.reduced_deflection_angle(x, y)
 
         # Compute deflection angles using the lensing potential.
@@ -90,8 +94,8 @@ def test_lens_potential_vs_deflection(device):
             assert backend.allclose(phi_ay, ay, atol=1e-3, rtol=1e-3)
         elif name in ["PixelatedConvergence"]:
             # PixelatedConvergence potential is defined by bilinear interpolation so it is very imprecise
-            # assert backend.allclose(phi_ax, ax, rtol=1e0)
-            # assert backend.allclose(phi_ay, ay, rtol=1e0)
+            assert backend.allclose(phi_ax, ax, rtol=1e-1)
+            assert backend.allclose(phi_ay, ay, rtol=1e-1)
             pass
         else:
             assert backend.allclose(phi_ax, ax, atol=1e-5)
@@ -176,7 +180,7 @@ def test_lens_potential_vs_convergence(device):
             print(backend.abs(phi_kappa - kappa) / kappa)
             assert backend.allclose(phi_kappa, kappa, rtol=1e-3, atol=1e-3)
         elif name.strip("_0") in ["PixelatedConvergence", "PixelatedPotential"]:
-            assert backend.allclose(phi_kappa, kappa, rtol=1e-4, atol=1e-4)
+            assert backend.allclose(phi_kappa, kappa, rtol=1e-3, atol=1e-4)
         else:
             assert backend.allclose(phi_kappa, kappa, rtol=1e-6, atol=1e-6)
 

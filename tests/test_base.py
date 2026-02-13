@@ -1,16 +1,16 @@
 import numpy as np
 
+import os
+
+os.environ["CASKADE_BACKEND"] = "torch"
+
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics import test as mini_test
 from caustics.backend_obj import backend
 
-import pytest
-
 
 def test(device):
-    if backend.backend == "jax":
-        pytest.skip("")
 
     z_l = backend.as_array(0.5, dtype=backend.float32, device=device)
     z_s = backend.as_array(1.5, dtype=backend.float32, device=device)

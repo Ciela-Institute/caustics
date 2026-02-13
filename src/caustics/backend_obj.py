@@ -71,6 +71,7 @@ class Backend:
         self.std = self._std_torch
         self.sum = self._sum_torch
         self.max = self._max_torch
+        self.min = self._min_torch
         self.topk = self._topk_torch
         self.bessel_j1 = self._bessel_j1_torch
         self.bessel_k1 = self._bessel_k1_torch
@@ -97,6 +98,9 @@ class Backend:
         self.device = self._device_torch
         self.numel = self._numel_torch
         self.Size = self._size_torch
+        self.chunk = self._chunk_torch
+        self.jit = self._jit_torch
+        self.norm = self._norm_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -127,6 +131,7 @@ class Backend:
         self.std = self._std_jax
         self.sum = self._sum_jax
         self.max = self._max_jax
+        self.min = self._min_jax
         self.topk = self._topk_jax
         self.bessel_j1 = self._bessel_j1_jax
         self.bessel_k1 = self._bessel_k1_jax
@@ -153,6 +158,9 @@ class Backend:
         self.device = self._device_jax
         self.numel = self._numel_jax
         self.Size = self._size_jax
+        self.chunk = self._chunk_jax
+        self.jit = self._jit_jax
+        self.norm = self._norm_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**32 - 1)
@@ -208,7 +216,9 @@ class Backend:
         return array.to(dtype=dtype, device=device)
 
     def _to_jax(self, array, dtype=None, device=None):
-        return self.jax.device_put(array.astype(dtype), device=device)
+        if dtype is not None:
+            array = array.astype(dtype)
+        return self.jax.device_put(array, device=device)
 
     def _to_numpy_torch(self, array):
         return array.detach().cpu().numpy()
@@ -350,6 +360,12 @@ class Backend:
 
     def _max_jax(self, array, dim=None):
         return self.module.max(array, axis=dim)
+
+    def _min_torch(self, array, dim=None):
+        return self.module.min(array, dim=dim).values
+
+    def _min_jax(self, array, dim=None):
+        return self.module.min(array, axis=dim)
 
     def _topk_torch(self, array, k):
         return self.module.topk(array, k=k)
@@ -579,6 +595,24 @@ class Backend:
     def _size_jax(self, shape):
         return tuple(shape)
 
+    def _chunk_torch(self, array, chunks, dim=0):
+        return self.module.chunk(array, chunks, dim=dim)
+
+    def _chunk_jax(self, array, chunks, dim=0):
+        return self.module.array_split(array, chunks, axis=dim)
+
+    def _jit_torch(self, func, **kwargs):
+        return func
+
+    def _jit_jax(self, func, **kwargs):
+        return self.jax.jit(func, **kwargs)
+
+    def _norm_torch(self, array, dim=None, **kwargs):
+        return self.linalg.norm(array, dim=dim, **kwargs)
+
+    def _norm_jax(self, array, dim=None, **kwargs):
+        return self.linalg.norm(array, axis=dim, **kwargs)
+
     def arange(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype, device=device)
 
@@ -760,6 +794,10 @@ class Backend:
     @property
     def pi(self):
         return self.module.pi
+
+    @property
+    def nan(self):
+        return self.module.nan
 
 
 backend = Backend()

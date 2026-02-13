@@ -12,8 +12,6 @@ import pytest
 @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi / 2])
 @pytest.mark.parametrize("bx,by", [(0.1, -0.05), (0.2, 0.1), (0.0, 0.0)])
 def test_time_delay_pointsource(q, phi, bx, by):
-    if backend.backend == "jax":
-        pytest.skip("")
 
     # configuration parameters
     bx = backend.as_array(bx)

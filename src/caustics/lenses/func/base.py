@@ -167,7 +167,7 @@ def remove_duplicate_points(x, epsilon):
     for i in range(x.shape[0]):
         # Compare current point with all points in the unique list
         if i == 0 or not backend.any(
-            backend.linalg.norm(x[i] - unique_points, dim=1) < epsilon
+            backend.norm(x[i] - unique_points, dim=1) < epsilon
         ):
             unique_points = backend.concatenate((unique_points, x[i][None]), dim=0)
 
@@ -175,7 +175,6 @@ def remove_duplicate_points(x, epsilon):
 
 
 def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
-
     # Construct a tiling of the image plane (squares at this point)
     X, Y = backend.meshgrid(
         backend.linspace(x0 - fov / 2, x0 + fov / 2, n),
@@ -198,7 +197,6 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
 
     i = 0
     while True:
-
         # Expand the search to neighboring triangles
         if i > 0:  # no need for neighbors in the first iteration
             E = backend.vmap(triangle_neighbors)(E)
@@ -207,6 +205,7 @@ def forward_raytrace(s, raytrace, x0, y0, fov, n, epsilon):
             # Upsample the triangles
             E = backend.vmap(triangle_upsample)(E)
             E = E.reshape(-1, 3, 2)
+            E = backend.where(backend.abs(E) < 1e-15, 0, E)
 
         S = raytrace(E[..., 0], E[..., 1])
         S = backend.stack(S, dim=-1)

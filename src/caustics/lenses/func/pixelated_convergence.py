@@ -222,7 +222,11 @@ def reduced_deflection_angle_pixelated_convergence(
         # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
         deflection_angle_maps = (
             backend.conv2d(
-                backend.unsqueeze(kernels, 1), convergence_map_flipped, padding="same"
+                backend.to(
+                    backend.unsqueeze(kernels, 1), dtype=convergence_map_flipped.dtype
+                ),
+                convergence_map_flipped,
+                padding="same",
             ).squeeze()
             * _pixelscale_pi
         )
@@ -324,7 +328,11 @@ def potential_pixelated_convergence(
     elif convolution_mode == "conv2d":
         convergence_map_flipped = backend.flip(convergence_map, (-1, -2))[None, None]
         potential_map = backend.conv2d(
-            potential_kernel[None, None], convergence_map_flipped, padding="same"
+            backend.to(
+                potential_kernel[None, None], dtype=convergence_map_flipped.dtype
+            ),
+            convergence_map_flipped,
+            padding="same",
         ).squeeze() * (pixelscale**2 / backend.pi)
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")

@@ -390,7 +390,9 @@ class LensSource(Module):
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
-            mu = backend.zeros_like(grid[0][..., 0])  # chop off quad dim
+            mu = backend.zeros_like(
+                grid[0][..., 0], dtype=grid[0].dtype
+            )  # chop off quad dim
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
@@ -409,7 +411,10 @@ class LensSource(Module):
                 mu = (
                     backend.conv2d(
                         mu[None, None],
-                        (backend.flip(psf, (0, 1)) / backend.sum(psf))[None, None],
+                        backend.to(
+                            (backend.flip(psf, (0, 1)) / backend.sum(psf)),
+                            dtype=mu.dtype,
+                        )[None, None],
                         padding="same",
                     )
                     .squeeze(0)
