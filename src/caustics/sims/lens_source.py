@@ -1,9 +1,7 @@
 # mypy: disable-error-code="union-attr"
 from scipy.fft import next_fast_len
-from torch.nn.functional import avg_pool2d, conv2d
 from typing import Optional, Annotated, Literal, Union
-import torch
-from torch import Tensor
+
 from caskade import Module, forward, Param
 
 from .simulator import NameType
@@ -14,6 +12,7 @@ from ..utils import (
 )
 from ..lenses.base import Lens
 from ..light.base import Source
+from ..backend_obj import backend, ArrayLike, deviceLike, dtypeLike
 
 __all__ = ("LensSource",)
 
@@ -62,7 +61,7 @@ class LensSource(Module):
         lens_light: Source, optional
             caustics light object which defines the lensing object's light
 
-        psf: Tensor, optional
+        psf: ArrayLike, optional
             An image to convolve with the scene. Note that if ``upsample_factor >
             1`` the psf must also be at the higher resolution.
 
@@ -136,15 +135,17 @@ class LensSource(Module):
         ] = "fft",
         psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
         psf: Annotated[
-            Optional[Union[Tensor, list]], "An image to convolve with the scene", True
+            Optional[Union[ArrayLike, list]],
+            "An image to convolve with the scene",
+            True,
         ] = [[1.0]],
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "center of the fov for the lens source image",
             True,
         ] = 0.0,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "center of the fov for the lens source image",
             True,
         ] = 0.0,
@@ -155,7 +156,7 @@ class LensSource(Module):
         # Configure PSF
         self._psf_mode = psf_mode
         if psf is not None:
-            psf = torch.as_tensor(psf)
+            psf = backend.as_array(psf)
         self._psf_shape = psf.shape if psf is not None else psf_shape
 
         # Build parameters
@@ -179,11 +180,11 @@ class LensSource(Module):
         self._build_grid()
 
     def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+        self, device: Optional[deviceLike] = None, dtype: Optional[dtypeLike] = None
     ):
         super().to(device, dtype)
-        self._grid = tuple(x.to(device, dtype) for x in self._grid)  # type: ignore[has-type]
-        self._weights = self._weights.to(device, dtype)  # type: ignore[has-type]
+        self._grid = tuple(backend.to(x, device=device, dtype=dtype) for x in self._grid)  # type: ignore[has-type]
+        self._weights = backend.to(self._weights, device=device, dtype=dtype)  # type: ignore[has-type]
 
         return self
 
@@ -277,7 +278,7 @@ class LensSource(Module):
             self._n_pix[0],  # upsample pixels
             self._n_pix[1],  # upsample pixels
         )
-        self._weights = torch.ones(
+        self._weights = backend.ones(
             (1, 1), dtype=self._grid[0].dtype, device=self._grid[0].device
         )
         if self.quad_level is not None and self.quad_level > 1:
@@ -287,7 +288,10 @@ class LensSource(Module):
             self._grid = (finegrid_x, finegrid_y)
             self._weights = weights
         else:
-            self._grid = (self._grid[0].unsqueeze(-1), self._grid[1].unsqueeze(-1))
+            self._grid = (
+                backend.unsqueeze(self._grid[0], -1),
+                backend.unsqueeze(self._grid[1], -1),
+            )
 
         # FFT convolution fastest when the image is padded to the next power of 2
         self._s = (next_fast_len(self._n_pix[0]), next_fast_len(self._n_pix[1]))
@@ -297,12 +301,12 @@ class LensSource(Module):
         Compute the 2D Fast Fourier Transform (FFT) of a tensor with zero-padding.
 
         Args:
-            x (Tensor): The input tensor to be transformed.
+            x (ArrayLike): The input tensor to be transformed.
 
         Returns:
-            Tensor: The 2D FFT of the input tensor with zero-padding.
+            ArrayLike: The 2D FFT of the input tensor with zero-padding.
         """
-        return torch.fft.rfft2(x, self._s)
+        return backend.fft.rfft2(x, self._s)
 
     def _unpad_fft(self, x):
         """
@@ -310,15 +314,15 @@ class LensSource(Module):
 
         Parameters
         ---------
-        x: Tensor
+        x: ArrayLike
             The input tensor with padding.
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The input tensor without padding.
         """
-        return torch.roll(
+        return backend.roll(
             x,
             (-self._psf_pad[0], -self._psf_pad[1]),
             dims=(-2, -1),
@@ -327,9 +331,9 @@ class LensSource(Module):
     @forward
     def __call__(
         self,
-        psf: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
+        psf: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
         source_light: bool = True,
         lens_light: bool = True,
         lens_source: bool = True,
@@ -371,27 +375,29 @@ class LensSource(Module):
         if source_light:
             if lens_source:
                 # Source is lensed by the lens mass distribution
-                bx, by = torch.vmap(self.lens.raytrace, chunk_size=chunk_size)(
-                    grid[0].flatten(), grid[1].flatten()
+                bx, by = backend.vmap(self.lens.raytrace, chunk_size=chunk_size)(
+                    backend.flatten(grid[0]), backend.flatten(grid[1])
                 )
-                mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
+                mu_fine = backend.vmap(self.source.brightness, chunk_size=chunk_size)(
                     bx, by
                 ).reshape(grid[0].shape)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
             else:
                 # Source is imaged without lensing
-                mu_fine = torch.vmap(self.source.brightness, chunk_size=chunk_size)(
-                    grid[0].flatten(), grid[1].flatten()
+                mu_fine = backend.vmap(self.source.brightness, chunk_size=chunk_size)(
+                    backend.flatten(grid[0]), backend.flatten(grid[1])
                 ).reshape(grid[0].shape)
                 mu = gaussian_quadrature_integrator(mu_fine, self._weights)
         else:
             # Source is not added to the scene
-            mu = torch.zeros_like(grid[0][..., 0])  # chop off quad dim
+            mu = backend.zeros_like(
+                grid[0][..., 0], dtype=grid[0].dtype
+            )  # chop off quad dim
 
         # Sample the lens light
         if lens_light and self.lens_light is not None:
-            mu_fine = torch.vmap(self.lens_light.brightness, chunk_size=chunk_size)(
-                grid[0].flatten(), grid[1].flatten()
+            mu_fine = backend.vmap(self.lens_light.brightness, chunk_size=chunk_size)(
+                backend.flatten(grid[0]), backend.flatten(grid[1])
             ).reshape(grid[0].shape)
             mu += gaussian_quadrature_integrator(mu_fine, self._weights)
 
@@ -400,12 +406,15 @@ class LensSource(Module):
             if self.psf_mode == "fft":
                 mu_fft = self._fft2_padded(mu)
                 psf_fft = self._fft2_padded(psf / psf.sum())
-                mu = self._unpad_fft(torch.fft.irfft2(mu_fft * psf_fft, self._s).real)
+                mu = self._unpad_fft(backend.fft.irfft2(mu_fft * psf_fft, self._s).real)
             elif self.psf_mode == "conv2d":
                 mu = (
-                    conv2d(
+                    backend.conv2d(
                         mu[None, None],
-                        (torch.flip(psf, (0, 1)) / psf.sum())[None, None],
+                        backend.to(
+                            (backend.flip(psf, (0, 1)) / backend.sum(psf)),
+                            dtype=mu.dtype,
+                        )[None, None],
                         padding="same",
                     )
                     .squeeze(0)
@@ -418,7 +427,7 @@ class LensSource(Module):
             self._psf_pad[0] : self.pixels_x * self.upsample_factor + self._psf_pad[0],
         ]
         mu_native_resolution = (
-            avg_pool2d(mu_clipped[None, None], self.upsample_factor)
+            backend.avg_pool2d(mu_clipped[None, None], self.upsample_factor)
             .squeeze(0)
             .squeeze(0)
         )

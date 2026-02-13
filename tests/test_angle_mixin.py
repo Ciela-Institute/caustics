@@ -1,7 +1,6 @@
 import numpy as np
-from torch import pi
-import torch
 import caustics
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -78,7 +77,7 @@ def test_angle_mixin():
         x0=0.0,
         y0=0.0,
         q=0.5,
-        phi=pi / 4,
+        phi=backend.pi / 4,
         Rein=1.0,
     )
 
@@ -95,7 +94,7 @@ def test_angle_mixin():
     lens.e2 = 0.4
     assert np.allclose(lens.q.value.item(), 0.5 / 1.5)
     assert np.allclose(lens.phi.value.item(), np.arctan2(0.4, 0.3) / 2)
-    q, phi = caustics.func.e1e2_to_qphi(torch.tensor(0.3), torch.tensor(0.4))
+    q, phi = caustics.func.e1e2_to_qphi(backend.as_array(0.3), backend.as_array(0.4))
     assert np.allclose(lens.q.value.item(), q.item())
     assert np.allclose(lens.phi.value.item(), phi.item())
     e1, e2 = caustics.func.qphi_to_e1e2(q, phi)
@@ -126,7 +125,7 @@ def test_angle_mixin():
     lens.c2 = 0.4
     assert np.allclose(lens.q.value.item(), 1 - 0.5 / 1.5)
     assert np.allclose(lens.phi.value.item(), np.arctan2(0.4, 0.3) / 2)
-    q, phi = caustics.func.c1c2_to_qphi(torch.tensor(0.3), torch.tensor(0.4))
+    q, phi = caustics.func.c1c2_to_qphi(backend.as_array(0.3), backend.as_array(0.4))
     assert np.allclose(lens.q.value.item(), q.item())
     assert np.allclose(lens.phi.value.item(), phi.item())
     c1, c2 = caustics.func.qphi_to_c1c2(q, phi)

@@ -15,7 +15,7 @@ authors = [
 ]
 description = "The lensing pipeline of the future: GPU-accelerated, automatically-differentiable, highly modular. Currently under heavy development: expect interface changes and some imprecise/untested calculations."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 keywords = [
         "caustics",
@@ -53,6 +53,7 @@ dev = [
     "ipywidgets",
     "matplotlib",
     "pyro-ppl",
+    "jax~=0.6.2",
 ]
 
 [tool.hatch.metadata.hooks.requirements_txt]

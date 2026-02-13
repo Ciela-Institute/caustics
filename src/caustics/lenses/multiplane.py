@@ -2,10 +2,9 @@ from typing import Annotated, Tuple
 from operator import itemgetter
 from warnings import warn
 
-import torch
-from torch import Tensor
 from caskade import forward
 
+from ..backend_obj import backend, ArrayLike
 from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
 from .base import ThickLens, ThinLens, NameType, CosmologyType, ZType
 
@@ -50,13 +49,13 @@ class Multiplane(ThickLens):
             lens.z_s = self.z_s
 
     @forward
-    def get_z_ls(self) -> list[Tensor]:
+    def get_z_ls(self) -> list[ArrayLike]:
         """
         Get the redshifts of each lens in the multiplane.
 
         Returns
         --------
-        List[Tensor]
+        List[ArrayLike]
             Redshifts of the lenses.
 
             *Unit: unitless*
@@ -66,9 +65,9 @@ class Multiplane(ThickLens):
     @forward
     def _raytrace_helper(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
         ray_coords: bool = True,
@@ -87,7 +86,7 @@ class Multiplane(ThickLens):
 
         # Store the time delays
         if shapiro_time_delay or geometric_time_delay:
-            TD = torch.zeros_like(x)
+            TD = backend.zeros_like(x)
 
         for i in lens_planes:
             z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
@@ -135,9 +134,9 @@ class Multiplane(ThickLens):
     @forward
     def raytrace(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> tuple[ArrayLike, ArrayLike]:
         """Calculate the angular source positions corresponding to the
         observer positions x,y. See Margarita et al. 2013 for the
         formalism from the GLAMER -II code:
@@ -165,24 +164,24 @@ class Multiplane(ThickLens):
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             angular x-coordinates in the image plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             angular y-coordinates in the image plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Reduced deflection angle in the x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Reduced deflection angle in the y-direction.
 
             *Unit: arcsec*
@@ -203,38 +202,38 @@ class Multiplane(ThickLens):
     @forward
     def effective_reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> tuple[ArrayLike, ArrayLike]:
         bx, by = self.raytrace(x, y)
         return x - bx, y - by
 
     @forward
     def surface_density(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Calculate the projected mass density.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Projected mass density.
 
             *Unit: Msun/Mpc^2*
@@ -250,11 +249,11 @@ class Multiplane(ThickLens):
     @forward
     def time_delay(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Compute the time delay of light caused by the lensing.
         This is based on equation 6.22 in Petters et al. 2001.
@@ -275,12 +274,12 @@ class Multiplane(ThickLens):
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the image plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the image plane.
 
             *Unit: arcsec*
@@ -293,7 +292,7 @@ class Multiplane(ThickLens):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Time delay caused by the lensing.
 
             *Unit: days*

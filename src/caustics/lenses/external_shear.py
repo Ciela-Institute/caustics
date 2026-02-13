@@ -2,10 +2,9 @@
 from typing import Optional, Union, Annotated, Literal
 from warnings import warn
 
-from torch import Tensor
-import torch
 from caskade import forward, Param
 
+from ..backend_obj import ArrayLike, backend
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -24,22 +23,22 @@ class ExternalShear(ThinLens):
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
 
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         The redshift of the lens.
 
         *Unit: unitless*
 
-    z_s: Optional[Union[Tensor, float]]
+    z_s: Optional[Union[ArrayLike, float]]
         The redshift of the source.
 
         *Unit: unitless*
 
-    x0, y0: Optional[Union[Tensor, float]]
+    x0, y0: Optional[Union[ArrayLike, float]]
         Coordinates of the shear center in the lens plane.
 
         *Unit: arcsec*
 
-    gamma_1, gamma_2: Optional[Union[Tensor, float]]
+    gamma_1, gamma_2: Optional[Union[ArrayLike, float]]
         Shear components.
 
         *Unit: unitless*
@@ -63,20 +62,24 @@ class ExternalShear(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "x-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "y-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         gamma_1: Annotated[
-            Optional[Union[Tensor, float]], "Shear component in the x-direction", True
+            Optional[Union[ArrayLike, float]],
+            "Shear component in the x-direction",
+            True,
         ] = None,
         gamma_2: Annotated[
-            Optional[Union[Tensor, float]], "Shear component in the y-direction", True
+            Optional[Union[ArrayLike, float]],
+            "Shear component in the y-direction",
+            True,
         ] = None,
         parametrization: Literal["cartesian", "angular"] = "cartesian",
         s: Annotated[
@@ -166,36 +169,36 @@ class ExternalShear(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        gamma_1: Annotated[Tensor, "Param"],
-        gamma_2: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        gamma_1: Annotated[ArrayLike, "Param"],
+        gamma_2: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculates the reduced deflection angle.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in y-direction.
 
             *Unit: arcsec*
@@ -208,31 +211,31 @@ class ExternalShear(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        gamma_1: Annotated[Tensor, "Param"],
-        gamma_2: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        gamma_1: Annotated[ArrayLike, "Param"],
+        gamma_2: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculates the lensing potential.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*
@@ -243,27 +246,27 @@ class ExternalShear(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> ArrayLike:
         """
         The convergence is undefined for an external shear.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Convergence for an external shear.
 
             *Unit: unitless*
@@ -274,4 +277,4 @@ class ExternalShear(ThinLens):
             This method is not implemented as the convergence is not defined
             for an external shear.
         """
-        return torch.zeros_like(x)
+        return backend.zeros_like(x)

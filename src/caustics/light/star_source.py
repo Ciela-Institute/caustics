@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
 from caskade import forward, Param
 
 from .base import Source, NameType
 from . import func
+from ..backend_obj import ArrayLike
 
 __all__ = ("StarSource",)
 
@@ -19,27 +19,27 @@ class StarSource(Source):
 
     Attributes
     -----------
-    x0: Optional[Tensor]
+    x0: Optional[ArrayLike]
         The x-coordinate of the Star source's center.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Optional[ArrayLike]
         The y-coordinate of the Star source's center.
 
         *Unit: arcsec*
 
-    theta_s: Optional[Tensor]
+    theta_s: Optional[ArrayLike]
         The radius of the star.
 
         *Unit: arcsec*
 
-    Ie: Optional[Tensor]
+    Ie: Optional[ArrayLike]
         The intensity at the center of the star.
 
         *Unit: flux*
 
-    gamma: Optional[Tensor]
+    gamma: Optional[ArrayLike]
         The linear limb darkening coefficient.
 
         *Unit: unitless*
@@ -49,27 +49,27 @@ class StarSource(Source):
     def __init__(
         self,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the star source's center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the star source's center",
             True,
         ] = None,
         theta_s: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The radius of the star source",
             True,
         ] = None,
         Ie: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The intensity at the effective radius",
             True,
         ] = None,
         gamma: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The linear limb darkening coefficient",
             True,
         ] = None,
@@ -83,27 +83,27 @@ class StarSource(Source):
         name: str
             The name of the source.
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             The x-coordinate of the star source's center.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             The y-coordinate of the star source's center.
 
             *Unit: arcsec*
 
-        theta_s: Optional[Tensor]
+        theta_s: Optional[ArrayLike]
             The radius of the star.
 
             *Unit: arcsec*
 
-        Ie: Optional[Tensor]
+        Ie: Optional[ArrayLike]
             The intensity at the center of the source.
 
             *Unit: flux*
 
-        gamma: Optional[Tensor]
+        gamma: Optional[ArrayLike]
             The linear limb darkening coefficient.
 
             *Unit: unitless*
@@ -123,11 +123,11 @@ class StarSource(Source):
         self,
         x,
         y,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        theta_s: Annotated[Tensor, "Param"],
-        Ie: Annotated[Tensor, "Param"],
-        gamma: Annotated[Tensor, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        theta_s: Annotated[ArrayLike, "Param"],
+        Ie: Annotated[ArrayLike, "Param"],
+        gamma: Annotated[ArrayLike, "Param"],
     ):
         """
         Implements the `brightness` method for `star`. This method calculates the
@@ -135,13 +135,13 @@ class StarSource(Source):
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
@@ -149,7 +149,7 @@ class StarSource(Source):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The brightness of the source at the given point(s).
             The output tensor has the same shape as `x` and `y`.
 

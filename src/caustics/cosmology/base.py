@@ -3,7 +3,7 @@ from abc import abstractmethod
 from math import pi
 from typing import Optional, Annotated
 
-from torch import Tensor
+from ..backend_obj import ArrayLike
 from caskade import Module, forward
 
 from ..constants import G_over_c2
@@ -45,20 +45,20 @@ class Cosmology(Module):
 
     @abstractmethod
     @forward
-    def critical_density(self, z: Tensor) -> Tensor:
+    def critical_density(self, z: ArrayLike) -> ArrayLike:
         """
         Compute the critical density at redshift z.
 
         Parameters
         ----------
-        z: Tensor
+        z: ArrayLike
             The redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The critical density at each redshift.
 
             *Unit: Msun/Mpc^3*
@@ -68,20 +68,20 @@ class Cosmology(Module):
 
     @abstractmethod
     @forward
-    def comoving_distance(self, z: Tensor, *args, **kwargs) -> Tensor:
+    def comoving_distance(self, z: ArrayLike, *args, **kwargs) -> ArrayLike:
         """
         Compute the comoving distance to redshift z.
 
         Parameters
         ----------
-        z: Tensor
+        z: ArrayLike
             The redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The comoving distance to each redshift.
 
             *Unit: Mpc*
@@ -91,20 +91,20 @@ class Cosmology(Module):
 
     @abstractmethod
     @forward
-    def transverse_comoving_distance(self, z: Tensor, *args, **kwargs) -> Tensor:
+    def transverse_comoving_distance(self, z: ArrayLike, *args, **kwargs) -> ArrayLike:
         """
         Compute the transverse comoving distance to redshift z (Mpc).
 
         Parameters
         ----------
-        z: Tensor
+        z: ArrayLike
             The redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The transverse comoving distance to each redshift in Mpc.
 
             *Unit: Mpc*
@@ -113,25 +113,25 @@ class Cosmology(Module):
         ...
 
     @forward
-    def comoving_distance_z1z2(self, z1: Tensor, z2: Tensor) -> Tensor:
+    def comoving_distance_z1z2(self, z1: ArrayLike, z2: ArrayLike) -> ArrayLike:
         """
         Compute the comoving distance between two redshifts.
 
         Parameters
         ----------
-        z1: Tensor
+        z1: ArrayLike
             The starting redshift.
 
             *Unit: unitless*
 
-        z2: Tensor
+        z2: ArrayLike
             The ending redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The comoving distance between each pair of redshifts.
 
             *Unit: Mpc*
@@ -140,25 +140,27 @@ class Cosmology(Module):
         return self.comoving_distance(z2) - self.comoving_distance(z1)
 
     @forward
-    def transverse_comoving_distance_z1z2(self, z1: Tensor, z2: Tensor) -> Tensor:
+    def transverse_comoving_distance_z1z2(
+        self, z1: ArrayLike, z2: ArrayLike
+    ) -> ArrayLike:
         """
         Compute the transverse comoving distance between two redshifts (Mpc).
 
         Parameters
         ----------
-        z1: Tensor
+        z1: ArrayLike
             The starting redshift.
 
             *Unit: unitless*
 
-        z2: Tensor
+        z2: ArrayLike
             The ending redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The transverse comoving distance between each pair of redshifts in Mpc.
 
             *Unit: Mpc*
@@ -169,20 +171,20 @@ class Cosmology(Module):
         ) - self.transverse_comoving_distance(z1)
 
     @forward
-    def angular_diameter_distance(self, z: Tensor) -> Tensor:
+    def angular_diameter_distance(self, z: ArrayLike) -> ArrayLike:
         """
         Compute the angular diameter distance to redshift z.
 
         Parameters
         -----------
-        z: Tensor
+        z: ArrayLike
             The redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The angular diameter distance to each redshift.
 
             *Unit: Mpc*
@@ -191,25 +193,25 @@ class Cosmology(Module):
         return self.comoving_distance(z) / (1 + z)
 
     @forward
-    def angular_diameter_distance_z1z2(self, z1: Tensor, z2: Tensor) -> Tensor:
+    def angular_diameter_distance_z1z2(self, z1: ArrayLike, z2: ArrayLike) -> ArrayLike:
         """
         Compute the angular diameter distance between two redshifts.
 
         Parameters
         ----------
-        z1: Tensor
+        z1: ArrayLike
             The starting redshift.
 
             *Unit: unitless*
 
-        z2: Tensor
+        z2: ArrayLike
             The ending redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The angular diameter distance between each pair of redshifts.
 
             *Unit: Mpc*
@@ -220,27 +222,27 @@ class Cosmology(Module):
     @forward
     def time_delay_distance(
         self,
-        z_l: Tensor,
-        z_s: Tensor,
-    ) -> Tensor:
+        z_l: ArrayLike,
+        z_s: ArrayLike,
+    ) -> ArrayLike:
         """
         Compute the time delay distance between lens and source planes.
 
         Parameters
         ----------
-        z_l: Tensor
+        z_l: ArrayLike
             The lens redshift.
 
             *Unit: unitless*
 
-        z_s: Tensor
+        z_s: ArrayLike
             The source redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The time delay distance for each pair of lens and source redshifts.
 
             *Unit: Mpc*
@@ -254,27 +256,27 @@ class Cosmology(Module):
     @forward
     def critical_surface_density(
         self,
-        z_l: Tensor,
-        z_s: Tensor,
-    ) -> Tensor:
+        z_l: ArrayLike,
+        z_s: ArrayLike,
+    ) -> ArrayLike:
         """
         Compute the critical surface density between lens and source planes.
 
         Parameters
         ----------
-        z_l: Tensor
+        z_l: ArrayLike
             The lens redshift.
 
             *Unit: unitless*
 
-        z_s: Tensor
+        z_s: ArrayLike
             The source redshift.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The critical surface density for each pair of lens and source redshifts.
 
             *Unit: Msun/Mpc^2*

@@ -1,5 +1,5 @@
 import caustics
-import torch
+from caustics.backend_obj import backend
 
 
 def test_enclosed_mass_runs(device):
@@ -12,10 +12,10 @@ def test_enclosed_mass_runs(device):
     cosmo = caustics.FlatLambdaCDM(name="cosmo")
 
     # Define the enclosed mass profile.
-    z_s = torch.tensor(1.0, device=device)
+    z_s = backend.as_array(1.0, device=device)
     enclosed_mass = caustics.EnclosedMass(
         cosmology=cosmo,
-        enclosed_mass=lambda r, p: 1 - torch.exp(-r / p),
+        enclosed_mass=lambda r, p: 1 - backend.exp(-r / p),
         z_l=0.5,
         z_s=z_s,
         **caustics.EnclosedMass._null_params,
@@ -23,11 +23,13 @@ def test_enclosed_mass_runs(device):
     enclosed_mass.to(device)
     # Calculate the enclosed mass profile.
     ax, ay = enclosed_mass.reduced_deflection_angle(x, y)
-    assert torch.all(torch.isfinite(ax))
-    assert torch.all(torch.isfinite(ay))
+    assert backend.all(backend.isfinite(ax))
+    assert backend.all(backend.isfinite(ay))
     k = enclosed_mass.convergence(x, y)
-    assert torch.all(torch.isfinite(k))
+    assert backend.all(backend.isfinite(k))
 
 
 if __name__ == "__main__":
+    import torch
+
     test_enclosed_mass_runs(torch.device("cpu"))

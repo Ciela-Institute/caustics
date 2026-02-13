@@ -1,9 +1,9 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor, pi
 from caskade import forward, Param
 
+from ..backend_obj import backend, ArrayLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 from ..angle_mixin import Angle_Mixin
@@ -35,7 +35,7 @@ class EPL(Angle_Mixin, ThinLens):
 
     Parameters
     ----------
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         This is the redshift of the lens.
         In the context of gravitational lensing,
         the lens is the galaxy or other mass distribution
@@ -43,32 +43,32 @@ class EPL(Angle_Mixin, ThinLens):
 
         *Unit: unitless*
 
-    x0 and y0: Optional[Union[Tensor, float]]
+    x0 and y0: Optional[Union[ArrayLike, float]]
         These are the coordinates of the lens center in the lens plane.
         The lens plane is the plane perpendicular to the line of sight
         in which the deflection of light by the lens is considered.
 
         *Unit: arcsec*
 
-    q: Optional[Union[Tensor, float]]
+    q: Optional[Union[ArrayLike, float]]
         This is the axis ratio of the lens, i.e., the ratio
         of the minor axis to the major axis of the elliptical lens.
 
         *Unit: unitless*
 
-    phi: Optional[Union[Tensor, float]]
+    phi: Optional[Union[ArrayLike, float]]
         This is the orientation of the lens on the sky,
         typically given as an angle measured counter-clockwise
         from some reference direction.
 
         *Unit: radians*
 
-    Rein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[ArrayLike, float]]
         The Einstein radius of the lens, exact at q=1.0.
 
         *Unit: arcsec*
 
-    t: Optional[Union[Tensor, float]]
+    t: Optional[Union[ArrayLike, float]]
         This is the power-law slope parameter of the lens model.
         In the context of the EPL model,
         t is equivalent to the gamma parameter minus one,
@@ -94,30 +94,30 @@ class EPL(Angle_Mixin, ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]], "X coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]], "X coordinate of the lens center", True
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]], "Y coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]], "Y coordinate of the lens center", True
         ] = None,
         q: Annotated[
-            Optional[Union[Tensor, float]], "Axis ratio of the lens", True
+            Optional[Union[ArrayLike, float]], "Axis ratio of the lens", True
         ] = None,
         phi: Annotated[
-            Optional[Union[Tensor, float]], "Position angle of the lens", True
+            Optional[Union[ArrayLike, float]], "Position angle of the lens", True
         ] = None,
         Rein: Annotated[
-            Optional[Union[Tensor, float]], "Einstein radius of the lens", True
+            Optional[Union[ArrayLike, float]], "Einstein radius of the lens", True
         ] = None,
         t: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "Power law slope (`gamma-1`) of the lens",
             True,
         ] = None,
         angle_system: str = "q_phi",
-        e1: Optional[Union[Tensor, float]] = None,
-        e2: Optional[Union[Tensor, float]] = None,
-        c1: Optional[Union[Tensor, float]] = None,
-        c2: Optional[Union[Tensor, float]] = None,
+        e1: Optional[Union[ArrayLike, float]] = None,
+        e2: Optional[Union[ArrayLike, float]] = None,
+        c1: Optional[Union[ArrayLike, float]] = None,
+        c2: Optional[Union[ArrayLike, float]] = None,
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
@@ -136,42 +136,42 @@ class EPL(Angle_Mixin, ThinLens):
             Name of the lens model.
         cosmology: Cosmology
             Cosmology object that provides cosmological distance calculations.
-        z_l: Optional[Tensor]
+        z_l: Optional[ArrayLike]
             Redshift of the lens.
             If not provided, it is considered as a free parameter.
 
             *Unit: unitless*
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             X coordinate of the lens center.
             If not provided, it is considered as a free parameter.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             Y coordinate of the lens center.
             If not provided, it is considered as a free parameter.
 
             *Unit: arcsec*
 
-        q: Optional[Tensor]
+        q: Optional[ArrayLike]
             Axis ratio of the lens.
             If not provided, it is considered as a free parameter.
 
             *Unit: unitless*
 
-        phi: Optional[Tensor]
+        phi: Optional[ArrayLike]
             Position angle of the lens.
             If not provided, it is considered as a free parameter.
 
             *Unit: radians*
 
-        Rein: Optional[Tensor]
+        Rein: Optional[ArrayLike]
             Einstein radius of the lens.
 
             *Unit: arcsec*
 
-        t: Optional[Tensor]
+        t: Optional[ArrayLike]
             Power law slope (`gamma-1`) of the lens.
             If not provided, it is considered as a free parameter.
 
@@ -195,7 +195,7 @@ class EPL(Angle_Mixin, ThinLens):
         self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self.q = Param("q", q, shape=(), units="unitless", valid=(0, 1))
         self.phi = Param(
-            "phi", phi, shape=(), units="radians", valid=(0, pi), cyclic=True
+            "phi", phi, shape=(), units="radians", valid=(0, backend.pi), cyclic=True
         )
         self.Rein = Param("Rein", Rein, shape=(), units="arcsec", valid=(0, None))
         self.t = Param("t", t, shape=(), units="unitless", valid=(0, 2))
@@ -214,38 +214,38 @@ class EPL(Angle_Mixin, ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-        t: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+        t: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Compute the reduced deflection angles of the lens.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             X coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             Y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         --------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle
 
             *Unit: arcsec*
@@ -258,33 +258,33 @@ class EPL(Angle_Mixin, ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-        t: Annotated[Tensor, "Param"],
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+        t: Annotated[ArrayLike, "Param"],
     ):
         """
         Compute the lensing potential of the lens.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             X coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             Y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*
@@ -297,33 +297,33 @@ class EPL(Angle_Mixin, ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-        t: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+        t: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the convergence of the lens, which describes the local density of the lens.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             X coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             Y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The convergence of the lens.
 
             *Unit: unitless*

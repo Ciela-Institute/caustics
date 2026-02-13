@@ -1,5 +1,4 @@
-import torch
-
+from ...backend_obj import backend
 from ...utils import translate_rotate
 
 
@@ -10,39 +9,39 @@ def reduced_deflection_angle_mass_sheet(x0, y0, kappa, x, y):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    kappa: Optional[Union[Tensor, float]]
+    kappa: Optional[Union[ArrayLike, float]]
         Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
     Returns
     -------
-    x_component: Tensor
+    x_component: ArrayLike
         Deflection Angle in the x-direction.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         Deflection Angle in the y-direction.
 
         *Unit: arcsec*
@@ -60,34 +59,34 @@ def potential_mass_sheet(x0, y0, kappa, x, y):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    kappa: Optional[Union[Tensor, float]]
+    kappa: Optional[Union[ArrayLike, float]]
         Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The lensing potential.
 
         *Unit: arcsec^2*
@@ -105,23 +104,23 @@ def convergence_mass_sheet(kappa, x):
 
     Parameters
     ----------
-    kappa: Optional[Union[Tensor, float]]
+    kappa: Optional[Union[ArrayLike, float]]
         Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens. Only used for shape and device.
 
         *Unit: arcsec*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The lensing potential.
 
         *Unit: arcsec^2*
 
     """
     # By definition
-    return kappa * torch.ones_like(x)
+    return kappa * backend.ones_like(x)

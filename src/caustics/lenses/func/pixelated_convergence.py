@@ -1,7 +1,6 @@
-import torch
-import torch.nn.functional as F
 from scipy.fft import next_fast_len
 
+from ...backend_obj import backend
 from ...utils import safe_divide, safe_log, meshgrid, interp2d
 
 
@@ -23,12 +22,12 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
 
     Returns
     -------
-    x_kernel: Tensor
+    x_kernel: ArrayLike
         The x-component of the kernel.
 
         *Unit: unitless*
 
-    y_kernel: Tensor
+    y_kernel: ArrayLike
         The y-component of the kernel.
 
         *Unit: unitless*
@@ -37,7 +36,7 @@ def build_kernels_pixelated_convergence(pixelscale, n_pix):
     x_mg, y_mg = meshgrid(pixelscale, 2 * n_pix)
 
     d2 = x_mg**2 + y_mg**2
-    potential_kernel = safe_log(d2.sqrt())
+    potential_kernel = safe_log(backend.sqrt(d2))
     ax_kernel = safe_divide(x_mg, d2)
     ay_kernel = safe_divide(y_mg, d2)
 
@@ -60,17 +59,17 @@ def build_window_pixelated_convergence(window, kernel_shape):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The window to multiply with the kernel.
 
     """
-    x, y = torch.meshgrid(
-        torch.linspace(-1, 1, kernel_shape[-1]),
-        torch.linspace(-1, 1, kernel_shape[-2]),
+    x, y = backend.meshgrid(
+        backend.linspace(-1, 1, kernel_shape[-1]),
+        backend.linspace(-1, 1, kernel_shape[-2]),
         indexing="xy",
     )
-    r = (x**2 + y**2).sqrt()
-    return torch.clip((1 - r) / window, 0, 1)
+    r = backend.sqrt(x**2 + y**2)
+    return backend.clamp((1 - r) / window, 0, 1)
 
 
 def _fft_size(n_pix):
@@ -85,7 +84,7 @@ def _fft2_padded(x, n_pix, padding: str):
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         The input tensor.
 
     padding: str
@@ -93,7 +92,7 @@ def _fft2_padded(x, n_pix, padding: str):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The 2D FFT of the input tensor.
 
     """
@@ -101,13 +100,15 @@ def _fft2_padded(x, n_pix, padding: str):
     if padding == "zero":
         pass
     elif padding in ["reflect", "circular"]:
-        x = F.pad(x[None, None], (0, n_pix - 1, 0, n_pix - 1), mode=padding).squeeze()
+        x = backend.pad(
+            x[None, None], (0, n_pix - 1, 0, n_pix - 1), mode=padding
+        ).squeeze()
     elif padding == "tile":
-        x = torch.tile(x, (2, 2))
+        x = backend.tile(x, (2, 2))
     else:
         raise ValueError(f"Invalid padding type: {padding}")
 
-    return torch.fft.rfft2(x, _fft_size(n_pix))
+    return backend.fft.rfft2(x, _fft_size(n_pix))
 
 
 def _unpad_fft(x, n_pix):
@@ -116,17 +117,17 @@ def _unpad_fft(x, n_pix):
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         The input tensor.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The unpaded FFT of the input tensor.
 
     """
     _s = _fft_size(n_pix)
-    return torch.roll(x, (-_s[0] // 2, -_s[1] // 2), dims=(-2, -1))[..., : n_pix, : n_pix]  # fmt: skip
+    return backend.roll(x, (-_s[0] // 2, -_s[1] // 2), dims=(-2, -1))[..., : n_pix, : n_pix]  # fmt: skip
 
 
 def reduced_deflection_angle_pixelated_convergence(
@@ -161,27 +162,27 @@ def reduced_deflection_angle_pixelated_convergence(
 
         *Unit: arcsec*
 
-    convergence_map: Tensor
+    convergence_map: ArrayLike
         The pixelated convergence map.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate in the lens plane at which to compute the deflection.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate in the lens plane at which to compute the deflection.
 
         *Unit: arcsec*
 
-    ax_kernel: Tensor
+    ax_kernel: ArrayLike
         The x-component of the kernel for convolution.
 
         *Unit: unitless*
 
-    ay_kernel: Tensor
+    ay_kernel: ArrayLike
         The y-component of the kernel for convolution.
 
         *Unit: unitless*
@@ -208,20 +209,24 @@ def reduced_deflection_angle_pixelated_convergence(
         The mode of convolution to use. Either "fft" or "conv2d".
     """
     _s = _fft_size(n_pix)
-    _pixelscale_pi = pixelscale**2 / torch.pi
-    kernels = torch.stack((ax_kernel, ay_kernel), dim=0)
+    _pixelscale_pi = pixelscale**2 / backend.pi
+    kernels = backend.stack((ax_kernel, ay_kernel), dim=0)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
         deflection_angles = (
-            torch.fft.irfft2(convergence_tilde * kernels, _s).real * _pixelscale_pi
+            backend.fft.irfft2(convergence_tilde * kernels, _s).real * _pixelscale_pi
         )
         deflection_angle_maps = _unpad_fft(deflection_angles, n_pix)
     elif convolution_mode == "conv2d":
-        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
+        convergence_map_flipped = backend.flip(convergence_map, (-1, -2))[None, None]
         # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
         deflection_angle_maps = (
-            F.conv2d(
-                kernels.unsqueeze(1), convergence_map_flipped, padding="same"
+            backend.conv2d(
+                backend.to(
+                    backend.unsqueeze(kernels, 1), dtype=convergence_map_flipped.dtype
+                ),
+                convergence_map_flipped,
+                padding="same",
             ).squeeze()
             * _pixelscale_pi
         )
@@ -230,8 +235,8 @@ def reduced_deflection_angle_pixelated_convergence(
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     # Scale is distance from center of image to center of pixel on the edge
     scale = fov / 2
-    _x_view_scale = (x - x0).view(-1) / scale
-    _y_view_scale = (y - y0).view(-1) / scale
+    _x_view_scale = backend.view(x - x0, -1) / scale
+    _y_view_scale = backend.view(y - y0, -1) / scale
     deflection_angle_x = interp2d(
         deflection_angle_maps[0], _x_view_scale, _y_view_scale
     ).reshape(x.shape)
@@ -272,22 +277,22 @@ def potential_pixelated_convergence(
 
         *Unit: arcsec*
 
-    convergence_map: Tensor
+    convergence_map: ArrayLike
         The pixelated convergence map.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate in the lens plane at which to compute the deflection.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate in the lens plane at which to compute the deflection.
 
         *Unit: arcsec*
 
-    potential_kernel: Tensor
+    potential_kernel: ArrayLike
         The kernel for convolution.
 
         *Unit: unitless*
@@ -316,18 +321,24 @@ def potential_pixelated_convergence(
     _s = _fft_size(n_pix)
     if convolution_mode == "fft":
         convergence_tilde = _fft2_padded(convergence_map, n_pix, padding)
-        potential = torch.fft.irfft2(convergence_tilde * potential_kernel, _s) * (
-            pixelscale**2 / torch.pi
+        potential = backend.fft.irfft2(convergence_tilde * potential_kernel, _s) * (
+            pixelscale**2 / backend.pi
         )
         potential_map = _unpad_fft(potential, n_pix)
     elif convolution_mode == "conv2d":
-        convergence_map_flipped = convergence_map.flip((-1, -2))[None, None]
-        potential_map = F.conv2d(
-            potential_kernel[None, None], convergence_map_flipped, padding="same"
-        ).squeeze() * (pixelscale**2 / torch.pi)
+        convergence_map_flipped = backend.flip(convergence_map, (-1, -2))[None, None]
+        potential_map = backend.conv2d(
+            backend.to(
+                potential_kernel[None, None], dtype=convergence_map_flipped.dtype
+            ),
+            convergence_map_flipped,
+            padding="same",
+        ).squeeze() * (pixelscale**2 / backend.pi)
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     scale = fov / 2
     return interp2d(
-        potential_map, (x - x0).view(-1) / scale, (y - y0).view(-1) / scale
+        potential_map,
+        backend.view(x - x0, -1) / scale,
+        backend.view(y - y0, -1) / scale,
     ).reshape(x.shape)

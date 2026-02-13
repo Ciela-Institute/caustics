@@ -1,9 +1,9 @@
 from typing import Optional
 from warnings import warn
 
-from torch import Tensor
 from caskade import forward
 
+from ..backend_obj import backend, ArrayLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from ..utils import vmap_reduce
 
@@ -60,46 +60,45 @@ class BatchedPlane(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         lens_params,
         lens_dims,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the total deflection angle by summing
         the deflection angles of all individual lenses.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             The x-component of the deflection angle.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             The y-component of the deflection angle.
 
             *Unit: arcsec*
 
         """
-        print(lens_dims)
         vr_deflection_angle = vmap_reduce(
             lambda *args: self.lens.reduced_deflection_angle(
                 args[0], args[1], args[2:]
             ),
-            reduce_func=lambda x: (x[0].sum(dim=0), x[1].sum(dim=0)),
+            reduce_func=lambda x: (backend.sum(x[0], dim=0), backend.sum(x[1], dim=0)),
             chunk_size=self.chunk_size,
             in_dims=(None, None) + tuple(lens_dims),
             out_dims=(0, 0),
@@ -109,30 +108,30 @@ class BatchedPlane(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         lens_params,
         lens_dims,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Calculate the total projected mass density by
         summing the mass densities of all individual lenses.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The total projected mass density.
 
             *Unit: unitless*
@@ -148,30 +147,30 @@ class BatchedPlane(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         lens_params,
         lens_dims,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Compute the total lensing potential by summing
         the lensing potentials of all individual lenses.
 
         Parameters
         -----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The total lensing potential.
 
             *Unit: arcsec^2*

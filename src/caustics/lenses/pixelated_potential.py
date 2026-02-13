@@ -1,11 +1,10 @@
 # mypy: disable-error-code="index,dict-item"
 from typing import Optional, Annotated, Union
 
-import torch
-from torch import Tensor
 import numpy as np
 from caskade import forward, Param
 
+from ..backend_obj import backend, ArrayLike
 from ..utils import interp_bicubic
 from .base import ThinLens, CosmologyType, NameType, ZType
 
@@ -26,17 +25,17 @@ class PixelatedPotential(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the center of the grid",
             True,
-        ] = torch.tensor(0.0),
+        ] = backend.make_array(0.0),
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the center of the grid",
             True,
-        ] = torch.tensor(0.0),
+        ] = backend.make_array(0.0),
         potential_map: Annotated[
-            Optional[Tensor],
+            Optional[ArrayLike],
             "A 2D tensor representing the potential map",
             True,
         ] = None,
@@ -67,22 +66,22 @@ class PixelatedPotential(ThinLens):
         cosmology: Cosmology
             An instance of the cosmological parameters.
 
-        z_l: Optional[Tensor]
+        z_l: Optional[ArrayLike]
             The redshift of the lens.
 
             *Unit: unitless*
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             The x-coordinate of the center of the grid.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             The y-coordinate of the center of the grid.
 
             *Unit: arcsec*
 
-        potential_map: Optional[Tensor]
+        potential_map: Optional[ArrayLike]
             A 2D tensor representing the potential map.
 
             *Unit: unitless*
@@ -113,36 +112,36 @@ class PixelatedPotential(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        potential_map: Annotated[Tensor, "Param"],
-        pixelscale: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        potential_map: Annotated[ArrayLike, "Param"],
+        pixelscale: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Compute the deflection angles at the specified positions using the given convergence map.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the deflection angles for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the deflection angles for.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in the x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in the y-direction.
 
             *Unit: arcsec*
@@ -153,8 +152,8 @@ class PixelatedPotential(ThinLens):
         return tuple(
             alpha.reshape(x.shape) / pixelscale
             for alpha in interp_bicubic(
-                (x - x0).view(-1) / fov_x * 2,
-                (y - y0).view(-1) / fov_y * 2,
+                backend.view(x - x0, -1) / fov_x * 2,
+                backend.view(y - y0, -1) / fov_y * 2,
                 potential_map,
                 get_Y=False,
                 get_dY=True,
@@ -165,31 +164,31 @@ class PixelatedPotential(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        potential_map: Annotated[Tensor, "Param"],
-        pixelscale: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        potential_map: Annotated[ArrayLike, "Param"],
+        pixelscale: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential at the specified positions using the given convergence map.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the lensing potential for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the lensing potential for.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential at the specified positions.
 
             *Unit: arcsec^2*
@@ -198,8 +197,8 @@ class PixelatedPotential(ThinLens):
         fov_x = potential_map.shape[1] * pixelscale
         fov_y = potential_map.shape[0] * pixelscale
         return interp_bicubic(
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1) / fov_y * 2,
             potential_map,
             get_Y=True,
             get_dY=False,
@@ -209,31 +208,31 @@ class PixelatedPotential(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        potential_map: Annotated[Tensor, "Param"],
-        pixelscale: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        potential_map: Annotated[ArrayLike, "Param"],
+        pixelscale: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the convergence at the specified positions.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinates of the positions to compute the convergence for.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The convergence at the specified positions.
 
             *Unit: unitless*
@@ -242,8 +241,8 @@ class PixelatedPotential(ThinLens):
         fov_x = potential_map.shape[1] * pixelscale
         fov_y = potential_map.shape[0] * pixelscale
         _, dY11, dY22 = interp_bicubic(
-            (x - x0).view(-1) / fov_x * 2,
-            (y - y0).view(-1) / fov_y * 2,
+            backend.view(x - x0, -1) / fov_x * 2,
+            backend.view(y - y0, -1) / fov_y * 2,
             potential_map,
             get_Y=False,
             get_dY=False,

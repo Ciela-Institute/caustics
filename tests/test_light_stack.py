@@ -1,6 +1,5 @@
-import torch
-
 import caustics
+from caustics.backend_obj import backend
 
 
 def test_stack_sersic(device):
@@ -30,5 +29,5 @@ def test_stack_sersic(device):
     brightness = stack.brightness(thx, thy, params=params)
 
     assert brightness.shape == (nx, ny)
-    assert torch.all(brightness >= 0.0).item()
-    assert torch.all(torch.isfinite(brightness)).item()
+    assert backend.all(brightness >= 0.0).item()
+    assert backend.all(backend.isfinite(brightness)).item()

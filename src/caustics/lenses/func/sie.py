@@ -1,6 +1,4 @@
-from math import pi
-import torch
-
+from ...backend_obj import backend
 from ...utils import translate_rotate, derotate
 from ...constants import c_km_s, rad_to_arcsec
 
@@ -13,37 +11,37 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Tensor
+    Rein: ArrayLike
         The Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
@@ -55,30 +53,30 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     Returns
     --------
-    x_component: Tensor
+    x_component: ArrayLike
         The x-component of the deflection angle.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         The y-component of the deflection angle.
 
         *Unit: arcsec*
 
     """
     # Handle the case where q = 1.0, numerical instability
-    q = torch.where(q == 1.0, q - 1e-6, q)
+    q = backend.where(q == 1.0, q - 1e-6, q)
 
     x, y = translate_rotate(x, y, x0, y0, phi)
 
     # intermediary variables
     q2_ = q**2
-    f = (1 - q2_).sqrt()
-    rein_q_sqrt_f_ = Rein * q.sqrt() / f
+    f = backend.sqrt(1 - q2_)
+    rein_q_sqrt_f_ = Rein * backend.sqrt(q) / f
 
-    psi = (q2_ * (x**2 + s**2) + y**2).sqrt()
-    ax = rein_q_sqrt_f_ * (f * x / (psi + s)).atan()  # fmt: skip
-    ay = rein_q_sqrt_f_ * (f * y / (psi + q2_ * s)).atanh()  # fmt: skip
+    psi = backend.sqrt(q2_ * (x**2 + s**2) + y**2)
+    ax = rein_q_sqrt_f_ * backend.atan(f * x / (psi + s))  # fmt: skip
+    ay = rein_q_sqrt_f_ * backend.atanh(f * y / (psi + q2_ * s))  # fmt: skip
 
     return derotate(ax, ay, phi)
 
@@ -91,37 +89,37 @@ def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Tensor
+    Rein: ArrayLike
         The Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
@@ -133,7 +131,7 @@ def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The lensing potential.
 
         *Unit: arcsec^2*
@@ -147,14 +145,15 @@ def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     q2_ = q**2
     x2_ = x**2
     max_s_ = max(s, 1e-6)
-    rein_q_sqrt_s_ = Rein * q.sqrt() * s
+    rein_q_sqrt_s_ = Rein * backend.sqrt(q) * s
 
-    psi = (q2_ * (x2_ + s**2) + y**2).sqrt()
+    psi = backend.sqrt(q2_ * (x2_ + s**2) + y**2)
     return (
         x * ax
         + y * ay
-        - rein_q_sqrt_s_ * ((psi + max_s_) ** 2 + (1 - q2_) * x2_).sqrt().log()
-        + rein_q_sqrt_s_ * ((1 + q) * max_s_).log()
+        - rein_q_sqrt_s_
+        * backend.log(backend.sqrt((psi + max_s_) ** 2 + (1 - q2_) * x2_))
+        + rein_q_sqrt_s_ * backend.log((1 + q) * max_s_)
     )
 
 
@@ -165,37 +164,37 @@ def convergence_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         The y-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    q: Tensor
+    q: ArrayLike
         The axis ratio of the lens.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The orientation angle of the lens (position angle).
 
         *Unit: radians*
 
-    Rein: Tensor
+    Rein: ArrayLike
         The Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate of the lens.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate of the lens.
 
         *Unit: arcsec*
@@ -207,15 +206,15 @@ def convergence_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The projected mass density.
 
         *Unit: unitless*
 
     """
     x, y = translate_rotate(x, y, x0, y0, phi)
-    psi = (q**2 * (x**2 + s**2) + y**2).sqrt()
-    return 0.5 * q.sqrt() * Rein / psi
+    psi = backend.sqrt(q**2 * (x**2 + s**2) + y**2)
+    return 0.5 * backend.sqrt(q) * Rein / psi
 
 
 def sigma_v_to_rein_sie(sigma_v, dls, ds):
@@ -225,27 +224,27 @@ def sigma_v_to_rein_sie(sigma_v, dls, ds):
 
     Parameters
     ----------
-    sigma_v: Tensor
+    sigma_v: ArrayLike
         The velocity dispersion of the lens.
 
         *Unit: km/s*
 
-    dls: Tensor
+    dls: ArrayLike
         The angular diameter distance between the lens and the source.
 
         *Unit: Mpc*
 
-    ds: Tensor
+    ds: ArrayLike
         The angular diameter distance between the observer and the source.
 
         *Unit: Mpc*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The Einstein radius.
 
         *Unit: arcsec*
 
     """
-    return rad_to_arcsec * 4 * pi * (sigma_v / c_km_s) ** 2 * dls / ds
+    return rad_to_arcsec * 4 * backend.pi * (sigma_v / c_km_s) ** 2 * dls / ds

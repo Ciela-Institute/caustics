@@ -5,6 +5,8 @@ import runpy
 import subprocess
 import os
 
+from caustics.backend_obj import backend
+
 pytestmark = pytest.mark.skipif(
     platform.system() in ["Windows", "Darwin"],
     reason="Graphviz not installed on Windows runner",
@@ -47,6 +49,9 @@ def cleanup_py_scripts(nbpath):
 
 @pytest.mark.parametrize("nb_path", notebooks)
 def test_notebook(nb_path):
+    if backend.backend == "jax":
+        pytest.skip("Notebooks are implemented with Torch.")
+
     convert_notebook_to_py(nb_path)
     original_directory = os.getcwd()
     try:

@@ -3,10 +3,9 @@ from abc import abstractmethod
 from typing import Optional, Union, Annotated
 import warnings
 
-import torch
-from torch import Tensor
 from caskade import Module, Param, forward
 
+from ..backend_obj import backend, ArrayLike
 from ..cosmology import Cosmology
 from .utils import magnification
 from . import func
@@ -19,7 +18,9 @@ CosmologyType = Annotated[
 ]
 NameType = Annotated[Optional[str], "Name of the lens model"]
 ZType = Annotated[
-    Optional[Union[Tensor, float]], "The redshift of an object in the lens system", True
+    Optional[Union[ArrayLike, float]],
+    "The redshift of an object in the lens system",
+    True,
 ]
 
 
@@ -54,12 +55,12 @@ class Lens(Module):
     @forward
     def jacobian_lens_equation(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         method="autograd",
         pixelscale=None,
         **kwargs,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the lensing equation at specified points.
         This equates to a (2,2) matrix at each (x,y) point.
@@ -83,46 +84,51 @@ class Lens(Module):
     @forward
     def shear(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         method="autograd",
-        pixelscale: Optional[Tensor] = None,
+        pixelscale: Optional[ArrayLike] = None,
     ):
         """
         General shear calculation for a lens model using the jacobian of the
         lens equation. Individual lenses may implement more efficient methods.
         """
         A = self.jacobian_lens_equation(x, y, method=method, pixelscale=pixelscale)
-        I = torch.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
+        I = backend.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
             *[1] * len(A.shape[:-2]), 2, 2
         )
-        negPsi = 0.5 * (A[..., 0, 0] + A[..., 1, 1]).unsqueeze(-1).unsqueeze(-1) * I - A
+        negPsi = (
+            0.5
+            * backend.unsqueeze(backend.unsqueeze(A[..., 0, 0] + A[..., 1, 1], -1), -1)
+            * I
+            - A
+        )
         return 0.5 * (negPsi[..., 0, 0] - negPsi[..., 1, 1]), negPsi[..., 0, 1]
 
     @forward
     def magnification(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> ArrayLike:
         """
         Compute the gravitational magnification at the given coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Gravitational magnification at the given coordinates.
 
             *Unit: unitless*
@@ -133,31 +139,32 @@ class Lens(Module):
     @forward
     def forward_raytrace(
         self,
-        bx: Tensor,
-        by: Tensor,
+        bx: ArrayLike,
+        by: ArrayLike,
         epsilon: float = 1e-3,
-        x0: Optional[Tensor] = None,
-        y0: Optional[Tensor] = None,
+        x0: Optional[ArrayLike] = None,
+        y0: Optional[ArrayLike] = None,
         fov: float = 5.0,
         divisions: int = 100,
-    ) -> tuple[Tensor, Tensor]:
+        max_depth: int = 25,
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Perform a forward ray-tracing operation which maps from the source plane
         to the image plane.
 
         Parameters
         ----------
-        bx: Tensor
-            Tensor of x coordinate in the source plane.
+        bx: ArrayLike
+            ArrayLike of x coordinate in the source plane.
 
             *Unit: arcsec*
 
-        by: Tensor
-            Tensor of y coordinate in the source plane.
+        by: ArrayLike
+            ArrayLike of y coordinate in the source plane.
 
             *Unit: arcsec*
 
-        epsilon: Tensor
+        epsilon: ArrayLike
             maximum distance between two images (arcsec) before they are
             considered the same image.
 
@@ -174,23 +181,30 @@ class Lens(Module):
 
         Returns
         -------
-        x_component: Tensor
-            x-coordinate Tensor of the ray-traced light rays
+        x_component: ArrayLike
+            x-coordinate ArrayLike of the ray-traced light rays
 
             *Unit: arcsec*
 
-        y_component: Tensor
-            y-coordinate Tensor of the ray-traced light rays
+        y_component: ArrayLike
+            y-coordinate ArrayLike of the ray-traced light rays
 
             *Unit: arcsec*
         """
         if x0 is None:
-            x0 = torch.zeros((), device=bx.device, dtype=bx.dtype)
+            x0 = backend.zeros((), device=bx.device, dtype=bx.dtype)
         if y0 is None:
-            y0 = torch.zeros((), device=by.device, dtype=by.dtype)
+            y0 = backend.zeros((), device=by.device, dtype=by.dtype)
 
         return func.forward_raytrace(
-            torch.stack((bx, by)), self.raytrace, x0, y0, fov, divisions, epsilon
+            backend.stack((bx, by)),
+            self.raytrace,
+            x0,
+            y0,
+            fov,
+            divisions,
+            epsilon,
+            max_depth,
         )
 
 
@@ -211,23 +225,23 @@ class ThickLens(Lens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         ThickLens objects do not have a reduced deflection angle
         since the distance D_ls is undefined
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: unitless*
 
@@ -246,10 +260,10 @@ class ThickLens(Lens):
     @forward
     def effective_reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[ArrayLike, ArrayLike]:
         """ThickLens objects do not have a reduced deflection angle since the
         distance D_ls is undefined. Instead we define an effective
         reduced deflection angle by simply assuming the relation
@@ -260,13 +274,13 @@ class ThickLens(Lens):
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
@@ -277,35 +291,35 @@ class ThickLens(Lens):
     @forward
     def physical_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[ArrayLike, ArrayLike]:
         """Physical deflection angles are computed with respect to a lensing
         plane. ThickLens objects have no unique definition of a lens
         plane and so cannot compute a physical_deflection_angle
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in x direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in y direction.
 
             *Unit: arcsec*
@@ -321,36 +335,36 @@ class ThickLens(Lens):
     @forward
     def raytrace(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[ArrayLike, ArrayLike]:
         """Performs ray tracing by computing the angular position on the
         source plance associated with a given input observed angular
         coordinate x,y.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x: Tensor
-            x coordinate Tensor of the ray-traced light rays
+        x: ArrayLike
+            x coordinate ArrayLike of the ray-traced light rays
 
             *Unit: arcsec*
 
-        y: Tensor
-            y coordinate Tensor of the ray-traced light rays
+        y: ArrayLike
+            y coordinate ArrayLike of the ray-traced light rays
 
             *Unit: arcsec*
 
@@ -361,29 +375,29 @@ class ThickLens(Lens):
     @forward
     def surface_density(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Computes the projected mass density at given coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The projected mass density at the given coordinates
             in units of solar masses per square Mpc.
 
@@ -396,29 +410,29 @@ class ThickLens(Lens):
     @forward
     def time_delay(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Computes the gravitational time delay at given coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The gravitational time delay at the given coordinates.
 
             *Unit: seconds*
@@ -429,10 +443,10 @@ class ThickLens(Lens):
     @forward
     def _jacobian_effective_deflection_angle_finitediff(
         self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+        x: ArrayLike,
+        y: ArrayLike,
+        pixelscale: ArrayLike,
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
         This equates to a (2,2) matrix at each (x,y) point.
@@ -441,42 +455,46 @@ class ThickLens(Lens):
         ax, ay = self.effective_reduced_deflection_angle(x, y)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
-        J[..., 0, 1], J[..., 0, 0] = torch.gradient(ax, spacing=pixelscale)
-        J[..., 1, 1], J[..., 1, 0] = torch.gradient(ay, spacing=pixelscale)
+        J = backend.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
+        grad_ax = backend.gradient(ax, spacing=pixelscale)
+        grad_ay = backend.gradient(ay, spacing=pixelscale)
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 1), grad_ax[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 0), grad_ax[1])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 1), grad_ay[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 0), grad_ay[1])
         return J
 
     @forward
     def _jacobian_effective_deflection_angle_autograd(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         chunk_size: Optional[int] = None,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
         This equates to a (2,2) matrix at each (x,y) point.
         """
-        J = torch.vmap(
-            torch.func.jacfwd(
+        J = backend.vmap(
+            backend.jacfwd(
                 self.effective_reduced_deflection_angle,
                 argnums=(0, 1),
                 randomness="different",
             ),
             chunk_size=chunk_size,
-        )(x.flatten(), y.flatten())
-        J = torch.stack([torch.stack(Jrow, dim=-1) for Jrow in J], dim=-2)
+        )(backend.flatten(x), backend.flatten(y))
+        J = backend.stack([backend.stack(Jrow, dim=-1) for Jrow in J], dim=-2)
         return J.reshape(*x.shape, 2, 2)
 
     @forward
     def jacobian_effective_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         method="autograd",
         pixelscale=None,
         **kwargs,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
         This equates to a (2,2) matrix at each (x,y) point.
@@ -502,11 +520,11 @@ class ThickLens(Lens):
     @forward
     def _jacobian_lens_equation_finitediff(
         self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
+        pixelscale: ArrayLike,
         **kwargs,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the lensing equation at specified points.
         This equates to a (2,2) matrix at each (x,y) point.
@@ -515,30 +533,30 @@ class ThickLens(Lens):
         J = self._jacobian_effective_deflection_angle_finitediff(
             x, y, pixelscale, **kwargs
         )
-        return torch.eye(2).to(J.device) - J
+        return backend.to(backend.eye(2), device=J.device) - J
 
     @forward
     def _jacobian_lens_equation_autograd(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the lensing equation at specified points.
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
         J = self._jacobian_effective_deflection_angle_autograd(x, y, **kwargs)
-        return torch.eye(2).to(J.device) - J.detach()
+        return backend.to(backend.eye(2), device=J.device) - backend.detach(J)
 
     @forward
     def effective_convergence_div(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Using the divergence of the effective reduced delfection angle
         we can compute the divergence component of the effective convergence field.
@@ -555,10 +573,10 @@ class ThickLens(Lens):
     @forward
     def effective_convergence_curl(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Use the curl of the effective reduced deflection angle vector field
         to compute an effective convergence which derives specifically
@@ -589,7 +607,7 @@ class ThinLens(Lens):
     cosmology: Cosmology
         Cosmology object that encapsulates cosmological parameters and distances.
 
-    z_l: (Optional[Tensor], optional)
+    z_l: (Optional[ArrayLike], optional)
         Redshift of the lens. Defaults to None.
 
         *Unit: unitless*
@@ -608,20 +626,20 @@ class ThinLens(Lens):
 
     @forward
     def reduced_deflection_angle(
-        self, x: Tensor, y: Tensor, chunk_size: Optional[int] = None
-    ) -> tuple[Tensor, Tensor]:
+        self, x: ArrayLike, y: ArrayLike, chunk_size: Optional[int] = None
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
@@ -632,53 +650,53 @@ class ThinLens(Lens):
 
         Returns
         --------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in the x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in the y-direction.
 
             *Unit: arcsec*
 
         """
-        ax, ay = torch.vmap(
-            torch.func.grad(self.potential, (0, 1)), chunk_size=chunk_size
-        )(x.flatten(), y.flatten())
+        ax, ay = backend.vmap(
+            backend.grad(self.potential, (0, 1)), chunk_size=chunk_size
+        )(backend.flatten(x), backend.flatten(y))
         return ax.reshape(x.shape), ay.reshape(y.shape)
 
     @forward
     def physical_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Computes the physical deflection angle immediately after passing through this lens's plane.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in y-direction.
 
             *Unit: arcsec*
@@ -695,24 +713,24 @@ class ThinLens(Lens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         chunk_size: Optional[int] = None,
         *args,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Computes the convergence of the lens at given coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
@@ -723,17 +741,17 @@ class ThinLens(Lens):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Dimensionless convergence, normalized by the critical surface density at the lens plane
 
             *Unit: unitless*
 
         """
-        Psi_H = torch.vmap(
-            torch.func.hessian(self.potential, (0, 1)),
+        Psi_H = backend.vmap(
+            backend.hessian(self.potential, (0, 1)),
             chunk_size=chunk_size,
-        )(x.flatten(), y.flatten())
-        Psi_H = torch.stack([torch.stack(Hrow, dim=-1) for Hrow in Psi_H], dim=-2)
+        )(backend.flatten(x), backend.flatten(y))
+        Psi_H = backend.stack([backend.stack(Hrow, dim=-1) for Hrow in Psi_H], dim=-2)
         Psi_H = Psi_H.reshape(*x.shape, 2, 2)
         return 0.5 * (Psi_H[..., 0, 0] + Psi_H[..., 1, 1]).reshape(x.shape)
 
@@ -741,29 +759,29 @@ class ThinLens(Lens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Computes the gravitational lensing potential at given coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Gravitational lensing potential at the given coordinates in arcsec^2.
 
             *Unit: arsec^2*
@@ -774,29 +792,29 @@ class ThinLens(Lens):
     @forward
     def surface_density(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Computes the surface mass density of the lens at given coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Surface mass density at the given coordinates in solar masses per Mpc^2.
 
             *Unit: Msun/Mpc^2*
@@ -808,34 +826,34 @@ class ThinLens(Lens):
     @forward
     def raytrace(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Perform a ray-tracing operation by subtracting
         the deflection angles from the input coordinates.
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in x direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in y direction.
 
             *Unit: arcsec*
@@ -846,7 +864,7 @@ class ThinLens(Lens):
 
     @forward
     def _arcsec2_to_days(
-        self, z_s: Annotated[Tensor, "Param"], z_l: Annotated[Tensor, "Param"]
+        self, z_s: Annotated[ArrayLike, "Param"], z_l: Annotated[ArrayLike, "Param"]
     ):
         """
         This method is used by :func:`caustics.lenses.ThinLens.time_delay` to
@@ -860,11 +878,11 @@ class ThinLens(Lens):
     @forward
     def time_delay(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         shapiro_time_delay: bool = True,
         geometric_time_delay: bool = True,
-    ) -> Tensor:
+    ) -> ArrayLike:
         """
         Computes the gravitational time delay for light passing through the lens at given coordinates.
 
@@ -883,13 +901,13 @@ class ThinLens(Lens):
 
         Parameters
         ----------
-        x: Tensor
-            Tensor of x coordinates in the lens plane.
+        x: ArrayLike
+            ArrayLike of x coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
-            Tensor of y coordinates in the lens plane.
+        y: ArrayLike
+            ArrayLike of y coordinates in the lens plane.
 
             *Unit: arcsec*
 
@@ -901,7 +919,7 @@ class ThinLens(Lens):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Time delay at the given coordinates.
 
             *Unit: days*
@@ -911,7 +929,7 @@ class ThinLens(Lens):
         1. Irwin I. Shapiro (1964). "Fourth Test of General Relativity". Physical Review Letters. 13 (26): 789-791
         2. Refsdal, S. (1964). "On the possibility of determining Hubble's parameter and the masses of galaxies from the gravitational lens effect". Monthly Notices of the Royal Astronomical Society. 128 (4): 307-310.
         """
-        TD = torch.zeros_like(x)
+        TD = backend.zeros_like(x)
 
         if shapiro_time_delay:
             potential = self.potential(x, y)
@@ -928,10 +946,10 @@ class ThinLens(Lens):
     @forward
     def _jacobian_deflection_angle_finitediff(
         self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+        x: ArrayLike,
+        y: ArrayLike,
+        pixelscale: ArrayLike,
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the deflection angle vector.
         This equates to a (2,2) matrix at each (x,y) point.
@@ -940,41 +958,45 @@ class ThinLens(Lens):
         ax, ay = self.reduced_deflection_angle(x, y)
 
         # Build Jacobian
-        J = torch.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
-        J[..., 0, 1], J[..., 0, 0] = torch.gradient(ax, spacing=pixelscale)
-        J[..., 1, 1], J[..., 1, 0] = torch.gradient(ay, spacing=pixelscale)
+        J = backend.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
+        grad_ax = backend.gradient(ax, spacing=pixelscale)
+        grad_ay = backend.gradient(ay, spacing=pixelscale)
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 1), grad_ax[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 0, 0), grad_ax[1])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 1), grad_ay[0])
+        J = backend.fill_at_indices(J, (Ellipsis, 1, 0), grad_ay[1])
         return J
 
     @forward
     def _jacobian_deflection_angle_autograd(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         chunk_size: Optional[int] = None,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the deflection angle vector.
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Compute deflection angle gradients
-        J = torch.vmap(
-            torch.func.jacfwd(
+        J = backend.vmap(
+            backend.jacfwd(
                 self.reduced_deflection_angle, argnums=(0, 1), randomness="different"
             ),
             chunk_size=chunk_size,
-        )(x.flatten(), y.flatten())
-        J = torch.stack([torch.stack(Jrow, dim=-1) for Jrow in J], dim=-2)
+        )(backend.flatten(x), backend.flatten(y))
+        J = backend.stack([backend.stack(Jrow, dim=-1) for Jrow in J], dim=-2)
         return J.reshape(*x.shape, 2, 2)
 
     @forward
     def jacobian_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         method="autograd",
         pixelscale=None,
         chunk_size: Optional[int] = None,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the deflection angle vector.
         This equates to a (2,2) matrix at each (x,y) point.
@@ -997,30 +1019,30 @@ class ThinLens(Lens):
     @forward
     def _jacobian_lens_equation_finitediff(
         self,
-        x: Tensor,
-        y: Tensor,
-        pixelscale: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
+        pixelscale: ArrayLike,
         **kwargs,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the lensing equation at specified points.
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
         J = self._jacobian_deflection_angle_finitediff(x, y, pixelscale, **kwargs)
-        return torch.eye(2).to(J.device) - J
+        return backend.to(backend.eye(2), device=J.device) - J
 
     @forward
     def _jacobian_lens_equation_autograd(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         **kwargs,
-    ) -> tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]:
+    ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the lensing equation at specified points.
         This equates to a (2,2) matrix at each (x,y) point.
         """
         # Build Jacobian
         J = self._jacobian_deflection_angle_autograd(x, y, **kwargs)
-        return torch.eye(2).to(J.device) - J.detach()
+        return backend.to(backend.eye(2), device=J.device) - backend.detach(J)

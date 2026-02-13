@@ -2,13 +2,13 @@ from io import StringIO
 
 import lenstronomy.Util.param_util as param_util
 import numpy as np
-import torch
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
 
 from caustics.light import Sersic
 from caustics.utils import meshgrid
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -62,7 +62,7 @@ def test_sersic(sim_source, device, q, n, th_e):
     # the definition used by lenstronomy. This only works when phi = 0.
     # any other angle will not give the same results between the
     # two codes.
-    x = torch.tensor(
+    x = backend.as_array(
         [
             thx0_src * np.sqrt(q_src),
             thy0_src,
@@ -91,4 +91,4 @@ def test_sersic(sim_source, device, q, n, th_e):
     x_ls, y_ls = pixel_grid.coordinate_grid(nx, ny)
     brightness_ls = sersic_ls.surface_brightness(x_ls, y_ls, kwargs_light_source)
 
-    assert np.allclose(brightness.cpu().numpy(), brightness_ls)
+    assert np.allclose(backend.to_numpy(brightness), brightness_ls)
