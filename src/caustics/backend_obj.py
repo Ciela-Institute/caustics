@@ -105,6 +105,7 @@ class Backend:
         self.chunk = self._chunk_torch
         self.jit = self._jit_torch
         self.norm = self._norm_torch
+        self.arange = self._arange_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -164,6 +165,7 @@ class Backend:
         self.chunk = self._chunk_jax
         self.jit = self._jit_jax
         self.norm = self._norm_jax
+        self.arange = self._arange_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**31 - 1)
