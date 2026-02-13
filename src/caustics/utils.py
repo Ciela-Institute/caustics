@@ -4,12 +4,10 @@ from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
 from importlib import import_module
 from functools import partial, lru_cache
 
-import torch
-from torch import Tensor
-from torch.func import jacfwd
 from scipy.special import roots_legendre
 
 from .constants import rad_to_deg, deg_to_rad
+from .backend_obj import backend, ArrayLike
 
 
 def _import_func_or_class(module_path: str) -> Any:
@@ -70,41 +68,41 @@ def flip_axis_ratio(q, phi):
 
     Parameters
     ----------
-    q: Tensor
-        Tensor containing values to be processed.
-    phi: Tensor
-        Tensor containing the phi values for the orientation of the axes.
+    q: ArrayLike
+        ArrayLike containing values to be processed.
+    phi: ArrayLike
+        ArrayLike containing the phi values for the orientation of the axes.
 
     Returns
     -------
-    Tuple[Tensor, Tensor]
-        Tuple containing the processed 'q' and 'phi' Tensors.
+    Tuple[ArrayLike, ArrayLike]
+        Tuple containing the processed 'q' and 'phi' ArrayLikes.
     """
-    q = q.abs()
-    return torch.where(q > 1, 1 / q, q), torch.where(q > 1, phi + pi / 2, phi)
+    q = backend.abs(q)
+    return backend.where(q > 1, 1 / q, q), backend.where(q > 1, phi + pi / 2, phi)
 
 
-def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
+def translate_rotate(x, y, x0, y0, phi: Optional[ArrayLike] = None):
     """
     Translates and rotates the points (x, y) by subtracting (x0, y0)
     and applying rotation angle phi.
 
     Parameters
     ----------
-    x: Tensor
-        Tensor containing the x-coordinates.
-    y: Tensor
-        Tensor containing the y-coordinates.
-    x0: Tensor
-        Tensor containing the x-coordinate translation values.
-    y0: Tensor
-        Tensor containing the y-coordinate translation values.
-    phi: Optional[Tensor], optional)
-        Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
+    x: ArrayLike
+        ArrayLike containing the x-coordinates.
+    y: ArrayLike
+        ArrayLike containing the y-coordinates.
+    x0: ArrayLike
+        ArrayLike containing the x-coordinate translation values.
+    y0: ArrayLike
+        ArrayLike containing the y-coordinate translation values.
+    phi: Optional[ArrayLike], optional)
+        ArrayLike containing the rotation angles. If None, no rotation is applied. Defaults to None.
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the translated and rotated x and y coordinates.
     """
     xt = x - x0
@@ -112,64 +110,64 @@ def translate_rotate(x, y, x0, y0, phi: Optional[Tensor] = None):
 
     if phi is not None:
         # Apply R(-phi)
-        c_phi = phi.cos()
-        s_phi = phi.sin()
+        c_phi = backend.cos(phi)
+        s_phi = backend.sin(phi)
         # Simultaneous assignment
         return xt * c_phi + yt * s_phi, yt * c_phi - xt * s_phi  # fmt: skip
 
     return xt, yt
 
 
-def derotate(vx, vy, phi: Optional[Tensor] = None):
+def derotate(vx, vy, phi: Optional[ArrayLike] = None):
     """
     Applies inverse rotation to the velocity components (vx, vy) using the rotation angle phi.
 
     Parameters
     ----------
-    vx: Tensor
-        Tensor containing the x-component of velocity.
-    vy: Tensor
-        Tensor containing the y-component of velocity.
-    phi: Optional[Tensor], optional)
-        Tensor containing the rotation angles. If None, no rotation is applied. Defaults to None.
+    vx: ArrayLike
+        ArrayLike containing the x-component of velocity.
+    vy: ArrayLike
+        ArrayLike containing the y-component of velocity.
+    phi: Optional[ArrayLike], optional)
+        ArrayLike containing the rotation angles. If None, no rotation is applied. Defaults to None.
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the derotated x and y components of velocity.
     """
     if phi is None:
         return vx, vy
 
-    c_phi = phi.cos()
-    s_phi = phi.sin()
+    c_phi = backend.cos(phi)
+    s_phi = backend.sin(phi)
     return vx * c_phi - vy * s_phi, vx * s_phi + vy * c_phi  # fmt: skip
 
 
-def to_elliptical(x, y, q: Tensor):
+def to_elliptical(x, y, q: ArrayLike):
     """
     Converts Cartesian coordinates to elliptical coordinates.
 
     Parameters
     ----------
-    x: Tensor
-        Tensor containing the x-coordinates.
-    y: Tensor
-        Tensor containing the y-coordinates.
-    q: Tensor
-        Tensor containing the elliptical parameters.
+    x: ArrayLike
+        ArrayLike containing the x-coordinates.
+    y: ArrayLike
+        ArrayLike containing the y-coordinates.
+    q: ArrayLike
+        ArrayLike containing the elliptical parameters.
 
     Returns
     -------
-    Tuple: Tensor, Tensor
+    Tuple: ArrayLike, ArrayLike
         Tuple containing the x and y coordinates in elliptical form.
     """
     return x, y / q
 
 
 def meshgrid(
-    pixelscale, nx, ny=None, device=None, dtype=torch.float32
-) -> Tuple[Tensor, Tensor]:
+    pixelscale, nx, ny=None, device=None, dtype=backend.float32
+) -> Tuple[ArrayLike, ArrayLike]:
     """
     Generates a 2D meshgrid based on the provided pixelscale and dimensions.
 
@@ -181,21 +179,21 @@ def meshgrid(
         The number of grid points along the x-axis.
     ny: int
         The number of grid points along the y-axis.
-    device: torch.device, optional
+    device: deviceLike, optional
         The device on which to create the tensor. Defaults to None.
-    dtype: torch.dtype, optional
+    dtype: dtypeLike, optional
         The desired data type of the tensor. Defaults to torch.float32.
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
-        The generated meshgrid as a tuple of Tensors.
+    Tuple: [ArrayLike, ArrayLike]
+        The generated meshgrid as a tuple of ArrayLikes.
     """
     if ny is None:
         ny = nx
-    xs = torch.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2  # fmt: skip
-    ys = torch.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2  # fmt: skip
-    return torch.meshgrid([xs, ys], indexing="xy")
+    xs = backend.linspace(-1, 1, nx, device=device, dtype=dtype) * pixelscale * (nx - 1) / 2  # fmt: skip
+    ys = backend.linspace(-1, 1, ny, device=device, dtype=dtype) * pixelscale * (ny - 1) / 2  # fmt: skip
+    return backend.meshgrid([xs, ys], indexing="xy")
 
 
 def plane_to_world_gnomonic(px, py, crval):
@@ -205,11 +203,11 @@ def plane_to_world_gnomonic(px, py, crval):
 
     Parameters
     ----------
-    px: Tensor
+    px: ArrayLike
         The x-coordinate of the point on the tangent plane in degrees.
-    py: Tensor
+    py: ArrayLike
         The y-coordinate of the point on the tangent plane in degrees.
-    crval: Tensor
+    crval: ArrayLike
         The celestial sphere world coordinates in degrees where the tangent
         plane meets the celestial sphere, should be a shape (2,) tensor. It is
         assumed that the tangent plane is centered at (0,0) for these
@@ -217,27 +215,27 @@ def plane_to_world_gnomonic(px, py, crval):
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the right ascension and declination in degrees.
     """
-    plane = torch.stack((px, py), -1) * deg_to_rad
-    rho = torch.sqrt(torch.sum(plane**2, dim=-1))
-    c = torch.arctan(rho)
+    plane = backend.stack((px, py), -1) * deg_to_rad
+    rho = backend.sqrt(backend.sum(plane**2, dim=-1))
+    c = backend.arctan(rho)
 
     # Convert to sky coordinates
-    ra = crval[0] + rad_to_deg * torch.arctan2(
-        plane[..., 0] * torch.sin(c),
-        rho * torch.cos(crval[1] * deg_to_rad) * torch.cos(c)
-        - plane[..., 1] * torch.sin(crval[1] * deg_to_rad) * torch.sin(c),
+    ra = crval[0] + rad_to_deg * backend.arctan2(
+        plane[..., 0] * backend.sin(c),
+        rho * backend.cos(crval[1] * deg_to_rad) * backend.cos(c)
+        - plane[..., 1] * backend.sin(crval[1] * deg_to_rad) * backend.sin(c),
     )
 
-    dec = torch.where(
+    dec = backend.where(
         rho == 0,
         crval[1],
         rad_to_deg
-        * torch.arcsin(
-            torch.cos(c) * torch.sin(crval[1] * deg_to_rad)
-            + plane[..., 1] * torch.sin(c) * torch.cos(crval[1] * deg_to_rad) / rho
+        * backend.arcsin(
+            backend.cos(c) * backend.sin(crval[1] * deg_to_rad)
+            + plane[..., 1] * backend.sin(c) * backend.cos(crval[1] * deg_to_rad) / rho
         ),
     )
     return ra, dec
@@ -259,34 +257,34 @@ def pixel_to_plane(i, j, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None):
 
     Parameters
     ----------
-    i: Tensor
+    i: ArrayLike
         The first coordinate of the pixel in pixel units. The origin may be
         either 0 indexed (python convention) or 1 indexed (FITS convention),
         simply ensure that ``crpix`` has the same convention.
-    j: Tensor
+    j: ArrayLike
         The second coordinate of the pixel in pixel units. The origin may be
         either 0 indexed (python convention) or 1 indexed (FITS convention),
         simply ensure that ``crpix`` has the same convention.
-    crpix: Tensor
+    crpix: ArrayLike
         The reference pixel in pixel units, should be a shape (2,) tensor. This
         is the point that will be placed at ``crval`` in the world coordinates.
         The origin may be either 0 indexed (python convention) or 1 indexed
         (FITS convention), simply ensure that ``i`` and ``j`` have the same
         convention.
-    CD: Tensor
+    CD: ArrayLike
         The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
         from pixel to degree units and also handles rotation/skew.
-    sip_powers: Tensor
+    sip_powers: ArrayLike
         The powers of the pixel coordinates for the SIP distortion, should be a
         shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the powers in order ``i,
         j``.
-    sip_coefs: Tensor
+    sip_coefs: ArrayLike
         The coefficients of the pixel coordinates for the SIP distortion, should
         be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the coefficients in order
         ``delta_x, delta_y``.
-    crplane: Optional[Tensor], optional
+    crplane: Optional[ArrayLike], optional
         The reference plane coordinates in degrees, should be a shape (2,)
         tensor. This is the point that will be placed at ``crpix`` in the pixel
         coordinates. If None, it is assumed to be (0, 0). Defaults to None.
@@ -307,19 +305,19 @@ def pixel_to_plane(i, j, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None):
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the x and y tangent plane coordinates in degrees.
     """
     if crplane is None:
-        crplane = torch.zeros_like(crpix)
+        crplane = backend.zeros_like(crpix)
 
-    pixel = torch.stack((i, j), -1) - crpix
-    delta_p = torch.zeros_like(pixel)
+    pixel = backend.stack((i, j), -1) - crpix
+    delta_p = backend.zeros_like(pixel)
     for p in range(len(sip_powers)):
-        delta_p += sip_coefs[p] * torch.prod(pixel ** sip_powers[p], dim=-1).unsqueeze(
-            -1
+        delta_p += sip_coefs[p] * backend.unsqueeze(
+            backend.prod(pixel ** sip_powers[p], dim=-1), -1
         )
-    plane = torch.einsum("ij,...j->...i", CD, pixel + delta_p) + crplane
+    plane = backend.einsum("ij,...j->...i", CD, pixel + delta_p) + crplane
     return plane[..., 0], plane[..., 1]
 
 
@@ -348,38 +346,38 @@ def pixel_to_world(
 
     Parameters
     ----------
-    i: Tensor
+    i: ArrayLike
         The first coordinate of the pixel in pixel units. The origin may be either 0
         indexed (python convention) or 1 indexed (FITS convention), simply
         ensure that ``crpix`` has the same convention.
-    j: Tensor
+    j: ArrayLike
         The second coordinate of the pixel in pixel units. The origin may be either 0
         indexed (python convention) or 1 indexed (FITS convention), simply
         ensure that ``crpix`` has the same convention.
-    crpix: Tensor
+    crpix: ArrayLike
         The reference pixel in pixel units, should be a shape (2,) tensor. This
         is the point that will be placed at ``crval`` in the world coordinates.
         The origin may be either 0 indexed (python convention) or 1 indexed
         (FITS convention), simply ensure that ``i`` and ``j`` have the same
         convention.
-    crval: Tensor
+    crval: ArrayLike
         The reference world coordinates in degrees, should be a shape (2,)
         tensor. This is the point that will be placed at ``crpix`` in the pixel
         coordinates.
-    CD: Tensor
+    CD: ArrayLike
         The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
         from pixel to world units and also handles rotation/skew.
-    sip_powers: Tensor
+    sip_powers: ArrayLike
         The powers of the pixel coordinates for the SIP distortion, should be a
         shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the powers in order ``i,
         j``.
-    sip_coefs: Tensor
+    sip_coefs: ArrayLike
         The coefficients of the pixel coordinates for the SIP distortion, should
         be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the coefficients in order
         ``delta_x, delta_y``.
-    crplane: Optional[Tensor], optional
+    crplane: Optional[ArrayLike], optional
         The reference plane coordinates in degrees, should be a shape (2,)
         tensor. This is the point that will be placed at ``crpix`` in the pixel
         coordinates. If None, it is assumed to be (0, 0). Defaults to None.
@@ -400,7 +398,7 @@ def pixel_to_world(
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the right ascension and declination in degrees.
     """
 
@@ -416,11 +414,11 @@ def world_to_plane_gnomonic(ra, dec, crval):
 
     Parameters
     ----------
-    ra: Tensor
+    ra: ArrayLike
         The right ascension in degrees.
-    dec: Tensor
+    dec: ArrayLike
         The declination in degrees.
-    crval: Tensor
+    crval: ArrayLike
         The celestial sphere world coordinates in degrees where the tangent
         plane meets the celestial sphere, should be a shape (2,) tensor. It is
         assumed that the tangent plane is centered at (0,0) for these
@@ -428,23 +426,23 @@ def world_to_plane_gnomonic(ra, dec, crval):
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the x and y tangent plane coordinates in degrees.
     """
     ra = ra * deg_to_rad
     dec = dec * deg_to_rad
 
-    cosc = torch.sin(crval[1] * deg_to_rad) * torch.sin(dec) + torch.cos(
+    cosc = backend.sin(crval[1] * deg_to_rad) * backend.sin(dec) + backend.cos(
         crval[1] * deg_to_rad
-    ) * torch.cos(dec) * torch.cos(ra - crval[0] * deg_to_rad)
+    ) * backend.cos(dec) * backend.cos(ra - crval[0] * deg_to_rad)
 
-    x = torch.cos(dec) * torch.sin(ra - crval[0] * deg_to_rad) / cosc
+    x = backend.cos(dec) * backend.sin(ra - crval[0] * deg_to_rad) / cosc
 
     y = (
-        torch.cos(crval[1] * deg_to_rad) * torch.sin(dec)
-        - torch.sin(crval[1] * deg_to_rad)
-        * torch.cos(dec)
-        * torch.cos(ra - crval[0] * deg_to_rad)
+        backend.cos(crval[1] * deg_to_rad) * backend.sin(dec)
+        - backend.sin(crval[1] * deg_to_rad)
+        * backend.cos(dec)
+        * backend.cos(ra - crval[0] * deg_to_rad)
     ) / cosc
 
     return x * rad_to_deg, y * rad_to_deg
@@ -466,29 +464,29 @@ def plane_to_pixel(px, py, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None)
 
     Parameters
     ----------
-    px: Tensor
+    px: ArrayLike
         The x-coordinate of the point on the tangent plane in degrees.
-    py: Tensor
+    py: ArrayLike
         The y-coordinate of the point on the tangent plane in degrees.
-    crpix: Tensor
+    crpix: ArrayLike
         The reference pixel in pixel units, should be a shape (2,) tensor. This
         is the point that will be placed at ``crval`` in the world coordinates.
         The origin may be either 0 indexed (python convention) or 1 indexed
         (FITS convention), ``i`` and ``j`` will have the same convention.
-    CD: Tensor
+    CD: ArrayLike
         The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
         from pixel to world units and also handles rotation/skew.
-    sip_powers: Tensor
+    sip_powers: ArrayLike
         The powers of the pixel coordinates for the SIP distortion, should be a
         shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the powers in order ``px,
         py``.
-    sip_coefs: Tensor
+    sip_coefs: ArrayLike
         The coefficients of the pixel coordinates for the SIP distortion, should
         be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the coefficients in order
         ``delta_x, delta_y``.
-    crplane: Optional[Tensor], optional
+    crplane: Optional[ArrayLike], optional
         The reference plane coordinates in degrees, should be a shape (2,)
         tensor. This is the point that will be placed at ``crpix`` in the pixel
         coordinates. If None, it is assumed to be (0, 0). Defaults to None.
@@ -509,20 +507,20 @@ def plane_to_pixel(px, py, crpix, CD, sip_powers=[], sip_coefs=[], crplane=None)
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the ``i`` and ``j`` pixel coordinates (in pixel units).
 
     """
     if crplane is None:
-        crplane = torch.zeros_like(crpix)
+        crplane = backend.zeros_like(crpix)
 
-    plane = torch.stack((px, py), -1) - crplane
-    iCD = torch.linalg.inv(CD)
-    pixel = torch.einsum("ij,...j->...i", iCD, plane)
-    delta_w = torch.zeros_like(plane)
+    plane = backend.stack((px, py), -1) - crplane
+    iCD = backend.linalg.inv(CD)
+    pixel = backend.einsum("ij,...j->...i", iCD, plane)
+    delta_w = backend.zeros_like(plane)
     for i in range(len(sip_powers)):
-        delta_w += sip_coefs[i] * torch.prod(pixel ** sip_powers[i], dim=-1).unsqueeze(
-            -1
+        delta_w += sip_coefs[i] * backend.unsqueeze(
+            backend.prod(pixel ** sip_powers[i], dim=-1), -1
         )
     pixel += delta_w + crpix
     return pixel[..., 0], pixel[..., 1]
@@ -553,28 +551,28 @@ def world_to_pixel(
 
     Parameters
     ----------
-    ra: Tensor
+    ra: ArrayLike
         The right ascension in degrees.
-    dec: Tensor
+    dec: ArrayLike
         The declination in degrees.
-    crpix: Tensor
+    crpix: ArrayLike
         The reference pixel in pixel units, should be a shape (2,) tensor. This
         is the point that will be placed at ``crval`` in the world coordinates.
         The origin may be either 0 indexed (python convention) or 1 indexed
         (FITS convention), ``i`` and ``j`` will have the same convention.
-    crval: Tensor
+    crval: ArrayLike
         The reference world coordinates in degrees, should be a shape (2,)
         tensor. This is the point that will be placed at ``crpix`` in the pixel
         coordinates (unless ``crplane`` is non-zero).
-    CD: Tensor
+    CD: ArrayLike
         The CD matrix in degrees per pixel. This 2x2 matrix is used to convert
         from pixel to world units and also handles rotation/skew.
-    powers: Tensor
+    powers: ArrayLike
         The powers of the pixel coordinates for the SIP distortion, should be a
         shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the powers in order ``i,
         j``.
-    coefs: Tensor
+    coefs: ArrayLike
         The coefficients of the pixel coordinates for the SIP distortion, should
         be a shape (N orders, 2) tensor. ``N orders`` is the number of non-zero
         polynomial coefficients. The second axis has the coefficients in order
@@ -596,7 +594,7 @@ def world_to_pixel(
 
     Returns
     -------
-    Tuple: [Tensor, Tensor]
+    Tuple: [ArrayLike, ArrayLike]
         Tuple containing the x and y pixel coordinates (in pixels).
     """
     px, py = world_to_plane_gnomonic(ra, dec, crval)
@@ -613,7 +611,7 @@ def _quad_table(n, p, dtype, device):
     ----------
     n : int
         The number of quadrature points in each dimension.
-    p : torch.Tensor
+    p : torch.ArrayLike
         The pixelscale.
     dtype : torch.dtype
         The desired data type of the tensor.
@@ -622,16 +620,16 @@ def _quad_table(n, p, dtype, device):
 
     Returns
     -------
-    Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-        The generated meshgrid as a tuple of Tensors.
+    Tuple[torch.ArrayLike, torch.ArrayLike, torch.ArrayLike]
+        The generated meshgrid as a tuple of ArrayLikes.
     """
     abscissa, weights = roots_legendre(n)
 
-    w = torch.tensor(weights, dtype=dtype, device=device)
-    a = p * torch.tensor(abscissa, dtype=dtype, device=device) / 2.0
-    X, Y = torch.meshgrid(a, a, indexing="xy")
+    w = backend.as_array(weights, dtype=dtype, device=device)
+    a = p * backend.as_array(abscissa, dtype=dtype, device=device) / 2.0
+    X, Y = backend.meshgrid(a, a, indexing="xy")
 
-    W = torch.outer(w, w) / 4.0
+    W = backend.outer(w, w) / 4.0
 
     X, Y = X.reshape(-1), Y.reshape(-1)  # flatten
     return X, Y, W.reshape(-1)
@@ -650,17 +648,17 @@ def gaussian_quadrature_grid(
     ----------
     pixelscale : float
         The scale of the meshgrid in each dimension.
-    X : Tensor
+    X : ArrayLike
         The x-coordinates of the pixel centers.
-    Y : Tensor
+    Y : ArrayLike
         The y-coordinates of the pixel centers.
     quad_level : int, optional
         The number of quadrature points in each dimension. Default is 3.
 
     Returns
     -------
-    Tuple[Tensor, Tensor]
-        The generated meshgrid as a tuple of Tensors.
+    Tuple[ArrayLike, ArrayLike]
+        The generated meshgrid as a tuple of ArrayLikes.
 
     Example
     -------
@@ -674,18 +672,18 @@ def gaussian_quadrature_grid(
 
     # collect gaussian quadrature weights
     abscissaX, abscissaY, weight = _quad_table(
-        quad_level, pixelscale, dtype=X.dtype, device=X.device
+        quad_level, pixelscale, dtype=X.dtype, device=backend.device(X)
     )
 
     # Gaussian quadrature evaluation points
-    Xs = torch.repeat_interleave(X[..., None], quad_level**2, -1) + abscissaX
-    Ys = torch.repeat_interleave(Y[..., None], quad_level**2, -1) + abscissaY
+    Xs = backend.repeat(X[..., None], quad_level**2, -1) + abscissaX
+    Ys = backend.repeat(Y[..., None], quad_level**2, -1) + abscissaY
     return Xs, Ys, weight
 
 
 def gaussian_quadrature_integrator(
-    F: Tensor,
-    weight: Tensor,
+    F: ArrayLike,
+    weight: ArrayLike,
 ):
     """
     Performs a pixel-wise integration using Gaussian quadrature.
@@ -696,14 +694,14 @@ def gaussian_quadrature_integrator(
 
     Parameters
     ----------
-    F : Tensor
+    F : ArrayLike
         The brightness function evaluated at the quadrature points.
-    weight : Tensor
+    weight : ArrayLike
         The quadrature weights as provided by the get_pixel_quad_integrator_grid function.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The integrated brightness function at each pixel.
 
 
@@ -717,14 +715,14 @@ def gaussian_quadrature_integrator(
         res = gaussian_quadrature_integrator(F, weight)
     """
 
-    return (F * weight).sum(axis=-1)
+    return backend.sum(F * weight, dim=-1)
 
 
 def quad(
     F: Callable,
     pixelscale: float,
-    X: Tensor,
-    Y: Tensor,
+    X: ArrayLike,
+    Y: ArrayLike,
     args: Tuple = (),
     quad_level: int = 3,
 ):
@@ -738,9 +736,9 @@ def quad(
         The function should take as input: F(X, Y, *args).
     pixelscale : float
         The scale of each pixel.
-    X : Tensor
+    X : ArrayLike
         The x-coordinates of the pixels.
-    Y : Tensor
+    Y : ArrayLike
         The y-coordinates of the pixels.
     args : Optional[Tuple], optional
         Additional arguments to be passed to the brightness function, by default None.
@@ -749,7 +747,7 @@ def quad(
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The integrated brightness function at each pixel.
     """
     X, Y, weight = gaussian_quadrature_grid(pixelscale, X, Y, quad_level)
@@ -757,26 +755,23 @@ def quad(
     return gaussian_quadrature_integrator(F, weight)
 
 
-def safe_divide(num, denom, places=7):
+def safe_divide(num, denom):
     """
     Safely divides two tensors, returning zero where the denominator is zero.
 
     Parameters
     ----------
-    num: Tensor
+    num: ArrayLike
         The numerator tensor.
-    denom: Tensor
+    denom: ArrayLike
         The denominator tensor.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The result of the division, with zero where the denominator was zero.
     """
-    out = torch.zeros_like(num)
-    where = denom != 0
-    out[where] = num[where] / denom[where]
-    return out
+    return backend.where(denom != 0, num / denom, backend.zeros_like(num))
 
 
 def safe_log(x):
@@ -785,18 +780,15 @@ def safe_log(x):
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         The input tensor.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The result of applying the logarithm, with zero where the input was zero.
     """
-    out = torch.zeros_like(x)
-    where = x != 0
-    out[where] = x[where].log()
-    return out
+    return backend.where(x != 0, backend.log(x), backend.zeros_like(x))
 
 
 def _h_poly(t):
@@ -805,41 +797,41 @@ def _h_poly(t):
 
     Parameters
     ----------
-    t: Tensor
+    t: ArrayLike
         A 1D tensor representing the normalized x values.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         A 2D tensor of size (4, len(t)) representing the 'h' polynomial matrix.
 
     """
 
-    tt = t[None, :] ** (torch.arange(4, device=t.device)[:, None])
-    A = torch.tensor(
+    tt = t[None, :] ** (backend.arange(4, device=backend.device(t))[:, None])
+    A = backend.as_array(
         [[1, 0, -3, 2], [0, 1, -2, 1], [0, 0, 3, -2], [0, 0, -1, 1]],
         dtype=t.dtype,
-        device=t.device,
+        device=backend.device(t),
     )
     return A @ tt
 
 
 def interp1d(
-    x: Tensor,
-    y: Tensor,
-    xs: Tensor,
+    x: ArrayLike,
+    y: ArrayLike,
+    xs: ArrayLike,
     extend: Literal["extrapolate", "const", "linear"] = "extrapolate",
-) -> Tensor:
+) -> ArrayLike:
     """Compute the 1D cubic spline interpolation for the given data points
     using PyTorch.
 
     Parameters
     ----------
-    x: Tensor
+    x: ArrayLike
         A 1D tensor representing the x-coordinates of the known data points.
-    y: Tensor
+    y: ArrayLike
         A 1D tensor representing the y-coordinates of the known data points.
-    xs: Tensor
+    xs: ArrayLike
         A 1D tensor representing the x-coordinates of the positions where
         the cubic spline function should be evaluated.
     extend: (str, optional)
@@ -851,13 +843,13 @@ def interp1d(
 
     Returns
     -------
-    Tensor
+    ArrayLike
         A 1D tensor representing the interpolated values at the specified positions (xs).
 
     """
     m = (y[1:] - y[:-1]) / (x[1:] - x[:-1])
-    m = torch.cat([m[[0]], (m[1:] + m[:-1]) / 2, m[[-1]]])
-    idxs = torch.searchsorted(x[:-1], xs) - 1
+    m = backend.cat([m[0:1], (m[1:] + m[:-1]) / 2, m[-1:]])
+    idxs = backend.searchsorted(x[:-1], xs) - 1
     dx = x[idxs + 1] - x[idxs]
     hh = _h_poly((xs - x[idxs]) / dx)
     ret = hh[0] * y[idxs] + hh[1] * m[idxs] * dx + hh[2] * y[idxs + 1] + hh[3] * m[idxs + 1] * dx  # fmt: skip
@@ -870,23 +862,23 @@ def interp1d(
 
 
 def interp2d(
-    im: Tensor,
-    x: Tensor,
-    y: Tensor,
+    im: ArrayLike,
+    x: ArrayLike,
+    y: ArrayLike,
     method: Literal["linear", "nearest"] = "linear",
     padding_mode: str = "zeros",
-) -> Tensor:
+) -> ArrayLike:
     """
     Interpolates a 2D image at specified coordinates. Similar to
     `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Parameters
     ----------
-    im: Tensor
+    im: ArrayLike
         A 2D tensor representing the image.
-    x: Tensor
+    x: ArrayLike
         A 0D or 1D tensor of x coordinates at which to interpolate.
-    y: Tensor
+    y: ArrayLike
         A 0D or 1D tensor of y coordinates at which to interpolate.
     method: (str, optional)
         Interpolation method. Either 'nearest' or 'linear'. Defaults to
@@ -914,8 +906,8 @@ def interp2d(
 
     Returns
     -------
-    Tensor
-        Tensor with the same shape as `x` and `y` containing the interpolated
+    ArrayLike
+        ArrayLike with the same shape as `x` and `y` containing the interpolated
         values.
     """
     if im.ndim != 2:
@@ -928,8 +920,8 @@ def interp2d(
         raise ValueError(f"{padding_mode} is not a valid padding mode")
 
     if padding_mode == "clamp":
-        x = x.clamp(-1, 1)
-        y = y.clamp(-1, 1)
+        x = backend.clamp(x, -1, 1)
+        y = backend.clamp(y, -1, 1)
     else:
         idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
 
@@ -939,10 +931,13 @@ def interp2d(
     y = 0.5 * ((y + 1) * h - 1)
 
     if method == "nearest":
-        result = im[y.round().long().clamp(0, h - 1), x.round().long().clamp(0, w - 1)]
+        result = im[
+            backend.clamp(backend.long(backend.round(y)), 0, h - 1),
+            backend.clamp(backend.long(backend.round(x)), 0, w - 1),
+        ]
     elif method == "linear":
-        x0 = x.floor().long().clamp(0, w - 2)
-        y0 = y.floor().long().clamp(0, h - 2)
+        x0 = backend.clamp(backend.long(backend.floor(x)), 0, w - 2)
+        y0 = backend.clamp(backend.long(backend.floor(y)), 0, h - 2)
         x1 = x0 + 1
         y1 = y0 + 1
 
@@ -961,32 +956,32 @@ def interp2d(
         raise ValueError(f"{method} is not a valid interpolation method")
 
     if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
+        result = backend.where(idxs_out_of_bounds, backend.zeros_like(result), result)
 
     return result
 
 
 def interp3d(
-    cu: Tensor,
-    x: Tensor,
-    y: Tensor,
-    t: Tensor,
+    cu: ArrayLike,
+    x: ArrayLike,
+    y: ArrayLike,
+    t: ArrayLike,
     method: Literal["linear", "nearest"] = "linear",
     padding_mode: Literal["zeros", "extrapolate"] = "zeros",
-) -> Tensor:
+) -> ArrayLike:
     """
     Interpolates a 3D image at specified coordinates.
     Similar to `torch.nn.functional.grid_sample` with `align_corners=False`.
 
     Parameters
     ----------
-    cu: Tensor
+    cu: ArrayLike
         A 3D tensor representing the cube.
-    x: Tensor
+    x: ArrayLike
         A 0D or 1D tensor of x coordinates at which to interpolate.
-    y: Tensor
+    y: ArrayLike
         A 0D or 1D tensor of y coordinates at which to interpolate.
-    t: Tensor
+    t: ArrayLike
         A 0D or 1D tensor of t coordinates at which to interpolate.
     method: (str, optional)
         Interpolation method. Either 'nearest' or 'linear'. Defaults to 'linear'.
@@ -1011,8 +1006,8 @@ def interp3d(
 
     Returns
     -------
-    Tensor
-        Tensor with the same shape as `x` and `y` containing the interpolated values.
+    ArrayLike
+        ArrayLike with the same shape as `x` and `y` containing the interpolated values.
     """
     if cu.ndim != 3:
         raise ValueError(f"im must be 3D (received {cu.ndim}D tensor)")
@@ -1031,14 +1026,14 @@ def interp3d(
 
     if method == "nearest":
         result = cu[
-            t.round().long().clamp(0, d - 1),
-            y.round().long().clamp(0, h - 1),
-            x.round().long().clamp(0, w - 1),
+            backend.clamp(backend.long(backend.round(t)), 0, d - 1),
+            backend.clamp(backend.long(backend.round(y)), 0, h - 1),
+            backend.clamp(backend.long(backend.round(x)), 0, w - 1),
         ]
     elif method == "linear":
-        x0 = x.floor().long().clamp(0, w - 2)
-        y0 = y.floor().long().clamp(0, h - 2)
-        t0 = t.floor().long().clamp(0, d - 2)
+        x0 = backend.clamp(backend.long(backend.floor(x)), 0, w - 2)
+        y0 = backend.clamp(backend.long(backend.floor(y)), 0, h - 2)
+        t0 = backend.clamp(backend.long(backend.floor(t)), 0, d - 2)
         x1 = x0 + 1
         y1 = y0 + 1
         t1 = t0 + 1
@@ -1069,7 +1064,7 @@ def interp3d(
         raise ValueError(f"{method} is not a valid interpolation method")
 
     if padding_mode == "zeros":  # else padding_mode == "extrapolate"
-        result = torch.where(idxs_out_of_bounds, torch.zeros_like(result), result)
+        result = backend.where(idxs_out_of_bounds, backend.zeros_like(result), result)
 
     return result
 
@@ -1107,25 +1102,29 @@ def bicubic_kernels(Z, d1, d2):
     finite differences. This is not the most accurate way to compute the
     derivatives, but it is good enough for most purposes.
     """
-    dZ1 = torch.zeros_like(Z)
-    dZ2 = torch.zeros_like(Z)
-    dZ12 = torch.zeros_like(Z)
+    dZ1 = backend.zeros_like(Z)
+    dZ2 = backend.zeros_like(Z)
+    dZ12 = backend.zeros_like(Z)
 
     # First derivatives on first axis
     # df/dx = (f(x+h, y) - f(x-h, y)) / 2h
-    dZ1[1:-1] = (Z[:-2] - Z[2:]) / (2 * d1)
-    dZ1[0] = (Z[0] - Z[1]) / d1
-    dZ1[-1] = (Z[-2] - Z[-1]) / d1
+    dZ1 = backend.fill_at_indices(dZ1, slice(1, -1), (Z[:-2] - Z[2:]) / (2 * d1))
+    dZ1 = backend.fill_at_indices(dZ1, 0, (Z[0] - Z[1]) / d1)
+    dZ1 = backend.fill_at_indices(dZ1, -1, (Z[-2] - Z[-1]) / d1)
     # First derivatives on second axis
     # df/dy = (f(x,y+h) - f(x,y-h)) / h
-    dZ2[:, 1:-1] = (Z[:, :-2] - Z[:, 2:]) / (2 * d2)
-    dZ2[:, 0] = (Z[:, 0] - Z[:, 1]) / d2
-    dZ2[:, -1] = (Z[:, -2] - Z[:, -1]) / d2
+    dZ2 = backend.fill_at_indices(
+        dZ2, (slice(None), slice(1, -1)), (Z[:, :-2] - Z[:, 2:]) / (2 * d2)
+    )
+    dZ2 = backend.fill_at_indices(dZ2, (slice(None), 0), (Z[:, 0] - Z[:, 1]) / d2)
+    dZ2 = backend.fill_at_indices(dZ2, (slice(None), -1), (Z[:, -2] - Z[:, -1]) / d2)
 
     # Second derivatives across both axes
     # d2f/dxdy = (f(x-h, y-k) - f(x-h, y+k) - f(x+h, y-k) + f(x+h, y+k)) / (4hk)
-    dZ12[1:-1, 1:-1] = (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (
-        4 * d1 * d2
+    dZ12 = backend.fill_at_indices(
+        dZ12,
+        (slice(1, -1), slice(1, -1)),
+        (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (4 * d1 * d2),
     )
     return dZ1, dZ2, dZ12
 
@@ -1159,31 +1158,31 @@ def interp_bicubic(
 
     Parameters
     ----------
-    x : torch.Tensor
+    x : torch.ArrayLike
         x-coordinates of the points to interpolate. Must be a 0D or 1D tensor.
         It should be in (-1,1) fov units, meaning that -1 is the left edge of
         the left pixel, and 1 is the right edge of the right pixel.
-    y : torch.Tensor
+    y : torch.ArrayLike
         y-coordinates of the points to interpolate. Must be a 0D or 1D tensor.
         It should be in (-1,1) fov units, meaning that -1 is the bottom edge of
         the bottom pixel, and 1 is the top edge of the top pixel.
-    Z : torch.Tensor
+    Z : torch.ArrayLike
         2D grid of values to interpolate. The first axis corresponds to the
         y-axis and the second axis to the x-axis. The values in Z correspond to
         pixel center values, so Z[0,0] is the value at the center of the bottom
         left corner pixel of the grid. The grid should be at least 2x2 so the
         bicubic interpolation can go between the values.
-    dZ1 : torch.Tensor or None
+    dZ1 : torch.ArrayLike or None
         First derivative of Z along the x-axis. If None, it will be estimated
         using central differences. Note that the derivative should be computed
         in pixel units, meaning that the distance from one pixel to the next is
         considered "1" in these units.
-    dZ2 : torch.Tensor or None
+    dZ2 : torch.ArrayLike or None
         First derivative of Z along the y-axis. If None, it will be estimated
         using central differences. Note that the derivative should be computed
         in pixel units, meaning that the distance from one pixel to the next is
         considered "1" in these units.
-    dZ12 : torch.Tensor or None
+    dZ12 : torch.ArrayLike or None
         Second derivative of Z along both axes. If None, it will be estimated
         using central differences. Note that the derivative should be computed
         in pixel units, meaning that the distance from one pixel to the next is
@@ -1200,22 +1199,22 @@ def interp_bicubic(
 
     Returns
     -------
-    Y : torch.Tensor or None
+    Y : torch.ArrayLike or None
         Interpolated values at the given locations. Only returned if get_Y is
         True
-    dY1 : torch.Tensor or None
+    dY1 : torch.ArrayLike or None
         Interpolated first derivative along the x-axis. Only returned if get_dY
         is True
-    dY2 : torch.Tensor or None
+    dY2 : torch.ArrayLike or None
         Interpolated first derivative along the y-axis. Only returned if get_dY
         is True
-    dY12 : torch.Tensor or None
+    dY12 : torch.ArrayLike or None
         Interpolated second derivative along both axes. Only returned if get_ddY
         is True
-    dY11 : torch.Tensor or None
+    dY11 : torch.ArrayLike or None
         Interpolated second derivative along the x-axis. Only returned if
         get_ddY is True
-    dY22 : torch.Tensor or None
+    dY22 : torch.ArrayLike or None
         Interpolated second derivative along the y-axis. Only returned if
         get_ddY is True
     """
@@ -1231,9 +1230,9 @@ def interp_bicubic(
     # Convert coordinates to pixel indices
     h, w = Z.shape
     x = 0.5 * ((x + 1) * w - 1)
-    x = x.clamp(-0.5, w - 0.5)
+    x = backend.clamp(x, -0.5, w - 0.5)
     y = 0.5 * ((y + 1) * h - 1)
-    y = y.clamp(-0.5, h - 0.5)
+    y = backend.clamp(y, -0.5, h - 0.5)
 
     # Compute bicubic kernels if not provided
     if dZ1 is None or dZ2 is None or dZ12 is None:
@@ -1246,14 +1245,14 @@ def interp_bicubic(
         dZ12 = _dZ12
 
     # Extract pixel values
-    x0 = x.floor().long()
-    y0 = y.floor().long()
+    x0 = backend.long(backend.floor(x))
+    y0 = backend.long(backend.floor(y))
     x1 = x0 + 1
     y1 = y0 + 1
-    x0 = x0.clamp(0, w - 2)
-    x1 = x1.clamp(1, w - 1)
-    y0 = y0.clamp(0, h - 2)
-    y1 = y1.clamp(1, h - 1)
+    x0 = backend.clamp(x0, 0, w - 2)
+    x1 = backend.clamp(x1, 1, w - 1)
+    y0 = backend.clamp(y0, 0, h - 2)
+    y1 = backend.clamp(y1, 1, h - 1)
 
     # Build interpolation vector
     v = []
@@ -1273,28 +1272,29 @@ def interp_bicubic(
     v.append(dZ12[y0, x1])
     v.append(dZ12[y1, x1])
     v.append(dZ12[y1, x0])
-    v = torch.stack(v, dim=-1)
+    v = backend.stack(v, dim=-1)
 
     # Compute interpolation coefficients
-    c = (torch.tensor(BC, dtype=v.dtype, device=v.device) @ v.unsqueeze(-1)).reshape(
-        -1, 4, 4
-    )
+    c = (
+        backend.as_array(BC, dtype=v.dtype, device=backend.device(v))
+        @ backend.unsqueeze(v, -1)
+    ).reshape(-1, 4, 4)
 
     # Compute interpolated values
     return_interp = []
-    t = torch.where(
-        (x < 0), (x % 1) - 1, torch.where(x >= w - 1, x % 1 + 1, x % 1)
+    t = backend.where(
+        (x < 0), (x % 1) - 1, backend.where(x >= w - 1, x % 1 + 1, x % 1)
     )  # TODO: change to x - x0
-    u = torch.where((y < 0), (y % 1) - 1, torch.where(y >= h - 1, y % 1 + 1, y % 1))
+    u = backend.where((y < 0), (y % 1) - 1, backend.where(y >= h - 1, y % 1 + 1, y % 1))
     if get_Y:
-        Y = torch.zeros_like(x)
+        Y = backend.zeros_like(x)
         for i in range(4):
             for j in range(4):
                 Y = Y + c[:, i, j] * t**i * u**j
         return_interp.append(Y)
     if get_dY:
-        dY1 = torch.zeros_like(x)
-        dY2 = torch.zeros_like(x)
+        dY1 = backend.zeros_like(x)
+        dY2 = backend.zeros_like(x)
         for i in range(4):
             for j in range(4):
                 if i > 0:
@@ -1304,9 +1304,9 @@ def interp_bicubic(
         return_interp.append(dY1)
         return_interp.append(dY2)
     if get_ddY:
-        dY12 = torch.zeros_like(x)
-        dY11 = torch.zeros_like(x)
-        dY22 = torch.zeros_like(x)
+        dY12 = backend.zeros_like(x)
+        dY11 = backend.zeros_like(x)
+        dY22 = backend.zeros_like(x)
         for i in range(4):
             for j in range(4):
                 if i > 0 and j > 0:
@@ -1363,7 +1363,7 @@ def vmap_n(
 
     vmapd_func = func
     for _ in range(depth):
-        vmapd_func = torch.vmap(vmapd_func, in_dims, out_dims, randomness)
+        vmapd_func = backend.vmap(vmapd_func, in_dims, out_dims, randomness)
 
     return vmapd_func
 
@@ -1385,7 +1385,7 @@ def _chunk_input(x, k, in_dims, chunk_size):
             if in_dim is None:
                 subchunking = [subx] * n_chunks
             else:
-                subchunking = subx.chunk(n_chunks, dim=in_dim)
+                subchunking = backend.chunk(subx, n_chunks, dim=in_dim)
             for j, subchunk in enumerate(subchunking):
                 chunks[j].append(subchunk)
     else:  # isinstance(in_dims, dict)
@@ -1404,7 +1404,7 @@ def _chunk_input(x, k, in_dims, chunk_size):
             if value is None:
                 subchunking = [k[key]] * n_chunks
             else:
-                subchunking = k[key].chunk(n_chunks, dim=value)
+                subchunking = backend.chunk(k[key], n_chunks, dim=value)
             for j, subchunk in enumerate(subchunking):
                 chunks[j][key] = subchunk
     return chunks
@@ -1412,12 +1412,12 @@ def _chunk_input(x, k, in_dims, chunk_size):
 
 def vmap_reduce(
     func: Callable,
-    reduce_func: Callable = lambda x: x.sum(dim=0),
+    reduce_func: Callable = lambda x: backend.sum(x, dim=0),
     chunk_size: Optional[int] = None,
     in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
     out_dims: Union[int, Tuple[int, ...]] = 0,
     **kwargs,
-) -> Tensor:
+) -> Callable:
     """
     Applies `torch.vmap` to `func` and then reduces the output using
     `reduce_func` along the appropriate dimensions. This saves on memory
@@ -1450,13 +1450,13 @@ def vmap_reduce(
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The reduced output.
     """
     if isinstance(in_dims, tuple):
-        vfunc = torch.vmap(func, in_dims, **kwargs)
+        vfunc = backend.vmap(func, in_dims, **kwargs)
     else:  # isinstance(in_dims, dict)
-        vfunc = torch.vmap(func, (in_dims,), **kwargs)
+        vfunc = backend.vmap(func, (in_dims,), **kwargs)
 
     def wrapped(*x, **k):
         # Determine chunks
@@ -1470,10 +1470,11 @@ def vmap_reduce(
 
         # Stack the output
         if isinstance(out_dims, int):
-            out = torch.stack(out, dim=out_dims)
+            out = backend.stack(out, dim=out_dims)
         else:
             out = tuple(
-                torch.stack([o[i] for o in out], dim=d) for i, d in enumerate(out_dims)
+                backend.stack([o[i] for o in out], dim=d)
+                for i, d in enumerate(out_dims)
             )
 
         # Reduce the output
@@ -1482,42 +1483,50 @@ def vmap_reduce(
     return wrapped
 
 
-def cluster_means(xs: Tensor, k: int):
+def cluster_means(xs: ArrayLike, k: int, key=None):
     """
     Computes cluster means using the k-means++ initialization algorithm.
 
     Parameters
     ----------
-    xs: Tensor
+    xs: ArrayLike
         A tensor of data points.
     k: int
         The number of clusters.
+    key: Optional[Union[None, jax.random.key]]
+        A jax.random.key if using the Jax backend.
 
     Returns
     -------
-    Tensor
+    ArrayLike
         A tensor of cluster means.
     """
     b = len(xs)
-    mean_idxs = [int(torch.randint(high=b, size=(), device=xs.device).item())]
+    mean_idxs = [
+        int(backend.randint(high=b, size=(), device=backend.device(xs), key=key).item())
+    ]
     means = [xs[mean_idxs[0]]]
     for _ in range(1, k):
-        unselected_xs = torch.stack([x for i, x in enumerate(xs) if i not in mean_idxs])
+        unselected_xs = backend.stack(
+            [x for i, x in enumerate(xs) if i not in mean_idxs]
+        )
 
         # Distances to all means
-        d2s = ((unselected_xs[:, None, :] - torch.stack(means)[None, :, :]) ** 2).sum(
-            -1
+        d2s = backend.sum(
+            (unselected_xs[:, None, :] - backend.stack(means)[None, :, :]) ** 2, -1
         )
 
         # Distances to closest mean
-        d2s_closest = torch.tensor([d2s[i, m] for i, m in enumerate(d2s.argmin(-1))])
+        d2s_closest = backend.as_array(
+            [d2s[i, m] for i, m in enumerate(d2s.argmin(-1))]
+        )
 
         # Add point furthest from closest mean as next mean
-        new_idx = int(d2s_closest.argmax().item())
+        new_idx = int(backend.argmax(d2s_closest).item())
         means.append(unselected_xs[new_idx])
         mean_idxs.append(new_idx)
 
-    return torch.stack(means)
+    return backend.stack(means)
 
 
 def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
@@ -1526,12 +1535,12 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     dY = Y - fY
 
     # Jacobian
-    J = jacfwd(f)(X)
-    J = J.to(dtype=X.dtype)
+    J = backend.jacfwd(f)(X)
+    J = backend.to(J, dtype=X.dtype)
     if Cinv.ndim == 1:
-        chi2 = (dY**2 * Cinv).sum(-1)
+        chi2 = backend.sum(dY**2 * Cinv, -1)
     else:
-        chi2 = (dY @ Cinv @ dY).sum(-1)
+        chi2 = backend.sum(dY @ Cinv @ dY, -1)
 
     # Gradient
     if Cinv.ndim == 1:
@@ -1544,28 +1553,28 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
         hess = J.T @ (J * Cinv.reshape(-1, 1))
     else:
         hess = J.T @ Cinv @ J
-    hess_perturb = L * torch.eye(hess.shape[0], device=hess.device)
+    hess_perturb = L * backend.eye(hess.shape[0], device=backend.device(hess))
     hess = hess + hess_perturb
 
     # Step
-    h = torch.linalg.solve(hess, grad)
+    h = backend.linalg.solve(hess, grad)
 
     # New chi^2
     fYnew = f(X + h)
     dYnew = Y - fYnew
     if Cinv.ndim == 1:
-        chi2_new = (dYnew**2 * Cinv).sum(-1)
+        chi2_new = backend.sum(dYnew**2 * Cinv, -1)
     else:
-        chi2_new = (dYnew @ Cinv @ dYnew).sum(-1)
+        chi2_new = backend.sum(dYnew @ Cinv @ dYnew, -1)
 
     # Test
-    expected_improvement = torch.dot(h, hess @ h) + 2 * torch.dot(h, grad)
-    rho = (chi2 - chi2_new) / torch.abs(expected_improvement)  # fmt: skip
+    expected_improvement = backend.dot(h, hess @ h) + 2 * backend.dot(h, grad)
+    rho = (chi2 - chi2_new) / backend.abs(expected_improvement)  # fmt: skip
 
     # Update
-    X = torch.where(rho >= epsilon, X + h, X)
-    chi2 = torch.where(rho > epsilon, chi2_new, chi2)
-    L = torch.clamp(torch.where(rho >= epsilon, L / Ldn, L * Lup), L_min, L_max)
+    X = backend.where(rho >= epsilon, X + h, X)
+    chi2 = backend.where(rho > epsilon, chi2_new, chi2)
+    L = backend.clamp(backend.where(rho >= epsilon, L / Ldn, L * Lup), L_min, L_max)
 
     return X, L, chi2
 
@@ -1593,14 +1602,14 @@ def batch_lm(
         raise ValueError("x and y must having matching batch dimension")
 
     if C is None:
-        C = torch.ones_like(Y)
+        C = backend.ones_like(Y)
     if C.ndim == 2:
         Cinv = 1 / C
     else:
-        Cinv = torch.linalg.inv(C)
-    Cinv = Cinv.to(dtype=X.dtype)
+        Cinv = backend.linalg.inv(C)
+    Cinv = backend.to(Cinv, dtype=X.dtype)
 
-    v_lm_step = torch.vmap(
+    v_lm_step = backend.vmap(
         partial(
             _lm_step,
             lambda x: f(x, *f_args, **f_kwargs),
@@ -1611,31 +1620,31 @@ def batch_lm(
             L_max=L_max,
         )
     )
-    L = L * torch.ones(B, device=X.device, dtype=X.dtype)
+    L = L * backend.ones(B, device=backend.device(X), dtype=X.dtype)
     for _ in range(max_iter):
         Xnew, L, C = v_lm_step(X, Y, Cinv, L)
         if (
-            torch.all((Xnew - X).abs() < stopping)
-            and torch.sum(L < 1e-2).item() > B / 3
+            backend.all(backend.abs(Xnew - X) < stopping)
+            and backend.sum(L < 1e-2).item() > B / 3
         ):
             break
-        if torch.all(L >= L_max):
+        if backend.all(L >= L_max):
             break
         X = Xnew
 
     return X, L, C
 
 
-def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=torch.float32, device=None):
-    X, Y = torch.meshgrid(
-        torch.linspace(
+def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=backend.float32, device=None):
+    X, Y = backend.meshgrid(
+        backend.linspace(
             -(nx * upsample - 1) * pixelscale / 2,
             (nx * upsample - 1) * pixelscale / 2,
             nx * upsample,
             dtype=dtype,
             device=device,
         ),
-        torch.linspace(
+        backend.linspace(
             -(ny * upsample - 1) * pixelscale / 2,
             (ny * upsample - 1) * pixelscale / 2,
             ny * upsample,
@@ -1645,8 +1654,8 @@ def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=torch.float32, device=
         indexing="xy",
     )
 
-    Z = torch.exp(-0.5 * (X**2 + Y**2) / sigma**2)
+    Z = backend.exp(-0.5 * (X**2 + Y**2) / sigma**2)
 
-    Z = Z.reshape(ny, upsample, nx, upsample).sum(dim=(1, 3))
+    Z = backend.sum(Z.reshape(ny, upsample, nx, upsample), dim=(1, 3))
 
-    return Z / Z.sum()
+    return Z / backend.sum(Z)

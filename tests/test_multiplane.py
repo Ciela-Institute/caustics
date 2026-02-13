@@ -1,7 +1,6 @@
 from math import pi
 
 import lenstronomy.Util.param_util as param_util
-import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_ap
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
@@ -10,6 +9,7 @@ import numpy as np
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane, PixelatedConvergence
 from caustics.utils import meshgrid
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -19,7 +19,7 @@ def test(device):
     atol = 5e-3
 
     # Setup
-    z_s = torch.tensor(1.5, dtype=torch.float32)
+    z_s = backend.as_array(1.5, dtype=backend.float32)
 
     # Parameters
     xs = [
@@ -27,10 +27,12 @@ def test(device):
         [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
         [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
     ]
-    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32, device=device)
+    x = backend.as_array(
+        [p for _xs in xs for p in _xs], dtype=backend.float32, device=device
+    )
 
     cosmology = FlatLambdaCDM(name="cosmo")
-    cosmology.to(dtype=torch.float32, device=device)
+    cosmology.to(dtype=backend.float32, device=device)
     lens = Multiplane(
         name="multiplane",
         cosmology=cosmology,
@@ -56,7 +58,9 @@ def test(device):
 
     # Use same cosmology
     cosmo_ap = FlatLambdaCDM_ap(
-        cosmology.h0.value.cpu(), cosmology.Om0.value.cpu(), Tcmb0=0
+        backend.to_numpy(cosmology.h0.value),
+        backend.to_numpy(cosmology.Om0.value),
+        Tcmb0=0,
     )
     lens_ls = LensModel(
         lens_model_list=["SIE" for _ in range(len(xs))],
@@ -82,9 +86,9 @@ def test(device):
 
 def test_multiplane_time_delay(device):
     # Setup
-    z_s = torch.tensor(1.5, dtype=torch.float32, device=device)
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
-    cosmology.to(dtype=torch.float32, device=device)
+    cosmology.to(dtype=backend.float32, device=device)
 
     n_pix = 10
     res = 0.05
@@ -92,7 +96,7 @@ def test_multiplane_time_delay(device):
     thx, thy = meshgrid(
         res / upsample_factor,
         upsample_factor * n_pix,
-        dtype=torch.float32,
+        dtype=backend.float32,
         device=device,
     )
 
@@ -102,7 +106,9 @@ def test_multiplane_time_delay(device):
         [0.7, 0.0, 0.5, 0.9999, -pi / 6, 0.7],
         [1.1, 0.4, 0.3, 0.9999, pi / 4, 0.9],
     ]
-    x = torch.tensor([p for _xs in xs for p in _xs], dtype=torch.float32, device=device)
+    x = backend.as_array(
+        [p for _xs in xs for p in _xs], dtype=backend.float32, device=device
+    )
 
     lens = Multiplane(
         name="multiplane",
@@ -112,9 +118,9 @@ def test_multiplane_time_delay(device):
     )
     lens.to(device=device)
 
-    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, x)))
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(backend.isfinite(lens.time_delay(thx, thy, x)))
+    assert backend.all(
+        backend.isfinite(
             lens.time_delay(
                 thx,
                 thy,
@@ -124,8 +130,8 @@ def test_multiplane_time_delay(device):
             )
         )
     )
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(
+        backend.isfinite(
             lens.time_delay(
                 thx,
                 thy,
@@ -160,38 +166,38 @@ def test_params(device):
         planes.append(lens)
     multiplane_lens = Multiplane(cosmology=cosmology, lenses=planes, z_s=z_s)
     multiplane_lens.to(device=device)
-    z_s = torch.tensor(z_s)
+    z_s = backend.as_array(z_s)
     x, y = meshgrid(pixel_size, 32, device=device)
-    params = [torch.randn(pixels, pixels, device=device) for i in range(10)]
+    params = [backend.randn(pixels, pixels, device=device) for i in range(10)]
 
     # Test out the computation of a few quantities to make sure params are passed correctly
 
     # First case, params as list of tensors
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, params)
-    assert kappa_eff.shape == torch.Size([32, 32])
+    assert kappa_eff.shape == backend.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, params)
-    assert alphax.shape == torch.Size([32, 32])
-    assert alphay.shape == torch.Size([32, 32])
+    assert alphax.shape == backend.Size([32, 32])
+    assert alphay.shape == backend.Size([32, 32])
 
     # Second case, params given as a kwargs
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, params=params)
-    assert kappa_eff.shape == torch.Size([32, 32])
+    assert kappa_eff.shape == backend.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(
         x, y, params=params
     )
-    assert alphax.shape == torch.Size([32, 32])
-    assert alphay.shape == torch.Size([32, 32])
+    assert alphax.shape == backend.Size([32, 32])
+    assert alphay.shape == backend.Size([32, 32])
 
     # Test that we can pass a dictionary
     params = {
         "lenses": {
-            f"plane_{p}": [torch.randn(pixels, pixels, device=device)]
+            f"plane_{p}": [backend.randn(pixels, pixels, device=device)]
             for p in range(n_planes)
         }
     }
 
     kappa_eff = multiplane_lens.effective_convergence_div(x, y, params)
-    assert kappa_eff.shape == torch.Size([32, 32])
+    assert kappa_eff.shape == backend.Size([32, 32])
     alphax, alphay = multiplane_lens.effective_reduced_deflection_angle(x, y, params)
 
 

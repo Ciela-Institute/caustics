@@ -1,6 +1,5 @@
 from io import StringIO
 
-import torch
 import numpy as np
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import (
@@ -12,6 +11,7 @@ from utils import (
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Multipole
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -19,9 +19,9 @@ import pytest
 @pytest.mark.parametrize("m_order", [2, 3, 4, 5, 6])
 def test_multipole_lenstronomy(sim_source, device, m_order):
     atol = 1e-5
-    rtol = 1e-5
-    z_l = torch.tensor(0.5)
-    z_s = torch.tensor(1.2)
+    rtol = 1e-4
+    z_l = backend.as_array(0.5)
+    z_s = backend.as_array(1.2)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -45,11 +45,12 @@ def test_multipole_lenstronomy(sim_source, device, m_order):
         lens = Multipole(
             name="multipole", cosmology=cosmology, z_l=z_l, m=m_order, z_s=z_s
         )
+    lens = lens.to(device)
     lens_model_list = ["MULTIPOLE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters  m, a_m ,phi_m
-    x = torch.tensor([-0.342, 0.51, 0.1, 3.14 / 4])
+    x = backend.as_array([-0.342, 0.51, 0.1, 3.14 / 4], device=device)
     kwargs_ls = [
         {
             "center_x": x[0].item(),
@@ -70,8 +71,8 @@ def test_multipole_lenstronomy(sim_source, device, m_order):
 def test_multipole_stack(device, m_order):
 
     cosmology = FlatLambdaCDM(name="cosmo")
-    z_l = torch.tensor(0.5)
-    z_s = torch.tensor(1.2)
+    z_l = backend.as_array(0.5)
+    z_s = backend.as_array(1.2)
     lens = Multipole(
         name="multipole",
         cosmology=cosmology,
@@ -85,14 +86,16 @@ def test_multipole_stack(device, m_order):
     )
     lens.to(device=device)
 
-    x = torch.linspace(-1, 1, 10, device=device)
-    y = torch.linspace(-1, 1, 10, device=device)
+    x = backend.linspace(-1, 1, 10, device=device)
+    y = backend.linspace(-1, 1, 10, device=device)
     ax, ay = lens.reduced_deflection_angle(x, y)
-    assert torch.all(torch.isfinite(ax)).item(), "multipole ax is not finite"
-    assert torch.all(torch.isfinite(ay)).item(), "multipole ay is not finite"
+    assert backend.all(backend.isfinite(ax)).item(), "multipole ax is not finite"
+    assert backend.all(backend.isfinite(ay)).item(), "multipole ay is not finite"
 
     p = lens.potential(x, y)
-    assert torch.all(torch.isfinite(p)).item(), "multipole potential is not finite"
+    assert backend.all(backend.isfinite(p)).item(), "multipole potential is not finite"
 
     k = lens.convergence(x, y)
-    assert torch.all(torch.isfinite(k)).item(), "multipole convergence is not finite"
+    assert backend.all(
+        backend.isfinite(k)
+    ).item(), "multipole convergence is not finite"

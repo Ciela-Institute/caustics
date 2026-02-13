@@ -1,10 +1,10 @@
 # mypy: disable-error-code="operator,union-attr"
 from typing import Annotated, Tuple
 
-import torch
 from caskade import forward
 
 from .base import Source, NameType
+from ..backend_obj import backend
 
 __all__ = ("LightStack",)
 
@@ -56,13 +56,13 @@ class LightStack(Source):
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
@@ -70,7 +70,7 @@ class LightStack(Source):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The brightness of the source at the given point(s).
             The output tensor has the same shape as `x` and `y`.
 
@@ -78,7 +78,7 @@ class LightStack(Source):
 
         """
 
-        brightness = torch.zeros_like(x)
+        brightness = backend.zeros_like(x)
         for light_model in self.light_models:
             brightness += light_model.brightness(x, y, **kwargs)
         return brightness

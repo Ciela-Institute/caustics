@@ -2,7 +2,6 @@ from math import pi
 from io import StringIO
 
 import lenstronomy.Util.param_util as param_util
-import torch
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 
@@ -10,6 +9,7 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
 from caustics.sims import build_simulator
 from caustics.utils import meshgrid
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -19,7 +19,7 @@ import pytest
 @pytest.mark.parametrize("Rein", [0.1, 1.0])
 @pytest.mark.parametrize("t", [0.1, 1.0, 1.9])
 def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
-    z_s = torch.tensor(1.0, device=device)
+    z_s = backend.as_array(1.0, device=device)
     if sim_source == "yaml":
         yaml_str = f"""\
         cosmology: &cosmology
@@ -44,7 +44,7 @@ def test_lenstronomy_epl(sim_source, device, q, phi, Rein, t):
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    x = torch.tensor([0.7, 0.912, -0.442, q, phi, Rein, t], device=device)
+    x = backend.as_array([0.7, 0.912, -0.442, q, phi, Rein, t], device=device)
 
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
     theta_E = Rein
@@ -74,14 +74,14 @@ def test_special_case_sie(device):
     Checks that the deflection field matches an SIE for `t=1`.
     """
     cosmology = FlatLambdaCDM(name="cosmo")
-    z_s = torch.tensor(1.9, device=device)
+    z_s = backend.as_array(1.9, device=device)
     lens = EPL(name="epl", cosmology=cosmology, z_s=z_s)
     lens.to(device=device)
     lens_model_list = ["SIE"]
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    x = torch.tensor([0.7, 0.912, -0.442, 0.7, pi / 3, 1.4, 1.0], device=device)
+    x = backend.as_array([0.7, 0.912, -0.442, 0.7, pi / 3, 1.4, 1.0], device=device)
     e1, e2 = param_util.phi_q2_ellipticity(phi=x[4].item(), q=x[3].item())
     theta_E = x[5].item()  # (x[5] / x[3].sqrt()).item()
     kwargs_ls = [
@@ -144,15 +144,15 @@ def test_epl_n_chunks_consistency(chunk_size, device):
     convergence_n = lens.convergence(x, y)
 
     # Validate against baseline results
-    assert torch.allclose(
+    assert backend.allclose(
         alpha_x_1, alpha_x_n, rtol=1e-5, atol=1e-7
     ), "alpha_x mismatch"
-    assert torch.allclose(
+    assert backend.allclose(
         alpha_y_1, alpha_y_n, rtol=1e-5, atol=1e-7
     ), "alpha_y mismatch"
-    assert torch.allclose(
+    assert backend.allclose(
         potential_1, potential_n, rtol=1e-5, atol=1e-7
     ), "Potential mismatch"
-    assert torch.allclose(
+    assert backend.allclose(
         convergence_1, convergence_n, rtol=1e-5, atol=1e-7
     ), "Convergence mismatch"

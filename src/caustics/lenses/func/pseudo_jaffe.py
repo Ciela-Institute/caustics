@@ -1,5 +1,4 @@
-import torch
-
+from ...backend_obj import backend
 from ...constants import arcsec_to_rad, G_over_c2
 from ...utils import translate_rotate
 
@@ -11,41 +10,41 @@ def convergence_0_pseudo_jaffe(mass, Rc, Rs, d_l, critical_surface_density):
 
     Parameters
     ----------
-    mass: Tensor
+    mass: ArrayLike
         Total mass of the lens (Msun).
 
         *Unit: Msun*
 
-    Rc: Tensor
+    Rc: ArrayLike
         Core radius of the lens.
 
         *Unit: arcsec*
 
-    Rs: Tensor
+    Rs: ArrayLike
         Scaling radius of the lens.
 
         *Unit: arcsec*
 
-    d_l: Tensor
+    d_l: ArrayLike
         Distance to the lens.
 
         *Unit: Mpc*
 
-    critical_surface_density: Tensor
+    critical_surface_density: ArrayLike
         Critical surface density of the universe at the lens redshift.
 
         *Unit: Msun / Mpc^2*
 
     Returns
     --------
-    Tensor
+    ArrayLike
         The convergence (dimensionless surface mass density) at the center of
         the pseudo jaffe.
 
         *Unit: unitless*
 
     """
-    return mass / (2 * torch.pi * critical_surface_density * Rc * Rs * (d_l * arcsec_to_rad) ** 2)  # fmt: skip
+    return mass / (2 * backend.pi * critical_surface_density * Rc * Rs * (d_l * arcsec_to_rad) ** 2)  # fmt: skip
 
 
 def mass_enclosed_2d_pseudo_jaffe(radius, mass, Rc, Rs, s=0.0):
@@ -54,22 +53,22 @@ def mass_enclosed_2d_pseudo_jaffe(radius, mass, Rc, Rs, s=0.0):
 
     Parameters
     ----------
-    radius: Optional[Tensor]
+    radius: Optional[ArrayLike]
         Radius at which to calculate enclosed mass (arcsec).
 
             *Unit: arcsec*
 
-    mass: Tensor
+    mass: ArrayLike
         Total mass of the lens
 
         *Unit: Msun*
 
-    Rc: Tensor
+    Rc: ArrayLike
         Core radius of the lens.
 
         *Unit: arcsec*
 
-    Rs: Tensor
+    Rs: ArrayLike
         Scaling radius of the lens.
 
         *Unit: arcsec*
@@ -77,7 +76,7 @@ def mass_enclosed_2d_pseudo_jaffe(radius, mass, Rc, Rs, s=0.0):
     """
     theta = radius + s
     frac_enclosed_num = (
-        (Rc**2 + theta**2).sqrt() - Rc - (Rs**2 + theta**2).sqrt() + Rs
+        backend.sqrt(Rc**2 + theta**2) - Rc - backend.sqrt(Rs**2 + theta**2) + Rs
     )  # arcsec
     frac_enclosed_denom = Rs - Rc  # arcsec
     return mass * frac_enclosed_num / frac_enclosed_denom
@@ -91,47 +90,47 @@ def reduced_deflection_angle_pseudo_jaffe(
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    mass: Tensor
+    mass: ArrayLike
         Total mass of the lens
 
         *Unit: Msun*
 
-    Rc: Tensor
+    Rc: ArrayLike
         Core radius of the lens.
 
         *Unit: arcsec*
 
-    Rs: Tensor
+    Rs: ArrayLike
         Scaling radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    d_l: Tensor
+    d_l: ArrayLike
         Distance to the lens.
 
         *Unit: Mpc*
 
-    critical_surface_density: Tensor
+    critical_surface_density: ArrayLike
         Critical surface density of the universe at the lens redshift.
 
         *Unit: Msun / Mpc^2*
@@ -143,8 +142,8 @@ def reduced_deflection_angle_pseudo_jaffe(
 
     """
     x, y = translate_rotate(x, y, x0, y0)
-    R = (x**2 + y**2).sqrt() + s
-    f = R / Rc / (1 + (1 + (R / Rc) ** 2).sqrt()) - R / (Rs * (1 + (1 + (R / Rs) ** 2).sqrt()))  # fmt: skip
+    R = backend.sqrt(x**2 + y**2) + s
+    f = R / Rc / (1 + backend.sqrt(1 + (R / Rc) ** 2)) - R / (Rs * (1 + backend.sqrt(1 + (R / Rs) ** 2)))  # fmt: skip
     alpha = 2 * convergence_0_pseudo_jaffe(mass, Rc, Rs, d_l, critical_surface_density) * Rc * Rs / (Rs - Rc) * f  # fmt: skip
     ax = alpha * x / R
     ay = alpha * y / R
@@ -158,52 +157,52 @@ def potential_pseudo_jaffe(x0, y0, mass, Rc, Rs, x, y, d_l, d_s, d_ls, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    mass: Tensor
+    mass: ArrayLike
         Total mass of the lens
 
         *Unit: Msun*
 
-    Rc: Tensor
+    Rc: ArrayLike
         Core radius of the lens.
 
         *Unit: arcsec*
 
-    Rs: Tensor
+    Rs: ArrayLike
         Scaling radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    d_l: Tensor
+    d_l: ArrayLike
         Distance to the lens.
 
         *Unit: Mpc*
 
-    d_s: Tensor
+    d_s: ArrayLike
         Distance to the source.
 
         *Unit: Mpc*
 
-    d_ls: Tensor
+    d_ls: ArrayLike
         Distance from the lens to the source.
 
         *Unit: Mpc*
@@ -222,7 +221,7 @@ def potential_pseudo_jaffe(x0, y0, mass, Rc, Rs, x, y, d_l, d_s, d_ls, s=0.0):
 
     coeff = -(
         8
-        * torch.pi
+        * backend.pi
         * G_over_c2
         * surface_density_0
         * (d_l * d_ls / d_s)
@@ -231,10 +230,10 @@ def potential_pseudo_jaffe(x0, y0, mass, Rc, Rs, x, y, d_l, d_s, d_ls, s=0.0):
         / (Rs - Rc)
     )  # arcsec
 
-    scale_a = (Rs**2 + R_squared).sqrt()  # arcsec
-    scale_b = (Rc**2 + R_squared).sqrt()  # arcsec
-    scale_c = Rc * (Rc + (Rc**2 + R_squared).sqrt()).log()  # arcsec
-    scale_d = Rs * (Rs + (Rs**2 + R_squared).sqrt()).log()  # arcsec
+    scale_a = backend.sqrt(Rs**2 + R_squared)  # arcsec
+    scale_b = backend.sqrt(Rc**2 + R_squared)  # arcsec
+    scale_c = Rc * backend.log(Rc + backend.sqrt(Rc**2 + R_squared))  # arcsec
+    scale_d = Rs * backend.log(Rs + backend.sqrt(Rs**2 + R_squared))  # arcsec
     scale_factor = scale_a - scale_b + scale_c - scale_d  # arcsec
     return coeff * scale_factor
 
@@ -247,47 +246,47 @@ def convergence_pseudo_jaffe(
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    mass: Tensor
+    mass: ArrayLike
         Total mass of the lens
 
         *Unit: Msun*
 
-    Rc: Tensor
+    Rc: ArrayLike
         Core radius of the lens.
 
         *Unit: arcsec*
 
-    Rs: Tensor
+    Rs: ArrayLike
         Scaling radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    d_l: Tensor
+    d_l: ArrayLike
         Distance to the lens.
 
         *Unit: Mpc*
 
-    critical_surface_density: Tensor
+    critical_surface_density: ArrayLike
         Critical surface density of the universe at the lens redshift.
 
         *Unit: Msun / Mpc^2*
@@ -301,4 +300,4 @@ def convergence_pseudo_jaffe(
     x, y = translate_rotate(x, y, x0, y0)
     R_squared = x**2 + y**2 + s
     coeff = convergence_0_pseudo_jaffe(mass, Rc, Rs, d_l, critical_surface_density) * Rc * Rs / (Rs - Rc)  # fmt: skip
-    return coeff * (1 / (Rc**2 + R_squared).sqrt() - 1 / (Rs**2 + R_squared).sqrt())  # fmt: skip
+    return coeff * (1 / backend.sqrt(Rc**2 + R_squared) - 1 / backend.sqrt(Rs**2 + R_squared))  # fmt: skip

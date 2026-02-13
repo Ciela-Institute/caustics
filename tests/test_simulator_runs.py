@@ -1,14 +1,13 @@
 from io import StringIO
 from math import pi
 
-import torch
-
 from caustics.sims import LensSource, Microlens
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.light import Sersic
 from caustics.utils import gaussian
 from caustics import build_simulator
+from caustics.backend_obj import backend
 
 
 def test_simulator_runs(sim_source, device):
@@ -102,6 +101,7 @@ def test_simulator_runs(sim_source, device):
         )
 
         psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
+        psf = backend.to(psf, dtype=backend.float32, device=device)
 
         sim = LensSource(
             name="simulator",
@@ -124,9 +124,6 @@ def test_simulator_runs(sim_source, device):
             quad_level=3,
         )
 
-    sim.to(device=device)
-    sim_q3.to(device=device)
-
     # Test setters
     sim.pixelscale = 0.05
     sim.pixels_x = 50
@@ -136,9 +133,12 @@ def test_simulator_runs(sim_source, device):
     sim.psf_shape = (11, 11)
     sim.psf_mode = "conv2d"
 
-    assert torch.all(torch.isfinite(sim()))
-    assert torch.all(
-        torch.isfinite(
+    sim.to(device=device)
+    sim_q3.to(device=device)
+
+    assert backend.all(backend.isfinite(sim()))
+    assert backend.all(
+        backend.isfinite(
             sim(
                 source_light=True,
                 lens_light=True,
@@ -147,8 +147,8 @@ def test_simulator_runs(sim_source, device):
             )
         )
     )
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(
+        backend.isfinite(
             sim(
                 source_light=True,
                 lens_light=True,
@@ -157,8 +157,8 @@ def test_simulator_runs(sim_source, device):
             )
         )
     )
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(
+        backend.isfinite(
             sim(
                 source_light=True,
                 lens_light=False,
@@ -167,8 +167,8 @@ def test_simulator_runs(sim_source, device):
             )
         )
     )
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(
+        backend.isfinite(
             sim(
                 source_light=False,
                 lens_light=True,
@@ -179,7 +179,7 @@ def test_simulator_runs(sim_source, device):
     )
 
     # Check quadrature integration is accurate
-    assert torch.allclose(sim(), sim_q3(), rtol=1e-1)
+    assert backend.allclose(sim(), sim_q3(), rtol=1e-1)
 
 
 def test_fft_vs_conv2d():
@@ -205,8 +205,9 @@ def test_fft_vs_conv2d():
     )
 
     psf = gaussian(0.05, 11, 11, 0.2, upsample=2)
-    psf[3, 4] = 0.1  # make PSF asymmetric
+    psf = backend.fill_at_indices(psf, (3, 4), 0.1)  # make PSF asymmetric
     psf /= psf.sum()
+    psf = backend.to(psf, dtype=backend.float32)
 
     sim_fft = LensSource(
         name="simulatorfft",
@@ -232,8 +233,12 @@ def test_fft_vs_conv2d():
         quad_level=3,
     )
 
-    print(torch.max(torch.abs((sim_fft() - sim_conv2d()) / sim_fft())))
-    assert torch.allclose(sim_fft(), sim_conv2d(), rtol=1e-1)
+    print(
+        backend.max(
+            backend.flatten(backend.abs((sim_fft() - sim_conv2d()) / sim_fft())), dim=0
+        )
+    )
+    assert backend.allclose(sim_fft(), sim_conv2d(), rtol=1e-1)
 
 
 def test_microlens_simulator_runs():
@@ -241,11 +246,11 @@ def test_microlens_simulator_runs():
     sie = SIE(cosmology=cosmology, name="lens")
     src = Sersic(name="source")
 
-    x = torch.tensor([
+    x = backend.as_array([
     #   z_s  z_l   x0   y0   q    phi     Rein x0   y0   q     phi    n    Re   Ie
         1.5, 0.5, -0.2, 0.0, 0.4, 1.5708, 1.7, 0.0, 0.0, 0.5, -0.985, 1.3, 1.0, 5.0
     ])  # fmt: skip
-    fov = torch.tensor((-1, -0.5, -0.25, 0.25))
+    fov = backend.as_array((-1, -0.5, -0.25, 0.25))
     sim = Microlens(lens=sie, source=src)
     sim(x, fov=fov)
     sim(x, fov=fov, method="grid")

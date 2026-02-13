@@ -1,9 +1,9 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
 from typing import Optional, Union, Annotated, Callable
 
-from torch import Tensor, pi
 from caskade import forward, Param
 
+from ..backend_obj import backend, ArrayLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from .func import (
     physical_deflection_angle_enclosed_mass,
@@ -37,19 +37,23 @@ class EnclosedMass(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The x-coordinate of the lens center",
+            True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The y-coordinate of the lens center",
+            True,
         ] = None,
         q: Annotated[
-            Optional[Union[Tensor, float]], "The axis ratio of the lens", True
+            Optional[Union[ArrayLike, float]], "The axis ratio of the lens", True
         ] = None,
         phi: Annotated[
-            Optional[Union[Tensor, float]], "The position angle of the lens", True
+            Optional[Union[ArrayLike, float]], "The position angle of the lens", True
         ] = None,
         p: Annotated[
-            Optional[Union[Tensor, list[float]]],
+            Optional[Union[ArrayLike, list[float]]],
             "parameters for the enclosed mass function",
             True,
         ] = None,
@@ -85,27 +89,27 @@ class EnclosedMass(ThinLens):
 
             *Unit: unitless*
 
-        x0 : float or Tensor, optional
+        x0 : float or ArrayLike, optional
             The x-coordinate of the lens center.
 
             *Unit: arcsec*
 
-        y0 : float or Tensor, optional
+        y0 : float or ArrayLike, optional
             The y-coordinate of the lens center.
 
             *Unit: arcsec*
 
-        q : float or Tensor, optional
+        q : float or ArrayLike, optional
             The axis ratio of the lens. ratio of semi-minor to semi-major axis (b/a).
 
             *Unit: unitless*
 
-        phi : float or Tensor, optional
+        phi : float or ArrayLike, optional
             The position angle of the lens.
 
             *Unit: radians*
 
-        p : list[float] or Tensor, optional
+        p : list[float] or ArrayLike, optional
             The parameters for the enclosed mass function.
 
             *Unit: user-defined*
@@ -118,10 +122,12 @@ class EnclosedMass(ThinLens):
         super().__init__(cosmology, z_l, name=name, z_s=z_s, **kwargs)
         self.enclosed_mass = enclosed_mass
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.q = Param("q", q, units="unitless", valid=(0, 1))
-        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.q = Param("q", q, shape=(), units="unitless", valid=(0, 1))
+        self.phi = Param(
+            "phi", phi, shape=(), units="radians", valid=(0, backend.pi), cyclic=True
+        )
         self.p = Param("p", p, units="user-defined")
 
         self.s = s
@@ -129,32 +135,32 @@ class EnclosedMass(ThinLens):
     @forward
     def physical_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        p: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        p: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the physical deflection angle of the lens at a given position.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate on the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate on the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-            The physical deflection angle at the given position. [Tensor, Tensor]
+            The physical deflection angle at the given position. [ArrayLike, ArrayLike]
 
             *Unit: arcsec*
         """
@@ -174,11 +180,11 @@ class EnclosedMass(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
+        x: ArrayLike,
+        y: ArrayLike,
         *args,
         **kwargs,
-    ) -> Tensor:
+    ) -> ArrayLike:
         raise NotImplementedError(
             "Potential is not implemented for enclosed mass profiles."
         )
@@ -186,34 +192,34 @@ class EnclosedMass(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        p: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        p: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the dimensionless convergence of the lens at a given position.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate on the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate on the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-            The dimensionless convergence at the given position. [Tensor]
+            The dimensionless convergence at the given position. [ArrayLike]
 
             *Unit: unitless*
         """

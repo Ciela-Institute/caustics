@@ -1,9 +1,9 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
 from caskade import forward, Param
 
+from ..backend_obj import ArrayLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -22,27 +22,27 @@ class MassSheet(ThinLens):
     cosmology: Cosmology
         The cosmological model used for lensing calculations.
 
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         The redshift of the lens.
 
         *Unit: unitless*
 
-    z_s : Optional[Union[Tensor, float]]
+    z_s : Optional[Union[ArrayLike, float]]
         The redshift of the source.
 
         *Unit: unitless*
 
-    x0: Optional[Union[Tensor, float]]
+    x0: Optional[Union[ArrayLike, float]]
         x-coordinate of the shear center in the lens plane.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Optional[Union[ArrayLike, float]]
         y-coordinate of the shear center in the lens plane.
 
         *Unit: arcsec*
 
-    kappa: Optional[Union[Tensor, float]]
+    kappa: Optional[Union[ArrayLike, float]]
         Convergence. Surface density normalized by the critical surface density.
 
         *Unit: unitless*
@@ -60,58 +60,58 @@ class MassSheet(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "x-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "y-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         kappa: Annotated[
-            Optional[Union[Tensor, float]], "Surface density", True
+            Optional[Union[ArrayLike, float]], "Surface density", True
         ] = None,
         name: NameType = None,
     ):
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
         self.kappa = Param("kappa", kappa, units="unitless")
 
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        kappa: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        kappa: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculates the reduced deflection angle.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle in x-direction.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle in y-direction.
 
             *Unit: arcsec*
@@ -122,21 +122,21 @@ class MassSheet(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        kappa: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        kappa: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         # Meneghetti eq 3.81
         return func.potential_mass_sheet(x0, y0, kappa, x, y)
 
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        kappa: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        kappa: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         # Essentially by definition
         return func.convergence_mass_sheet(kappa, x)

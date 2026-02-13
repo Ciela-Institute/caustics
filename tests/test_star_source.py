@@ -1,13 +1,13 @@
 import caustics
-import torch
 from caustics.utils import meshgrid
+from caustics.backend_obj import backend
 
 
 def test_star_source():
     src = caustics.StarSource(name="source")
 
     rho = 1.5
-    x = torch.tensor(
+    x = backend.as_array(
         [
             0.0,  # x0
             0.0,  # y0
@@ -16,8 +16,8 @@ def test_star_source():
             0.0,  # gamma
         ]
     )
-    theta_x = torch.tensor([0.1])
-    theta_y = torch.tensor([0.2])
+    theta_x = backend.as_array([0.1])
+    theta_y = backend.as_array([0.2])
     # Check if brightness is constant inside source with no limb darkening
     assert src.brightness(theta_x, theta_y, x) == 5.0
     # Check if brightness is zero outside source
@@ -35,7 +35,7 @@ def test_star_source():
         res / upsample_factor,
         upsample_factor * n_pix,
         upsample_factor * n_pix,
-        dtype=torch.float32,
+        dtype=backend.float32,
     )
 
-    assert torch.all(torch.isfinite(src.brightness(thx, thy, x)))
+    assert backend.all(backend.isfinite(src.brightness(thx, thy, x)))
