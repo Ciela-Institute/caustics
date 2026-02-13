@@ -106,6 +106,7 @@ class Backend:
         self.jit = self._jit_torch
         self.norm = self._norm_torch
         self.arange = self._arange_torch
+        self.linspace = self._linspace_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -166,6 +167,7 @@ class Backend:
         self.jit = self._jit_jax
         self.norm = self._norm_jax
         self.arange = self._arange_jax
+        self.linspace = self._linspace_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**31 - 1)
@@ -625,8 +627,11 @@ class Backend:
     def _arange_jax(self, *args, dtype=None, device=None):
         return self.module.arange(*args, dtype=dtype)
 
-    def linspace(self, start, end, steps, dtype=None, device=None):
+    def _linspace_torch(self, start, end, steps, dtype=None, device=None):
         return self.module.linspace(start, end, steps, dtype=dtype, device=device)
+
+    def _linspace_jax(self, start, end, steps, dtype=None, device=None):
+        return self.module.linspace(start, end, steps, dtype=dtype)
 
     def searchsorted(self, array, value):
         return self.module.searchsorted(array, value)
