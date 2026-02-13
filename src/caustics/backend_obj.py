@@ -1,5 +1,6 @@
 import os
 import importlib
+from collections import namedtuple
 from typing import Annotated
 
 from torch import Tensor, dtype, device
@@ -17,6 +18,10 @@ deviceLike = Annotated[
     device,
     "One of: torch.device or jax.DeviceArray depending on the chosen backend.",
 ]
+
+
+# Util to make Jax and Torch TopK to behave similarly
+TopKResult = namedtuple("TopKResult", ["values", "indices"])
 
 
 class Backend:
@@ -74,7 +79,6 @@ class Backend:
         self.min = self._min_torch
         self.topk = self._topk_torch
         self.bessel_j1 = self._bessel_j1_torch
-        self.bessel_k1 = self._bessel_k1_torch
         self.lgamma = self._lgamma_torch
         self.hessian = self._hessian_torch
         self.jacobian = self._jacobian_torch
@@ -134,7 +138,6 @@ class Backend:
         self.min = self._min_jax
         self.topk = self._topk_jax
         self.bessel_j1 = self._bessel_j1_jax
-        self.bessel_k1 = self._bessel_k1_jax
         self.lgamma = self._lgamma_jax
         self.hessian = self._hessian_jax
         self.jacobian = self._jacobian_jax
@@ -242,9 +245,7 @@ class Backend:
         return self.module.transpose(array, *args)
 
     def _transpose_jax(self, array, *args):
-        permutation = np.arange(array.ndim)
-        permutation[np.sort(args)] = args
-        return self.module.transpose(array, permutation)
+        return self.module.swapaxes(array, *args)
 
     def _gammaln_torch(self, array):
         return self.module.special.gammaln(array)
@@ -338,7 +339,7 @@ class Backend:
         return self.module.mean(array, axis=dim)
 
     def _std_torch(self, array, dim=None):
-        return self.module.std(array, dim=dim)
+        return self.module.std(array, dim=dim, correction=0)
 
     def _std_jax(self, array, dim=None):
         return self.module.std(array, axis=dim)
@@ -356,13 +357,21 @@ class Backend:
         return self.module.cumprod(array, axis=dim)
 
     def _max_torch(self, array, dim=None):
-        return self.module.max(array, dim=dim).values
+        return (
+            self.module.max(array)
+            if dim is None
+            else self.module.max(array, dim=dim).values
+        )
 
     def _max_jax(self, array, dim=None):
         return self.module.max(array, axis=dim)
 
     def _min_torch(self, array, dim=None):
-        return self.module.min(array, dim=dim).values
+        return (
+            self.module.min(array)
+            if dim is None
+            else self.module.min(array, dim=dim).values
+        )
 
     def _min_jax(self, array, dim=None):
         return self.module.min(array, axis=dim)
@@ -371,19 +380,14 @@ class Backend:
         return self.module.topk(array, k=k)
 
     def _topk_jax(self, array, k):
-        return self.jax.lax.top_k(array, k=k)
+        res = self.jax.lax.top_k(array, k=k)
+        return TopKResult(values=res[0], indices=res[1])
 
     def _bessel_j1_torch(self, array):
         return self.module.special.bessel_j1(array)
 
     def _bessel_j1_jax(self, array):
-        return self.jax.scipy.special.bessel_jn(array, v=1)
-
-    def _bessel_k1_torch(self, array):
-        return self.module.special.modified_bessel_k1(array)
-
-    def _bessel_k1_jax(self, array):
-        return self.jax.scipy.special.kn(1, array)
+        return self.jax.scipy.special.bessel_jn(array, v=1)[-1]
 
     def _lgamma_torch(self, array):
         return self.module.lgamma(array)
@@ -749,7 +753,7 @@ class Backend:
         return self.module.isfinite(array)
 
     def prod(self, array, dim=None):
-        return self.module.prod(array, dim)
+        return self.module.prod(array) if dim is None else self.module.prod(array, dim)
 
     def cumprod(self, array, dim=None):
         return self.module.cumprod(array, dim)
