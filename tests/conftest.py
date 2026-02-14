@@ -4,13 +4,17 @@ import torch
 import pytest
 import matplotlib
 import matplotlib.pyplot as plt
+from caustics.backend_obj import backend
 
 # Add the helpers directory to the path so we can import the helpers
 sys.path.append(os.path.join(os.path.dirname(__file__), "utils"))
 
 # from caustics.models.utils import setup_pydantic_models
 
-CUDA_AVAILABLE = torch.cuda.is_available()
+if backend.backend == "torch":
+    CUDA_AVAILABLE = torch.cuda.is_available()
+elif backend.backend == "jax":
+    CUDA_AVAILABLE = any(d.platform == "gpu" for d in backend.jax.devices())
 
 
 @pytest.fixture(params=["yaml", "no_yaml"])
@@ -30,7 +34,12 @@ def sim_source(request):
     ]
 )
 def device(request):
-    return torch.device(request.param)
+    if backend.backend == "torch":
+        return torch.device(request.param)
+    elif backend.backend == "jax":
+        param = "gpu" if request.param == "cuda" else "cpu"
+        return backend.jax.devices(param)[0]
+    return None
 
 
 @pytest.fixture(autouse=True)

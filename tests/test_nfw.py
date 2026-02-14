@@ -1,7 +1,6 @@
 from io import StringIO
 
 # import lenstronomy.Util.param_util as param_util
-import torch
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from astropy.cosmology import default_cosmology
 
@@ -13,6 +12,7 @@ from utils import lens_test_helper, setup_grids
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustics.lenses import NFW
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -26,8 +26,8 @@ Ob0_default = float(default_cosmology.get().Ob0)
 def test_nfw(sim_source, device, mass, c):
     atol = 1e-5
     rtol = 3e-2
-    z_l = torch.tensor(0.1)
-    z_s = torch.tensor(0.5)
+    z_l = backend.as_array(0.1)
+    z_s = backend.as_array(0.5)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -59,7 +59,7 @@ def test_nfw(sim_source, device, mass, c):
     thy0 = 0.141
     # m = 1e12
     # c = 8.0
-    x = torch.tensor([thx0, thy0, mass, c])
+    x = backend.as_array([thx0, thy0, mass, c])
 
     # Lenstronomy
     cosmo = FlatLambdaCDM_AP(H0=h0_default * 100, Om0=Om0_default, Ob0=Ob0_default)
@@ -84,8 +84,8 @@ def test_nfw(sim_source, device, mass, c):
 
 
 def test_runs(sim_source, device):
-    z_l = torch.tensor(0.1)
-    z_s = torch.tensor(0.5)
+    z_l = backend.as_array(0.1)
+    z_s = backend.as_array(0.5)
     if sim_source == "yaml":
         yaml_str = f"""\
         cosmology: &cosmology
@@ -112,14 +112,14 @@ def test_runs(sim_source, device):
     thy0 = 0.141
     mass = 1e12
     rs = 8.0
-    x = torch.tensor([thx0, thy0, mass, rs])
+    x = backend.as_array([thx0, thy0, mass, rs])
 
     thx, thy, thx_ls, thy_ls = setup_grids(device=device)
 
     Psi = lens.potential(thx, thy, x)
-    assert torch.all(torch.isfinite(Psi))
+    assert backend.all(backend.isfinite(Psi))
     alpha = lens.reduced_deflection_angle(thx, thy, x)
-    assert torch.all(torch.isfinite(alpha[0]))
-    assert torch.all(torch.isfinite(alpha[1]))
+    assert backend.all(backend.isfinite(alpha[0]))
+    assert backend.all(backend.isfinite(alpha[1]))
     kappa = lens.convergence(thx, thy, x)
-    assert torch.all(torch.isfinite(kappa))
+    assert backend.all(backend.isfinite(kappa))

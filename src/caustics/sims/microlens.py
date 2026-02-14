@@ -1,11 +1,11 @@
-from typing import Annotated, Literal
-import torch
-from torch import Tensor
+from typing import Annotated, Literal, Optional
+
 from caskade import Module, forward
 
 from .simulator import NameType
 from ..lenses.base import Lens
 from ..light.base import Source
+from ..backend_obj import backend, ArrayLike
 
 
 __all__ = ("Microlens",)
@@ -61,16 +61,17 @@ class Microlens(Module):
     @forward
     def __call__(
         self,
-        fov: Tensor,
+        fov: ArrayLike,
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
         N_grid: int = 100,
+        key: Optional[ArrayLike] = None,
     ):
         """Forward pass of the simulator.
 
         Parameters
         ----------
-        fov: Tensor
+        fov: ArrayLike
             Field of view box of the simulation in arcseconds indexed as (x_min, x_max, y_min, y_max)
 
         method: str (default "mcmc")
@@ -82,32 +83,39 @@ class Microlens(Module):
         N_grid: int
             Number of sample points for the sampling grid on each axis if method is "grid"
 
+        key: Optional[ArrayLike]
+            A jax.random.key to be used when the Jax backend is used
+
         Returns
         -------
-        Tensor
+        ArrayLike
             Total flux from the microlens system within the field of view
 
-        Tensor
+        ArrayLike
             Error estimate on the total flux
 
         """
 
         if method == "mcmc":
             # Sample the source using MCMC
-            sample_x = torch.rand(N_mcmc) * (fov[1] - fov[0]) + fov[0]
-            sample_y = torch.rand(N_mcmc) * (fov[3] - fov[2]) + fov[2]
+            if key is not None:
+                key_x, key_y = backend.split_key(key)
+            else:
+                key_x, key_y = None, None
+            sample_x = backend.rand(N_mcmc, key=key_x) * (fov[1] - fov[0]) + fov[0]
+            sample_y = backend.rand(N_mcmc, key=key_y) * (fov[3] - fov[2]) + fov[2]
             bx, by = self.lens.raytrace(sample_x, sample_y)
             mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
-            return mu.mean() * A, mu.std() * A / N_mcmc**0.5
+            return backend.mean(mu) * A, backend.std(mu) * A / N_mcmc**0.5
         elif method == "grid":
             # Sample the source using a grid
-            x = torch.linspace(fov[0], fov[1], N_grid)
-            y = torch.linspace(fov[2], fov[3], N_grid)
-            sample_x, sample_y = torch.meshgrid(x, y, indexing="ij")
+            x = backend.linspace(fov[0], fov[1], N_grid)
+            y = backend.linspace(fov[2], fov[3], N_grid)
+            sample_x, sample_y = backend.meshgrid(x, y, indexing="ij")
             bx, by = self.lens.raytrace(sample_x, sample_y)
             mu = self.source.brightness(bx, by)
             A = (fov[1] - fov[0]) * (fov[3] - fov[2])
-            return mu.mean() * A, mu.std() * A / N_grid
+            return backend.mean(mu) * A, backend.std(mu) * A / N_grid
         else:
             raise ValueError(f"Invalid method: {method}, choose from 'mcmc' or 'grid'")

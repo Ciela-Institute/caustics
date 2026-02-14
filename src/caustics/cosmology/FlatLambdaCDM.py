@@ -1,13 +1,12 @@
 # mypy: disable-error-code="operator"
 from typing import Optional, Annotated
 
-import torch
-from torch import Tensor
 from caskade import forward, Param
 from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
 
 from ..utils import interp1d
+from ..backend_obj import backend, ArrayLike, deviceLike
 from ..constants import c_Mpc_s, km_to_Mpc
 from .base import Cosmology, NameType
 
@@ -19,16 +18,18 @@ _Om0_default = float(default_cosmology.get().Om0)
 
 # Set up interpolator to speed up comoving distance calculations in Lambda-CDM
 # cosmologies. Construct with float64 precision.
-_comoving_distance_helper_x_grid = 10 ** torch.linspace(-3, 1, 500, dtype=torch.float64)
-_comoving_distance_helper_y_grid = torch.as_tensor(
+_comoving_distance_helper_x_grid = 10 ** backend.linspace(
+    -3, 1, 500, dtype=backend.float64
+)
+_comoving_distance_helper_y_grid = backend.as_array(
     _comoving_distance_helper_x_grid
     * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_distance_helper_x_grid**3)),
-    dtype=torch.float64,
+    dtype=backend.float64,
 )
 
-h0_default = torch.tensor(_h0_default)
-critical_density_0_default = torch.tensor(_critical_density_0_default)
-Om0_default = torch.tensor(_Om0_default)
+h0_default = backend.as_array(_h0_default)
+critical_density_0_default = backend.as_array(_critical_density_0_default)
+Om0_default = backend.as_array(_Om0_default)
 
 
 class FlatLambdaCDM(Cosmology):
@@ -39,12 +40,14 @@ class FlatLambdaCDM(Cosmology):
 
     def __init__(
         self,
-        h0: Annotated[Optional[Tensor], "Hubble constant over 100", True] = h0_default,
+        h0: Annotated[
+            Optional[ArrayLike], "Hubble constant over 100", True
+        ] = h0_default,
         critical_density_0: Annotated[
-            Optional[Tensor], "Critical density at z=0", True
+            Optional[ArrayLike], "Critical density at z=0", True
         ] = critical_density_0_default,
         Om0: Annotated[
-            Optional[Tensor], "Matter density parameter at z=0", True
+            Optional[ArrayLike], "Matter density parameter at z=0", True
         ] = Om0_default,
         name: NameType = None,
     ):
@@ -55,11 +58,11 @@ class FlatLambdaCDM(Cosmology):
         ----------
         name: str
         Name of the cosmology.
-        h0: Optional[Tensor]
+        h0: Optional[ArrayLike]
             Hubble constant over 100. Default is h0_default.
-        critical_density_0: (Optional[Tensor])
+        critical_density_0: (Optional[ArrayLike])
             Critical density at z=0. Default is critical_density_0_default.
-        Om0: Optional[Tensor]
+        Om0: Optional[ArrayLike]
             Matter density parameter at z=0. Default is Om0_default.
         """
         super().__init__(name)
@@ -73,38 +76,38 @@ class FlatLambdaCDM(Cosmology):
         )
         self.Om0 = Param("Om0", Om0, units="unitless", valid=(0, 1))
 
-        self._comoving_distance_helper_x_grid = _comoving_distance_helper_x_grid.to(
-            dtype=torch.float32
+        self._comoving_distance_helper_x_grid = backend.to(
+            _comoving_distance_helper_x_grid, dtype=backend.float32
         )
-        self._comoving_distance_helper_y_grid = _comoving_distance_helper_y_grid.to(
-            dtype=torch.float32
+        self._comoving_distance_helper_y_grid = backend.to(
+            _comoving_distance_helper_y_grid, dtype=backend.float32
         )
 
     def to(
-        self, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None
+        self, device: Optional[deviceLike] = None, dtype: Optional[deviceLike] = None
     ):
         super().to(device, dtype)
-        self._comoving_distance_helper_y_grid = (
-            self._comoving_distance_helper_y_grid.to(device, dtype)
+        self._comoving_distance_helper_y_grid = backend.to(
+            self._comoving_distance_helper_y_grid, device=device, dtype=dtype
         )
-        self._comoving_distance_helper_x_grid = (
-            self._comoving_distance_helper_x_grid.to(device, dtype)
+        self._comoving_distance_helper_x_grid = backend.to(
+            self._comoving_distance_helper_x_grid, device=device, dtype=dtype
         )
 
         return self
 
-    def hubble_distance(self, h0: Annotated[Tensor, "Param"]):
+    def hubble_distance(self, h0: Annotated[ArrayLike, "Param"]):
         """
         Calculate the Hubble distance.
 
         Parameters
         ----------
-        h0: Tensor
+        h0: ArrayLike
             Hubble constant.
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Hubble distance.
         """
         return c_Mpc_s / (100 * km_to_Mpc) / h0
@@ -112,65 +115,68 @@ class FlatLambdaCDM(Cosmology):
     @forward
     def critical_density(
         self,
-        z: Tensor,
-        critical_density_0: Annotated[Tensor, "Param"],
-        Om0: Annotated[Tensor, "Param"],
-    ) -> torch.Tensor:
+        z: ArrayLike,
+        critical_density_0: Annotated[ArrayLike, "Param"],
+        Om0: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the critical density at redshift z.
 
         Parameters
         ----------
-        z: Tensor
+        z: ArrayLike
             Redshift.
 
         Returns
         -------
-        torch.Tensor
+        ArrayLike
             Critical density at redshift z.
         """
         Ode0 = 1 - Om0
         return critical_density_0 * (Om0 * (1 + z) ** 3 + Ode0)  # fmt: skip
 
     @forward
-    def _comoving_distance_helper(self, x: Tensor) -> Tensor:
+    def _comoving_distance_helper(self, x: ArrayLike) -> ArrayLike:
         """
         Helper method for computing comoving distances.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             Input tensor.
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Computed comoving distances.
         """
-        return interp1d(
-            self._comoving_distance_helper_x_grid,
-            self._comoving_distance_helper_y_grid,
-            torch.atleast_1d(x),
-        ).reshape(x.shape)
+        return backend.view(
+            interp1d(
+                self._comoving_distance_helper_x_grid,
+                self._comoving_distance_helper_y_grid,
+                backend.atleast_1d(x),
+            ),
+            x.shape,
+        )
 
     @forward
     def comoving_distance(
         self,
-        z: Tensor,
-        h0: Annotated[Tensor, "Param"],
-        Om0: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        z: ArrayLike,
+        h0: Annotated[ArrayLike, "Param"],
+        Om0: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the comoving distance to redshift z.
 
         Parameters
         ----------
-        z: Tensor
+        z: ArrayLike
             Redshift.
 
         Returns
         -------
-        Tensor
+        ArrayLike
             Comoving distance to redshift z.
         """
         Ode0 = 1 - Om0
@@ -181,5 +187,5 @@ class FlatLambdaCDM(Cosmology):
         return DH * (DC1z - DC) / (Om0 ** (1 / 3) * Ode0 ** (1 / 6))  # fmt: skip
 
     @forward
-    def transverse_comoving_distance(self, z: Tensor) -> Tensor:
+    def transverse_comoving_distance(self, z: ArrayLike) -> ArrayLike:
         return self.comoving_distance(z)

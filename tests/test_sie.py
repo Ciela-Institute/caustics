@@ -1,7 +1,6 @@
 from math import pi
 from io import StringIO
 
-import torch
 import numpy as np
 import lenstronomy.Util.param_util as param_util
 from lenstronomy.LensModel.lens_model import LensModel
@@ -11,6 +10,7 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.utils import meshgrid
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -21,7 +21,7 @@ import pytest
 def test_sie(sim_source, device, q, phi, Rein):
     atol = 1e-5
     rtol = 1e-3
-    z_s = torch.tensor(1.2)
+    z_s = backend.as_array(1.2)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -45,7 +45,7 @@ def test_sie(sim_source, device, q, phi, Rein):
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    x = torch.tensor([0.5, 0.912, -0.442, q, phi, Rein])
+    x = backend.as_array([0.5, 0.912, -0.442, q, phi, Rein])
     e1, e2 = param_util.phi_q2_ellipticity(phi=phi, q=q)
     kwargs_ls = [
         {
@@ -65,11 +65,11 @@ def test_sie(sim_source, device, q, phi, Rein):
 def test_sie_time_delay():
     # Models
     cosmology = FlatLambdaCDM(name="cosmo")
-    z_s = torch.tensor(1.2)
+    z_s = backend.as_array(1.2)
     lens = SIE(name="sie", cosmology=cosmology, z_s=z_s)
 
     # Parameters
-    x = torch.tensor([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
+    x = backend.as_array([0.5, 0.912, -0.442, 0.7, pi / 3, 1.4])
 
     n_pix = 10
     res = 0.05
@@ -78,12 +78,12 @@ def test_sie_time_delay():
         res / upsample_factor,
         upsample_factor * n_pix,
         upsample_factor * n_pix,
-        dtype=torch.float32,
+        dtype=backend.float32,
     )
 
-    assert torch.all(torch.isfinite(lens.time_delay(thx, thy, x)))
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(backend.isfinite(lens.time_delay(thx, thy, x)))
+    assert backend.all(
+        backend.isfinite(
             lens.time_delay(
                 thx,
                 thy,
@@ -93,8 +93,8 @@ def test_sie_time_delay():
             )
         )
     )
-    assert torch.all(
-        torch.isfinite(
+    assert backend.all(
+        backend.isfinite(
             lens.time_delay(
                 thx,
                 thy,
