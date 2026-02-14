@@ -42,6 +42,7 @@ class PixelatedDeflection(ThinLens):
         shape: Annotated[
             tuple[Optional[int], ...], "The shape of the deflection map"
         ] = (
+            2,
             None,
             None,
         ),
