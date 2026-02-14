@@ -1,5 +1,4 @@
-import torch
-
+from ...backend_obj import backend
 from ...utils import translate_rotate
 
 
@@ -10,44 +9,44 @@ def reduced_deflection_angle_external_shear(x0, y0, gamma_1, gamma_2, x, y):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    gamma_1: Tensor
+    gamma_1: ArrayLike
         The shear component in the x-direction.
 
         *Unit: unitless*
 
-    gamma_2: Tensor
+    gamma_2: ArrayLike
         The shear component in the y-direction.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
     Returns
     -------
-    x_component: Tensor
+    x_component: ArrayLike
         Deflection Angle in the x-direction.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         Deflection Angle in the y-direction.
 
         *Unit: arcsec*
@@ -67,39 +66,39 @@ def potential_external_shear(x0, y0, gamma_1, gamma_2, x, y):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    gamma_1: Tensor
+    gamma_1: ArrayLike
         The shear component in the x-direction.
 
         *Unit: unitless*
 
-    gamma_2: Tensor
+    gamma_2: ArrayLike
         The shear component in the y-direction.
 
         *Unit: unitless*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The lensing potential.
 
         *Unit: arcsec^2*
@@ -115,25 +114,25 @@ def gamma_phi_to_gamma1(gamma, phi):
 
     Parameters
     ----------
-    gamma: Tensor
+    gamma: ArrayLike
         The shear magnitude.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The shear angle.
 
         *Unit: radians*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The gamma_1 component of the shear.
 
         *Unit: unitless*
 
     """
-    return gamma * torch.cos(2 * phi)
+    return gamma * backend.cos(2 * phi)
 
 
 def gamma_phi_to_gamma2(gamma, phi):
@@ -142,22 +141,22 @@ def gamma_phi_to_gamma2(gamma, phi):
 
     Parameters
     ----------
-    gamma: Tensor
+    gamma: ArrayLike
         The shear magnitude.
 
         *Unit: unitless*
 
-    phi: Tensor
+    phi: ArrayLike
         The shear angle.
 
         *Unit: radians*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The gamma_2 component of the shear.
 
         *Unit: unitless*
 
     """
-    return gamma * torch.sin(2 * phi)
+    return gamma * backend.sin(2 * phi)

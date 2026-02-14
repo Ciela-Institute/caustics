@@ -1,6 +1,5 @@
 from io import StringIO
 
-import torch
 import numpy as np
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
@@ -8,6 +7,7 @@ from utils import lens_test_helper
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Point
 from caustics.sims import build_simulator
+from caustics.backend_obj import backend
 
 import pytest
 
@@ -16,8 +16,8 @@ import pytest
 def test_point_lens(sim_source, device, Rein):
     atol = 1e-5
     rtol = 1e-5
-    z_l = torch.tensor(0.9)
-    z_s = torch.tensor(1.2)
+    z_l = backend.as_array(0.9)
+    z_s = backend.as_array(1.2)
 
     if sim_source == "yaml":
         yaml_str = f"""\
@@ -42,7 +42,7 @@ def test_point_lens(sim_source, device, Rein):
     lens_ls = LensModel(lens_model_list=lens_model_list)
 
     # Parameters
-    x = torch.tensor([0.912, -0.442, Rein])
+    x = backend.as_array([0.912, -0.442, Rein])
     kwargs_ls = [{"center_x": x[0].item(), "center_y": x[1].item(), "theta_E": Rein}]
 
     lens_test_helper(lens, lens_ls, x, kwargs_ls, rtol, atol, device=device)

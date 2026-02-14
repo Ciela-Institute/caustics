@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 import pytest
 from astropy.wcs import WCS
@@ -13,6 +12,7 @@ from caustics.utils import (
     plane_to_pixel,
 )
 from caustics.constants import arcsec_to_deg
+from caustics.backend_obj import backend
 
 _sip_powers = (
     (0, 2),
@@ -58,17 +58,17 @@ _sip_coefs = (
 @pytest.mark.parametrize("crval", [(0.0, 0.0), (10.0, 90.0), (180.0, -45.0)])
 def test_gnomonic_projection(crval):
 
-    px, py = meshgrid(pixelscale=0.1 * arcsec_to_deg, nx=100, dtype=torch.float64)
+    px, py = meshgrid(pixelscale=0.1 * arcsec_to_deg, nx=100, dtype=backend.float64)
 
     ra, dec = plane_to_world_gnomonic(
-        px, py, crval=torch.tensor(crval, dtype=torch.float64)
+        px, py, crval=backend.as_array(crval, dtype=backend.float64)
     )
     px2, py2 = world_to_plane_gnomonic(
-        ra, dec, crval=torch.tensor(crval, dtype=torch.float64)
+        ra, dec, crval=backend.as_array(crval, dtype=backend.float64)
     )
 
-    assert torch.allclose(px, px2, atol=1e-7)
-    assert torch.allclose(py, py2, atol=1e-7)
+    assert backend.allclose(px, px2, atol=1e-7)
+    assert backend.allclose(py, py2, atol=1e-7)
 
 
 @pytest.mark.parametrize("crpix", [(0.0, 0.0), (50.0, 50.0), (-10.0, -100.0)])
@@ -78,21 +78,21 @@ def test_gnomonic_projection(crval):
     [((1e-4, 0.0), (0.0, 1e-4)), ((-9.72e-6, -1.03e-5), (-9.63e-6, 8.70e-6))],
 )
 def test_tangent_projection(crpix, crval, CD):
-    crpix = torch.tensor(crpix, dtype=torch.float64)
-    crval = torch.tensor(crval, dtype=torch.float64)
-    CD = torch.tensor(CD, dtype=torch.float64)
+    crpix = backend.as_array(crpix, dtype=backend.float64)
+    crval = backend.as_array(crval, dtype=backend.float64)
+    CD = backend.as_array(CD, dtype=backend.float64)
 
-    px, py = torch.meshgrid(
-        torch.arange(0, 100, dtype=torch.float64),
-        torch.arange(0, 100, dtype=torch.float64),
+    px, py = backend.meshgrid(
+        backend.arange(0, 100, dtype=backend.float64),
+        backend.arange(0, 100, dtype=backend.float64),
         indexing="ij",
     )
 
     ra, dec = pixel_to_plane(px, py, crpix=crpix, CD=CD)
     px2, py2 = plane_to_pixel(ra, dec, crpix=crpix, CD=CD)
 
-    assert torch.allclose(px, px2, atol=1e-7)
-    assert torch.allclose(py, py2, atol=1e-7)
+    assert backend.allclose(px, px2, atol=1e-7)
+    assert backend.allclose(py, py2, atol=1e-7)
 
 
 @pytest.mark.parametrize("crpix", [(0.0, 0.0), (50.0, 50.0), (-10.0, -100.0)])
@@ -102,16 +102,16 @@ def test_tangent_projection(crpix, crval, CD):
     [((1e-4, 0.0), (0.0, 1e-4)), ((-9.72e-6, -1.03e-5), (-9.63e-6, 8.70e-6))],
 )
 def test_sip_wcs(crpix, crval, CD):
-    crpix = torch.tensor(crpix, dtype=torch.float64)
-    crval = torch.tensor(crval, dtype=torch.float64)
-    CD = torch.tensor(CD, dtype=torch.float64)
+    crpix = backend.as_array(crpix, dtype=backend.float64)
+    crval = backend.as_array(crval, dtype=backend.float64)
+    CD = backend.as_array(CD, dtype=backend.float64)
     # SIP coefficients from a random HST image
-    sip_powers = torch.tensor(_sip_powers, dtype=torch.float64)
-    sip_coefs = torch.tensor(_sip_coefs, dtype=torch.float64)
+    sip_powers = backend.as_array(_sip_powers, dtype=backend.float64)
+    sip_coefs = backend.as_array(_sip_coefs, dtype=backend.float64)
 
-    px, py = torch.meshgrid(
-        torch.arange(0, 100, dtype=torch.float64),
-        torch.arange(0, 100, dtype=torch.float64),
+    px, py = backend.meshgrid(
+        backend.arange(0, 100, dtype=backend.float64),
+        backend.arange(0, 100, dtype=backend.float64),
         indexing="ij",
     )
 
@@ -134,8 +134,8 @@ def test_sip_wcs(crpix, crval, CD):
         sip_coefs=-sip_coefs,
     )
 
-    assert torch.allclose(px, px2, atol=1e-3)
-    assert torch.allclose(py, py2, atol=1e-3)
+    assert backend.allclose(px, px2, atol=1e-3)
+    assert backend.allclose(py, py2, atol=1e-3)
 
 
 @pytest.mark.parametrize("crpix", [(0.0, 0.0), (2048, 1024)])
@@ -161,7 +161,7 @@ def test_caustics_vs_astropy_wcs_linear(crpix, crval):
 
     px, py = np.meshgrid(
         np.arange(0, 4096)[::4],
-        torch.arange(0, 2048)[::4],
+        backend.arange(0, 2048)[::4],
         indexing="ij",
     )
 
@@ -169,18 +169,18 @@ def test_caustics_vs_astropy_wcs_linear(crpix, crval):
     astropy_wx, astropy_wy = astropy_wcs.pixel_to_world_values(px, py)
 
     # Caustics
-    crpix = torch.tensor(crpix, dtype=torch.float64) - 1
-    crval = torch.tensor(crval, dtype=torch.float64)
-    CD = torch.tensor(
+    crpix = backend.as_array(crpix, dtype=backend.float64) - 1
+    crval = backend.as_array(crval, dtype=backend.float64)
+    CD = backend.as_array(
         (
             (wcs_info["CD1_1"], wcs_info["CD1_2"]),
             (wcs_info["CD2_1"], wcs_info["CD2_2"]),
         ),
-        dtype=torch.float64,
+        dtype=backend.float64,
     )
     caustics_wx, caustics_wy = pixel_to_world(
-        torch.tensor(px, dtype=torch.float64),
-        torch.tensor(py, dtype=torch.float64),
+        backend.as_array(px, dtype=backend.float64),
+        backend.as_array(py, dtype=backend.float64),
         crpix=crpix,
         crval=crval,
         CD=CD,
@@ -188,12 +188,10 @@ def test_caustics_vs_astropy_wcs_linear(crpix, crval):
 
     # Compare
     # Use modulo to enforce periodicity
-    assert np.allclose(
-        astropy_wx % 360, caustics_wx.detach().cpu().numpy() % 360, atol=1e-7
-    )
+    assert np.allclose(astropy_wx % 360, backend.to_numpy(caustics_wx) % 360, atol=1e-7)
     assert np.allclose(
         (astropy_wy + 90) % 180,
-        (caustics_wy.detach().cpu().numpy() + 90) % 180,
+        (backend.to_numpy(caustics_wy) + 90) % 180,
         atol=1e-7,
     )
 
@@ -227,7 +225,7 @@ def test_caustics_vs_astropy_wcs_sip(crpix, crval):
 
     px, py = np.meshgrid(
         np.arange(0, 4096)[::4],
-        torch.arange(0, 2048)[::4],
+        backend.arange(0, 2048)[::4],
         indexing="ij",
     )
 
@@ -235,20 +233,20 @@ def test_caustics_vs_astropy_wcs_sip(crpix, crval):
     astropy_wx, astropy_wy = astropy_wcs.pixel_to_world_values(px, py)
 
     # Caustics
-    sip_powers = torch.tensor(_sip_powers, dtype=torch.float64)
-    sip_coefs = torch.tensor(_sip_coefs, dtype=torch.float64)
-    crpix = torch.tensor(crpix, dtype=torch.float64) - 1
-    crval = torch.tensor(crval, dtype=torch.float64)
-    CD = torch.tensor(
+    sip_powers = backend.as_array(_sip_powers, dtype=backend.float64)
+    sip_coefs = backend.as_array(_sip_coefs, dtype=backend.float64)
+    crpix = backend.as_array(crpix, dtype=backend.float64) - 1
+    crval = backend.as_array(crval, dtype=backend.float64)
+    CD = backend.as_array(
         (
             (wcs_info["CD1_1"], wcs_info["CD1_2"]),
             (wcs_info["CD2_1"], wcs_info["CD2_2"]),
         ),
-        dtype=torch.float64,
+        dtype=backend.float64,
     )
     caustics_wx, caustics_wy = pixel_to_world(
-        torch.tensor(px, dtype=torch.float64),
-        torch.tensor(py, dtype=torch.float64),
+        backend.as_array(px, dtype=backend.float64),
+        backend.as_array(py, dtype=backend.float64),
         crpix=crpix,
         crval=crval,
         CD=CD,
@@ -258,11 +256,9 @@ def test_caustics_vs_astropy_wcs_sip(crpix, crval):
 
     # Compare
     # Use modulo to enforce periodicity
-    assert np.allclose(
-        astropy_wx % 360, caustics_wx.detach().cpu().numpy() % 360, atol=1e-7
-    )
+    assert np.allclose(astropy_wx % 360, backend.to_numpy(caustics_wx) % 360, atol=1e-7)
     assert np.allclose(
         (astropy_wy + 90) % 180,
-        (caustics_wy.detach().cpu().numpy() + 90) % 180,
+        (backend.to_numpy(caustics_wy) + 90) % 180,
         atol=1e-7,
     )

@@ -1,5 +1,4 @@
-import torch
-
+from ...backend_obj import backend
 from ...utils import translate_rotate
 from ...constants import G_over_c2, rad_to_arcsec
 
@@ -11,27 +10,27 @@ def reduced_deflection_angle_point(x0, y0, Rein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    Rein: Tensor
+    Rein: ArrayLike
         Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
@@ -43,19 +42,19 @@ def reduced_deflection_angle_point(x0, y0, Rein, x, y, s=0.0):
 
     Returns
     -------
-    x_component: Tensor
+    x_component: ArrayLike
         Deflection Angle in the x-direction.
 
         *Unit: arcsec*
 
-    y_component: Tensor
+    y_component: ArrayLike
         Deflection Angle in the y-direction.
 
         *Unit: arcsec*
 
     """
     x, y = translate_rotate(x, y, x0, y0)
-    th = (x**2 + y**2).sqrt() + s
+    th = backend.sqrt(x**2 + y**2) + s
     ax = x * Rein**2 / th**2
     ay = y * Rein**2 / th**2
     return ax, ay
@@ -68,27 +67,27 @@ def potential_point(x0, y0, Rein, x, y, s=0.0):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    Rein: Tensor
+    Rein: ArrayLike
         Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
@@ -100,15 +99,15 @@ def potential_point(x0, y0, Rein, x, y, s=0.0):
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The lensing potential.
 
         *Unit: arcsec^2*
 
     """
     x, y = translate_rotate(x, y, x0, y0)
-    th = (x**2 + y**2).sqrt() + s
-    return Rein**2 * th.log()
+    th = backend.sqrt(x**2 + y**2) + s
+    return Rein**2 * backend.log(th)
 
 
 def convergence_point(x0, y0, x, y):
@@ -118,36 +117,36 @@ def convergence_point(x0, y0, x, y):
 
     Parameters
     ----------
-    x0: Tensor
+    x0: ArrayLike
         x-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    y0: Tensor
+    y0: ArrayLike
         y-coordinate of the center of the lens.
 
         *Unit: arcsec*
 
-    x: Tensor
+    x: ArrayLike
         x-coordinates in the lens plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         y-coordinates in the lens plane.
 
         *Unit: arcsec*
 
     Returns
     --------
-    Tensor
+    ArrayLike
         The convergence (dimensionless surface mass density).
 
         *Unit: unitless*
 
     """
     x, y = translate_rotate(x, y, x0, y0)
-    return torch.where((x == 0) & (y == 0), torch.inf, 0.0)
+    return backend.where((x == 0) & (y == 0), backend.inf, 0.0)
 
 
 def mass_to_rein_point(M, d_ls, d_l, d_s):
@@ -156,35 +155,35 @@ def mass_to_rein_point(M, d_ls, d_l, d_s):
 
     Parameters
     ----------
-    M: Tensor
+    M: ArrayLike
         Mass of the lens.
 
         *Unit: solar masses*
 
-    d_ls: Tensor
+    d_ls: ArrayLike
         Distance between the lens and the source.
 
         *Unit: Mpc*
 
-    d_l: Tensor
+    d_l: ArrayLike
         Distance between the observer and the lens.
 
         *Unit: Mpc*
 
-    d_s: Tensor
+    d_s: ArrayLike
         Distance between the observer and the source.
 
         *Unit: Mpc*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The Einstein radius.
 
         *Unit: arcsec*
 
     """
-    return rad_to_arcsec * (4 * G_over_c2 * M * d_ls / (d_l * d_s)).sqrt()
+    return rad_to_arcsec * backend.sqrt(4 * G_over_c2 * M * d_ls / (d_l * d_s))
 
 
 def rein_to_mass_point(r, d_ls, d_l, d_s):
@@ -193,29 +192,29 @@ def rein_to_mass_point(r, d_ls, d_l, d_s):
 
     Parameters
     ----------
-    r: Tensor
+    r: ArrayLike
         Einstein radius of the lens.
 
         *Unit: arcsec*
 
-    d_ls: Tensor
+    d_ls: ArrayLike
         Distance between the lens and the source.
 
         *Unit: Mpc*
 
-    d_l: Tensor
+    d_l: ArrayLike
         Distance between the observer and the lens.
 
         *Unit: Mpc*
 
-    d_s: Tensor
+    d_s: ArrayLike
         Distance between the observer and the source.
 
         *Unit: Mpc*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The mass of the lens
 
         *Unit: solar masses*

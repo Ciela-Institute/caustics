@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,dict-item"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
 from caskade import forward, Param
 
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from ..backend_obj import ArrayLike
 
 __all__ = ("SIS",)
 
@@ -23,25 +23,25 @@ class SIS(ThinLens):
     cosmology: Cosmology
         An instance of the Cosmology class.
 
-    z_l: Optional[Union[Tensor, float]]
+    z_l: Optional[Union[ArrayLike, float]]
         The lens redshift.
 
         *Unit: unitless*
 
-    z_s: Optional[Union[Tensor, float]]
+    z_s: Optional[Union[ArrayLike, float]]
         The source redshift.
 
         *Unit: unitless*
 
-    x0: Optional[Union[Tensor, float]]
+    x0: Optional[Union[ArrayLike, float]]
         The x-coordinate of the lens center.
 
         *Unit: arcsec*
 
-    y0: Optional[Union[Tensor, float]]
+    y0: Optional[Union[ArrayLike, float]]
         The y-coordinate of the lens center.
 
-    Rein: Optional[Union[Tensor, float]]
+    Rein: Optional[Union[ArrayLike, float]]
         The Einstein radius of the lens.
 
         *Unit: arcsec*
@@ -65,13 +65,17 @@ class SIS(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]], "The x-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The x-coordinate of the lens center",
+            True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]], "The y-coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]],
+            "The y-coordinate of the lens center",
+            True,
         ] = None,
         Rein: Annotated[
-            Optional[Union[Tensor, float]], "The Einstein radius of the lens", True
+            Optional[Union[ArrayLike, float]], "The Einstein radius of the lens", True
         ] = None,
         s: Annotated[float, "A smoothing factor"] = 0.0,
         name: NameType = None,
@@ -81,43 +85,43 @@ class SIS(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.Rein = Param("Rein", Rein, units="arcsec", valid=(0, None))
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.Rein = Param("Rein", Rein, shape=(), units="arcsec", valid=(0, None))
         self.s = s
 
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the deflection angle of the SIS lens.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             Deflection Angle
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             Deflection Angle
 
             *Unit: arcsec*
@@ -128,30 +132,30 @@ class SIS(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential of the SIS lens.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*
@@ -162,30 +166,30 @@ class SIS(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        Rein: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        Rein: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the projected mass density of the SIS lens.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The projected mass density.
 
             *Unit: unitless*

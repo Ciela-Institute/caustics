@@ -1,11 +1,10 @@
 from warnings import warn
 from typing import Tuple
 
-import torch
-from torch import Tensor
 from caskade import forward
 
 from .base import ThinLens, CosmologyType, NameType, ZType
+from ..backend_obj import backend, ArrayLike
 
 __all__ = ("SinglePlane",)
 
@@ -58,40 +57,40 @@ class SinglePlane(ThinLens):
     @forward
     def reduced_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Calculate the total deflection angle by summing
         the deflection angles of all individual lenses.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             The x-component of the deflection angle.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             The y-component of the deflection angle.
 
             *Unit: arcsec*
 
         """
-        ax = torch.zeros_like(x)
-        ay = torch.zeros_like(x)
+        ax = backend.zeros_like(x)
+        ay = backend.zeros_like(x)
         for lens in self.lenses:
             ax_cur, ay_cur = lens.reduced_deflection_angle(x, y)
             ax = ax + ax_cur
@@ -101,34 +100,34 @@ class SinglePlane(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> ArrayLike:
         """
         Calculate the total projected mass density by
         summing the mass densities of all individual lenses.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The total projected mass density.
 
             *Unit: unitless*
 
         """
-        convergence = torch.zeros_like(x)
+        convergence = backend.zeros_like(x)
         for lens in self.lenses:
             convergence_cur = lens.convergence(x, y)
             convergence = convergence + convergence_cur
@@ -137,34 +136,34 @@ class SinglePlane(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+    ) -> ArrayLike:
         """
         Compute the total lensing potential by summing
         the lensing potentials of all individual lenses.
 
         Parameters
         -----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate of the lens.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate of the lens.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The total lensing potential.
 
             *Unit: arcsec^2*
 
         """
-        potential = torch.zeros_like(x)
+        potential = backend.zeros_like(x)
         for lens in self.lenses:
             potential_cur = lens.potential(x, y)
             potential = potential + potential_cur
