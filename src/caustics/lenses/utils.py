@@ -3,7 +3,6 @@ from typing import Tuple
 import torch
 from torch import Tensor
 
-
 __all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
 
 

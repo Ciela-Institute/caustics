@@ -14,7 +14,6 @@ from caustics.lenses import TNFW
 from caustics.sims import build_simulator
 import pytest
 
-
 h0_default = float(default_cosmology.get().h)
 Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)
