@@ -1,5 +1,4 @@
-from torch import where
-
+from ...backend_obj import backend
 from ...utils import translate_rotate
 
 
@@ -10,6 +9,8 @@ def brightness_star(x0, y0, theta_s, Ie, x, y, gamma=0.0):
     impact_parameter = (x**2 + y**2) ** (1 / 2)
     # linear limb darkening
     mu = (1 - impact_parameter**2) ** (1 / 2)
-    intensity = where(impact_parameter <= theta_s, Ie * (1 - gamma * (1 - mu)), 0)
+    intensity = backend.where(
+        impact_parameter <= theta_s, Ie * (1 - gamma * (1 - mu)), 0
+    )
 
     return intensity

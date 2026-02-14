@@ -1,22 +1,21 @@
-from torch import Tensor
-
+from ...backend_obj import backend, ArrayLike
 from ...utils import translate_rotate, to_elliptical
 
 
-def k_sersic(n: Tensor) -> Tensor:
+def k_sersic(n: ArrayLike) -> ArrayLike:
     """
     Computes the value of k for the Sersic profile.
 
     Parameters
     ----------
-    n: Tensor
+    n: ArrayLike
         The Sersic index, which describes the degree of concentration of the source.
 
         *Unit: unitless*
 
     Returns
     --------
-    k: Tensor
+    k: ArrayLike
         The value of k for the Sersic profile.
 
         *Unit: unitless*
@@ -36,20 +35,20 @@ def k_sersic(n: Tensor) -> Tensor:
     )
 
 
-def k_lenstronomy(n: Tensor) -> Tensor:
+def k_lenstronomy(n: ArrayLike) -> ArrayLike:
     """
     Computes the value of k for the Sersic profile, as used in the lenstronomy package.
 
     Parameters
     ----------
-    n: Tensor
+    n: ArrayLike
         The Sersic index, which describes the degree of concentration of the source.
 
         *Unit: unitless*
 
     Returns
     --------
-    k: Tensor
+    k: ArrayLike
         The value of k for the Sersic profile.
 
         *Unit: unitless*
@@ -61,7 +60,7 @@ def k_lenstronomy(n: Tensor) -> Tensor:
 def brightness_sersic(x0, y0, q, phi, n, Re, Ie, x, y, k, s=0.0):
     x, y = translate_rotate(x, y, x0, y0, phi)
     ex, ey = to_elliptical(x, y, q)
-    e = (ex**2 + ey**2).sqrt() + s
+    e = backend.sqrt(ex**2 + ey**2) + s
 
     exponent = -k * ((e / Re) ** (1 / n) - 1)
-    return Ie * exponent.exp()
+    return Ie * backend.exp(exponent)

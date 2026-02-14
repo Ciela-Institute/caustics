@@ -2,13 +2,7 @@ from ._version import version as VERSION  # noqa
 
 from caskade import forward, Module, Param, ValidContext
 
-from .cosmology import (
-    Cosmology,
-    FlatLambdaCDM,
-    h0_default,
-    critical_density_0_default,
-    Om0_default,
-)
+from .cosmology import Cosmology, FlatLambdaCDM
 from .lenses import (
     ThinLens,
     ThickLens,
@@ -40,6 +34,7 @@ from .light import (
 )
 from .angle_mixin import Angle_Mixin
 from . import utils
+from .backend_obj import backend
 from .sims import LensSource, Microlens, build_simulator
 from .tests import test
 from . import func
@@ -54,9 +49,6 @@ __all__ = [
     "forward",
     "Cosmology",
     "FlatLambdaCDM",
-    "h0_default",
-    "critical_density_0_default",
-    "Om0_default",
     "ThinLens",
     "ThickLens",
     "EPL",
@@ -84,6 +76,7 @@ __all__ = [
     "StarSource",
     "Angle_Mixin",
     "utils",
+    "backend",
     "LensSource",
     "Microlens",
     "test",

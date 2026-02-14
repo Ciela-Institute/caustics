@@ -2,6 +2,7 @@ import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
 
 from caustics.utils import meshgrid
+from caustics.backend_obj import backend
 
 
 def test_meshgrid(device):
@@ -27,5 +28,5 @@ def test_meshgrid(device):
     }
     pixel_grid = PixelGrid(**kwargs_pixel)
 
-    assert np.allclose(thx.cpu().numpy(), pixel_grid.coordinate_grid(nx, ny)[0])
-    assert np.allclose(thy.cpu().numpy(), pixel_grid.coordinate_grid(nx, ny)[1])
+    assert np.allclose(backend.to_numpy(thx), pixel_grid.coordinate_grid(nx, ny)[0])
+    assert np.allclose(backend.to_numpy(thy), pixel_grid.coordinate_grid(nx, ny)[1])

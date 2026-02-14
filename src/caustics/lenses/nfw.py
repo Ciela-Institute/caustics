@@ -1,9 +1,9 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor
 from caskade import forward, Param
 
+from ..backend_obj import ArrayLike
 from .base import ThinLens, NameType, CosmologyType, ZType
 from . import func
 
@@ -20,32 +20,32 @@ class NFW(ThinLens):
 
     Attributes
     -----------
-    z_l: Optional[Tensor]
+    z_l: Optional[ArrayLike]
         Redshift of the lens. Default is None.
 
         *Unit: unitless*
 
-    z_s: Optional[Tensor]
+    z_s: Optional[ArrayLike]
         Redshift of the source. Default is None.
 
         *Unit: unitless*
 
-    x0: Optional[Tensor]
+    x0: Optional[ArrayLike]
         x-coordinate of the lens center in the lens plane. Default is None.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Optional[ArrayLike]
         y-coordinate of the lens center in the lens plane. Default is None.
 
         *Unit: arcsec*
 
-    mass: Optional[Tensor]
+    mass: Optional[ArrayLike]
         Mass of the lens. Default is None.
 
         *Unit: Msun*
 
-    c: Optional[Tensor]
+    c: Optional[ArrayLike]
         Concentration parameter of the lens. Default is None.
 
         *Unit: unitless*
@@ -90,16 +90,18 @@ class NFW(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[Tensor, float]], "X coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]], "X coordinate of the lens center", True
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]], "Y coordinate of the lens center", True
+            Optional[Union[ArrayLike, float]], "Y coordinate of the lens center", True
         ] = None,
         mass: Annotated[
-            Optional[Union[Tensor, float]], "Mass of the lens", True
+            Optional[Union[ArrayLike, float]], "Mass of the lens", True
         ] = None,
         c: Annotated[
-            Optional[Union[Tensor, float]], "Concentration parameter of the lens", True
+            Optional[Union[ArrayLike, float]],
+            "Concentration parameter of the lens",
+            True,
         ] = None,
         s: Annotated[
             float,
@@ -119,29 +121,29 @@ class NFW(ThinLens):
             An instance of the Cosmology class which contains
             information about the cosmological model and parameters.
 
-        z_l: Optional[Union[Tensor, float]]
+        z_l: Optional[Union[ArrayLike, float]]
             Redshift of the lens. Default is None.
 
             *Unit: unitless*
 
-        x0: Optional[Union[Tensor, float]]
+        x0: Optional[Union[ArrayLike, float]]
             x-coordinate of the lens center in the lens plane.
                 Default is None.
 
             *Unit: arcsec*
 
-        y0: Optional[Union[Tensor, float]]
+        y0: Optional[Union[ArrayLike, float]]
             y-coordinate of the lens center in the lens plane.
                 Default is None.
 
             *Unit: arcsec*
 
-        mass: Optional[Union[Tensor, float]]
+        mass: Optional[Union[ArrayLike, float]]
             Mass of the lens. Default is None.
 
             *Unit: Msun*
 
-        c: Optional[Union[Tensor, float]]
+        c: Optional[Union[ArrayLike, float]]
             Concentration parameter of the lens. Default is None.
 
             *Unit: unitless*
@@ -155,42 +157,42 @@ class NFW(ThinLens):
         """
         super().__init__(cosmology, z_l, name=name, z_s=z_s)
 
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.mass = Param("mass", mass, units="Msun")
-        self.c = Param("c", c, units="unitless")
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.mass = Param("mass", mass, shape=(), units="Msun")
+        self.c = Param("c", c, shape=(), units="unitless")
         self.s = s
 
     @forward
     def get_scale_radius(
         self,
-        z_l: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        c: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        z_l: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        c: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the scale radius of the lens.
 
         Parameters
         ----------
-        z_l: Tensor
+        z_l: ArrayLike
             Redshift of the lens.
 
             *Unit: unitless*
 
-        mass: Tensor
+        mass: ArrayLike
             Mass of the lens.
 
             *Unit: Msun*
 
-        c: Tensor
+        c: ArrayLike
             Concentration parameter of the lens.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The scale radius of the lens in Mpc.
 
             *Unit: Mpc*
@@ -202,27 +204,27 @@ class NFW(ThinLens):
     @forward
     def get_scale_density(
         self,
-        z_l: Annotated[Tensor, "Param"],
-        c: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        z_l: Annotated[ArrayLike, "Param"],
+        c: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Calculate the scale density of the lens.
 
         Parameters
         ----------
-        z_l: Tensor
+        z_l: ArrayLike
             Redshift of the lens.
 
             *Unit: unitless*
 
-        c: Tensor
+        c: ArrayLike
             Concentration parameter of the lens.
 
             *Unit: unitless*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The scale density of the lens in solar masses per Mpc cubed.
 
             *Unit: Msun/Mpc^3*
@@ -234,37 +236,37 @@ class NFW(ThinLens):
     @forward
     def physical_deflection_angle(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        c: Annotated[Tensor, "Param"],
-    ) -> tuple[Tensor, Tensor]:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        c: Annotated[ArrayLike, "Param"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """
         Compute the physical deflection angle.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        x_component: Tensor
+        x_component: ArrayLike
             The x-component of the reduced deflection angle.
 
             *Unit: arcsec*
 
-        y_component: Tensor
+        y_component: ArrayLike
             The y-component of the reduced deflection angle.
 
             *Unit: arcsec*
@@ -288,33 +290,33 @@ class NFW(ThinLens):
     @forward
     def convergence(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        c: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        c: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the convergence (dimensionless surface mass density).
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The convergence (dimensionless surface mass density).
 
             *Unit: unitless*
@@ -340,33 +342,33 @@ class NFW(ThinLens):
     @forward
     def potential(
         self,
-        x: Tensor,
-        y: Tensor,
-        z_s: Annotated[Tensor, "Param"],
-        z_l: Annotated[Tensor, "Param"],
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        mass: Annotated[Tensor, "Param"],
-        c: Annotated[Tensor, "Param"],
-    ) -> Tensor:
+        x: ArrayLike,
+        y: ArrayLike,
+        z_s: Annotated[ArrayLike, "Param"],
+        z_l: Annotated[ArrayLike, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        mass: Annotated[ArrayLike, "Param"],
+        c: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
         """
         Compute the lensing potential.
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             x-coordinates in the lens plane.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             y-coordinates in the lens plane.
 
             *Unit: arcsec*
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The lensing potential.
 
             *Unit: arcsec^2*

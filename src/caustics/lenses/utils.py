@@ -1,14 +1,13 @@
 from typing import Tuple
 
-import torch
-from torch import Tensor
+from ..backend_obj import backend, ArrayLike
 
 __all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
 
 
 def pixel_jacobian(
     raytrace, x, y
-) -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor]]:
+) -> Tuple[Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike]]:
     """Computes the Jacobian matrix of the partial derivatives of the
     image position with respect to the source position
     (:math:`\\partial \beta / \\partial \theta`).  This is done at a
@@ -18,12 +17,12 @@ def pixel_jacobian(
     -----------
     raytrace: function
         A function that maps the lensing plane coordinates to the source plane coordinates.
-    x: Tensor
+    x: ArrayLike
         The x-coordinate on the lensing plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate on the lensing plane.
 
         *Unit: arcsec*
@@ -36,11 +35,11 @@ def pixel_jacobian(
         *Unit: unitless*
 
     """
-    jac = torch.func.jacfwd(raytrace, (0, 1))(x, y)  # type: ignore
+    jac = backend.jacfwd(raytrace, (0, 1))(x, y)  # type: ignore
     return jac
 
 
-def pixel_magnification(raytrace, x, y) -> Tensor:
+def pixel_magnification(raytrace, x, y) -> ArrayLike:
     """
     Computes the magnification at a single point on the lensing plane.
     The magnification is derived from the determinant
@@ -51,29 +50,29 @@ def pixel_magnification(raytrace, x, y) -> Tensor:
     raytrace: function
         A function that maps the lensing plane coordinates to the source plane coordinates.
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinate on the lensing plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinate on the lensing plane.
 
         *Unit: arcsec*
 
     Returns
     -------
-    Tensor
+    ArrayLike
         The magnification at the given point on the lensing plane.
 
         *Unit: unitless*
 
     """
     jac = pixel_jacobian(raytrace, x, y)
-    return 1 / (jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]).abs()  # fmt: skip
+    return 1 / backend.abs(jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0])  # fmt: skip
 
 
-def magnification(raytrace, x, y) -> Tensor:
+def magnification(raytrace, x, y) -> ArrayLike:
     """
     Computes the magnification over a grid on the lensing plane.
     This is done by calling `pixel_magnification`
@@ -84,26 +83,26 @@ def magnification(raytrace, x, y) -> Tensor:
     raytrace: function
         A function that maps the lensing plane coordinates to the source plane coordinates.
 
-    x: Tensor
+    x: ArrayLike
         The x-coordinates on the lensing plane.
 
         *Unit: arcsec*
 
-    y: Tensor
+    y: ArrayLike
         The y-coordinates on the lensing plane.
 
         *Unit: arcsec*
 
     Returns
     --------
-    Tensor
+    ArrayLike
         A tensor representing the magnification at each point on the grid.
 
         *Unit: unitless*
 
     """
-    return torch.reshape(
-        torch.func.vmap(pixel_magnification, in_dims=(None, 0, 0))(
+    return backend.view(
+        backend.vmap(pixel_magnification, in_dims=(None, 0, 0))(
             raytrace, x.reshape(-1), y.reshape(-1)
         ),
         x.shape,

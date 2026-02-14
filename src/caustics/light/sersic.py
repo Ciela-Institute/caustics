@@ -1,12 +1,12 @@
 # mypy: disable-error-code="operator,union-attr"
 from typing import Optional, Union, Annotated
 
-from torch import Tensor, pi
 from caskade import forward, Param
 
 from .base import Source, NameType
 from . import func
 from ..angle_mixin import Angle_Mixin
+from ..backend_obj import backend, ArrayLike
 
 __all__ = ("Sersic",)
 
@@ -23,37 +23,37 @@ class Sersic(Angle_Mixin, Source):
 
     Attributes
     -----------
-    x0: Optional[Tensor]
+    x0: Optional[ArrayLike]
         The x-coordinate of the Sersic source's center.
 
         *Unit: arcsec*
 
-    y0: Optional[Tensor]
+    y0: Optional[ArrayLike]
         The y-coordinate of the Sersic source's center.
 
         *Unit: arcsec*
 
-    q: Optional[Tensor]
+    q: Optional[ArrayLike]
         The axis ratio of the Sersic source.
 
         *Unit: unitless*
 
-    phi: Optional[Tensor]
+    phi: Optional[ArrayLike]
         The orientation of the Sersic source (position angle).
 
         *Unit: radians*
 
-    n: Optional[Tensor]
+    n: Optional[ArrayLike]
         The Sersic index, which describes the degree of concentration of the source.
 
         *Unit: unitless*
 
-    Re: Optional[Tensor]
+    Re: Optional[ArrayLike]
         The scale length of the Sersic source.
 
         *Unit: arcsec*
 
-    Ie: Optional[Tensor]
+    Ie: Optional[ArrayLike]
         The intensity at the effective radius.
 
         *Unit: flux*
@@ -72,35 +72,37 @@ class Sersic(Angle_Mixin, Source):
     def __init__(
         self,
         x0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The x-coordinate of the Sersic source's center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The y-coordinate of the Sersic source's center",
             True,
         ] = None,
         q: Annotated[
-            Optional[Union[Tensor, float]], "The axis ratio of the Sersic source", True
+            Optional[Union[ArrayLike, float]],
+            "The axis ratio of the Sersic source",
+            True,
         ] = None,
         phi: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The orientation of the Sersic source (position angle)",
             True,
         ] = None,
         n: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The Sersic index, which describes the degree of concentration of the source",
             True,
         ] = None,
         Re: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The scale length of the Sersic source",
             True,
         ] = None,
         Ie: Annotated[
-            Optional[Union[Tensor, float]],
+            Optional[Union[ArrayLike, float]],
             "The intensity at the effective radius",
             True,
         ] = None,
@@ -110,10 +112,10 @@ class Sersic(Angle_Mixin, Source):
             "A flag indicating whether to use lenstronomy to compute the value of k.",
         ] = False,
         angle_system: str = "q_phi",
-        e1: Optional[Union[Tensor, float]] = None,
-        e2: Optional[Union[Tensor, float]] = None,
-        c1: Optional[Union[Tensor, float]] = None,
-        c2: Optional[Union[Tensor, float]] = None,
+        e1: Optional[Union[ArrayLike, float]] = None,
+        e2: Optional[Union[ArrayLike, float]] = None,
+        c1: Optional[Union[ArrayLike, float]] = None,
+        c2: Optional[Union[ArrayLike, float]] = None,
         name: NameType = None,
     ):
         """
@@ -124,37 +126,37 @@ class Sersic(Angle_Mixin, Source):
         name: str
             The name of the source.
 
-        x0: Optional[Tensor]
+        x0: Optional[ArrayLike]
             The x-coordinate of the Sersic source's center.
 
             *Unit: arcsec*
 
-        y0: Optional[Tensor]
+        y0: Optional[ArrayLike]
             The y-coordinate of the Sersic source's center.
 
             *Unit: arcsec*
 
-        q: Optional[Tensor]
+        q: Optional[ArrayLike]
             The axis ratio of the Sersic source.
 
             *Unit: unitless*
 
-        phi: Optional[Tensor]
+        phi: Optional[ArrayLike]
             The orientation of the Sersic source.
 
             *Unit: radians*
 
-        n: Optional[Tensor]
+        n: Optional[ArrayLike]
             The Sersic index, which describes the degree of concentration of the source.
 
             *Unit: unitless*
 
-        Re: Optional[Tensor]
+        Re: Optional[ArrayLike]
             The scale length of the Sersic source.
 
             *Unit: arcsec*
 
-        Ie: Optional[Tensor]
+        Ie: Optional[ArrayLike]
             The intensity at the effective radius.
 
             *Unit: flux*
@@ -170,13 +172,15 @@ class Sersic(Angle_Mixin, Source):
 
         """
         super().__init__(name=name)
-        self.x0 = Param("x0", x0, units="arcsec")
-        self.y0 = Param("y0", y0, units="arcsec")
-        self.q = Param("q", q, units="unitless", valid=(0, 1))
-        self.phi = Param("phi", phi, units="radians", valid=(0, pi), cyclic=True)
-        self.n = Param("n", n, units="unitless", valid=(0.36, 10))
-        self.Re = Param("Re", Re, units="arcsec", valid=(0, None))
-        self.Ie = Param("Ie", Ie, units="flux", valid=(0, None))
+        self.x0 = Param("x0", x0, shape=(), units="arcsec")
+        self.y0 = Param("y0", y0, shape=(), units="arcsec")
+        self.q = Param("q", q, shape=(), units="unitless", valid=(0, 1))
+        self.phi = Param(
+            "phi", phi, shape=(), units="radians", valid=(0, backend.pi), cyclic=True
+        )
+        self.n = Param("n", n, shape=(), units="unitless", valid=(0.36, 10))
+        self.Re = Param("Re", Re, shape=(), units="arcsec", valid=(0, None))
+        self.Ie = Param("Ie", Ie, shape=(), units="flux", valid=(0, None))
         self.s = s
 
         self.lenstronomy_k_mode = use_lenstronomy_k
@@ -193,13 +197,13 @@ class Sersic(Angle_Mixin, Source):
         self,
         x,
         y,
-        x0: Annotated[Tensor, "Param"],
-        y0: Annotated[Tensor, "Param"],
-        q: Annotated[Tensor, "Param"],
-        phi: Annotated[Tensor, "Param"],
-        n: Annotated[Tensor, "Param"],
-        Re: Annotated[Tensor, "Param"],
-        Ie: Annotated[Tensor, "Param"],
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+        q: Annotated[ArrayLike, "Param"],
+        phi: Annotated[ArrayLike, "Param"],
+        n: Annotated[ArrayLike, "Param"],
+        Re: Annotated[ArrayLike, "Param"],
+        Ie: Annotated[ArrayLike, "Param"],
     ):
         """
         Implements the `brightness` method for `Sersic`. The brightness at a given point is
@@ -207,13 +211,13 @@ class Sersic(Angle_Mixin, Source):
 
         Parameters
         ----------
-        x: Tensor
+        x: ArrayLike
             The x-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
             *Unit: arcsec*
 
-        y: Tensor
+        y: ArrayLike
             The y-coordinate(s) at which to calculate the source brightness.
             This could be a single value or a tensor of values.
 
@@ -221,7 +225,7 @@ class Sersic(Angle_Mixin, Source):
 
         Returns
         -------
-        Tensor
+        ArrayLike
             The brightness of the source at the given point(s).
             The output tensor has the same shape as `x` and `y`.
 
