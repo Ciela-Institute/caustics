@@ -16,21 +16,6 @@ _critical_density_0_default = float(
 )
 _Om0_default = float(default_cosmology.get().Om0)
 
-# Set up interpolator to speed up comoving distance calculations in Lambda-CDM
-# cosmologies. Construct with float64 precision.
-_comoving_distance_helper_x_grid = 10 ** backend.linspace(
-    -3, 1, 500, dtype=backend.float64
-)
-_comoving_distance_helper_y_grid = backend.as_array(
-    _comoving_distance_helper_x_grid
-    * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_distance_helper_x_grid**3)),
-    dtype=backend.float64,
-)
-
-h0_default = backend.as_array(_h0_default)
-critical_density_0_default = backend.as_array(_critical_density_0_default)
-Om0_default = backend.as_array(_Om0_default)
-
 
 class FlatLambdaCDM(Cosmology):
     """
@@ -42,13 +27,13 @@ class FlatLambdaCDM(Cosmology):
         self,
         h0: Annotated[
             Optional[ArrayLike], "Hubble constant over 100", True
-        ] = h0_default,
+        ] = _h0_default,
         critical_density_0: Annotated[
             Optional[ArrayLike], "Critical density at z=0", True
-        ] = critical_density_0_default,
+        ] = _critical_density_0_default,
         Om0: Annotated[
             Optional[ArrayLike], "Matter density parameter at z=0", True
-        ] = Om0_default,
+        ] = _Om0_default,
         name: NameType = None,
     ):
         """
@@ -76,6 +61,16 @@ class FlatLambdaCDM(Cosmology):
         )
         self.Om0 = Param("Om0", Om0, units="unitless", valid=(0, 1))
 
+        # Set up interpolator to speed up comoving distance calculations in Lambda-CDM
+        # cosmologies. Construct with float64 precision.
+        _comoving_distance_helper_x_grid = 10 ** backend.linspace(
+            -3, 1, 500, dtype=backend.float64
+        )
+        _comoving_distance_helper_y_grid = backend.as_array(
+            _comoving_distance_helper_x_grid
+            * hyp2f1(1 / 3, 1 / 2, 4 / 3, -(_comoving_distance_helper_x_grid**3)),
+            dtype=backend.float64,
+        )
         self._comoving_distance_helper_x_grid = backend.to(
             _comoving_distance_helper_x_grid, dtype=backend.float32
         )
