@@ -1,5 +1,6 @@
 emcee
 ipywidgets
+jax~=0.6.2
 jupyter-book<2.0
 matplotlib
 pydantic>=2.6.1,<3
