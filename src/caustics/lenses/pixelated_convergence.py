@@ -46,8 +46,11 @@ class PixelatedConvergence(ThinLens):
             True,
         ] = 1.0,
         shape: Annotated[
-            Optional[tuple[int, ...]], "The shape of the convergence map"
-        ] = None,
+            tuple[Optional[int], ...], "The shape of the convergence map"
+        ] = (
+            None,
+            None,
+        ),
         convolution_mode: Annotated[
             Literal["fft", "conv2d"],
             "The convolution mode for calculating deflection angles and lensing potential",
