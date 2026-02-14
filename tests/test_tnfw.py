@@ -15,7 +15,6 @@ from caustics.backend_obj import backend
 
 import pytest
 
-
 h0_default = float(default_cosmology.get().h)
 Om0_default = float(default_cosmology.get().Om0)
 Ob0_default = float(default_cosmology.get().Ob0)

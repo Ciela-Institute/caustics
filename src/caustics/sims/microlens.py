@@ -7,7 +7,6 @@ from ..lenses.base import Lens
 from ..light.base import Source
 from ..backend_obj import backend, ArrayLike
 
-
 __all__ = ("Microlens",)
 
 
