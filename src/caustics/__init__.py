@@ -2,13 +2,7 @@ from ._version import version as VERSION  # noqa
 
 from caskade import forward, Module, Param, ValidContext
 
-from .cosmology import (
-    Cosmology,
-    FlatLambdaCDM,
-    h0_default,
-    critical_density_0_default,
-    Om0_default,
-)
+from .cosmology import Cosmology, FlatLambdaCDM
 from .lenses import (
     ThinLens,
     ThickLens,
@@ -55,9 +49,6 @@ __all__ = [
     "forward",
     "Cosmology",
     "FlatLambdaCDM",
-    "h0_default",
-    "critical_density_0_default",
-    "Om0_default",
     "ThinLens",
     "ThickLens",
     "EPL",

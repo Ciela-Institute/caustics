@@ -3,10 +3,10 @@ from typing import List, Tuple
 import numpy as np
 from astropy.cosmology import Cosmology as Cosmology_AP
 from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
+from astropy.cosmology import default_cosmology
 
 from caustics.cosmology import Cosmology
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
-from caustics.cosmology import Om0_default, h0_default
 from caustics.backend_obj import backend
 
 
@@ -18,7 +18,9 @@ def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
     cosmologies.append(
         (
             CausticFlatLambdaCDM(name="cosmo"),
-            AstropyFlatLambdaCDM(h0_default, Om0_default, Tcmb0=0),
+            AstropyFlatLambdaCDM(
+                default_cosmology.get().h, default_cosmology.get().Om0, Tcmb0=0
+            ),
         )
     )
     return cosmologies
