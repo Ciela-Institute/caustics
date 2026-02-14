@@ -60,3 +60,4 @@ def test_notebook(nb_path):
     finally:  # always run cleanup even if the test fails
         cleanup_py_scripts(nb_path)
         os.chdir(original_directory)
+        os.environ.pop("CASKADE_BACKEND", None)  # Clean up environment variable
