@@ -11,6 +11,11 @@ The easiest way to install is to make a new ``Python`` virtual environment (``Py
 
 this will install all the required libraries and then install ``caustics`` and you are ready to go! You can check out the tutorials afterwards to see some of ``caustics``' capabilities.
 
+If you want to use ``caustics`` with ``JAX`` you'll also need to install ``jax``. You can do this with::
+
+    pip install jax
+
+Then just set the ``CASKADE_BACKEND`` environment variable to ``jax`` and you are ready to go!
 
 Developer Install
 -----------------
