@@ -59,6 +59,7 @@ dev = [
     "ipywidgets",
     "matplotlib",
     "pyro-ppl",
+    "emcee",
     "jax",
 ]
 jax = ["jax>=0.7.0"]
