@@ -16,6 +16,7 @@ chapters:
           - file: tutorials/InterfaceIntroduction_oop
           - file: tutorials/InterfaceIntroduction_func
       - file: tutorials/BasicCustomSimulator
+      - file: tutorials/BasicIntro_JAX
       - file: tutorials/IntroductionInDepth
       - file: tutorials/Microlensing
       - file: tutorials/VisualizeCaustics

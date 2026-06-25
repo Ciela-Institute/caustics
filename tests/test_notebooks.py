@@ -1,7 +1,6 @@
 import platform
 import glob
 import pytest
-import runpy
 import subprocess
 import os
 
@@ -56,7 +55,12 @@ def test_notebook(nb_path):
     original_directory = os.getcwd()
     try:
         os.chdir(os.path.dirname(nb_path))
-        runpy.run_path(nb_path.replace(".ipynb", ".py"), run_name="__main__")
+        os.environ["MPLBACKEND"] = "Agg"
+        subprocess.run(
+            ["python", nb_path.replace(".ipynb", ".py")],
+            check=True,
+        )
+        # runpy.run_path(nb_path.replace(".ipynb", ".py"), run_name="__main__")
     finally:  # always run cleanup even if the test fails
         cleanup_py_scripts(nb_path)
         os.chdir(original_directory)
