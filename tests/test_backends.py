@@ -3,13 +3,16 @@ import pytest
 import torch
 
 from caustics.backend_obj import Backend
+import caustics
 
 BACKENDS = ["torch", "jax"]
 
 
 @pytest.fixture(params=BACKENDS)
 def b(request):
-    return Backend(request.param)
+    init_backend = caustics.backend.backend  # save current backend
+    yield Backend(request.param)
+    caustics.backend.backend = init_backend  # set backend back to original after test
 
 
 def to_np(backend, array):

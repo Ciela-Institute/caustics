@@ -33,7 +33,7 @@ jobs:
       - name: Build sdist and wheel
         run: pipx run build
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           path: dist
 
@@ -50,8 +50,8 @@ jobs:
       - uses: actions/setup-python@v6
         name: Install Python
         with:
-          python-version: "3.10"
-      - uses: actions/download-artifact@v7
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
         with:
           name: artifact
           path: dist
@@ -82,6 +82,8 @@ jobs:
           python -m pip install --extra-index-url https://test.pypi.org/simple --upgrade --pre --no-binary=:all: caustics
           python -c "import caustics; print(caustics.__version__); caustics.test()"
           echo "=== Done testing source tar file ==="
+        env:
+          CASKADE_BACKEND: torch
 
   publish:
     needs: [dist, test-built-dist]
@@ -93,7 +95,7 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: artifact
           path: dist

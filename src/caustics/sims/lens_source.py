@@ -12,7 +12,7 @@ from ..utils import (
 )
 from ..lenses.base import Lens
 from ..light.base import Source
-from ..backend_obj import backend, ArrayLike, deviceLike, dtypeLike
+from ..backend_obj import backend, ArrayLike
 
 __all__ = ("LensSource",)
 
@@ -179,9 +179,7 @@ class LensSource(Module):
         # Build the imaging grid
         self._build_grid()
 
-    def to(
-        self, device: Optional[deviceLike] = None, dtype: Optional[dtypeLike] = None
-    ):
+    def to(self, device=None, dtype=None):
         super().to(device, dtype)
         self._grid = tuple(backend.to(x, device=device, dtype=dtype) for x in self._grid)  # type: ignore[has-type]
         self._weights = backend.to(self._weights, device=device, dtype=dtype)  # type: ignore[has-type]
