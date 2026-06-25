@@ -3,7 +3,7 @@ from typing import Optional, Union, Annotated
 
 from caskade import forward, Param
 
-from ..backend_obj import backend, ArrayLike, dtypeLike, deviceLike
+from ..backend_obj import backend, ArrayLike
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
 
@@ -83,16 +83,16 @@ class Multipole(ThinLens):
             cyclic=True,
         )
 
-    def to(self, device: deviceLike = None, dtype: dtypeLike = None):
+    def to(self, device=None, dtype=None):
         """
         Move the lens to the specified device.
 
         Parameters
         ----------
-        device: deviceLike
+        device: optional
             The device to move the lens to.
 
-        dtype: dtypeLike
+        dtype: optional
             The data type to cast the lens to.
 
         Returns

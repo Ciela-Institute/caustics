@@ -38,6 +38,9 @@ def device(request):
         return torch.device(request.param)
     elif backend.backend == "jax":
         param = "gpu" if request.param == "cuda" else "cpu"
+        print(
+            f"Available {param} devices: {backend.jax.devices(param)}, sending {backend.jax.devices(param)[0]}"
+        )
         return backend.jax.devices(param)[0]
     return None
 

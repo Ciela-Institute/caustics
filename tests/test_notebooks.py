@@ -20,6 +20,15 @@ notebooks = glob.glob(
         "*.ipynb",
     )
 )
+notebooks = notebooks + glob.glob(
+    os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "docs",
+        "source",
+        "examples",
+        "*.ipynb",
+    )
+)
 
 
 def convert_notebook_to_py(nbpath):

@@ -1,9 +1,5 @@
 import numpy as np
 
-import os
-
-os.environ["CASKADE_BACKEND"] = "torch"
-
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics import test as mini_test

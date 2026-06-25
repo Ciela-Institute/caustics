@@ -4,7 +4,7 @@ from typing import Optional, Annotated, Union, Literal
 import numpy as np
 from caskade import forward, Param
 
-from ..backend_obj import backend, ArrayLike, deviceLike, dtypeLike
+from ..backend_obj import backend, ArrayLike
 from ..utils import interp2d
 from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
@@ -188,18 +188,16 @@ class PixelatedConvergence(ThinLens):
         # Triggers creation of FFTs of kernels
         self.convolution_mode = convolution_mode
 
-    def to(
-        self, device: Optional[deviceLike] = None, dtype: Optional[dtypeLike] = None
-    ):
+    def to(self, device=None, dtype=None):
         """
         Move the ConvergenceGrid object and all its tensors to the specified device and dtype.
 
         Parameters
         ----------
-        device: Optional[deviceLike]
+        device: optional
             The target device to move the tensors to.
 
-        dtype: Optional[dtypeLike]
+        dtype: optional
             The target data type to cast the tensors to.
 
         """
