@@ -1,23 +1,12 @@
 import os
 import importlib
 from collections import namedtuple
-from typing import Annotated
+from typing import TypeAlias
 
-from torch import Tensor, dtype, device
 import numpy as np
+import caskade as ck
 
-ArrayLike = Annotated[
-    Tensor,
-    "One of: torch.Tensor or jax.numpy.ndarray depending on the chosen backend.",
-]
-dtypeLike = Annotated[
-    dtype,
-    "One of: torch.dtype or jax.numpy.dtype depending on the chosen backend.",
-]
-deviceLike = Annotated[
-    device,
-    "One of: torch.device or jax.DeviceArray depending on the chosen backend.",
-]
+ArrayLike: TypeAlias = ck.ArrayLike
 
 
 # Util to make Jax and Torch TopK to behave similarly
@@ -35,7 +24,8 @@ class Backend:
     @backend.setter
     def backend(self, backend):
         if backend is None:
-            backend = os.getenv("CASKADE_BACKEND", "torch")
+            backend = os.getenv("CASKADE_BACKEND", ck.backend.backend)
+        ck.backend.backend = backend
         self._load_backend(backend)
         self._backend = backend
 

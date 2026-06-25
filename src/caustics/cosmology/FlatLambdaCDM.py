@@ -6,7 +6,7 @@ from astropy.cosmology import default_cosmology
 from scipy.special import hyp2f1
 
 from ..utils import interp1d
-from ..backend_obj import backend, ArrayLike, deviceLike
+from ..backend_obj import backend, ArrayLike
 from ..constants import c_Mpc_s, km_to_Mpc
 from .base import Cosmology, NameType
 
@@ -78,9 +78,7 @@ class FlatLambdaCDM(Cosmology):
             _comoving_distance_helper_y_grid, dtype=backend.float32
         )
 
-    def to(
-        self, device: Optional[deviceLike] = None, dtype: Optional[deviceLike] = None
-    ):
+    def to(self, device=None, dtype=None):
         super().to(device, dtype)
         self._comoving_distance_helper_y_grid = backend.to(
             self._comoving_distance_helper_y_grid, device=device, dtype=dtype

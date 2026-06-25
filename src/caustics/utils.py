@@ -179,9 +179,9 @@ def meshgrid(
         The number of grid points along the x-axis.
     ny: int
         The number of grid points along the y-axis.
-    device: deviceLike, optional
+    device: optional
         The device on which to create the tensor. Defaults to None.
-    dtype: dtypeLike, optional
+    dtype: optional
         The desired data type of the tensor. Defaults to torch.float32.
 
     Returns
