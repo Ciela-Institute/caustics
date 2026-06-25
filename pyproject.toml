@@ -5,7 +5,6 @@ build-backend = "hatchling.build"
 [project]
 name = "caustics"
 dynamic = [
-        "dependencies",
         "version"
 ]
 authors = [
@@ -34,6 +33,15 @@ classifiers=[
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3"
 ]
+dependencies = [
+        "astropy>=7.0.0",
+        "caskade>=0.15.0",
+        "graphviz>=0.20.1",
+        "h5py>=3.8.0",
+        "numpy>=1.24,<3",
+        "scipy>=1.8.0",
+        "torch>=2.0.0",
+]
 
 [project.urls]
 Homepage = "https://mila.quebec/en/"
@@ -53,11 +61,8 @@ dev = [
     "ipywidgets",
     "matplotlib",
     "pyro-ppl",
-    "jax~=0.6.2",
+    "jax",
 ]
-
-[tool.hatch.metadata.hooks.requirements_txt]
-files = ["requirements.txt"]
 
 [tool.hatch.version]
 source = "vcs"
