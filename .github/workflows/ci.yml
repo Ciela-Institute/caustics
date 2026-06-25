@@ -69,6 +69,8 @@ jobs:
       - name: Test with pytest
         run: |
           coverage run --source=${{ env.PROJECT_NAME }} -m pytest -v tests/
+        env:
+          CASKADE_BACKEND: torch
       # pytest -vvv --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/
       - name: Extra coverage report for jax checks
         if:
