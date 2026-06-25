@@ -4,17 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "caustics"
-dynamic = [
-        "version"
-]
+dynamic = ["version"]
 authors = [
   { name="Connor Stone", email="connor.stone@mila.quebec" },
   { name="Alexandre Adam", email="alexandre.adam@mila.quebec" },
   { name="UW SSEC", email="ssec@uw.edu" }
 ]
-description = "The lensing pipeline of the future: GPU-accelerated, automatically-differentiable, highly modular. Currently under heavy development: expect interface changes and some imprecise/untested calculations."
+description = "The gravitational lensing pipeline of the future: GPU-accelerated, automatically-differentiable, highly modular."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 keywords = [
         "caustics",
@@ -27,7 +25,7 @@ keywords = [
         "pytorch"
 ]
 classifiers=[
-        "Development Status :: 1 - Planning",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -44,8 +42,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://mila.quebec/en/"
-Documentation = "https://caustics.readthedocs.io/en/latest/"
+Homepage = "https://caustics.readthedocs.io"
+Documentation = "https://caustics.readthedocs.io"
 Repository = "https://github.com/Ciela-Institute/caustics"
 Issues = "https://github.com/Ciela-Institute/caustics/issues"
 
@@ -63,6 +61,7 @@ dev = [
     "pyro-ppl",
     "jax",
 ]
+jax = ["jax>=0.7.0"]
 
 [tool.hatch.version]
 source = "vcs"
