@@ -28,8 +28,8 @@ Simply install `caustics` from PyPI:
 pip install caustics
 ```
 
-Note: `Python 3.9` through `3.12` are recommended; compatibility with
-versions >=3.13 is currently untested.
+Note: `Python 3.11` is the minimum supported version for the latest caustics
+features.
 
 ## Minimal Example
 
