@@ -20,6 +20,18 @@ are ready to go! You can check out the tutorials afterwards to see some of
 `caustics`' capabilities. If you want to help out with building the `caustics`
 code base check out the developer installation instructions instead.
 
+## Real World Example
+
+Below is Figure 1 from
+[Mind the information gap, by Legin et al. 2026](https://ui.adsabs.harvard.edu/abs/2025arXiv251119595L/abstract),
+here we draw posterior samples from a detailed model of HST data (one of the
+SLACS lenses). The four dithered data images on the top row are combined into a
+single analysis for the model on the bottom row, the middle row shows the
+residuals. This shows the power of caustics to create state of the art lensing
+models!
+
+![Example real lensing analysis with Caustics, detailed source reconstruction of a SLACS lens](../../media/SDSSJ1430+4105_512x512-1.png)
+
 ## Minimal Example
 
 ```python
