@@ -47,7 +47,7 @@ plt.show()
 ```python
 sim.to_dynamic(False)
 cosmology.to_static()
-x = sim.build_params_tensor()
+x = sim.get_values()
 newx = x.repeat(20, 1)
 newx += torch.normal(mean=0, std=0.1 * torch.ones_like(newx))
 
