@@ -197,9 +197,7 @@ def test_single_plane_time_delay_equivalence(
     "shapiro_time_delay,geometric_time_delay",
     [(True, True), (True, False), (False, True)],
 )
-def test_coplanar_lenses_time_delay(
-    device, shapiro_time_delay, geometric_time_delay
-):
+def test_coplanar_lenses_time_delay(device, shapiro_time_delay, geometric_time_delay):
     z_l = 0.5
     z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
     cosmology = FlatLambdaCDM(name="cosmo")
