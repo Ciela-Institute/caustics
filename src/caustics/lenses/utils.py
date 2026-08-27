@@ -177,11 +177,6 @@ def _contours_touch_edge(
 # declare convergence.
 _MAX_DENSIFIED_POINTS = 1_000_000
 
-# Caps the Phase 2 refinement grid so a non-convergent field cannot drive
-# `npix` (and the X/Y/z arrays sized `npix x npix`) to an unbounded size.
-# 4096**2 = 16,777,216 points, about 402 MB across the three float64 arrays.
-_MAX_GRID_POINTS = 4096**2
-
 
 def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
     """Insert points along each segment so consecutive spacing never exceeds `spacing`."""
@@ -389,10 +384,9 @@ def find_contours(
     RuntimeError
         If the field of view cannot be grown enough to enclose the contours, if
         the contour geometry has not stabilised within
-        ``max_resolution_halvings``, if refinement converges on a contour set
+        ``max_resolution_halvings``, or if refinement converges on a contour set
         that touches the grid edge (a feature revealed only by refinement that
-        extends beyond ``fov``), or if the refinement grid would exceed the
-        internal point-count cap.
+        extends beyond ``fov``).
 
     Notes
     -----
@@ -406,7 +400,10 @@ def find_contours(
 
     Cost scales as the square of the pixel count, and contours with cusps
     converge at first order rather than second, so they need roughly twice as
-    many halvings per digit of accuracy as smooth contours.
+    many halvings per digit of accuracy as smooth contours. The refinement grid
+    is bounded only by ``resolution`` and ``max_resolution_halvings``: the final
+    grid is ``npix ~ fov * 2 ** max_resolution_halvings / resolution`` on a side,
+    so choose those two together with the available memory in mind.
 
     For extreme ``geometry_tolerance``, the densification used internally to
     measure contour displacement is capped, and the metric's resolution floor
@@ -457,13 +454,6 @@ def find_contours(
     for _ in range(max_resolution_halvings):
         resolution /= 2
         npix = max(int(round(fov / resolution)) + 1, 2)
-        if npix * npix > _MAX_GRID_POINTS:
-            raise RuntimeError(
-                f"find_contours refinement would build a grid of npix={npix} "
-                f"({npix * npix} points) at resolution={resolution:.6g}, exceeding "
-                f"the {_MAX_GRID_POINTS}-point cap; use a coarser geometry_tolerance "
-                f"or a smaller max_resolution_halvings."
-            )
         X, Y = meshgrid(resolution, npix, device=device, dtype=backend.float64)
         current = _mask_contours(
             _extract_contours(f, X, Y, target_value), mask_positions, mask_radius

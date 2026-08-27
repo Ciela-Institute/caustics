@@ -340,22 +340,6 @@ def test_find_contours_edge_touching_error_is_actionable_with_larger_fov():
         assert np.abs(c[:, 1]).max() < 3.99
 
 
-def test_find_contours_refinement_cap_raises_before_allocating():
-    # fov/resolution is chosen so the very first refinement halving needs a
-    # grid just over the internal _MAX_GRID_POINTS cap (4096**2): Phase 1
-    # builds a 2049**2 grid, then the first halving would need 4097**2. The
-    # cap must raise before that grid is built rather than attempting to
-    # allocate it (which is the MemoryError this guards against).
-    with pytest.raises(RuntimeError, match="cap"):
-        find_contours(
-            _circle_field,
-            1.0,
-            fov=4.0,
-            resolution=4.0 / 2048,
-            max_resolution_halvings=5,
-        )
-
-
 def test_find_contours_accepts_empty_mask_positions():
     # `_mask_contours` already treats an empty list as a no-op; validation
     # must not demand a mask_radius that will never be used.
