@@ -185,6 +185,31 @@ def test_contour_distance_is_symmetric():
     assert _contour_distance(a, b) == pytest.approx(_contour_distance(b, a))
 
 
+def test_contour_distance_measures_geometry_not_pixel_scale():
+    """The metric must converge in distance, not merely trail the resolution.
+
+    A metric that trails the pixel scale holds dH/h constant across refinements;
+    one that measures real displacement lets it fall, because a smooth contour's
+    geometry converges at second order while h only halves. This is precisely
+    what a vertex-to-vertex Hausdorff distance fails -- there dH/h stays pinned
+    near 1.0 -- and it is why this module projects onto segments instead.
+    """
+    ratios = []
+    h = 0.05
+    previous = _extract_contours(lambda a, b: a**2 + b**2, *_grid(4.0, h), 1.0)[0]
+    for _ in range(3):
+        h /= 2
+        current = _extract_contours(lambda a, b: a**2 + b**2, *_grid(4.0, h), 1.0)[0]
+        ratios.append(_contour_distance(previous, current) / h)
+        previous = current
+
+    # Measured ~0.0247, 0.0121, 0.0061: each roughly half its predecessor.
+    for coarser, finer in zip(ratios, ratios[1:]):
+        assert finer < 0.65 * coarser, f"dH/h did not fall: {ratios}"
+    # And it must land far below 1.0, where a pixel-scale-trailing metric sits.
+    assert max(ratios) < 0.1
+
+
 def test_contour_distance_cost_is_independent_of_tolerance():
     # No tolerance reaches the metric any more, so an extreme geometry_tolerance
     # cannot drive allocation. This is what the removed densification cap was

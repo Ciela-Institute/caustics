@@ -415,7 +415,13 @@ def find_contours(
 
     Cost scales as the square of the pixel count, and contours with cusps
     converge at first order rather than second, so they need roughly twice as
-    many halvings per digit of accuracy as smooth contours.
+    many halvings per digit of accuracy as smooth contours. Concretely, the pixel
+    scale at which refinement stops goes as ``sqrt(geometry_tolerance)`` for a
+    smooth contour, where the geometry converges at second order, but as
+    ``4 * geometry_tolerance`` at a cusp, where it converges at first order. Real
+    caustics have cusps, so budget for the latter. The tolerance is measured in
+    arcsec of curve displacement either way, and on a smooth contour it
+    overstates the true geometric error by a factor of about four.
 
     Grid size is bounded only by ``resolution`` and ``max_resolution_halvings``.
     Refinement holds the field of view fixed and halves the pixel scale, so the
