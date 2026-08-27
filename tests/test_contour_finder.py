@@ -149,6 +149,14 @@ def test_densify_contour_leaves_short_segments_alone():
     assert len(_densify_contour(poly, 1.0)) == 2
 
 
+def test_densify_contour_caps_total_points_for_tiny_spacing():
+    poly = _circle(1.0)
+    dense = _densify_contour(poly, 1e-13)
+    assert len(dense) <= 1_000_000 + len(poly)
+    assert np.allclose(dense[0], poly[0])
+    assert np.allclose(dense[-1], poly[-1])
+
+
 def test_contour_distance_zero_for_identical_contours():
     c = _circle(1.0)
     assert _contour_distance(c, c, 1e-4) < 1e-9

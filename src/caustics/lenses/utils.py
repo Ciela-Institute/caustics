@@ -168,6 +168,16 @@ def _contours_touch_edge(
     return False
 
 
+# Total inserted points is capped so a pathologically small `spacing` (e.g. an
+# extreme `geometry_tolerance`) cannot blow up memory. Rescaling to the coarsest
+# spacing that still fits the cap only ever makes `_densify_contour` sparser, and
+# `_contour_distance`'s guarantee is one-sided (densified points lie on the
+# polyline, so the reported distance can only overstate a difference, never
+# understate one) -- so a coarser cap-limited spacing can still never falsely
+# declare convergence.
+_MAX_DENSIFIED_POINTS = 1_000_000
+
+
 def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
     """Insert points along each segment so consecutive spacing never exceeds `spacing`."""
     if len(contour) < 2:
@@ -175,7 +185,11 @@ def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
 
     starts, ends = contour[:-1], contour[1:]
     lengths = np.linalg.norm(ends - starts, axis=1)
-    counts = np.maximum(np.ceil(lengths / spacing).astype(int), 1)
+    counts = np.ceil(lengths / spacing)
+    if counts.sum() > _MAX_DENSIFIED_POINTS:
+        spacing = lengths.sum() / _MAX_DENSIFIED_POINTS
+        counts = np.ceil(lengths / spacing)
+    counts = np.maximum(counts.astype(int), 1)
 
     pieces = []
     for start, end, count in zip(starts, ends, counts):
