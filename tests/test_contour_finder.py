@@ -1,7 +1,10 @@
 import numpy as np
+import pytest
 
 from caustics.backend_obj import backend
 from caustics.lenses.utils import (
+    _contour_distance,
+    _densify_contour,
     _extract_contours,
     _mask_contours,
     _contours_touch_edge,
@@ -128,3 +131,50 @@ def test_contours_touch_edge_tolerance_is_tight():
     # a contour one whole pixel inside the boundary must not be flagged
     near = np.array([[0.0, 0.0], [1.9, 0.0]])
     assert not _contours_touch_edge([near], BOUNDS, 1e-6 * 0.1)
+
+
+def test_densify_contour_respects_spacing_and_endpoints():
+    poly = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]])
+    dense = _densify_contour(poly, 0.1)
+
+    assert np.linalg.norm(np.diff(dense, axis=0), axis=1).max() <= 0.1 + 1e-12
+    assert np.allclose(dense[0], poly[0])
+    assert np.allclose(dense[-1], poly[-1])
+
+
+def test_densify_contour_leaves_short_segments_alone():
+    poly = np.array([[0.0, 0.0], [0.01, 0.0]])
+    assert len(_densify_contour(poly, 1.0)) == 2
+
+
+def test_contour_distance_zero_for_identical_contours():
+    c = _circle(1.0)
+    assert _contour_distance(c, c, 1e-4) < 1e-9
+
+
+def test_contour_distance_equals_offset_for_concentric_circles():
+    inner, outer = _circle(1.0, n=2000), _circle(1.002, n=2000)
+    d = _contour_distance(inner, outer, 1e-4)
+    assert d == pytest.approx(0.002, abs=5e-5)
+
+
+def test_contour_distance_is_insensitive_to_vertex_density():
+    # the whole point of the polyline metric: same curve, very different sampling
+    coarse, fine = _circle(1.0, n=40), _circle(1.0, n=4000)
+
+    coarse_vertex_spacing = np.linalg.norm(np.diff(coarse, axis=0), axis=1).max()
+    assert coarse_vertex_spacing > 0.1  # sanity: the samplings really do differ
+
+    d = _contour_distance(coarse, fine, 1e-4)
+    assert d < 0.01  # far below the vertex spacing a point-to-point metric would report
+
+
+def test_contour_distance_is_symmetric():
+    a, b = _circle(1.0, n=200), _circle(1.05, n=97)
+    assert _contour_distance(a, b, 1e-4) == pytest.approx(_contour_distance(b, a, 1e-4))
+
+
+def test_contour_distance_never_understates():
+    # one-sided guarantee: densified points lie on the polyline
+    a, b = _circle(1.0, n=500), _circle(1.01, n=500)
+    assert _contour_distance(a, b, 1e-4) >= 0.01 - 1e-6

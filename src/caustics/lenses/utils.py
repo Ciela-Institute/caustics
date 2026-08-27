@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 from contourpy import contour_generator
+from scipy.spatial import cKDTree
 
 from ..backend_obj import backend, ArrayLike
 
@@ -163,3 +164,27 @@ def _contours_touch_edge(
         ):
             return True
     return False
+
+
+def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
+    """Insert points along each segment so consecutive spacing never exceeds `spacing`."""
+    if len(contour) < 2:
+        return contour
+
+    starts, ends = contour[:-1], contour[1:]
+    lengths = np.linalg.norm(ends - starts, axis=1)
+    counts = np.maximum(np.ceil(lengths / spacing).astype(int), 1)
+
+    pieces = []
+    for start, end, count in zip(starts, ends, counts):
+        fractions = np.linspace(0.0, 1.0, count + 1)[:-1, None]
+        pieces.append(start + fractions * (end - start))
+    pieces.append(contour[-1][None, :])
+    return np.concatenate(pieces, axis=0)
+
+
+def _contour_distance(a: np.ndarray, b: np.ndarray, spacing: float) -> float:
+    """Symmetric point-to-polyline Hausdorff distance between two contours."""
+    a_to_b = cKDTree(_densify_contour(b, spacing)).query(a, k=1)[0].max()
+    b_to_a = cKDTree(_densify_contour(a, spacing)).query(b, k=1)[0].max()
+    return float(max(a_to_b, b_to_a))
