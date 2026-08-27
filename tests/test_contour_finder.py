@@ -4,6 +4,7 @@ import pytest
 from caustics.backend_obj import backend
 from caustics.lenses.utils import (
     _contour_distance,
+    _contours_agree,
     _densify_contour,
     _extract_contours,
     _mask_contours,
@@ -178,3 +179,46 @@ def test_contour_distance_never_understates():
     # one-sided guarantee: densified points lie on the polyline
     a, b = _circle(1.0, n=500), _circle(1.01, n=500)
     assert _contour_distance(a, b, 1e-4) >= 0.01 - 1e-6
+
+
+def test_contours_agree_for_identical_sets():
+    contours = [_circle(1.0), _circle(0.5, centre=(3.0, 0.0))]
+    agreed, worst = _contours_agree(contours, list(contours), 1e-3)
+    assert agreed
+    assert worst < 1e-9
+
+
+def test_contours_agree_is_order_independent():
+    a, b = _circle(1.0), _circle(0.5, centre=(3.0, 0.0))
+    agreed, _ = _contours_agree([a, b], [b, a], 1e-3)
+    assert agreed
+
+
+def test_contours_agree_false_when_counts_differ():
+    agreed, worst = _contours_agree([_circle(1.0)], [_circle(1.0), _circle(0.1)], 1e-3)
+    assert not agreed
+    assert worst == np.inf
+
+
+def test_contours_agree_false_when_a_contour_moves_beyond_tolerance():
+    tol = 1e-3
+    agreed, worst = _contours_agree(
+        [_circle(1.0, n=2000)], [_circle(1.0 + 2 * tol, n=2000)], tol
+    )
+    assert not agreed
+    assert worst == pytest.approx(2 * tol, abs=1e-4)
+
+
+def test_contours_agree_catches_one_bad_contour_among_stable_ones():
+    tol = 1e-3
+    stable = _circle(0.5, centre=(3.0, 0.0), n=2000)
+    previous = [_circle(1.0, n=2000), stable]
+    current = [_circle(1.0 + 5 * tol, n=2000), stable]
+    agreed, _ = _contours_agree(previous, current, tol)
+    assert not agreed
+
+
+def test_contours_agree_for_two_empty_sets():
+    agreed, worst = _contours_agree([], [], 1e-3)
+    assert agreed
+    assert worst == 0.0

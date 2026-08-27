@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 from contourpy import contour_generator
+from scipy.optimize import linear_sum_assignment
 from scipy.spatial import cKDTree
 
 from ..backend_obj import backend, ArrayLike
@@ -188,3 +189,23 @@ def _contour_distance(a: np.ndarray, b: np.ndarray, spacing: float) -> float:
     a_to_b = cKDTree(_densify_contour(b, spacing)).query(a, k=1)[0].max()
     b_to_a = cKDTree(_densify_contour(a, spacing)).query(b, k=1)[0].max()
     return float(max(a_to_b, b_to_a))
+
+
+def _contours_agree(
+    previous: list, current: list, tolerance: float
+) -> Tuple[bool, float]:
+    """Compare two contour sets by count and optimally paired polyline distance."""
+    if len(previous) != len(current):
+        return False, float("inf")
+    if len(previous) == 0:
+        return True, 0.0
+
+    spacing = tolerance / 10
+    cost = np.empty((len(previous), len(current)), dtype=np.float64)
+    for i, prev in enumerate(previous):
+        for j, cur in enumerate(current):
+            cost[i, j] = _contour_distance(prev, cur, spacing)
+
+    rows, cols = linear_sum_assignment(cost)
+    paired = cost[rows, cols]
+    return bool(np.all(paired < tolerance)), float(paired.max())
