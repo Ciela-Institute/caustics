@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import caustics
 from caustics.backend_obj import backend
 from caustics.lenses.utils import (
     _contour_distance,
@@ -10,6 +11,7 @@ from caustics.lenses.utils import (
     _mask_contours,
     _contours_touch_edge,
     find_contours,
+    pixel_jacobian,
 )
 from caustics.utils import meshgrid
 
@@ -378,3 +380,50 @@ def test_find_contours_zero_halvings_raises():
         find_contours(
             _circle_field, 1.0, fov=4.0, resolution=0.05, max_resolution_halvings=0
         )
+
+
+def test_sis_critical_curve_is_a_circle_of_radius_rein():
+    """For an SIS, det A = 1 - Rein / r, so the critical curve is r = Rein."""
+    rein = 1.0
+    cosmology = caustics.FlatLambdaCDM(name="cosmo")
+    lens = caustics.SIS(
+        cosmology=cosmology, z_l=0.5, z_s=1.0, x0=0.0, y0=0.0, Rein=rein, name="sis"
+    )
+
+    def signed_det(X, Y):
+        def det_at(px, py):
+            jac = pixel_jacobian(lens.raytrace, px, py)
+            return jac[0][0] * jac[1][1] - jac[0][1] * jac[1][0]
+
+        flat = backend.vmap(det_at, in_dims=(0, 0))(X.reshape(-1), Y.reshape(-1))
+        return backend.view(flat, X.shape)
+
+    contours = find_contours(
+        signed_det,
+        0.0,
+        fov=4.0,
+        resolution=0.1,
+        geometry_tolerance=1e-3,
+        mask_positions=[(0.0, 0.0)],
+        mask_radius=0.5,
+    )
+
+    assert len(contours) == 1
+    r = np.hypot(contours[0][:, 0], contours[0][:, 1])
+    assert np.abs(r - rein).max() < 1e-3
+
+
+def test_inverse_magnification_cannot_locate_critical_curves():
+    """1 / magnification is abs(det A); it never crosses zero, so nothing is found."""
+    cosmology = caustics.FlatLambdaCDM(name="cosmo2")
+    lens = caustics.SIS(
+        cosmology=cosmology, z_l=0.5, z_s=1.0, x0=0.0, y0=0.0, Rein=1.0, name="sis2"
+    )
+
+    X, Y = _grid(4.0, 0.05)
+    z = backend.to_numpy(1.0 / lens.magnification(X, Y))
+    assert (z < 0).sum() == 0
+
+    assert (
+        _extract_contours(lambda a, b: 1.0 / lens.magnification(a, b), X, Y, 0.0) == []
+    )
