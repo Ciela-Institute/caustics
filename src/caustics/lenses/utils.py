@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 from contourpy import contour_generator
@@ -6,8 +6,9 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial import cKDTree
 
 from ..backend_obj import backend, ArrayLike
+from ..utils import meshgrid
 
-__all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
+__all__ = ("pixel_jacobian", "pixel_magnification", "magnification", "find_contours")
 
 
 def pixel_jacobian(
@@ -209,3 +210,111 @@ def _contours_agree(
     rows, cols = linear_sum_assignment(cost)
     paired = cost[rows, cols]
     return bool(np.all(paired < tolerance)), float(paired.max())
+
+
+def _validate_find_contours_args(
+    fov,
+    fov_expansion_factor,
+    max_fov_expansions,
+    resolution,
+    max_resolution_halvings,
+    geometry_tolerance,
+    mask_positions,
+    mask_radius,
+):
+    if fov <= 0:
+        raise ValueError(f"fov must be positive (received {fov})")
+    if resolution <= 0:
+        raise ValueError(f"resolution must be positive (received {resolution})")
+    if fov_expansion_factor <= 1:
+        raise ValueError(
+            f"fov_expansion_factor must exceed 1 (received {fov_expansion_factor})"
+        )
+    if max_fov_expansions < 0:
+        raise ValueError(
+            f"max_fov_expansions must be non-negative (received {max_fov_expansions})"
+        )
+    if max_resolution_halvings < 0:
+        raise ValueError(
+            f"max_resolution_halvings must be non-negative (received {max_resolution_halvings})"
+        )
+    if geometry_tolerance <= 0:
+        raise ValueError(
+            f"geometry_tolerance must be positive (received {geometry_tolerance})"
+        )
+
+    if mask_positions is None:
+        return
+
+    positions = np.atleast_2d(np.asarray(mask_positions, dtype=np.float64))
+    if positions.size and positions.shape[1] != 2:
+        raise ValueError(
+            f"mask_positions must have shape (M, 2) (received {positions.shape})"
+        )
+    if mask_radius is None:
+        raise ValueError("mask_radius is required when mask_positions is given")
+
+    radii = np.atleast_1d(np.asarray(mask_radius, dtype=np.float64))
+    if radii.size not in (1, positions.shape[0]):
+        raise ValueError(
+            f"mask_radius must be a scalar or have one value per masked position "
+            f"({positions.shape[0]}); received {radii.size}"
+        )
+    if np.any(radii <= 0):
+        raise ValueError(f"mask_radius must be positive (received {mask_radius})")
+
+
+def find_contours(
+    f: Callable,
+    target_value: float,
+    fov: float = 5.0,
+    fov_expansion_factor: float = 2.0,
+    max_fov_expansions: int = 5,
+    resolution: float = 0.1,
+    max_resolution_halvings: int = 8,
+    geometry_tolerance: float = 1e-3,
+    mask_positions: Optional[ArrayLike] = None,
+    mask_radius: Optional[ArrayLike] = None,
+    device=None,
+) -> list:
+    """Provisional docstring; Task 7 replaces it with the full numpydoc entry."""
+    _validate_find_contours_args(
+        fov,
+        fov_expansion_factor,
+        max_fov_expansions,
+        resolution,
+        max_resolution_halvings,
+        geometry_tolerance,
+        mask_positions,
+        mask_radius,
+    )
+
+    contours = None
+    touched_edge = False
+    for _ in range(max_fov_expansions + 1):
+        npix = max(int(round(fov / resolution)) + 1, 2)
+        X, Y = meshgrid(resolution, npix, device=device, dtype=backend.float64)
+        candidate = _mask_contours(
+            _extract_contours(f, X, Y, target_value), mask_positions, mask_radius
+        )
+        half_span = resolution * (npix - 1) / 2
+        bounds = (-half_span, half_span, -half_span, half_span)
+        touched_edge = _contours_touch_edge(candidate, bounds, 1e-6 * resolution)
+        if len(candidate) > 0 and not touched_edge:
+            contours = candidate
+            break
+        fov *= fov_expansion_factor
+
+    if contours is None:
+        reason = (
+            "contours touching the grid edge"
+            if touched_edge
+            else f"no contours at target_value={target_value}"
+        )
+        raise RuntimeError(
+            f"find_contours failed to enclose the contours: after "
+            f"{max_fov_expansions} expansion(s) the grid still produced {reason} "
+            f"(final fov={fov / fov_expansion_factor:.6g})."
+        )
+
+    return contours

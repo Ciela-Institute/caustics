@@ -9,6 +9,7 @@ from caustics.lenses.utils import (
     _extract_contours,
     _mask_contours,
     _contours_touch_edge,
+    find_contours,
 )
 from caustics.utils import meshgrid
 
@@ -222,3 +223,91 @@ def test_contours_agree_for_two_empty_sets():
     agreed, worst = _contours_agree([], [], 1e-3)
     assert agreed
     assert worst == 0.0
+
+
+def _circle_field(a, b):
+    return a**2 + b**2
+
+
+def test_find_contours_single_circle():
+    contours = find_contours(_circle_field, 1.0, fov=4.0, resolution=0.05)
+    assert len(contours) == 1
+    r = np.hypot(contours[0][:, 0], contours[0][:, 1])
+    assert np.abs(r - 1.0).max() < 1e-3
+
+
+def test_find_contours_return_type():
+    contours = find_contours(_circle_field, 1.0, fov=4.0, resolution=0.05)
+    assert isinstance(contours, list)
+    for c in contours:
+        assert isinstance(c, np.ndarray)
+        assert c.ndim == 2 and c.shape[1] == 2
+        assert c.dtype == np.float64
+
+
+def test_find_contours_expands_fov_until_contour_is_enclosed():
+    # radius-4 circle: fov=1,2,4 find nothing, fov=8 touches the boundary exactly,
+    # fov=16 encloses it
+    contours = find_contours(_circle_field, 16.0, fov=1.0, resolution=0.1)
+    assert len(contours) == 1
+    r = np.hypot(contours[0][:, 0], contours[0][:, 1])
+    assert np.abs(r - 4.0).max() < 1e-2
+
+
+def test_find_contours_raises_when_no_contour_exists():
+    with pytest.raises(RuntimeError, match="no contours"):
+        find_contours(
+            _circle_field, -1.0, fov=4.0, resolution=0.1, max_fov_expansions=3
+        )
+
+
+def test_find_contours_raises_for_unbounded_contour():
+    with pytest.raises(RuntimeError, match="edge"):
+        find_contours(
+            lambda a, b: a, 0.0, fov=4.0, resolution=0.1, max_fov_expansions=3
+        )
+
+
+def test_find_contours_applies_masks_before_checks():
+    # a genuine circle plus a tiny artifact-like ring near the origin
+    def two_scales(a, b):
+        r2 = a**2 + b**2
+        return (r2 - 1.0) * (r2 - 0.01)
+
+    unmasked = find_contours(two_scales, 0.0, fov=4.0, resolution=0.02)
+    assert len(unmasked) == 2
+
+    masked = find_contours(
+        two_scales,
+        0.0,
+        fov=4.0,
+        resolution=0.02,
+        mask_positions=[(0.0, 0.0)],
+        mask_radius=0.5,
+    )
+    assert len(masked) == 1
+    r = np.hypot(masked[0][:, 0], masked[0][:, 1])
+    assert np.abs(r - 1.0).max() < 1e-2
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"fov": 0.0},
+        {"fov": -1.0},
+        {"resolution": 0.0},
+        {"resolution": -0.1},
+        {"fov_expansion_factor": 1.0},
+        {"fov_expansion_factor": 0.5},
+        {"max_fov_expansions": -1},
+        {"max_resolution_halvings": -1},
+        {"geometry_tolerance": 0.0},
+        {"mask_positions": [(0.0, 0.0)]},
+        {"mask_positions": [(0.0, 0.0)], "mask_radius": 0.0},
+        {"mask_positions": [(0.0, 0.0, 1.0)], "mask_radius": 0.5},
+        {"mask_positions": [(0.0, 0.0), (1.0, 1.0)], "mask_radius": [0.1, 0.2, 0.3]},
+    ],
+)
+def test_find_contours_validates_arguments(kwargs):
+    with pytest.raises(ValueError):
+        find_contours(_circle_field, 1.0, **kwargs)
