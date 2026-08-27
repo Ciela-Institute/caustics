@@ -1,5 +1,8 @@
 from typing import Tuple
 
+import numpy as np
+from contourpy import contour_generator
+
 from ..backend_obj import backend, ArrayLike
 
 __all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
@@ -107,3 +110,17 @@ def magnification(raytrace, x, y) -> ArrayLike:
         ),
         x.shape,
     )
+
+
+def _extract_contours(f, X, Y, target_value: float) -> list:
+    """Evaluate `f` on the grid and extract contour lines at `target_value`."""
+    z = np.asarray(backend.to_numpy(f(X, Y)), dtype=np.float64)
+    generator = contour_generator(
+        x=np.asarray(backend.to_numpy(X), dtype=np.float64),
+        y=np.asarray(backend.to_numpy(Y), dtype=np.float64),
+        z=z,
+        name="serial",
+        line_type="Separate",
+        quad_as_tri=True,
+    )
+    return generator.lines(float(target_value))
