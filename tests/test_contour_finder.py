@@ -1,7 +1,7 @@
 import numpy as np
 
 from caustics.backend_obj import backend
-from caustics.lenses.utils import _extract_contours
+from caustics.lenses.utils import _extract_contours, _mask_contours
 from caustics.utils import meshgrid
 
 
@@ -50,3 +50,44 @@ def test_extract_contours_casts_float32_field_to_float64():
 
     contours = _extract_contours(f32, X, Y, 1.0)
     assert contours[0].dtype == np.float64
+
+
+def _circle(radius, centre=(0.0, 0.0), n=64):
+    t = np.linspace(0.0, 2.0 * np.pi, n)
+    return np.stack(
+        [centre[0] + radius * np.cos(t), centre[1] + radius * np.sin(t)], axis=1
+    )
+
+
+def test_mask_contours_drops_contour_fully_inside_disc():
+    small = _circle(0.1)
+    large = _circle(1.0)
+    kept = _mask_contours([large, small], [(0.0, 0.0)], 0.5)
+    assert len(kept) == 1
+    assert np.allclose(kept[0], large)
+
+
+def test_mask_contours_keeps_contour_with_any_vertex_outside():
+    # radius 1.0 curve against a radius 0.99 mask: every vertex is outside
+    kept = _mask_contours([_circle(1.0)], [(0.0, 0.0)], 0.99)
+    assert len(kept) == 1
+
+
+def test_mask_contours_drops_real_contour_when_radius_too_large():
+    # documented sharp edge of the rule: a genuine contour inside the disc is dropped
+    assert _mask_contours([_circle(1.0)], [(0.0, 0.0)], 1.5) == []
+
+
+def test_mask_contours_handles_multiple_positions_and_per_position_radii():
+    a = _circle(0.1, centre=(2.0, 0.0))
+    b = _circle(0.4, centre=(-2.0, 0.0))
+    keep = _circle(1.0)
+    kept = _mask_contours([keep, a, b], [(2.0, 0.0), (-2.0, 0.0)], [0.2, 0.5])
+    assert len(kept) == 1
+    assert np.allclose(kept[0], keep)
+
+
+def test_mask_contours_is_a_noop_without_positions():
+    contours = [_circle(1.0), _circle(0.1)]
+    assert _mask_contours(contours, None, None) is contours
+    assert len(_mask_contours(contours, [], 0.5)) == 2

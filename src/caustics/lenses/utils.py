@@ -124,3 +124,25 @@ def _extract_contours(f, X, Y, target_value: float) -> list:
         quad_as_tri=True,
     )
     return generator.lines(float(target_value))
+
+
+def _mask_contours(contours: list, mask_positions, mask_radius) -> list:
+    """Drop contours lying entirely within `mask_radius` of a masked position."""
+    if mask_positions is None or len(mask_positions) == 0:
+        return contours
+
+    positions = np.atleast_2d(np.asarray(mask_positions, dtype=np.float64))
+    radii = np.broadcast_to(
+        np.asarray(mask_radius, dtype=np.float64), (positions.shape[0],)
+    )
+
+    kept = []
+    for contour in contours:
+        inside = False
+        for (px, py), radius in zip(positions, radii):
+            if np.all(np.hypot(contour[:, 0] - px, contour[:, 1] - py) <= radius):
+                inside = True
+                break
+        if not inside:
+            kept.append(contour)
+    return kept
