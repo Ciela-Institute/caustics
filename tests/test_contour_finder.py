@@ -311,3 +311,62 @@ def test_find_contours_applies_masks_before_checks():
 def test_find_contours_validates_arguments(kwargs):
     with pytest.raises(ValueError):
         find_contours(_circle_field, 1.0, **kwargs)
+
+
+def test_find_contours_refines_until_geometry_is_stable():
+    # tolerance 1e-3 converges after two halvings from resolution 0.1 (see spec table);
+    # the returned curve is far more accurate than the coarse Phase 1 grid's 2.5e-3
+    contours = find_contours(
+        _circle_field, 1.0, fov=4.0, resolution=0.1, geometry_tolerance=1e-3
+    )
+    assert len(contours) == 1
+    r = np.hypot(contours[0][:, 0], contours[0][:, 1])
+    assert np.abs(r - 1.0).max() < 5e-4
+
+
+def test_find_contours_multiple_disjoint_contours():
+    def two_circles(a, b):
+        left = (a + 1.5) ** 2 + b**2
+        right = (a - 1.5) ** 2 + b**2
+        return backend.where(left < right, left, right)
+
+    contours = find_contours(two_circles, 0.25, fov=6.0, resolution=0.1)
+    assert len(contours) == 2
+    for c in contours:
+        centre = -1.5 if c[:, 0].mean() < 0 else 1.5
+        r = np.hypot(c[:, 0] - centre, c[:, 1])
+        assert np.abs(r - 0.5).max() < 1e-2
+
+
+def test_find_contours_raises_when_refinement_does_not_converge():
+    with pytest.raises(RuntimeError, match="refin"):
+        find_contours(
+            _circle_field,
+            1.0,
+            fov=4.0,
+            resolution=0.1,
+            geometry_tolerance=1e-12,
+            max_resolution_halvings=3,
+        )
+
+
+def test_find_contours_refinement_error_reports_distance():
+    with pytest.raises(RuntimeError) as excinfo:
+        find_contours(
+            _circle_field,
+            1.0,
+            fov=4.0,
+            resolution=0.1,
+            geometry_tolerance=1e-12,
+            max_resolution_halvings=3,
+        )
+    message = str(excinfo.value)
+    assert "1" in message  # contour counts
+    assert "distance" in message.lower()
+
+
+def test_find_contours_zero_halvings_raises():
+    with pytest.raises(RuntimeError, match="refin"):
+        find_contours(
+            _circle_field, 1.0, fov=4.0, resolution=0.05, max_resolution_halvings=0
+        )

@@ -277,7 +277,112 @@ def find_contours(
     mask_radius: Optional[ArrayLike] = None,
     device=None,
 ) -> list:
-    """Provisional docstring; Task 7 replaces it with the full numpydoc entry."""
+    """
+    Find contours of a scalar function at a target value, adapting both the field
+    of view and the pixel scale until the result is stable.
+
+    The field of view is grown by ``fov_expansion_factor`` until the target
+    contours are present and fully enclosed by the grid. The pixel scale is then
+    halved repeatedly, at fixed field of view, until two successive contour sets
+    have the same number of contours and every optimally paired contour moves by
+    less than ``geometry_tolerance``.
+
+    Distances between contour sets are point-to-polyline, not point-to-point, so
+    ``geometry_tolerance`` measures how far the curve actually moved rather than
+    how densely it happens to be sampled.
+
+    Parameters
+    ----------
+    f: Callable
+        The scalar field to contour. Called once per grid as ``f(X, Y)`` with the
+        full 2D meshgrid, and must return an array of the same shape.
+
+    target_value: float
+        The contour level to extract.
+
+    fov: float
+        The initial field of view, a square side length centred on the origin.
+
+        *Unit: arcsec*
+
+    fov_expansion_factor: float
+        The factor by which the field of view grows when contours are missing or
+        clipped. Must exceed 1.
+
+        *Unit: unitless*
+
+    max_fov_expansions: int
+        The maximum number of expansions. The initial grid is not counted.
+
+    resolution: float
+        The initial pixel scale.
+
+        *Unit: arcsec*
+
+    max_resolution_halvings: int
+        The maximum number of times the pixel scale is halved.
+
+    geometry_tolerance: float
+        The convergence threshold on contour displacement between successive
+        refinements.
+
+        *Unit: arcsec*
+
+    mask_positions: Optional[ArrayLike]
+        An ``(M, 2)`` array of positions around which contours are discarded. Use
+        this for singular components of a lens model: when a singularity lands
+        exactly on a grid point, the field flips sign at that single pixel and an
+        unphysical one-pixel contour appears, which never converges under
+        refinement. A contour is discarded only when *every* one of its vertices
+        lies within ``mask_radius`` of a masked position, so a genuine contour
+        passing nearby survives. Note that ``mask_radius`` must therefore stay
+        below the extent of the smallest genuine contour.
+
+        *Unit: arcsec*
+
+    mask_radius: Optional[ArrayLike]
+        The mask disc radius, either a scalar or one value per masked position.
+        Required when ``mask_positions`` is given.
+
+        *Unit: arcsec*
+
+    device: optional
+        The device on which to build the coordinate grid. Defaults to the backend
+        default.
+
+    Returns
+    -------
+    list of ArrayLike
+        One ``(N, 2)`` float64 numpy array of ``(x, y)`` vertices per contour,
+        taken from the finest grid. The order carries no meaning.
+
+        *Unit: arcsec*
+
+    Raises
+    ------
+    ValueError
+        If any argument is out of range, or ``mask_positions`` is given without a
+        positive ``mask_radius``.
+
+    RuntimeError
+        If the field of view cannot be grown enough to enclose the contours, or
+        if the contour geometry has not stabilised within
+        ``max_resolution_halvings``.
+
+    Notes
+    -----
+    An empty contour set is always treated as "the field of view is too small",
+    because that cause cannot be distinguished from "the feature is smaller than
+    the pixel scale". Choosing an initial ``resolution`` fine enough to detect
+    the feature at all is the caller's responsibility.
+
+    Contour extraction runs through numpy, so gradients do not propagate through
+    this function.
+
+    Cost scales as the square of the pixel count, and contours with cusps
+    converge at first order rather than second, so they need roughly twice as
+    many halvings per digit of accuracy as smooth contours.
+    """
     _validate_find_contours_args(
         fov,
         fov_expansion_factor,
@@ -317,4 +422,24 @@ def find_contours(
             f"(final fov={fov / fov_expansion_factor:.6g})."
         )
 
-    return contours
+    previous = contours
+    worst = float("inf")
+    for _ in range(max_resolution_halvings):
+        resolution /= 2
+        npix = max(int(round(fov / resolution)) + 1, 2)
+        X, Y = meshgrid(resolution, npix, device=device, dtype=backend.float64)
+        current = _mask_contours(
+            _extract_contours(f, X, Y, target_value), mask_positions, mask_radius
+        )
+        agreed, worst = _contours_agree(previous, current, geometry_tolerance)
+        if agreed:
+            return current
+        previous = current
+
+    raise RuntimeError(
+        f"find_contours refinement failed to converge: after "
+        f"{max_resolution_halvings} resolution halving(s) the contour set still "
+        f"changed (contour counts {len(contours)} then {len(previous)}, largest "
+        f"paired distance {worst:.6g} against "
+        f"geometry_tolerance={geometry_tolerance:.6g})."
+    )
