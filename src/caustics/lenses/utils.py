@@ -168,59 +168,74 @@ def _contours_touch_edge(
     return False
 
 
-# Total inserted points is capped so a pathologically small `spacing` (e.g. an
-# extreme `geometry_tolerance`) cannot blow up memory. Rescaling to the coarsest
-# spacing that still fits the cap only ever makes `_densify_contour` sparser, and
-# `_contour_distance`'s guarantee is one-sided (densified points lie on the
-# polyline, so the reported distance can only overstate a difference, never
-# understate one) -- so a coarser cap-limited spacing can still never falsely
-# declare convergence.
-_MAX_DENSIFIED_POINTS = 1_000_000
+def _point_to_segments(
+    point: np.ndarray, starts: np.ndarray, ends: np.ndarray
+) -> np.ndarray:
+    """Exact distance from `point` to each segment `(starts[i], ends[i])`."""
+    spans = ends - starts
+    lengths_squared = np.einsum("ij,ij->i", spans, spans)
+    lengths_squared = np.where(lengths_squared > 0, lengths_squared, 1.0)
+    fractions = np.einsum("ij,ij->i", point[None, :] - starts, spans) / lengths_squared
+    feet = starts + np.clip(fractions, 0.0, 1.0)[:, None] * spans
+    return np.linalg.norm(point[None, :] - feet, axis=1)
 
 
-def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
-    """Insert points along each segment so consecutive spacing never exceeds `spacing`."""
-    if len(contour) < 2:
-        return contour
+def _directed_contour_distance(source: np.ndarray, target: np.ndarray) -> float:
+    """Largest exact distance from a vertex of `source` to the polyline `target`.
 
-    starts, ends = contour[:-1], contour[1:]
-    lengths = np.linalg.norm(ends - starts, axis=1)
-    effective_spacing = spacing
-    counts = np.ceil(lengths / effective_spacing)
-    if counts.sum() > _MAX_DENSIFIED_POINTS:
-        effective_spacing = lengths.sum() / _MAX_DENSIFIED_POINTS
-        counts = np.ceil(lengths / effective_spacing)
-    counts = np.maximum(counts.astype(int), 1)
+    The distance is computed by projection onto `target`'s segments, not by
+    sampling it: a KD-tree over `target`'s vertices only narrows down which
+    segments can matter. For a query point ``p``, let ``d`` be its distance to
+    the nearest vertex of `target` and ``L`` the longest segment. Any segment
+    whose distance to ``p`` is at most ``d`` has an endpoint within ``d + L`` of
+    ``p``, because the closest point on a segment is within ``L`` of either
+    endpoint. Projecting onto just those segments therefore gives the exact
+    minimum, at no approximation and with no dependence on any tolerance.
+    """
+    if len(target) < 2:
+        return float(cKDTree(target).query(source, k=1)[0].max())
 
-    pieces = []
-    for start, end, count in zip(starts, ends, counts):
-        fractions = np.linspace(0.0, 1.0, count + 1)[:-1, None]
-        pieces.append(start + fractions * (end - start))
-    pieces.append(contour[-1][None, :])
-    return np.concatenate(pieces, axis=0)
+    starts, ends = target[:-1], target[1:]
+    longest_segment = np.linalg.norm(ends - starts, axis=1).max()
+    tree = cKDTree(target)
+    nearest_vertex, _ = tree.query(source, k=1)
+
+    worst = 0.0
+    for point, radius in zip(source, nearest_vertex):
+        vertices = np.asarray(
+            tree.query_ball_point(point, radius + longest_segment), dtype=int
+        )
+        # Vertex j bounds segments j-1 and j.
+        candidates = np.unique(np.concatenate([vertices - 1, vertices]))
+        candidates = candidates[(candidates >= 0) & (candidates < len(starts))]
+        worst = max(
+            worst, _point_to_segments(point, starts[candidates], ends[candidates]).min()
+        )
+    return float(worst)
 
 
-def _contour_distance(a: np.ndarray, b: np.ndarray, spacing: float) -> float:
-    """Symmetric point-to-polyline Hausdorff distance between two contours."""
-    a_to_b = cKDTree(_densify_contour(b, spacing)).query(a, k=1)[0].max()
-    b_to_a = cKDTree(_densify_contour(a, spacing)).query(b, k=1)[0].max()
-    return float(max(a_to_b, b_to_a))
+def _contour_distance(a: np.ndarray, b: np.ndarray) -> float:
+    """Symmetric vertex-to-polyline distance between two contours.
+
+    Exact, so it carries no tolerance parameter and its cost does not depend on
+    ``geometry_tolerance``. Symmetrised because the directed distance is not.
+    """
+    return max(_directed_contour_distance(a, b), _directed_contour_distance(b, a))
 
 
 def _contours_agree(
     previous: list, current: list, tolerance: float
 ) -> Tuple[bool, float]:
-    """Compare two contour sets by count and optimally paired polyline distance."""
+    """Compare two contour sets by count and optimally paired contour distance."""
     if len(previous) != len(current):
         return False, float("inf")
     if len(previous) == 0:
         return True, 0.0
 
-    spacing = tolerance / 10
     cost = np.empty((len(previous), len(current)), dtype=np.float64)
     for i, prev in enumerate(previous):
         for j, cur in enumerate(current):
-            cost[i, j] = _contour_distance(prev, cur, spacing)
+            cost[i, j] = _contour_distance(prev, cur)
 
     rows, cols = linear_sum_assignment(cost)
     paired = cost[rows, cols]
@@ -400,14 +415,15 @@ def find_contours(
 
     Cost scales as the square of the pixel count, and contours with cusps
     converge at first order rather than second, so they need roughly twice as
-    many halvings per digit of accuracy as smooth contours. The refinement grid
-    is bounded only by ``resolution`` and ``max_resolution_halvings``: the final
-    grid is ``npix ~ fov * 2 ** max_resolution_halvings / resolution`` on a side,
-    so choose those two together with the available memory in mind.
+    many halvings per digit of accuracy as smooth contours.
 
-    For extreme ``geometry_tolerance``, the densification used internally to
-    measure contour displacement is capped, and the metric's resolution floor
-    becomes ``perimeter / 2e6`` rather than ``geometry_tolerance / 20``.
+    Grid size is bounded only by ``resolution`` and ``max_resolution_halvings``.
+    Refinement holds the field of view fixed and halves the pixel scale, so the
+    final and largest grid is
+    ``npix ~ fov_final * 2 ** max_resolution_halvings / resolution`` on a side,
+    where ``fov_final`` is the field of view expansion settled on (the ``fov``
+    argument multiplied by ``fov_expansion_factor`` once per expansion actually
+    used). Choose those parameters with the available memory in mind.
     """
     _validate_find_contours_args(
         fov,
