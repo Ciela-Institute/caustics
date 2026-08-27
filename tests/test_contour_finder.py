@@ -1,7 +1,11 @@
 import numpy as np
 
 from caustics.backend_obj import backend
-from caustics.lenses.utils import _extract_contours, _mask_contours
+from caustics.lenses.utils import (
+    _extract_contours,
+    _mask_contours,
+    _contours_touch_edge,
+)
 from caustics.utils import meshgrid
 
 
@@ -91,3 +95,36 @@ def test_mask_contours_is_a_noop_without_positions():
     contours = [_circle(1.0), _circle(0.1)]
     assert _mask_contours(contours, None, None) is contours
     assert len(_mask_contours(contours, [], 0.5)) == 2
+
+
+BOUNDS = (-2.0, 2.0, -2.0, 2.0)
+
+
+def test_contours_touch_edge_false_for_interior_contour():
+    assert not _contours_touch_edge([_circle(1.0)], BOUNDS, 1e-8)
+
+
+def test_contours_touch_edge_true_for_vertex_on_boundary():
+    clipped = np.array([[0.0, -2.0], [0.5, 0.0], [0.0, 2.0]])
+    assert _contours_touch_edge([clipped], BOUNDS, 1e-8)
+
+
+def test_contours_touch_edge_checks_every_bound():
+    for vertex in ([-2.0, 0.0], [2.0, 0.0], [0.0, -2.0], [0.0, 2.0]):
+        contour = np.array([[0.0, 0.0], vertex, [0.1, 0.1]])
+        assert _contours_touch_edge([contour], BOUNDS, 1e-8)
+
+
+def test_contours_touch_edge_true_if_any_contour_touches():
+    clipped = np.array([[0.0, -2.0], [0.5, 0.0]])
+    assert _contours_touch_edge([_circle(1.0), clipped], BOUNDS, 1e-8)
+
+
+def test_contours_touch_edge_false_for_empty_list():
+    assert not _contours_touch_edge([], BOUNDS, 1e-8)
+
+
+def test_contours_touch_edge_tolerance_is_tight():
+    # a contour one whole pixel inside the boundary must not be flagged
+    near = np.array([[0.0, 0.0], [1.9, 0.0]])
+    assert not _contours_touch_edge([near], BOUNDS, 1e-6 * 0.1)

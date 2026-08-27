@@ -146,3 +146,20 @@ def _mask_contours(contours: list, mask_positions, mask_radius) -> list:
         if not inside:
             kept.append(contour)
     return kept
+
+
+def _contours_touch_edge(
+    contours: list, bounds: Tuple[float, float, float, float], atol: float
+) -> bool:
+    """True if any contour vertex lies within `atol` of the grid boundary."""
+    x_min, x_max, y_min, y_max = bounds
+    for contour in contours:
+        cx, cy = contour[:, 0], contour[:, 1]
+        if (
+            np.any(np.abs(cx - x_min) <= atol)
+            or np.any(np.abs(cx - x_max) <= atol)
+            or np.any(np.abs(cy - y_min) <= atol)
+            or np.any(np.abs(cy - y_max) <= atol)
+        ):
+            return True
+    return False
