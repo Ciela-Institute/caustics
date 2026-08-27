@@ -153,8 +153,14 @@ def test_densify_contour_leaves_short_segments_alone():
 
 def test_densify_contour_caps_total_points_for_tiny_spacing():
     poly = _circle(1.0)
+    perimeter = np.linalg.norm(np.diff(poly, axis=0), axis=1).sum()
     dense = _densify_contour(poly, 1e-13)
     assert len(dense) <= 1_000_000 + len(poly)
+    # A hard lower bound too: an implementation that capped at, say, 2 points
+    # would satisfy the upper bound above but is clearly not "close to the cap".
+    assert len(dense) > 900_000
+    achieved_spacing = np.linalg.norm(np.diff(dense, axis=0), axis=1).max()
+    assert achieved_spacing == pytest.approx(perimeter / 1_000_000, rel=1e-2)
     assert np.allclose(dense[0], poly[0])
     assert np.allclose(dense[-1], poly[-1])
 
@@ -278,6 +284,87 @@ def test_find_contours_raises_for_unbounded_contour():
         )
 
 
+def _sliver_field(a, b):
+    # A unit circle plus a thin sliver centred at x=1.85 that falls entirely
+    # between grid points at resolution=0.1 -- and so is invisible to Phase
+    # 1's edge check at that resolution -- but resolves once refinement
+    # reaches resolution<=0.05.
+    return (a**2 + b**2 - 1.0) * ((a - 1.85) ** 2 - 0.02**2)
+
+
+def test_find_contours_raises_when_refinement_reveals_edge_touching_contour():
+    # Phase 1 accepts fov=4.0 having only ever seen the unit circle at
+    # resolution=0.1, since the sliver is not resolved there at all. Without a
+    # Phase 2 edge check, refinement would converge once the sliver resolves
+    # and silently return contours clipped at the y=+/-2.0 domain boundary
+    # instead of raising.
+    with pytest.raises(RuntimeError, match="grid edge"):
+        find_contours(
+            _sliver_field, 0.0, fov=4.0, resolution=0.1, geometry_tolerance=1e-3
+        )
+
+
+def _bounded_sliver_field(a, b):
+    # `_sliver_field` above is not a fair vehicle for an "increasing fov
+    # fixes it" check: its second factor, (a - 1.85)**2 - 0.02**2, does not
+    # depend on b at all, so its zero set is two mathematically infinite
+    # vertical lines -- no finite fov can ever enclose them, and indeed
+    # find_contours(_sliver_field, ..., fov=8.0, ...) still raises. This
+    # variant closes the sliver into a bounded, thin ellipse (semi-axes 0.02
+    # in x, 2.3 in y) that is genuinely enclosable, while preserving the
+    # property that exercises the fix: at resolution=0.1 the ellipse is
+    # invisible (its ends land inside a single grid cell, same as the
+    # sliver), and only resolves once refinement reaches resolution<=0.05.
+    return (a**2 + b**2 - 1.0) * (((a - 1.85) / 0.02) ** 2 + (b / 2.3) ** 2 - 1.0)
+
+
+def test_find_contours_edge_touching_error_is_actionable_with_larger_fov():
+    # At fov=4.0 the same shape as above: revealed only by refinement, and
+    # clipped by the domain edge (the ellipse's y-extent of 2.3 exceeds the
+    # fov=4 half-span of 2.0), so this raises for the same reason.
+    with pytest.raises(RuntimeError, match="grid edge"):
+        find_contours(
+            _bounded_sliver_field, 0.0, fov=4.0, resolution=0.1, geometry_tolerance=1e-2
+        )
+
+    # A large enough fov encloses the ellipse entirely (half-span 4.0 > 2.3),
+    # so refinement converges with every contour interior -- proving the
+    # RuntimeError above names a real, fixable problem rather than being a
+    # dead end.
+    contours = find_contours(
+        _bounded_sliver_field, 0.0, fov=8.0, resolution=0.1, geometry_tolerance=1e-2
+    )
+    assert len(contours) == 2
+    for c in contours:
+        assert np.abs(c[:, 0]).max() < 3.99
+        assert np.abs(c[:, 1]).max() < 3.99
+
+
+def test_find_contours_refinement_cap_raises_before_allocating():
+    # fov/resolution is chosen so the very first refinement halving needs a
+    # grid just over the internal _MAX_GRID_POINTS cap (4096**2): Phase 1
+    # builds a 2049**2 grid, then the first halving would need 4097**2. The
+    # cap must raise before that grid is built rather than attempting to
+    # allocate it (which is the MemoryError this guards against).
+    with pytest.raises(RuntimeError, match="cap"):
+        find_contours(
+            _circle_field,
+            1.0,
+            fov=4.0,
+            resolution=4.0 / 2048,
+            max_resolution_halvings=5,
+        )
+
+
+def test_find_contours_accepts_empty_mask_positions():
+    # `_mask_contours` already treats an empty list as a no-op; validation
+    # must not demand a mask_radius that will never be used.
+    contours = find_contours(
+        _circle_field, 1.0, fov=4.0, resolution=0.05, mask_positions=[]
+    )
+    assert len(contours) == 1
+
+
 def test_find_contours_applies_masks_before_checks():
     # a genuine circle plus a tiny artifact-like ring near the origin
     def two_scales(a, b):
@@ -311,6 +398,7 @@ def test_find_contours_applies_masks_before_checks():
         {"fov_expansion_factor": 0.5},
         {"max_fov_expansions": -1},
         {"max_resolution_halvings": -1},
+        {"max_resolution_halvings": 0},
         {"geometry_tolerance": 0.0},
         {"mask_positions": [(0.0, 0.0)]},
         {"mask_positions": [(0.0, 0.0)], "mask_radius": 0.0},
@@ -371,12 +459,15 @@ def test_find_contours_refinement_error_reports_distance():
             max_resolution_halvings=3,
         )
     message = str(excinfo.value)
-    assert "1" in message  # contour counts
+    assert "contour counts 1 then 1" in message
     assert "distance" in message.lower()
 
 
-def test_find_contours_zero_halvings_raises():
-    with pytest.raises(RuntimeError, match="refin"):
+def test_find_contours_zero_halvings_rejected():
+    # max_resolution_halvings=0 would skip the refinement loop entirely and
+    # return an unverified Phase 1 contour set, silently weakening the
+    # function's "verified stable across at least one refinement" contract.
+    with pytest.raises(ValueError, match="max_resolution_halvings"):
         find_contours(
             _circle_field, 1.0, fov=4.0, resolution=0.05, max_resolution_halvings=0
         )

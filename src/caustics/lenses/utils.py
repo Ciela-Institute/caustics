@@ -177,6 +177,11 @@ def _contours_touch_edge(
 # declare convergence.
 _MAX_DENSIFIED_POINTS = 1_000_000
 
+# Caps the Phase 2 refinement grid so a non-convergent field cannot drive
+# `npix` (and the X/Y/z arrays sized `npix x npix`) to an unbounded size.
+# 4096**2 = 16,777,216 points, about 402 MB across the three float64 arrays.
+_MAX_GRID_POINTS = 4096**2
+
 
 def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
     """Insert points along each segment so consecutive spacing never exceeds `spacing`."""
@@ -185,10 +190,11 @@ def _densify_contour(contour: np.ndarray, spacing: float) -> np.ndarray:
 
     starts, ends = contour[:-1], contour[1:]
     lengths = np.linalg.norm(ends - starts, axis=1)
-    counts = np.ceil(lengths / spacing)
+    effective_spacing = spacing
+    counts = np.ceil(lengths / effective_spacing)
     if counts.sum() > _MAX_DENSIFIED_POINTS:
-        spacing = lengths.sum() / _MAX_DENSIFIED_POINTS
-        counts = np.ceil(lengths / spacing)
+        effective_spacing = lengths.sum() / _MAX_DENSIFIED_POINTS
+        counts = np.ceil(lengths / effective_spacing)
     counts = np.maximum(counts.astype(int), 1)
 
     pieces = []
@@ -248,9 +254,9 @@ def _validate_find_contours_args(
         raise ValueError(
             f"max_fov_expansions must be non-negative (received {max_fov_expansions})"
         )
-    if max_resolution_halvings < 0:
+    if max_resolution_halvings < 1:
         raise ValueError(
-            f"max_resolution_halvings must be non-negative (received {max_resolution_halvings})"
+            f"max_resolution_halvings must be at least 1 (received {max_resolution_halvings})"
         )
     if geometry_tolerance <= 0:
         raise ValueError(
@@ -261,7 +267,9 @@ def _validate_find_contours_args(
         return
 
     positions = np.atleast_2d(np.asarray(mask_positions, dtype=np.float64))
-    if positions.size and positions.shape[1] != 2:
+    if positions.size == 0:
+        return
+    if positions.shape[1] != 2:
         raise ValueError(
             f"mask_positions must have shape (M, 2) (received {positions.shape})"
         )
@@ -290,7 +298,7 @@ def find_contours(
     mask_positions: Optional[ArrayLike] = None,
     mask_radius: Optional[ArrayLike] = None,
     device=None,
-) -> list:
+) -> list[np.ndarray]:
     """
     Find contours of a scalar function at a target value, adapting both the field
     of view and the pixel scale until the result is stable.
@@ -379,9 +387,12 @@ def find_contours(
         positive ``mask_radius``.
 
     RuntimeError
-        If the field of view cannot be grown enough to enclose the contours, or
-        if the contour geometry has not stabilised within
-        ``max_resolution_halvings``.
+        If the field of view cannot be grown enough to enclose the contours, if
+        the contour geometry has not stabilised within
+        ``max_resolution_halvings``, if refinement converges on a contour set
+        that touches the grid edge (a feature revealed only by refinement that
+        extends beyond ``fov``), or if the refinement grid would exceed the
+        internal point-count cap.
 
     Notes
     -----
@@ -396,6 +407,10 @@ def find_contours(
     Cost scales as the square of the pixel count, and contours with cusps
     converge at first order rather than second, so they need roughly twice as
     many halvings per digit of accuracy as smooth contours.
+
+    For extreme ``geometry_tolerance``, the densification used internally to
+    measure contour displacement is capped, and the metric's resolution floor
+    becomes ``perimeter / 2e6`` rather than ``geometry_tolerance / 20``.
     """
     _validate_find_contours_args(
         fov,
@@ -425,6 +440,7 @@ def find_contours(
         fov *= fov_expansion_factor
 
     if contours is None:
+        actual_span = resolution * (npix - 1)
         reason = (
             "contours touching the grid edge"
             if touched_edge
@@ -433,7 +449,7 @@ def find_contours(
         raise RuntimeError(
             f"find_contours failed to enclose the contours: after "
             f"{max_fov_expansions} expansion(s) the grid still produced {reason} "
-            f"(final fov={fov / fov_expansion_factor:.6g})."
+            f"(final grid span={actual_span:.6g})."
         )
 
     previous = contours
@@ -441,12 +457,31 @@ def find_contours(
     for _ in range(max_resolution_halvings):
         resolution /= 2
         npix = max(int(round(fov / resolution)) + 1, 2)
+        if npix * npix > _MAX_GRID_POINTS:
+            raise RuntimeError(
+                f"find_contours refinement would build a grid of npix={npix} "
+                f"({npix * npix} points) at resolution={resolution:.6g}, exceeding "
+                f"the {_MAX_GRID_POINTS}-point cap; use a coarser geometry_tolerance "
+                f"or a smaller max_resolution_halvings."
+            )
         X, Y = meshgrid(resolution, npix, device=device, dtype=backend.float64)
         current = _mask_contours(
             _extract_contours(f, X, Y, target_value), mask_positions, mask_radius
         )
         agreed, worst = _contours_agree(previous, current, geometry_tolerance)
         if agreed:
+            half_span = resolution * (npix - 1) / 2
+            if _contours_touch_edge(
+                current,
+                (-half_span, half_span, -half_span, half_span),
+                1e-6 * resolution,
+            ):
+                raise RuntimeError(
+                    f"find_contours refinement converged on a contour set touching the "
+                    f"grid edge at resolution={resolution:.6g} (fov={fov:.6g}); a feature "
+                    f"revealed only by refinement extends beyond the field of view. "
+                    f"Increase fov."
+                )
             return current
         previous = current
 
