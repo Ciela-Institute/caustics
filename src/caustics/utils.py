@@ -1719,10 +1719,15 @@ def _mask_contours(contours: list, mask_positions, mask_radius) -> list:
     disc, so a genuine contour that merely passes nearby survives. The rule is
     intended for singular components of a lens model: where a singularity lands
     exactly on a grid point, the field flips sign at that one pixel and an
-    unphysical one-pixel contour appears, which tracks the grid rather than the
-    physics and so never converges under refinement. The consequence of the rule
-    is that a radius larger than a genuine contour's extent discards that contour
-    too.
+    unphysical contour appears, which tracks the grid rather than the physics and
+    so never converges under refinement. That contour is not half a pixel across.
+    The singular value dwarfs its neighbours by so many orders of magnitude that
+    the zero crossing on each incident edge collapses onto the neighbouring grid
+    point, so the artifact traces the ring of eight neighbours and its corner
+    vertices sit a full pixel diagonal, ``resolution * sqrt(2)``, from the centre.
+    The radius is therefore bounded on both sides: below the extent of the
+    smallest genuine contour, which it would otherwise discard, and above the
+    pixel diagonal, below which it catches nothing.
 
     Parameters
     ----------
@@ -2057,8 +2062,10 @@ def _validate_find_contours_args(
         *Unit: arcsec*
 
     mask_radius: Optional[ArrayLike]
-        The mask disc radii, required and positive when `mask_positions` is
-        non-empty, and either a scalar or one value per masked position.
+        The mask disc radii, required when `mask_positions` is non-empty, and
+        either a scalar or one value per masked position. Every radius must
+        exceed the pixel diagonal ``resolution * sqrt(2)``, the extent of the
+        artifact the mask exists to remove.
 
         *Unit: arcsec*
 
@@ -2109,6 +2116,20 @@ def _validate_find_contours_args(
         )
     if np.any(radii <= 0):
         raise ValueError(f"mask_radius must be positive (received {mask_radius})")
+
+    # A singularity on a grid point drives the field so far past its neighbours
+    # that the zero crossing on every incident edge collapses onto the
+    # neighbouring grid point itself, putting the artifact's corner vertices a
+    # full pixel diagonal out. Refinement only shrinks the pixel scale, so the
+    # initial resolution sets the binding floor.
+    floor = resolution * np.sqrt(2)
+    if np.any(radii <= floor):
+        raise ValueError(
+            f"mask_radius must exceed the pixel diagonal "
+            f"resolution*sqrt(2)={floor:.6g} (received {mask_radius}); a smaller "
+            f"radius cannot remove a singularity artifact, whose outermost "
+            f"vertices lie exactly that far from the grid point"
+        )
 
 
 def find_contours(
@@ -2179,17 +2200,21 @@ def find_contours(
         An ``(M, 2)`` array of positions around which contours are discarded. Use
         this for singular components of a lens model: when a singularity lands
         exactly on a grid point, the field flips sign at that single pixel and an
-        unphysical one-pixel contour appears, which never converges under
-        refinement. A contour is discarded only when *every* one of its vertices
-        lies within ``mask_radius`` of a masked position, so a genuine contour
-        passing nearby survives. Note that ``mask_radius`` must therefore stay
-        below the extent of the smallest genuine contour.
+        unphysical contour appears, which never converges under refinement. A
+        contour is discarded only when *every* one of its vertices lies within
+        ``mask_radius`` of a masked position, so a genuine contour passing nearby
+        survives.
 
         *Unit: arcsec*
 
     mask_radius: Optional[ArrayLike]
         The mask disc radius, either a scalar or one value per masked position.
-        Required when ``mask_positions`` is given.
+        Required when ``mask_positions`` is given. Bounded on both sides: it must
+        stay below the extent of the smallest genuine contour, which it would
+        otherwise discard, and must exceed the pixel diagonal
+        ``resolution * sqrt(2)``, since the artifact it targets reaches the
+        diagonal neighbours of the singular grid point. A radius at or below that
+        floor is rejected rather than silently catching nothing.
 
         *Unit: arcsec*
 
@@ -2209,7 +2234,7 @@ def find_contours(
     ------
     ValueError
         If any argument is out of range, or ``mask_positions`` is given without a
-        positive ``mask_radius``.
+        ``mask_radius`` that is positive and above the pixel diagonal.
 
     RuntimeError
         If the field of view cannot be grown enough to enclose the contours, if

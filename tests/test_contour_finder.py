@@ -411,6 +411,12 @@ def test_find_contours_applies_masks_before_checks():
         {"geometry_tolerance": 0.0},
         {"mask_positions": [(0.0, 0.0)]},
         {"mask_positions": [(0.0, 0.0)], "mask_radius": 0.0},
+        {"mask_positions": [(0.0, 0.0)], "mask_radius": 0.1, "resolution": 0.1},
+        {
+            "mask_positions": [(0.0, 0.0), (1.0, 1.0)],
+            "mask_radius": [0.5, 0.1],
+            "resolution": 0.1,
+        },
         {"mask_positions": [(0.0, 0.0, 1.0)], "mask_radius": 0.5},
         {"mask_positions": [(0.0, 0.0), (1.0, 1.0)], "mask_radius": [0.1, 0.2, 0.3]},
     ],
@@ -485,6 +491,47 @@ def test_find_contours_raises_when_refinement_loses_all_contours():
     with pytest.raises(RuntimeError, match="refin"):
         find_contours(
             vanishing, 1.0, fov=4.0, resolution=0.1, max_resolution_halvings=3
+        )
+
+
+def test_find_contours_rejects_mask_radius_below_pixel_diagonal():
+    # A singularity landing on a grid point puts the contour's corner vertices
+    # on the diagonal neighbours, at resolution*sqrt(2). A smaller radius never
+    # catches the artifact it exists to remove.
+    floor = 0.1 * np.sqrt(2)
+
+    with pytest.raises(ValueError, match="mask_radius"):
+        find_contours(
+            _circle_field,
+            1.0,
+            fov=4.0,
+            resolution=0.1,
+            mask_positions=[(0.0, 0.0)],
+            mask_radius=floor,
+        )
+
+    contours = find_contours(
+        _circle_field,
+        1.0,
+        fov=4.0,
+        resolution=0.1,
+        mask_positions=[(0.0, 0.0)],
+        mask_radius=1.01 * floor,
+    )
+    assert len(contours) == 1
+
+
+def test_find_contours_mask_radius_floor_uses_the_initial_resolution():
+    # Refinement only ever shrinks the pixel scale, so the coarsest grid sets
+    # the largest artifact and therefore the binding floor.
+    with pytest.raises(ValueError, match="mask_radius"):
+        find_contours(
+            _circle_field,
+            1.0,
+            fov=4.0,
+            resolution=0.4,
+            mask_positions=[(0.0, 0.0)],
+            mask_radius=0.3,
         )
 
 
