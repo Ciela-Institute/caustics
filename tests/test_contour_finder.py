@@ -3,16 +3,16 @@ import pytest
 
 import caustics
 from caustics.backend_obj import backend
-from caustics.lenses.utils import (
+from caustics.lenses.utils import pixel_jacobian
+from caustics.utils import (
     _contour_distance,
     _contours_agree,
     _extract_contours,
     _mask_contours,
     _contours_touch_edge,
     find_contours,
-    pixel_jacobian,
+    meshgrid,
 )
-from caustics.utils import meshgrid
 
 
 def _grid(fov, resolution):
