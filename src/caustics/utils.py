@@ -1960,8 +1960,12 @@ def _contours_agree(
     which makes the comparison independent of the order the sets arrive in and
     yields one distance per contour, so a single badly-moving contour cannot hide
     behind an otherwise stable set. The count check precedes any distance work,
-    since an unequal-length cost matrix is not meaningful. Two empty sets agree
-    vacuously.
+    since an unequal-length cost matrix is not meaningful.
+
+    Two empty sets do not agree. Refinement starts from a set the field-of-view
+    loop has already found to be non-empty, so it can only arrive at an empty set
+    by losing contours it had; calling that convergence would return an empty
+    result as a success.
 
     Parameters
     ----------
@@ -1985,14 +1989,14 @@ def _contours_agree(
     -------
     Tuple[bool, float]
         Whether the sets agree, and the largest paired distance. The distance is
-        infinite when the counts differ and zero for two empty sets.
+        infinite when the counts differ and when both sets are empty.
 
         *Unit: arcsec*
     """
     if len(previous) != len(current):
         return False, float("inf")
     if len(previous) == 0:
-        return True, 0.0
+        return False, float("inf")
 
     cost = np.empty((len(previous), len(current)), dtype=np.float64)
     for i, prev in enumerate(previous):
@@ -2210,9 +2214,9 @@ def find_contours(
     RuntimeError
         If the field of view cannot be grown enough to enclose the contours, if
         the contour geometry has not stabilised within
-        ``max_resolution_halvings``, or if refinement converges on a contour set
-        that touches the grid edge (a feature revealed only by refinement that
-        extends beyond ``fov``).
+        ``max_resolution_halvings``, if refinement loses every contour, or if it
+        converges on a contour set that touches the grid edge (a feature revealed
+        only by refinement that extends beyond ``fov``).
 
     Notes
     -----

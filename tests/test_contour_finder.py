@@ -258,10 +258,12 @@ def test_contours_agree_catches_one_bad_contour_among_stable_ones():
     assert not agreed
 
 
-def test_contours_agree_for_two_empty_sets():
+def test_contours_agree_rejects_two_empty_sets():
+    # Refinement only ever reaches an empty set by losing contours it already
+    # had, so "agreeing" here would report a silent empty success.
     agreed, worst = _contours_agree([], [], 1e-3)
-    assert agreed
-    assert worst == 0.0
+    assert not agreed
+    assert worst == float("inf")
 
 
 def _circle_field(a, b):
@@ -468,6 +470,22 @@ def test_find_contours_refinement_error_reports_distance():
     message = str(excinfo.value)
     assert "contour counts 1 then 1" in message
     assert "distance" in message.lower()
+
+
+def test_find_contours_raises_when_refinement_loses_all_contours():
+    # Grids nest under halving, so a real field cannot lose a sign change;
+    # masking can. This stub reproduces the end state either way: a set that
+    # was non-empty in Phase 1 and is empty twice running in refinement. That
+    # must raise rather than return [].
+    def vanishing(a, b):
+        if backend.to_numpy(a).shape[0] > 41:
+            return a**2 + b**2 + 2.0
+        return a**2 + b**2
+
+    with pytest.raises(RuntimeError, match="refin"):
+        find_contours(
+            vanishing, 1.0, fov=4.0, resolution=0.1, max_resolution_halvings=3
+        )
 
 
 def test_find_contours_zero_halvings_rejected():
