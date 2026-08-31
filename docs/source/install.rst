@@ -5,12 +5,17 @@ Installation
 Regular Install
 ---------------
 
-The easiest way to install is to make a new ``Python`` virtual environment (``Python 3.9`` through ``3.12`` are recommended; compatibility with versions ``>=3.13`` is currently untested). Then run::
+The easiest way to install is to make a new ``Python`` virtual environment (``Python >=3.11`` for latest caustics versions). Then run::
 
     pip install caustics
 
 this will install all the required libraries and then install ``caustics`` and you are ready to go! You can check out the tutorials afterwards to see some of ``caustics``' capabilities.
 
+If you want to use ``caustics`` with ``JAX`` you'll also need to install ``jax``. You can do this with::
+
+    pip install jax
+
+Then just set the ``CASKADE_BACKEND`` environment variable to ``jax`` and you are ready to go!
 
 Developer Install
 -----------------
