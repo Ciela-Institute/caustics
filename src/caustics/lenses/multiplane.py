@@ -95,8 +95,6 @@ class Multiplane(ThickLens):
                 if plane_index + 1 < len(lens_planes)
                 else z_s
             )
-            next_is_coplanar = z_next == z_l
-
             # Compute deflection angle at current ray positions
             D_l = self.cosmology.transverse_comoving_distance(z_l)
             D_is = self.cosmology.transverse_comoving_distance_z1z2(z_l, z_s)
@@ -112,33 +110,28 @@ class Multiplane(ThickLens):
             theta_y = theta_y - alpha_y
 
             # The Shapiro coefficient tau_ij * beta_ij simplifies to tau_is.
-            # Computing it directly avoids an inf * 0 indeterminacy for
-            # consecutive lenses at the same redshift.
             if shapiro_time_delay:
                 tau_is = D_l * D_s / (D_is * c_Mpc_s) / days_to_seconds
                 potential = self.lenses[i].potential(x_i, y_i)
                 TD += (-tau_is * arcsec_to_rad**2) * potential
 
-            # Coplanar lenses act at the same ray position. Accumulate all their
-            # deflections and potentials before propagating to the next plane.
-            if next_is_coplanar:
-                continue
-
-            # Propagate rays to the next plane (basically eq 18)
+            # Propagate rays to the next plane (basically eq 18).
             D = self.cosmology.transverse_comoving_distance_z1z2(z_l, z_next)
             D_next = self.cosmology.transverse_comoving_distance(z_next)
-            X_next = X + D * theta_x * arcsec_to_rad
-            Y_next = Y + D * theta_y * arcsec_to_rad
+            X = X + D * theta_x * arcsec_to_rad
+            Y = Y + D * theta_y * arcsec_to_rad
 
             if geometric_time_delay:
-                tau_ij = D_l * D_next / (D * c_Mpc_s) / days_to_seconds
-                x_next = X_next * rad_to_arcsec / D_next
-                y_next = Y_next * rad_to_arcsec / D_next
+                # Zero tau_ij when D == 0 rather than dividing by zero.
+                # A dummy D in the unused branch keeps both JAX paths finite.
+                D_safe = backend.where(D != 0, D, backend.ones_like(D))
+                tau_ij = D_l * D_next / (D_safe * c_Mpc_s) / days_to_seconds
+                tau_ij = backend.where(D != 0, tau_ij, backend.zeros_like(tau_ij))
+                x_next = X * rad_to_arcsec / D_next
+                y_next = Y * rad_to_arcsec / D_next
                 TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (
                     (x_next - x_i) ** 2 + (y_next - y_i) ** 2
                 )
-
-            X, Y = X_next, Y_next
 
         # Convert from physical position to angular position on the source plane
         D_end = self.cosmology.transverse_comoving_distance(z_s)
