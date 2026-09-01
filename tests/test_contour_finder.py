@@ -78,8 +78,13 @@ def test_mask_contours_drops_contour_fully_inside_disc():
 
 
 def test_mask_contours_keeps_contour_with_any_vertex_outside():
-    # radius 1.0 curve against a radius 0.99 mask: every vertex is outside
-    kept = _mask_contours([_circle(1.0)], [(0.0, 0.0)], 0.99)
+    # radius 1.0 circle centred at (0.1, 0.0) versus a radius 1.0 mask at the origin.
+    # The circle's right vertex is at 1.1, so it is not fully contained
+    kept = _mask_contours(
+        contours=[_circle(radius=1.0, centre=(0.1, 0.0))],
+        mask_positions=[(0.0, 0.0)],
+        mask_radius=[1.0],
+    )
     assert len(kept) == 1
 
 
