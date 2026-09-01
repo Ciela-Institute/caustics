@@ -34,7 +34,6 @@ classifiers=[
 dependencies = [
         "astropy>=7.0.0",
         "caskade>=0.15.0",
-        "contourpy>=1.2.0",
         "graphviz>=0.20.1",
         "h5py>=3.8.0",
         "numpy>=1.24,<3",
@@ -62,6 +61,7 @@ dev = [
     "pyro-ppl",
     "emcee",
     "jax",
+    "contourpy>=1.2.0",
 ]
 jax = ["jax>=0.7.0"]
 

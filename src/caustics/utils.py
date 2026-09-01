@@ -5,13 +5,17 @@ from importlib import import_module
 from functools import partial, lru_cache
 
 import numpy as np
-from contourpy import contour_generator
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial import cKDTree
 from scipy.special import roots_legendre
 
 from .constants import rad_to_deg, deg_to_rad
 from .backend_obj import backend, ArrayLike
+
+try:
+    from contourpy import contour_generator
+except ImportError:
+    pass
 
 
 def _import_func_or_class(module_path: str) -> Any:
@@ -2074,6 +2078,14 @@ def _validate_find_contours_args(
     ValueError
         If any argument falls outside the ranges above.
     """
+    try:
+        import contourpy  # noqa: F401
+    except ImportError:
+        raise ImportError(
+            "contourpy is required for find_contours. "
+            "Either install caustics with dev dependencies or separately "
+            "install contourpy with `pip install contourpy`."
+        )
     if fov <= 0:
         raise ValueError(f"fov must be positive (received {fov})")
     if resolution <= 0:
