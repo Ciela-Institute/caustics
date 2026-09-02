@@ -118,7 +118,8 @@ def test_multiplane_time_delay(device):
     )
     lens.to(device=device)
 
-    assert backend.all(backend.isfinite(lens.time_delay(thx, thy, x)))
+    td = lens.time_delay(thx, thy, x)
+    assert backend.all(backend.isfinite(td))
     assert backend.all(
         backend.isfinite(
             lens.time_delay(
@@ -141,6 +142,44 @@ def test_multiplane_time_delay(device):
             )
         )
     )
+
+    # lenstronomy
+    kwargs_ls = []
+    for _xs in xs:
+        e1, e2 = param_util.phi_q2_ellipticity(phi=_xs[4], q=_xs[3])
+        kwargs_ls.append(
+            {
+                "theta_E": _xs[5],
+                "e1": e1,
+                "e2": e2,
+                "center_x": _xs[1],
+                "center_y": _xs[2],
+            }
+        )
+
+    # Use same cosmology. Caustics stores little-h, Astropy wants H0 = 100h.
+    cosmo_ap = FlatLambdaCDM_ap(
+        100 * backend.to_numpy(cosmology.h0.value),
+        backend.to_numpy(cosmology.Om0.value),
+        Tcmb0=0,
+    )
+    lens_ls = LensModel(
+        lens_model_list=["SIE" for _ in range(len(xs))],
+        z_source=z_s.item(),
+        lens_redshift_list=[_xs[0] for _xs in xs],
+        cosmo=cosmo_ap,
+        multi_plane=True,
+    )
+
+    td = backend.to_numpy(td)
+    td = td - np.min(td)
+    td_ls = lens_ls.arrival_time(
+        backend.to_numpy(thx),
+        backend.to_numpy(thy),
+        kwargs_ls,
+    )
+    td_ls = td_ls - np.min(td_ls)
+    assert np.allclose(td, td_ls, rtol=0, atol=5e-4)
 
 
 @pytest.mark.parametrize(
