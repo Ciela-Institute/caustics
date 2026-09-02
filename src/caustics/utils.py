@@ -4,10 +4,18 @@ from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
 from importlib import import_module
 from functools import partial, lru_cache
 
+import numpy as np
+from scipy.optimize import linear_sum_assignment
+from scipy.spatial import cKDTree
 from scipy.special import roots_legendre
 
 from .constants import rad_to_deg, deg_to_rad
 from .backend_obj import backend, ArrayLike
+
+try:
+    from contourpy import contour_generator
+except ImportError:
+    pass
 
 
 def _import_func_or_class(module_path: str) -> Any:
@@ -1659,3 +1667,691 @@ def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=backend.float32, devic
     Z = backend.sum(Z.reshape(ny, upsample, nx, upsample), dim=(1, 3))
 
     return Z / backend.sum(Z)
+
+
+def _extract_contours(f, X, Y, target_value: float) -> list:
+    """
+    Evaluates a scalar field on a grid and extracts its contour lines at a target value.
+
+    The field is cast to float64 before extraction, since contourpy returns
+    vertices in the dtype of the field and `f` may downcast internally even on a
+    float64 grid.
+
+    Parameters
+    ----------
+    f: Callable
+        The scalar field to contour. Called once, as ``f(X, Y)``, and must return
+        an array of the same shape.
+    X: ArrayLike
+        The x-coordinates of the grid.
+
+        *Unit: arcsec*
+
+    Y: ArrayLike
+        The y-coordinates of the grid.
+
+        *Unit: arcsec*
+
+    target_value: float
+        The contour level to extract.
+
+    Returns
+    -------
+    list of ndarray
+        One ``(N, 2)`` float64 array of ``(x, y)`` vertices per contour line,
+        empty if the field does not cross the target value.
+
+        *Unit: arcsec*
+    """
+    z = np.asarray(backend.to_numpy(f(X, Y)), dtype=np.float64)
+    generator = contour_generator(
+        x=np.asarray(backend.to_numpy(X), dtype=np.float64),
+        y=np.asarray(backend.to_numpy(Y), dtype=np.float64),
+        z=z,
+        name="serial",
+        line_type="Separate",
+        quad_as_tri=True,
+    )
+    return generator.lines(float(target_value))
+
+
+def _mask_contours(contours: list, mask_positions, mask_radius) -> list:
+    """
+    Discards contours lying entirely within a masked disc.
+
+    A contour is dropped only when *every* one of its vertices falls inside the
+    disc, so a genuine contour that merely passes nearby survives. The rule is
+    intended for singular components of a lens model: where a singularity lands
+    exactly on a grid point, the field flips sign at that one pixel and an
+    unphysical contour appears, which tracks the grid rather than the physics and
+    so never converges under refinement. That contour is not half a pixel across.
+    The singular value dwarfs its neighbours by so many orders of magnitude that
+    the zero crossing on each incident edge collapses onto the neighbouring grid
+    point, so the artifact traces the ring of eight neighbours and its corner
+    vertices sit a full pixel diagonal, ``resolution * sqrt(2)``, from the centre.
+    The radius is therefore bounded on both sides: below the extent of the
+    smallest genuine contour, which it would otherwise discard, and above the
+    pixel diagonal, below which it catches nothing.
+
+    Parameters
+    ----------
+    contours: list of ndarray
+        The contours to filter, each an ``(N, 2)`` array of ``(x, y)`` vertices.
+
+        *Unit: arcsec*
+
+    mask_positions: Optional[ArrayLike]
+        An ``(M, 2)`` array of positions to mask around. ``None`` or empty
+        returns the input unchanged.
+
+        *Unit: arcsec*
+
+    mask_radius: Optional[ArrayLike]
+        The disc radius, either a scalar applying to every position or one value
+        per position.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    list of ndarray
+        The surviving contours, unchanged and in their original order.
+
+        *Unit: arcsec*
+    """
+    if mask_positions is None or len(mask_positions) == 0:
+        return contours
+
+    positions = np.atleast_2d(np.asarray(mask_positions, dtype=np.float64))
+    radii = np.broadcast_to(
+        np.asarray(mask_radius, dtype=np.float64), (positions.shape[0],)
+    )
+
+    kept = []
+    for contour in contours:
+        inside = False
+        for (px, py), radius in zip(positions, radii):
+            if np.all(np.hypot(contour[:, 0] - px, contour[:, 1] - py) <= radius):
+                inside = True
+                break
+        if not inside:
+            kept.append(contour)
+    return kept
+
+
+def _contours_touch_edge(
+    contours: list, bounds: Tuple[float, float, float, float], atol: float
+) -> bool:
+    """
+    Determines whether any contour runs off the edge of the grid.
+
+    The tolerance is deliberately far tighter than one pixel. A contour leaving
+    the domain terminates on a boundary grid line, so its boundary vertex carries
+    the boundary coordinate bit-for-bit; `atol` only absorbs floating-point noise
+    from grid construction, and must stay tight enough that a genuine interior
+    contour passing near the edge is not flagged.
+
+    Parameters
+    ----------
+    contours: list of ndarray
+        The contours to test, each an ``(N, 2)`` array of ``(x, y)`` vertices.
+
+        *Unit: arcsec*
+
+    bounds: Tuple[float, float, float, float]
+        The grid boundary as ``(x_min, x_max, y_min, y_max)``. All four are
+        tested independently, since a contour may exit through any side.
+
+        *Unit: arcsec*
+
+    atol: float
+        The absolute tolerance for considering a vertex to lie on a boundary.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    bool
+        True if any vertex of any contour lies within `atol` of any boundary.
+    """
+    x_min, x_max, y_min, y_max = bounds
+    for contour in contours:
+        cx, cy = contour[:, 0], contour[:, 1]
+        if (
+            np.any(np.abs(cx - x_min) <= atol)
+            or np.any(np.abs(cx - x_max) <= atol)
+            or np.any(np.abs(cy - y_min) <= atol)
+            or np.any(np.abs(cy - y_max) <= atol)
+        ):
+            return True
+    return False
+
+
+def _point_to_segments(
+    point: np.ndarray, starts: np.ndarray, ends: np.ndarray
+) -> np.ndarray:
+    """
+    Computes the exact distance from a point to each of a set of line segments.
+
+    The projection parameter is clamped to ``[0, 1]`` so the foot of the
+    perpendicular stays on the segment rather than its infinite extension.
+    Degenerate zero-length segments reduce to the distance to their endpoint.
+
+    Parameters
+    ----------
+    point: ndarray
+        The query point, shape ``(2,)``.
+
+        *Unit: arcsec*
+
+    starts: ndarray
+        The segment start points, shape ``(S, 2)``.
+
+        *Unit: arcsec*
+
+    ends: ndarray
+        The segment end points, shape ``(S, 2)``.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    ndarray
+        The distance from `point` to each segment, shape ``(S,)``.
+
+        *Unit: arcsec*
+    """
+    spans = ends - starts
+    lengths_squared = np.einsum("ij,ij->i", spans, spans)
+    lengths_squared = np.where(lengths_squared > 0, lengths_squared, 1.0)
+    fractions = np.einsum("ij,ij->i", point[None, :] - starts, spans) / lengths_squared
+    feet = starts + np.clip(fractions, 0.0, 1.0)[:, None] * spans
+    return np.linalg.norm(point[None, :] - feet, axis=1)
+
+
+def _directed_contour_distance(source: np.ndarray, target: np.ndarray) -> float:
+    """
+    Computes the largest distance from a vertex of one contour to another's polyline.
+
+    The distance is obtained by projecting onto the target's segments, not by
+    sampling them, so it is exact and independent of any tolerance. A KD-tree
+    over the target's vertices serves only to narrow down which segments can
+    matter: for a query point ``p``, let ``d`` be its distance to the nearest
+    target vertex and ``L`` the longest target segment. Any segment whose
+    distance to ``p`` is at most ``d`` must have an endpoint within ``d + L`` of
+    ``p``, since the closest point on a segment lies within ``L`` of either
+    endpoint. Projecting onto just the segments incident to that neighbourhood
+    therefore yields the exact minimum.
+
+    Measuring existing vertices against the opposite polyline, rather than taking
+    a supremum over both curves, is what makes the result insensitive to how
+    densely either contour happens to be sampled.
+
+    Parameters
+    ----------
+    source: ndarray
+        The contour supplying the query vertices, shape ``(M, 2)``.
+
+        *Unit: arcsec*
+
+    target: ndarray
+        The contour treated as a polyline to measure against, shape ``(N, 2)``.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    float
+        The largest distance from any vertex of `source` to the polyline
+        `target`.
+
+        *Unit: arcsec*
+    """
+    if len(target) < 2:
+        return float(cKDTree(target).query(source, k=1)[0].max())
+
+    starts, ends = target[:-1], target[1:]
+    longest_segment = np.linalg.norm(ends - starts, axis=1).max()
+    tree = cKDTree(target)
+    nearest_vertex, _ = tree.query(source, k=1)
+
+    worst = 0.0
+    for point, radius in zip(source, nearest_vertex):
+        vertices = np.asarray(
+            tree.query_ball_point(point, radius + longest_segment), dtype=int
+        )
+        # Vertex j bounds segments j-1 and j.
+        candidates = np.unique(np.concatenate([vertices - 1, vertices]))
+        candidates = candidates[(candidates >= 0) & (candidates < len(starts))]
+        worst = max(
+            worst, _point_to_segments(point, starts[candidates], ends[candidates]).min()
+        )
+    return float(worst)
+
+
+def _contour_distance(a: np.ndarray, b: np.ndarray) -> float:
+    """
+    Computes the symmetric vertex-to-polyline distance between two contours.
+
+    Symmetrised by taking the larger of the two directed distances, since the
+    directed distance alone is not symmetric. Exact, so it carries no tolerance
+    parameter and its cost does not scale with any convergence threshold.
+
+    Parameters
+    ----------
+    a: ndarray
+        The first contour, shape ``(M, 2)``.
+
+        *Unit: arcsec*
+
+    b: ndarray
+        The second contour, shape ``(N, 2)``.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    float
+        The larger of the two directed vertex-to-polyline distances.
+
+        *Unit: arcsec*
+    """
+    return max(_directed_contour_distance(a, b), _directed_contour_distance(b, a))
+
+
+def _contours_agree(
+    previous: list, current: list, tolerance: float
+) -> Tuple[bool, float]:
+    """
+    Decides whether two contour sets agree to within a tolerance.
+
+    Contours are paired by optimal assignment over the full distance cost matrix,
+    which makes the comparison independent of the order the sets arrive in and
+    yields one distance per contour, so a single badly-moving contour cannot hide
+    behind an otherwise stable set. The count check precedes any distance work,
+    since an unequal-length cost matrix is not meaningful.
+
+    Two empty sets do not agree. Refinement starts from a set the field-of-view
+    loop has already found to be non-empty, so it can only arrive at an empty set
+    by losing contours it had; calling that convergence would return an empty
+    result as a success.
+
+    Parameters
+    ----------
+    previous: list of ndarray
+        The earlier contour set, each entry an ``(N, 2)`` array of vertices.
+
+        *Unit: arcsec*
+
+    current: list of ndarray
+        The later contour set, each entry an ``(N, 2)`` array of vertices.
+
+        *Unit: arcsec*
+
+    tolerance: float
+        The threshold every paired distance must fall below for the sets to
+        agree.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    Tuple[bool, float]
+        Whether the sets agree, and the largest paired distance. The distance is
+        infinite when the counts differ and when both sets are empty.
+
+        *Unit: arcsec*
+    """
+    if len(previous) != len(current):
+        return False, float("inf")
+    if len(previous) == 0:
+        return False, float("inf")
+
+    cost = np.empty((len(previous), len(current)), dtype=np.float64)
+    for i, prev in enumerate(previous):
+        for j, cur in enumerate(current):
+            cost[i, j] = _contour_distance(prev, cur)
+
+    rows, cols = linear_sum_assignment(cost)
+    paired = cost[rows, cols]
+    return bool(np.all(paired < tolerance)), float(paired.max())
+
+
+def _validate_find_contours_args(
+    fov,
+    fov_expansion_factor,
+    max_fov_expansions,
+    resolution,
+    max_resolution_halvings,
+    geometry_tolerance,
+    mask_positions,
+    mask_radius,
+):
+    """
+    Validates the arguments of :func:`find_contours`, raising on any bad value.
+
+    Parameters
+    ----------
+    fov: float
+        The initial field of view, which must be positive.
+
+        *Unit: arcsec*
+
+    fov_expansion_factor: float
+        The field-of-view growth factor, which must exceed 1.
+
+        *Unit: unitless*
+
+    max_fov_expansions: int
+        The maximum number of expansions, which must be non-negative.
+
+    resolution: float
+        The initial pixel scale, which must be positive.
+
+        *Unit: arcsec*
+
+    max_resolution_halvings: int
+        The maximum number of pixel-scale halvings, which must be at least 1;
+        zero would return a contour set whose stability was never checked.
+
+    geometry_tolerance: float
+        The convergence threshold, which must be positive.
+
+        *Unit: arcsec*
+
+    mask_positions: Optional[ArrayLike]
+        The positions to mask around, which must be shaped ``(M, 2)`` if given.
+        ``None`` and empty are both accepted and skip the remaining mask checks.
+
+        *Unit: arcsec*
+
+    mask_radius: Optional[ArrayLike]
+        The mask disc radii, required when `mask_positions` is non-empty, and
+        either a scalar or one value per masked position. Every radius must
+        exceed the pixel diagonal ``resolution * sqrt(2)``, the extent of the
+        artifact the mask exists to remove.
+
+        *Unit: arcsec*
+
+    Raises
+    ------
+    ValueError
+        If any argument falls outside the ranges above.
+    """
+    try:
+        import contourpy  # noqa: F401
+    except ImportError:
+        raise ImportError(
+            "contourpy is required for find_contours. "
+            "Either install caustics with dev dependencies or separately "
+            "install contourpy with `pip install contourpy`."
+        )
+    if fov <= 0:
+        raise ValueError(f"fov must be positive (received {fov})")
+    if resolution <= 0:
+        raise ValueError(f"resolution must be positive (received {resolution})")
+    if fov_expansion_factor <= 1:
+        raise ValueError(
+            f"fov_expansion_factor must exceed 1 (received {fov_expansion_factor})"
+        )
+    if max_fov_expansions < 0:
+        raise ValueError(
+            f"max_fov_expansions must be non-negative (received {max_fov_expansions})"
+        )
+    if max_resolution_halvings < 1:
+        raise ValueError(
+            f"max_resolution_halvings must be at least 1 (received {max_resolution_halvings})"
+        )
+    if geometry_tolerance <= 0:
+        raise ValueError(
+            f"geometry_tolerance must be positive (received {geometry_tolerance})"
+        )
+
+    if mask_positions is None:
+        return
+
+    positions = np.atleast_2d(np.asarray(mask_positions, dtype=np.float64))
+    if positions.size == 0:
+        return
+    if positions.shape[1] != 2:
+        raise ValueError(
+            f"mask_positions must have shape (M, 2) (received {positions.shape})"
+        )
+    if mask_radius is None:
+        raise ValueError("mask_radius is required when mask_positions is given")
+
+    radii = np.atleast_1d(np.asarray(mask_radius, dtype=np.float64))
+    if radii.size not in (1, positions.shape[0]):
+        raise ValueError(
+            f"mask_radius must be a scalar or have one value per masked position "
+            f"({positions.shape[0]}); received {radii.size}"
+        )
+    if np.any(radii <= 0):
+        raise ValueError(f"mask_radius must be positive (received {mask_radius})")
+
+    # A singularity on a grid point drives the field so far past its neighbours
+    # that the zero crossing on every incident edge collapses onto the
+    # neighbouring grid point itself, putting the artifact's corner vertices a
+    # full pixel diagonal out. Refinement only shrinks the pixel scale, so the
+    # initial resolution sets the binding floor.
+    floor = resolution * np.sqrt(2)
+    if np.any(radii <= floor):
+        raise ValueError(
+            f"mask_radius must exceed the pixel diagonal "
+            f"resolution*sqrt(2)={floor:.6g} (received {mask_radius}); a smaller "
+            f"radius cannot remove a singularity artifact, whose outermost "
+            f"vertices lie exactly that far from the grid point"
+        )
+
+
+def find_contours(
+    f: Callable,
+    target_value: float,
+    fov: float = 5.0,
+    fov_expansion_factor: float = 2.0,
+    max_fov_expansions: int = 5,
+    resolution: float = 0.1,
+    max_resolution_halvings: int = 8,
+    geometry_tolerance: float = 1e-3,
+    mask_positions: Optional[ArrayLike] = None,
+    mask_radius: Optional[ArrayLike] = None,
+    device=None,
+) -> list[np.ndarray]:
+    """
+    Find contours of a scalar function at a target value, adapting both the field
+    of view and the pixel scale until the result is stable.
+
+    The field of view is grown by ``fov_expansion_factor`` until the target
+    contours are present and fully enclosed by the grid. The pixel scale is then
+    halved repeatedly, at fixed field of view, until two successive contour sets
+    have the same number of contours and every optimally paired contour moves by
+    less than ``geometry_tolerance``.
+
+    Distances between contour sets are point-to-polyline, not point-to-point, so
+    ``geometry_tolerance`` measures how far the curve actually moved rather than
+    how densely it happens to be sampled.
+
+    Parameters
+    ----------
+    f: Callable
+        The scalar field to contour. Called once per grid as ``f(X, Y)`` with the
+        full 2D meshgrid, and must return an array of the same shape.
+
+    target_value: float
+        The contour level to extract.
+
+    fov: float
+        The initial field of view, a square side length centred on the origin.
+
+        *Unit: arcsec*
+
+    fov_expansion_factor: float
+        The factor by which the field of view grows when contours are missing or
+        clipped. Must exceed 1.
+
+        *Unit: unitless*
+
+    max_fov_expansions: int
+        The maximum number of expansions. The initial grid is not counted.
+
+    resolution: float
+        The initial pixel scale.
+
+        *Unit: arcsec*
+
+    max_resolution_halvings: int
+        The maximum number of times the pixel scale is halved.
+
+    geometry_tolerance: float
+        The convergence threshold on contour displacement between successive
+        refinements.
+
+        *Unit: arcsec*
+
+    mask_positions: Optional[ArrayLike]
+        An ``(M, 2)`` array of positions around which contours are discarded. Use
+        this for singular components of a lens model: when a singularity lands
+        exactly on a grid point, the field flips sign at that single pixel and an
+        unphysical contour appears, which never converges under refinement. A
+        contour is discarded only when *every* one of its vertices lies within
+        ``mask_radius`` of a masked position, so a genuine contour passing nearby
+        survives.
+
+        *Unit: arcsec*
+
+    mask_radius: Optional[ArrayLike]
+        The mask disc radius, either a scalar or one value per masked position.
+        Required when ``mask_positions`` is given. Bounded on both sides: it must
+        stay below the extent of the smallest genuine contour, which it would
+        otherwise discard, and must exceed the pixel diagonal
+        ``resolution * sqrt(2)``, since the artifact it targets reaches the
+        diagonal neighbours of the singular grid point. A radius at or below that
+        floor is rejected rather than silently catching nothing.
+
+        *Unit: arcsec*
+
+    device: optional
+        The device on which to build the coordinate grid. Defaults to the backend
+        default.
+
+    Returns
+    -------
+    list of ArrayLike
+        One ``(N, 2)`` float64 numpy array of ``(x, y)`` vertices per contour,
+        taken from the finest grid. The order carries no meaning.
+
+        *Unit: arcsec*
+
+    Raises
+    ------
+    ValueError
+        If any argument is out of range, or ``mask_positions`` is given without a
+        ``mask_radius`` that is positive and above the pixel diagonal.
+
+    RuntimeError
+        If the field of view cannot be grown enough to enclose the contours, if
+        the contour geometry has not stabilised within
+        ``max_resolution_halvings``, if refinement loses every contour, or if it
+        converges on a contour set that touches the grid edge (a feature revealed
+        only by refinement that extends beyond ``fov``).
+
+    Notes
+    -----
+    An empty contour set is always treated as "the field of view is too small",
+    because that cause cannot be distinguished from "the feature is smaller than
+    the pixel scale". Choosing an initial ``resolution`` fine enough to detect
+    the feature at all is the caller's responsibility.
+
+    Contour extraction runs through numpy, so gradients do not propagate through
+    this function.
+
+    Cost scales as the square of the pixel count, and contours with cusps
+    converge at first order rather than second, so they need roughly twice as
+    many halvings per digit of accuracy as smooth contours. Concretely, the pixel
+    scale at which refinement stops goes as ``sqrt(geometry_tolerance)`` for a
+    smooth contour, where the geometry converges at second order, but as
+    ``4 * geometry_tolerance`` at a cusp, where it converges at first order. Real
+    caustics have cusps, so budget for the latter. The tolerance is measured in
+    arcsec of curve displacement either way, and on a smooth contour it
+    overstates the true geometric error by a factor of about four.
+
+    Grid size is bounded only by ``resolution`` and ``max_resolution_halvings``.
+    Refinement holds the field of view fixed and halves the pixel scale, so the
+    final and largest grid is
+    ``npix ~ fov_final * 2 ** max_resolution_halvings / resolution`` on a side,
+    where ``fov_final`` is the field of view expansion settled on. Choose those
+    parameters with the available memory in mind.
+    """
+    _validate_find_contours_args(
+        fov,
+        fov_expansion_factor,
+        max_fov_expansions,
+        resolution,
+        max_resolution_halvings,
+        geometry_tolerance,
+        mask_positions,
+        mask_radius,
+    )
+
+    contours = None
+    touched_edge = False
+    for _ in range(max_fov_expansions + 1):
+        npix = max(int(round(fov / resolution)) + 1, 2)
+        X, Y = meshgrid(resolution, npix, device=device, dtype=backend.float64)
+        candidate = _mask_contours(
+            _extract_contours(f, X, Y, target_value), mask_positions, mask_radius
+        )
+        half_span = resolution * (npix - 1) / 2
+        bounds = (-half_span, half_span, -half_span, half_span)
+        touched_edge = _contours_touch_edge(candidate, bounds, 1e-6 * resolution)
+        if len(candidate) > 0 and not touched_edge:
+            contours = candidate
+            break
+        fov *= fov_expansion_factor
+
+    if contours is None:
+        actual_span = resolution * (npix - 1)
+        reason = (
+            "contours touching the grid edge"
+            if touched_edge
+            else f"no contours at target_value={target_value}"
+        )
+        raise RuntimeError(
+            f"find_contours failed to enclose the contours: after "
+            f"{max_fov_expansions} expansion(s) the grid still produced {reason} "
+            f"(final grid span={actual_span:.6g})."
+        )
+
+    previous = contours
+    worst = float("inf")
+    for _ in range(max_resolution_halvings):
+        resolution /= 2
+        npix = max(int(round(fov / resolution)) + 1, 2)
+        X, Y = meshgrid(resolution, npix, device=device, dtype=backend.float64)
+        current = _mask_contours(
+            _extract_contours(f, X, Y, target_value), mask_positions, mask_radius
+        )
+        agreed, worst = _contours_agree(previous, current, geometry_tolerance)
+        if agreed:
+            half_span = resolution * (npix - 1) / 2
+            if _contours_touch_edge(
+                current,
+                (-half_span, half_span, -half_span, half_span),
+                1e-6 * resolution,
+            ):
+                raise RuntimeError(
+                    f"find_contours refinement converged on a contour set touching the "
+                    f"grid edge at resolution={resolution:.6g} (fov={fov:.6g}); a feature "
+                    f"revealed only by refinement extends beyond the field of view. "
+                    f"Increase fov."
+                )
+            return current
+        previous = current
+
+    raise RuntimeError(
+        f"find_contours refinement failed to converge: after "
+        f"{max_resolution_halvings} resolution halving(s) the contour set still "
+        f"changed (contour counts {len(contours)} then {len(previous)}, largest "
+        f"paired distance {worst:.6g} against "
+        f"geometry_tolerance={geometry_tolerance:.6g})."
+    )

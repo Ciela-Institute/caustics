@@ -61,6 +61,7 @@ dev = [
     "pyro-ppl",
     "emcee",
     "jax",
+    "contourpy>=1.2.0",
 ]
 jax = ["jax>=0.7.0"]
 
