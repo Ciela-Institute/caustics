@@ -7,7 +7,7 @@ from utils import lens_test_helper
 import numpy as np
 
 from caustics.cosmology import FlatLambdaCDM
-from caustics.lenses import SIE, Multiplane, PixelatedConvergence
+from caustics.lenses import SIE, Multiplane, PixelatedConvergence, SinglePlane
 from caustics.utils import meshgrid
 from caustics.backend_obj import backend
 
@@ -118,7 +118,8 @@ def test_multiplane_time_delay(device):
     )
     lens.to(device=device)
 
-    assert backend.all(backend.isfinite(lens.time_delay(thx, thy, x)))
+    td = lens.time_delay(thx, thy, x)
+    assert backend.all(backend.isfinite(td))
     assert backend.all(
         backend.isfinite(
             lens.time_delay(
@@ -141,6 +142,160 @@ def test_multiplane_time_delay(device):
             )
         )
     )
+
+    # lenstronomy
+    kwargs_ls = []
+    for _xs in xs:
+        e1, e2 = param_util.phi_q2_ellipticity(phi=_xs[4], q=_xs[3])
+        kwargs_ls.append(
+            {
+                "theta_E": _xs[5],
+                "e1": e1,
+                "e2": e2,
+                "center_x": _xs[1],
+                "center_y": _xs[2],
+            }
+        )
+
+    # Use same cosmology. Caustics stores little-h, Astropy wants H0 = 100h.
+    cosmo_ap = FlatLambdaCDM_ap(
+        100 * backend.to_numpy(cosmology.h0.value),
+        backend.to_numpy(cosmology.Om0.value),
+        Tcmb0=0,
+    )
+    lens_ls = LensModel(
+        lens_model_list=["SIE" for _ in range(len(xs))],
+        z_source=z_s.item(),
+        lens_redshift_list=[_xs[0] for _xs in xs],
+        cosmo=cosmo_ap,
+        multi_plane=True,
+    )
+
+    td = backend.to_numpy(td)
+    td = td - np.min(td)
+    td_ls = lens_ls.arrival_time(
+        backend.to_numpy(thx),
+        backend.to_numpy(thy),
+        kwargs_ls,
+    )
+    td_ls = td_ls - np.min(td_ls)
+    assert np.allclose(td, td_ls, rtol=0, atol=5e-4)
+
+
+@pytest.mark.parametrize(
+    "shapiro_time_delay,geometric_time_delay",
+    [(True, True), (True, False), (False, True)],
+)
+def test_single_plane_time_delay_equivalence(
+    device, shapiro_time_delay, geometric_time_delay
+):
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    cosmology.to(dtype=backend.float32, device=device)
+    plane = SIE(
+        name="sie",
+        cosmology=cosmology,
+        z_l=0.5,
+        x0=0.1,
+        y0=-0.2,
+        q=0.8,
+        phi=0.3,
+        Rein=0.9,
+    )
+    lens = Multiplane(
+        name="multiplane",
+        cosmology=cosmology,
+        lenses=[plane],
+        z_s=z_s,
+    )
+    lens.to(dtype=backend.float32, device=device)
+    thx, thy = meshgrid(0.05, 10, dtype=backend.float32, device=device)
+
+    expected_bx, expected_by = plane.raytrace(thx, thy)
+    actual_bx, actual_by = lens.raytrace(thx, thy)
+    assert backend.allclose(actual_bx, expected_bx, rtol=1e-4, atol=1e-4)
+    assert backend.allclose(actual_by, expected_by, rtol=1e-4, atol=1e-4)
+
+    expected = plane.time_delay(
+        thx,
+        thy,
+        shapiro_time_delay=shapiro_time_delay,
+        geometric_time_delay=geometric_time_delay,
+    )
+    actual = lens.time_delay(
+        thx,
+        thy,
+        shapiro_time_delay=shapiro_time_delay,
+        geometric_time_delay=geometric_time_delay,
+    )
+
+    assert backend.allclose(actual, expected, rtol=1e-4, atol=1e-4)
+
+
+@pytest.mark.parametrize(
+    "shapiro_time_delay,geometric_time_delay",
+    [(True, True), (True, False), (False, True)],
+)
+def test_coplanar_lenses_time_delay(device, shapiro_time_delay, geometric_time_delay):
+    z_l = 0.5
+    z_s = backend.as_array(1.5, dtype=backend.float32, device=device)
+    cosmology = FlatLambdaCDM(name="cosmo")
+    cosmology.to(dtype=backend.float32, device=device)
+
+    def make_lenses(prefix, lens_redshift):
+        return [
+            SIE(
+                name=f"{prefix}_{i}",
+                cosmology=cosmology,
+                z_l=lens_redshift,
+                x0=x0,
+                y0=y0,
+                q=q,
+                phi=phi,
+                Rein=Rein,
+            )
+            for i, (x0, y0, q, phi, Rein) in enumerate(
+                [(0.1, -0.2, 0.8, 0.3, 0.9), (-0.2, 0.1, 0.7, -0.4, 0.6)]
+            )
+        ]
+
+    expected_lens = SinglePlane(
+        name="singleplane",
+        cosmology=cosmology,
+        lenses=make_lenses("single_sie", None),
+        z_l=z_l,
+        z_s=z_s,
+    )
+    actual_lens = Multiplane(
+        name="multiplane",
+        cosmology=cosmology,
+        lenses=make_lenses("multi_sie", z_l),
+        z_s=z_s,
+    )
+    expected_lens.to(dtype=backend.float32, device=device)
+    actual_lens.to(dtype=backend.float32, device=device)
+    thx, thy = meshgrid(0.05, 10, dtype=backend.float32, device=device)
+
+    expected_bx, expected_by = expected_lens.raytrace(thx, thy)
+    actual_bx, actual_by = actual_lens.raytrace(thx, thy)
+    assert backend.allclose(actual_bx, expected_bx, rtol=1e-4, atol=1e-4)
+    assert backend.allclose(actual_by, expected_by, rtol=1e-4, atol=1e-4)
+
+    expected = expected_lens.time_delay(
+        thx,
+        thy,
+        shapiro_time_delay=shapiro_time_delay,
+        geometric_time_delay=geometric_time_delay,
+    )
+    actual = actual_lens.time_delay(
+        thx,
+        thy,
+        shapiro_time_delay=shapiro_time_delay,
+        geometric_time_delay=geometric_time_delay,
+    )
+
+    assert backend.all(backend.isfinite(actual))
+    assert backend.allclose(actual, expected, rtol=1e-4, atol=1e-4)
 
 
 def test_params(device):

@@ -88,36 +88,50 @@ class Multiplane(ThickLens):
         if shapiro_time_delay or geometric_time_delay:
             TD = backend.zeros_like(x)
 
-        for i in lens_planes:
-            z_next = z_ls[i + 1] if i != lens_planes[-1] else z_s
+        for plane_index, i in enumerate(lens_planes):
+            z_l = z_ls[i]
+            z_next = (
+                z_ls[lens_planes[plane_index + 1]]
+                if plane_index + 1 < len(lens_planes)
+                else z_s
+            )
             # Compute deflection angle at current ray positions
-            D_l = self.cosmology.transverse_comoving_distance(z_ls[i])
-            D = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_next)
-            D_is = self.cosmology.transverse_comoving_distance_z1z2(z_ls[i], z_s)
-            D_next = self.cosmology.transverse_comoving_distance(z_next)
+            D_l = self.cosmology.transverse_comoving_distance(z_l)
+            D_is = self.cosmology.transverse_comoving_distance_z1z2(z_l, z_s)
+            x_i = X * rad_to_arcsec / D_l
+            y_i = Y * rad_to_arcsec / D_l
             alpha_x, alpha_y = self.lenses[i].physical_deflection_angle(
-                X * rad_to_arcsec / D_l,
-                Y * rad_to_arcsec / D_l,
+                x_i,
+                y_i,
             )
 
             # Update angle of rays after passing through lens (sum in eq 18)
             theta_x = theta_x - alpha_x
             theta_y = theta_y - alpha_y
 
-            # Compute time delay
-            tau_ij = (1 + z_ls[i]) * D_l * D_next / (D * c_Mpc_s) / days_to_seconds
+            # The Shapiro coefficient tau_ij * beta_ij simplifies to tau_is.
             if shapiro_time_delay:
-                beta_ij = D * D_s / (D_next * D_is)
-                potential = self.lenses[i].potential(
-                    X * rad_to_arcsec / D_l, Y * rad_to_arcsec / D_l
-                )
-                TD += (-tau_ij * beta_ij * arcsec_to_rad**2) * potential
-            if geometric_time_delay:
-                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (alpha_x**2 + alpha_y**2)
+                tau_is = D_l * D_s / (D_is * c_Mpc_s) / days_to_seconds
+                potential = self.lenses[i].potential(x_i, y_i)
+                TD += (-tau_is * arcsec_to_rad**2) * potential
 
-            # Propagate rays to next plane (basically eq 18)
+            # Propagate rays to the next plane (basically eq 18).
+            D = self.cosmology.transverse_comoving_distance_z1z2(z_l, z_next)
+            D_next = self.cosmology.transverse_comoving_distance(z_next)
             X = X + D * theta_x * arcsec_to_rad
             Y = Y + D * theta_y * arcsec_to_rad
+
+            if geometric_time_delay:
+                # Zero tau_ij when D == 0 rather than dividing by zero.
+                # A dummy D in the unused branch keeps both JAX paths finite.
+                D_safe = backend.where(D != 0, D, backend.ones_like(D))
+                tau_ij = D_l * D_next / (D_safe * c_Mpc_s) / days_to_seconds
+                tau_ij = backend.where(D != 0, tau_ij, backend.zeros_like(tau_ij))
+                x_next = X * rad_to_arcsec / D_next
+                y_next = Y * rad_to_arcsec / D_next
+                TD += (tau_ij * arcsec_to_rad**2 * 0.5) * (
+                    (x_next - x_i) ** 2 + (y_next - y_i) ** 2
+                )
 
         # Convert from physical position to angular position on the source plane
         D_end = self.cosmology.transverse_comoving_distance(z_s)
@@ -259,11 +273,11 @@ class Multiplane(ThickLens):
         This is based on equation 6.22 in Petters et al. 2001.
         For the time delay of a light path from the observer to the source, the following equation is used::
 
-            \\Delta t = \\sum_{i=1}^{N-1} \\tau_{i,i+1} \\left[ \\frac{1}{2} \\left( \\vec{\\alpha}^i \\right)^2 - \\beta_{i,i+1} \\psi^i \\right] \\\\
-            \\tau_{i,j} = (1 + z_i) \\frac{D_i D_{j}}{D_{i,j} c} \\\\
+            \\Delta t = \\sum_{i=1}^{N-1} \\tau_{i,i+1} \\left[ \\frac{1}{2} \\left| \\vec{x}^{i+1} - \\vec{x}^i \\right|^2 - \\beta_{i,i+1} \\psi^i \\right] \\\\
+            \\tau_{i,j} = \\frac{D_i D_{j}}{D_{i,j} c} \\\\
             \\beta_{i,j} = \\frac{D_{i,j} D_s}{D_{j} D_{i,s}} \\\\
 
-        where :math:`\\vec{\\alpha}^i` is the deflection angle at the i-th lens plane,
+        where :math:`\\vec{x}^i` is the angular ray position at the i-th lens plane,
         :math:`\\psi^i` is the lensing potential at the i-th lens plane,
         :math:`D_i` is the comoving distance to the i-th lens plane,
         :math:`D_{i,j}` is the comoving distance between the i-th and j-th lens plane,
