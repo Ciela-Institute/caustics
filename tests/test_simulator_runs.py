@@ -1,13 +1,13 @@
 from io import StringIO
 from math import pi
 
-from caustics.sims import LensSource, Microlens
+from caustics import build_simulator
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
 from caustics.light import Sersic
+from caustics.sims import LensSource, Microlens
 from caustics.utils import gaussian
-from caustics import build_simulator
-from caustics.backend_obj import backend
 
 
 def test_simulator_runs(sim_source, device):

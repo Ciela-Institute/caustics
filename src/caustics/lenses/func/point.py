@@ -1,6 +1,6 @@
 from ...backend_obj import backend
-from ...utils import translate_rotate
 from ...constants import G_over_c2, rad_to_arcsec
+from ...utils import translate_rotate
 
 
 def reduced_deflection_angle_point(x0, y0, Rein, x, y, s=0.0):

@@ -1,8 +1,8 @@
 import numpy as np
 from lenstronomy.Data.pixel_grid import PixelGrid
 
-from caustics.utils import meshgrid
 from caustics.backend_obj import backend
+from caustics.utils import meshgrid
 
 
 def test_meshgrid(device):

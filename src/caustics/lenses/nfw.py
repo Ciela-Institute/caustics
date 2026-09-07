@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
 from ..backend_obj import ArrayLike
-from .base import ThinLens, NameType, CosmologyType, ZType
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 DELTA = 200.0
 
@@ -90,16 +90,16 @@ class NFW(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]], "X coordinate of the lens center", True
+            ArrayLike | float | None, "X coordinate of the lens center", True
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]], "Y coordinate of the lens center", True
+            ArrayLike | float | None, "Y coordinate of the lens center", True
         ] = None,
         mass: Annotated[
-            Optional[Union[ArrayLike, float]], "Mass of the lens", True
+            ArrayLike | float | None, "Mass of the lens", True
         ] = None,
         c: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Concentration parameter of the lens",
             True,
         ] = None,

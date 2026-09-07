@@ -1,11 +1,11 @@
 # mypy: disable-error-code="union-attr"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from .base import Source, NameType
 from ..backend_obj import ArrayLike, backend
 from ..utils import interp2d
+from .base import NameType, Source
 
 __all__ = ("Pixelated",)
 
@@ -51,35 +51,35 @@ class Pixelated(Source):
     def __init__(
         self,
         image: Annotated[
-            Optional[ArrayLike],
+            ArrayLike | None,
             "The source image from which brightness values will be interpolated.",
             True,
             "flux",
         ] = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the source image's center.",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the source image's center.",
             True,
         ] = None,
         pixelscale: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The pixelscale of the source image in the lens plane",
             True,
             "arcsec/pixel",
         ] = None,
         scale: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "A scale factor to multiply by the image",
             True,
             "flux",
         ] = 1.0,
         shape: Annotated[
-            tuple[Optional[int], ...], "The shape of the source image."
+            tuple[int | None, ...], "The shape of the source image."
         ] = (
             None,
             None,

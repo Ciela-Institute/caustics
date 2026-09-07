@@ -1,12 +1,12 @@
 # mypy: disable-error-code="operator,union-attr"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from .base import Source, NameType
-from . import func
 from ..angle_mixin import Angle_Mixin
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
+from . import func
+from .base import NameType, Source
 
 __all__ = ("Sersic",)
 
@@ -72,37 +72,37 @@ class Sersic(Angle_Mixin, Source):
     def __init__(
         self,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the Sersic source's center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the Sersic source's center",
             True,
         ] = None,
         q: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The axis ratio of the Sersic source",
             True,
         ] = None,
         phi: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The orientation of the Sersic source (position angle)",
             True,
         ] = None,
         n: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The Sersic index, which describes the degree of concentration of the source",
             True,
         ] = None,
         Re: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The scale length of the Sersic source",
             True,
         ] = None,
         Ie: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The intensity at the effective radius",
             True,
         ] = None,
@@ -112,10 +112,10 @@ class Sersic(Angle_Mixin, Source):
             "A flag indicating whether to use lenstronomy to compute the value of k.",
         ] = False,
         angle_system: str = "q_phi",
-        e1: Optional[Union[ArrayLike, float]] = None,
-        e2: Optional[Union[ArrayLike, float]] = None,
-        c1: Optional[Union[ArrayLike, float]] = None,
-        c2: Optional[Union[ArrayLike, float]] = None,
+        e1: ArrayLike | float | None = None,
+        e2: ArrayLike | float | None = None,
+        c1: ArrayLike | float | None = None,
+        c2: ArrayLike | float | None = None,
         name: NameType = None,
     ):
         """

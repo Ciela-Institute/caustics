@@ -1,13 +1,12 @@
-from typing import Tuple
 
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 
-__all__ = ("pixel_jacobian", "pixel_magnification", "magnification")
+__all__ = ("magnification", "pixel_jacobian", "pixel_magnification")
 
 
 def pixel_jacobian(
     raytrace, x, y
-) -> Tuple[Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike]]:
+) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
     """Computes the Jacobian matrix of the partial derivatives of the
     image position with respect to the source position
     (:math:`\\partial \beta / \\partial \theta`).  This is done at a

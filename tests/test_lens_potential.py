@@ -96,7 +96,6 @@ def test_lens_potential_vs_deflection(device):
             # PixelatedConvergence potential is defined by bilinear interpolation so it is very imprecise
             assert backend.allclose(phi_ax, ax, rtol=1e-1)
             assert backend.allclose(phi_ay, ay, rtol=1e-1)
-            pass
         else:
             assert backend.allclose(phi_ax, ax, atol=1e-5)
             assert backend.allclose(phi_ay, ay, atol=1e-5)

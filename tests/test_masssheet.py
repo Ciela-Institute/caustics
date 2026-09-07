@@ -1,12 +1,12 @@
 from io import StringIO
 
+import pytest
+
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import MassSheet
-from caustics.utils import meshgrid
 from caustics.sims import build_simulator
-from caustics.backend_obj import backend
-
-import pytest
+from caustics.utils import meshgrid
 
 
 @pytest.mark.parametrize("convergence", [-1.0, 0.0, 1.0])
