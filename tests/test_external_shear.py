@@ -1,15 +1,14 @@
 from io import StringIO
 
 import numpy as np
+import pytest
 from lenstronomy.LensModel.lens_model import LensModel
-
 from utils import lens_test_helper
+
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import ExternalShear
 from caustics.sims import build_simulator
-from caustics.backend_obj import backend
-
-import pytest
 
 
 def test(sim_source, device):

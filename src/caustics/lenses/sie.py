@@ -1,13 +1,13 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Annotated, Literal
+from typing import Annotated, Literal
 from warnings import warn
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from . import func
-from .base import ThinLens, CosmologyType, NameType, ZType
 from ..angle_mixin import Angle_Mixin
 from ..backend_obj import ArrayLike, backend
+from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("SIE",)
 
@@ -81,35 +81,35 @@ class SIE(Angle_Mixin, ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the lens center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the lens center",
             True,
         ] = None,
         q: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The axis ratio of the lens convergence",
             True,
         ] = None,
         phi: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The orientation angle of the lens (position angle)",
             True,
         ] = None,
         Rein: Annotated[
-            Optional[Union[ArrayLike, float]], "The Einstein radius of the lens", True
+            ArrayLike | float | None, "The Einstein radius of the lens", True
         ] = None,
         parametrization: Literal["Rein", "velocity_dispersion"] = "Rein",
-        sigma_v: Optional[Union[ArrayLike, float]] = None,
+        sigma_v: ArrayLike | float | None = None,
         angle_system: str = "q_phi",
-        e1: Optional[Union[ArrayLike, float]] = None,
-        e2: Optional[Union[ArrayLike, float]] = None,
-        c1: Optional[Union[ArrayLike, float]] = None,
-        c2: Optional[Union[ArrayLike, float]] = None,
+        e1: ArrayLike | float | None = None,
+        e2: ArrayLike | float | None = None,
+        c1: ArrayLike | float | None = None,
+        c2: ArrayLike | float | None = None,
         s: Annotated[float, "The core radius of the lens"] = 0.0,
         name: NameType = None,
         **kwargs,

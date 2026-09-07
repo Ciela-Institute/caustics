@@ -1,13 +1,14 @@
 # mypy: disable-error-code="misc", disable-error-code="attr-defined"
-from math import pi, ceil
-from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
+from collections.abc import Callable
+from functools import lru_cache, partial
 from importlib import import_module
-from functools import partial, lru_cache
+from math import ceil, pi
+from typing import Any, Literal
 
 from scipy.special import roots_legendre
 
-from .constants import rad_to_deg, deg_to_rad
-from .backend_obj import backend, ArrayLike
+from .backend_obj import ArrayLike, backend
+from .constants import deg_to_rad, rad_to_deg
 
 
 def _import_func_or_class(module_path: str) -> Any:
@@ -29,7 +30,7 @@ def _import_func_or_class(module_path: str) -> Any:
     return getattr(mod, name)  # type: ignore
 
 
-def _eval_expression(input_string: str) -> Union[int, float]:
+def _eval_expression(input_string: str) -> int | float:
     """
     Evaluates a string expression to create an integer or float
 
@@ -82,7 +83,7 @@ def flip_axis_ratio(q, phi):
     return backend.where(q > 1, 1 / q, q), backend.where(q > 1, phi + pi / 2, phi)
 
 
-def translate_rotate(x, y, x0, y0, phi: Optional[ArrayLike] = None):
+def translate_rotate(x, y, x0, y0, phi: ArrayLike | None = None):
     """
     Translates and rotates the points (x, y) by subtracting (x0, y0)
     and applying rotation angle phi.
@@ -118,7 +119,7 @@ def translate_rotate(x, y, x0, y0, phi: Optional[ArrayLike] = None):
     return xt, yt
 
 
-def derotate(vx, vy, phi: Optional[ArrayLike] = None):
+def derotate(vx, vy, phi: ArrayLike | None = None):
     """
     Applies inverse rotation to the velocity components (vx, vy) using the rotation angle phi.
 
@@ -167,7 +168,7 @@ def to_elliptical(x, y, q: ArrayLike):
 
 def meshgrid(
     pixelscale, nx, ny=None, device=None, dtype=backend.float32
-) -> Tuple[ArrayLike, ArrayLike]:
+) -> tuple[ArrayLike, ArrayLike]:
     """
     Generates a 2D meshgrid based on the provided pixelscale and dimensions.
 
@@ -723,7 +724,7 @@ def quad(
     pixelscale: float,
     X: ArrayLike,
     Y: ArrayLike,
-    args: Tuple = (),
+    args: tuple = (),
     quad_level: int = 3,
 ):
     """
@@ -1324,8 +1325,8 @@ def interp_bicubic(
 def vmap_n(
     func: Callable,
     depth: int = 1,
-    in_dims: Union[int, Tuple] = 0,
-    out_dims: Union[int, Tuple[int, ...]] = 0,
+    in_dims: int | tuple = 0,
+    out_dims: int | tuple[int, ...] = 0,
     randomness: str = "error",
 ) -> Callable:
     """
@@ -1413,9 +1414,9 @@ def _chunk_input(x, k, in_dims, chunk_size):
 def vmap_reduce(
     func: Callable,
     reduce_func: Callable = lambda x: backend.sum(x, dim=0),
-    chunk_size: Optional[int] = None,
-    in_dims: Union[Tuple[int, ...], Dict[str, int]] = (0,),
-    out_dims: Union[int, Tuple[int, ...]] = 0,
+    chunk_size: int | None = None,
+    in_dims: tuple[int, ...] | dict[str, int] = (0,),
+    out_dims: int | tuple[int, ...] = 0,
     **kwargs,
 ) -> Callable:
     """

@@ -1,12 +1,12 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from ..backend_obj import backend, ArrayLike
-from .base import ThinLens, CosmologyType, NameType, ZType
-from . import func
 from ..angle_mixin import Angle_Mixin
+from ..backend_obj import ArrayLike, backend
+from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("EPL",)
 
@@ -94,36 +94,36 @@ class EPL(Angle_Mixin, ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]], "X coordinate of the lens center", True
+            ArrayLike | float | None, "X coordinate of the lens center", True
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]], "Y coordinate of the lens center", True
+            ArrayLike | float | None, "Y coordinate of the lens center", True
         ] = None,
         q: Annotated[
-            Optional[Union[ArrayLike, float]], "Axis ratio of the lens", True
+            ArrayLike | float | None, "Axis ratio of the lens", True
         ] = None,
         phi: Annotated[
-            Optional[Union[ArrayLike, float]], "Position angle of the lens", True
+            ArrayLike | float | None, "Position angle of the lens", True
         ] = None,
         Rein: Annotated[
-            Optional[Union[ArrayLike, float]], "Einstein radius of the lens", True
+            ArrayLike | float | None, "Einstein radius of the lens", True
         ] = None,
         t: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Power law slope (`gamma-1`) of the lens",
             True,
         ] = None,
         angle_system: str = "q_phi",
-        e1: Optional[Union[ArrayLike, float]] = None,
-        e2: Optional[Union[ArrayLike, float]] = None,
-        c1: Optional[Union[ArrayLike, float]] = None,
-        c2: Optional[Union[ArrayLike, float]] = None,
+        e1: ArrayLike | float | None = None,
+        e2: ArrayLike | float | None = None,
+        c1: ArrayLike | float | None = None,
+        c2: ArrayLike | float | None = None,
         s: Annotated[
             float, "Softening length for the elliptical power-law profile"
         ] = 0.0,
         n_iter: Annotated[int, "Number of iterations for the iterative solver"] = 18,
         chunk_size: Annotated[
-            Optional[int], "Number of chunks for the iterative solver"
+            int | None, "Number of chunks for the iterative solver"
         ] = None,
         name: NameType = None,
     ):

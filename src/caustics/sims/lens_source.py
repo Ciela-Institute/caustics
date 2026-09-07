@@ -1,18 +1,18 @@
 # mypy: disable-error-code="union-attr"
+from typing import Annotated, Literal
+
+from caskade import Module, Param, forward
 from scipy.fft import next_fast_len
-from typing import Optional, Annotated, Literal, Union
 
-from caskade import Module, forward, Param
-
-from .simulator import NameType
-from ..utils import (
-    meshgrid,
-    gaussian_quadrature_grid,
-    gaussian_quadrature_integrator,
-)
+from ..backend_obj import ArrayLike, backend
 from ..lenses.base import Lens
 from ..light.base import Source
-from ..backend_obj import backend, ArrayLike
+from ..utils import (
+    gaussian_quadrature_grid,
+    gaussian_quadrature_integrator,
+    meshgrid,
+)
+from .simulator import NameType
 
 __all__ = ("LensSource",)
 
@@ -109,7 +109,7 @@ class LensSource(Module):
           you should still use upsample_factor (if your PSF is supersampled) to
           ensure that everything is sampled at the PSF resolution.
 
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
@@ -122,30 +122,30 @@ class LensSource(Module):
             int, "number of pixels on the x-axis for the sampling grid"
         ],
         lens_light: Annotated[
-            Optional[Source],
+            Source | None,
             "caustics light object which defines the lensing object's light",
         ] = None,
         pixels_y: Annotated[
-            Optional[int], "number of pixels on the y-axis for the sampling grid"
+            int | None, "number of pixels on the y-axis for the sampling grid"
         ] = None,
         upsample_factor: Annotated[int, "Amount of upsampling to model the image"] = 1,
-        quad_level: Annotated[Optional[int], "sub pixel integration resolution"] = None,
+        quad_level: Annotated[int | None, "sub pixel integration resolution"] = None,
         psf_mode: Annotated[
             Literal["fft", "conv2d"], "Mode for convolving psf"
         ] = "fft",
-        psf_shape: Annotated[Optional[tuple[int, ...]], "The shape of the psf"] = None,
+        psf_shape: Annotated[tuple[int, ...] | None, "The shape of the psf"] = None,
         psf: Annotated[
-            Optional[Union[ArrayLike, list]],
+            ArrayLike | list | None,
             "An image to convolve with the scene",
             True,
         ] = [[1.0]],
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "center of the fov for the lens source image",
             True,
         ] = 0.0,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "center of the fov for the lens source image",
             True,
         ] = 0.0,
@@ -336,7 +336,7 @@ class LensSource(Module):
         lens_light: bool = True,
         lens_source: bool = True,
         psf_convolve: bool = True,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ):
         """
         forward function

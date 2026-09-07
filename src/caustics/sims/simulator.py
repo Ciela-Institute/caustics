@@ -1,18 +1,18 @@
 # mypy: disable-error-code="import-untyped,var-annotated"
-from typing import Annotated, Optional, Union, TextIO
 from inspect import signature
+from typing import Annotated, TextIO
 
-from caskade import Module
 import yaml
+from caskade import Module
 
 import caustics
 
 __all__ = ("NameType", "build_simulator")
 
-NameType = Annotated[Optional[str], "Name of the simulator"]
+NameType = Annotated[str | None, "Name of the simulator"]
 
 
-def build_simulator(config: Union[str, TextIO]) -> Module:
+def build_simulator(config: str | TextIO) -> Module:
 
     if isinstance(config, str):
         with open(config, "r") as f:

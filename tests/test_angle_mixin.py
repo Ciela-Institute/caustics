@@ -1,8 +1,8 @@
 import numpy as np
+import pytest
+
 import caustics
 from caustics.backend_obj import backend
-
-import pytest
 
 
 def test_angle_mixin_init():
