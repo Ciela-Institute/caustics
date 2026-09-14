@@ -1,8 +1,8 @@
 from math import pi
 
-from caustics import FlatLambdaCDM, SIE, SinglePlane
-from caustics.utils import meshgrid
+from caustics import SIE, FlatLambdaCDM, SinglePlane
 from caustics.backend_obj import backend
+from caustics.utils import meshgrid
 
 
 def test_singleplane():

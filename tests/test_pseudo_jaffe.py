@@ -1,14 +1,13 @@
 from io import StringIO
 
+import pytest
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PseudoJaffe
 from caustics.sims import build_simulator
-from caustics.backend_obj import backend
-
-import pytest
 
 
 @pytest.mark.parametrize("mass", [1e8, 1e10, 1e12])

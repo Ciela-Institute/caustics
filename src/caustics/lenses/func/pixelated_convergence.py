@@ -1,7 +1,7 @@
 from scipy.fft import next_fast_len
 
 from ...backend_obj import backend
-from ...utils import safe_divide, safe_log, meshgrid, interp2d
+from ...utils import interp2d, meshgrid, safe_divide, safe_log
 
 
 def build_kernels_pixelated_convergence(pixelscale, n_pix):
@@ -219,7 +219,7 @@ def reduced_deflection_angle_pixelated_convergence(
         deflection_angle_maps = _unpad_fft(deflection_angles, n_pix)
     elif convolution_mode == "conv2d":
         convergence_map_flipped = backend.flip(convergence_map, (-1, -2))[None, None]
-        # noqa: E501 F.pad(, ((pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2, (pad - self.n_pix)//2), mode = self.padding_mode)
+
         deflection_angle_maps = (
             backend.conv2d(
                 backend.to(
@@ -230,7 +230,7 @@ def reduced_deflection_angle_pixelated_convergence(
             ).squeeze()
             * _pixelscale_pi
         )
-        # noqa: E501 torch.roll(x, (-self.padding_range * self.ax_kernel.shape[0]//4,-self.padding_range * self.ax_kernel.shape[1]//4), dims = (-2,-1))[..., :self.n_pix, :self.n_pix] #[..., 1:, 1:]
+
     else:
         raise ValueError(f"Invalid convolution mode: {convolution_mode}")
     # Scale is distance from center of image to center of pixel on the edge

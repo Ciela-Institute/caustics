@@ -1,12 +1,12 @@
 # mypy: disable-error-code="index,dict-item"
-from typing import Optional, Annotated, Union
+from typing import Annotated
 
 import numpy as np
-from caskade import forward, Param
+from caskade import Param, forward
 
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..utils import interp_bicubic
-from .base import ThinLens, CosmologyType, NameType, ZType
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("PixelatedPotential",)
 
@@ -25,22 +25,22 @@ class PixelatedPotential(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the center of the grid",
             True,
         ] = backend.make_array(0.0),
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the center of the grid",
             True,
         ] = backend.make_array(0.0),
         potential_map: Annotated[
-            Optional[ArrayLike],
+            ArrayLike | None,
             "A 2D tensor representing the potential map",
             True,
         ] = None,
         shape: Annotated[
-            tuple[Optional[int], ...], "The shape of the potential map"
+            tuple[int | None, ...], "The shape of the potential map"
         ] = (
             None,
             None,
