@@ -1,13 +1,14 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Annotated, Callable
+from collections.abc import Callable
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from ..backend_obj import backend, ArrayLike
-from .base import ThinLens, CosmologyType, NameType, ZType
+from ..backend_obj import ArrayLike, backend
+from .base import CosmologyType, NameType, ThinLens, ZType
 from .func import (
-    physical_deflection_angle_enclosed_mass,
     convergence_enclosed_mass,
+    physical_deflection_angle_enclosed_mass,
     reduced_from_physical_deflection_angle,
 )
 
@@ -37,23 +38,23 @@ class EnclosedMass(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the lens center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the lens center",
             True,
         ] = None,
         q: Annotated[
-            Optional[Union[ArrayLike, float]], "The axis ratio of the lens", True
+            ArrayLike | float | None, "The axis ratio of the lens", True
         ] = None,
         phi: Annotated[
-            Optional[Union[ArrayLike, float]], "The position angle of the lens", True
+            ArrayLike | float | None, "The position angle of the lens", True
         ] = None,
         p: Annotated[
-            Optional[Union[ArrayLike, list[float]]],
+            ArrayLike | list[float] | None,
             "parameters for the enclosed mass function",
             True,
         ] = None,

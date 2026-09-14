@@ -1,7 +1,7 @@
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import PixelatedConvergence, PseudoJaffe
 from caustics.utils import meshgrid
-from caustics.backend_obj import backend
 
 
 def _setup(n_pix, mode, use_next_fast_len, padding="zero", device=None):

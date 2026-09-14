@@ -1,6 +1,6 @@
 from ...backend_obj import backend
-from ...utils import translate_rotate
 from ...constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
+from ...utils import translate_rotate
 
 
 def scale_radius_nfw(critical_density, mass, c, DELTA=200.0):

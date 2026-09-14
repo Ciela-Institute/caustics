@@ -1,16 +1,15 @@
-from typing import List, Tuple
 
 import numpy as np
 from astropy.cosmology import Cosmology as Cosmology_AP
 from astropy.cosmology import FlatLambdaCDM as AstropyFlatLambdaCDM
 from astropy.cosmology import default_cosmology
 
+from caustics.backend_obj import backend
 from caustics.cosmology import Cosmology
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
-from caustics.backend_obj import backend
 
 
-def get_cosmologies() -> List[Tuple[Cosmology, Cosmology_AP]]:
+def get_cosmologies() -> list[tuple[Cosmology, Cosmology_AP]]:
     """
     Gets caustics cosmologies and corresponding astropy ones.
     """

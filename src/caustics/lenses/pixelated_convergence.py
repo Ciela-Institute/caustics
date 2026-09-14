@@ -1,13 +1,13 @@
 # mypy: disable-error-code="index,dict-item"
-from typing import Optional, Annotated, Union, Literal
+from typing import Annotated, Literal
 
 import numpy as np
-from caskade import forward, Param
+from caskade import Param, forward
 
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..utils import interp2d
-from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("PixelatedConvergence",)
 
@@ -26,27 +26,27 @@ class PixelatedConvergence(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the center of the grid",
             True,
         ] = backend.make_array(0.0),
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the center of the grid",
             True,
         ] = backend.make_array(0.0),
         convergence_map: Annotated[
-            Optional[ArrayLike],
+            ArrayLike | None,
             "A 2D tensor representing the convergence map",
             True,
         ] = None,
         scale: Annotated[
-            Optional[ArrayLike],
+            ArrayLike | None,
             "A scale factor to multiply by the convergence map",
             True,
         ] = 1.0,
         shape: Annotated[
-            tuple[Optional[int], ...], "The shape of the convergence map"
+            tuple[int | None, ...], "The shape of the convergence map"
         ] = (
             None,
             None,

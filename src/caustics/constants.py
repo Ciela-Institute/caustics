@@ -4,15 +4,15 @@ from astropy.constants.codata2018 import G as _G_astropy
 from astropy.constants.codata2018 import c as _c_astropy
 
 __all__ = (
-    "rad_to_arcsec",
-    "arcsec_to_rad",
-    "rad_to_deg",
-    "deg_to_rad",
-    "c_km_s",
     "G",
     "G_over_c2",
+    "arcsec_to_rad",
     "c_Mpc_s",
+    "c_km_s",
+    "deg_to_rad",
     "km_to_Mpc",
+    "rad_to_arcsec",
+    "rad_to_deg",
 )
 
 # fmt: off
