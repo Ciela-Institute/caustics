@@ -1,11 +1,11 @@
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from caskade import Module, forward
 
-from .simulator import NameType
+from ..backend_obj import ArrayLike, backend
 from ..lenses.base import Lens
 from ..light.base import Source
-from ..backend_obj import backend, ArrayLike
+from .simulator import NameType
 
 __all__ = ("Microlens",)
 
@@ -42,7 +42,7 @@ class Microlens(Module):
     name: string (default "sim")
         a name for this simulator in the parameter DAG.
 
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
@@ -64,7 +64,7 @@ class Microlens(Module):
         method: Literal["mcmc", "grid"] = "mcmc",
         N_mcmc: int = 10000,
         N_grid: int = 100,
-        key: Optional[ArrayLike] = None,
+        key: ArrayLike | None = None,
     ):
         """Forward pass of the simulator.
 

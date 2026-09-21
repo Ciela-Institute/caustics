@@ -1,12 +1,12 @@
 # mypy: disable-error-code="index,dict-item"
-from typing import Optional, Annotated, Union
+from typing import Annotated
 
 import numpy as np
-from caskade import forward, Param
+from caskade import Param, forward
 
-from .base import ThinLens, CosmologyType, NameType, ZType
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..utils import interp2d
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("PixelatedDeflection",)
 
@@ -25,22 +25,22 @@ class PixelatedDeflection(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the center of the grid",
             True,
         ] = backend.make_array(0.0),
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the center of the grid",
             True,
         ] = backend.make_array(0.0),
         deflection_map: Annotated[
-            Optional[ArrayLike],
+            ArrayLike | None,
             "A 3D tensor (2, nx, ny) representing the reduced deflection angle map",
             True,
         ] = None,
         shape: Annotated[
-            tuple[Optional[int], ...], "The shape of the deflection map"
+            tuple[int | None, ...], "The shape of the deflection map"
         ] = (
             2,
             None,
