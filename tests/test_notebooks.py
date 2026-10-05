@@ -1,8 +1,9 @@
-import platform
 import glob
-import pytest
-import subprocess
 import os
+import platform
+import subprocess
+
+import pytest
 
 from caustics.backend_obj import backend
 

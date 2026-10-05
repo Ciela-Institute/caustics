@@ -2,17 +2,17 @@ import numpy as np
 import pytest
 from astropy.wcs import WCS
 
+from caustics.backend_obj import backend
+from caustics.constants import arcsec_to_deg
 from caustics.utils import (
     meshgrid,
-    pixel_to_world,
-    world_to_pixel,
-    plane_to_world_gnomonic,
-    world_to_plane_gnomonic,
     pixel_to_plane,
+    pixel_to_world,
     plane_to_pixel,
+    plane_to_world_gnomonic,
+    world_to_pixel,
+    world_to_plane_gnomonic,
 )
-from caustics.constants import arcsec_to_deg
-from caustics.backend_obj import backend
 
 _sip_powers = (
     (0, 2),

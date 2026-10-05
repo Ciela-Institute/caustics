@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from ..backend_obj import backend, ArrayLike
-from .base import ThinLens, CosmologyType, NameType, ZType
+from ..backend_obj import ArrayLike, backend
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("Multipole",)
 
@@ -44,24 +44,24 @@ class Multipole(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        m: Annotated[Union[ArrayLike, int, tuple[int]], "The Multipole moment(s) m"],
+        m: Annotated[ArrayLike | int | tuple[int], "The Multipole moment(s) m"],
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the lens center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the lens center",
             True,
         ] = None,
         a_m: Annotated[
-            Optional[Union[ArrayLike, float]], "The amplitude of the multipole", True
+            ArrayLike | float | None, "The amplitude of the multipole", True
         ] = None,
         phi_m: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The orientation angle of the multipole",
             True,
         ] = None,

@@ -1,12 +1,13 @@
 from math import pi
 
-from caustics.sims import LensSource
+import torch
+
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane
 from caustics.light import Sersic
+from caustics.sims import LensSource
 from caustics.utils import gaussian, meshgrid
-from caustics.backend_obj import backend
-import torch
 
 __all__ = ["test"]
 

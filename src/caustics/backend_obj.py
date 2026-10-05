@@ -1,10 +1,10 @@
-import os
 import importlib
+import os
 from collections import namedtuple
 from typing import TypeAlias
 
-import numpy as np
 import caskade as ck
+import numpy as np
 
 ArrayLike: TypeAlias = ck.ArrayLike
 

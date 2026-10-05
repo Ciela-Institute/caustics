@@ -1,16 +1,15 @@
 from io import StringIO
 
-import lenstronomy.Util.param_util as param_util
 import numpy as np
+import pytest
 from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.LightModel.light_model import LightModel
+from lenstronomy.Util import param_util
 
-from caustics.light import Sersic
-from caustics.utils import meshgrid
-from caustics.sims import build_simulator
 from caustics.backend_obj import backend
-
-import pytest
+from caustics.light import Sersic
+from caustics.sims import build_simulator
+from caustics.utils import meshgrid
 
 
 @pytest.mark.parametrize("q", [0.2, 0.7])
