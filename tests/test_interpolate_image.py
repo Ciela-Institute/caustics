@@ -2,9 +2,9 @@ import numpy as np
 import torch
 from scipy.interpolate import RegularGridInterpolator
 
-from caustics.utils import meshgrid, interp2d, interp3d
-from caustics.light import Pixelated
 from caustics.backend_obj import backend
+from caustics.light import Pixelated
+from caustics.utils import interp2d, interp3d, meshgrid
 
 
 def test_random_inbounds(device):

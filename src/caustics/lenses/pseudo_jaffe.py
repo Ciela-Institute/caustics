@@ -1,13 +1,13 @@
 # mypy: disable-error-code="operator,dict-item"
 from math import pi
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..constants import arcsec_to_rad
-from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("PseudoJaffe",)
 
@@ -80,23 +80,23 @@ class PseudoJaffe(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "X coordinate of the center of the lens",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Y coordinate of the center of the lens",
             True,
         ] = None,
         mass: Annotated[
-            Optional[Union[ArrayLike, float]], "Total mass of the lens", True, "Msol"
+            ArrayLike | float | None, "Total mass of the lens", True, "Msol"
         ] = None,
         Rc: Annotated[
-            Optional[Union[ArrayLike, float]], "Core radius of the lens", True, "arcsec"
+            ArrayLike | float | None, "Core radius of the lens", True, "arcsec"
         ] = None,
         Rs: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Scaling radius of the lens",
             True,
             "arcsec",
