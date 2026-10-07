@@ -267,9 +267,9 @@ class ThickLens(Lens):
         """ThickLens objects do not have a reduced deflection angle since the
         distance D_ls is undefined. Instead we define an effective
         reduced deflection angle by simply assuming the relation
-        $\alpha = \theta - \beta$ holds, where $\alpha$ is the
-        effective reduced deflection angle, $\theta$ are the observed
-        angular coordinates, and $\beta$ are the angular coordinates
+        $\\alpha = \\theta - \\beta$ holds, where $\\alpha$ is the
+        effective reduced deflection angle, $\\theta$ are the observed
+        angular coordinates, and $\\beta$ are the angular coordinates
         to the source plane.
 
         Parameters
@@ -889,15 +889,15 @@ class ThinLens(Lens):
         This time delay is induced by the photons traveling through a gravitational potential well (Shapiro time delay) plus the effect of the increased path length that the photons must traverse (geometric time delay).
         The main equation involved here is the following:
 
-        .. math::
-
+        $$
             \\Delta t = \\frac{1 + z_l}{c} \\frac{D_s}{D_l D_{ls}} \\left[ \\frac{1}{2}|\\vec{\\alpha}(\\vec{\\theta})|^2 - \\psi(\\vec{\\theta}) \\right]
+        $$
 
-        where :math:`\\vec{\\alpha}(\\vec{\\theta})` is the deflection angle,
-        :math:`\\psi(\\vec{\\theta})` is the lensing potential,
-        :math:`D_l` is the comoving distance to the lens,
-        :math:`D_s` is the comoving distance to the source,
-        and :math:`D_{ls}` is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
+        where $\\vec{\\alpha}(\\vec{\\theta})$ is the deflection angle,
+        $\\psi(\\vec{\\theta})$ is the lensing potential,
+        $D_l$ is the comoving distance to the lens,
+        $D_s$ is the comoving distance to the source,
+        and $D_{ls}$ is the comoving distance between the lens and the source. In the above equation, the first term is the geometric time delay and the second term is the gravitational time delay.
 
         Parameters
         ----------

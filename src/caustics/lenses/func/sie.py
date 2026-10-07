@@ -6,7 +6,7 @@ from ...constants import c_km_s, rad_to_arcsec
 def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     """
     Calculate the physical deflection angle. For more detail see Keeton 2002
-    equations 34 and 35, although our ``Rein`` is defined as :math:`b/\\sqrt(q)` in
+    equations 34 and 35, although our ``Rein`` is defined as $b/\\sqrt{q}$ in
     Keeton's notation.
 
     Parameters
@@ -84,7 +84,7 @@ def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
 def potential_sie(x0, y0, q, phi, Rein, x, y, s=0.0):
     """
     Compute the lensing potential. For more detail see Keeton 2002
-    equation 33, although our ``Rein`` is defined as :math:`b/\\sqrt(q)` in
+    equation 33, although our ``Rein`` is defined as $b/\\sqrt{q}$ in
     Keeton's notation.
 
     Parameters
