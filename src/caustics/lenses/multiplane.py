@@ -165,7 +165,7 @@ class Multiplane(ThickLens):
         As an initialization we set the physical positions at the first lensing plane to be $\\vec{\\theta}D_{1,0}$ which is just propagation through regular space to the first plane.
         Note that $\\vec{\\alpha}$ is a physical deflection angle. The equation above converts straightforwardly into a recursion formula:
 
-        
+
         $$
           \\vec{x}^{i+1} = \\vec{x}^i + D_{i+1,i}\\vec{\\theta}^{i}
           \\vec{\\theta}^{i+1} = \\vec{\\theta}^{i} -  \\alpha^i(\\vec{x}^{i+1})
