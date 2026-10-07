@@ -10,7 +10,7 @@ def pixel_jacobian(
 ) -> Tuple[Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike]]:
     """Computes the Jacobian matrix of the partial derivatives of the
     image position with respect to the source position
-    (:math:`\\partial \beta / \\partial \theta`).  This is done at a
+    ($\\partial \\beta / \\partial \\theta$).  This is done at a
     single point on the lensing plane.
 
     Parameters
