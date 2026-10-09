@@ -1,5 +1,5 @@
 """
-Refinement on the dyadic lattice, shared by the lens mesh and the magnification map.
+Refinement on the dyadic lattice, shared by the lens mesh and the source mesh of a magnification region.
 
 A ``sample`` callable maps ``(N, 2)`` float64 positions to ``(N, C)``
 float64 values. Every lattice point it is called on is kept in a

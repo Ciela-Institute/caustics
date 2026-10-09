@@ -1,0 +1,314 @@
+"""
+Regions of the source plane between two total magnifications.
+
+:func:`magnification_region` refines a throwaway triangulation of the source
+plane, the source mesh, wherever the boundary of ``{mu_min <= mu_tot <=
+mu_max}`` can run, samples ``mu_tot`` at its vertices from the lens mesh
+alone (:func:`~.magnification._total_magnification`), and traces that
+boundary as the zero sets of ``mu_tot - mu_min`` and ``mu_max - mu_tot``,
+with the tracer of the critical curves. Every size it uses comes from the
+lens mesh: its level-0 cells are the lens mesh's ``init_res`` over the image
+of the fov boundary, and a triangle stops splitting once it is no longer
+than the source-plane images of the leaves at its samples.
+:func:`build_closed_magnification_region` grows the lens mesh, and extends
+the source mesh, until the region is bounded.
+"""
+
+import math
+from typing import NamedTuple
+
+from ....backend_obj import ArrayLike
+from .mesh_backend import mesh_backend
+from .geometry import ROOT_CLASS, is_member, ring_next
+from .lattice import (
+    MAX_KEY,
+    Lattice,
+    depth_floor,
+    initial_triangles,
+    lattice_h0,
+    lattice_init_res,
+    lattice_xy,
+    make_lattice,
+)
+from .refine import add_roots, close, empty_cache, empty_store, refine
+from .lens_mesh import _fov_boundary, inside_fov_image
+from .magnification import _total_magnification, leaf_tables
+
+
+class SourceMesh(NamedTuple):
+    """
+    A refinement of the source plane for one ``(mu_min, mu_max)``, and what an extension resumes from.
+
+    Parameters
+    ----------
+    lattice: Lattice
+        Over a square around the image of the fov boundary.
+    max_level: int
+        The finest level.
+    vertices_ij: ArrayLike
+        ``(V, 2)`` int64 lattice coordinates, in ascending lattice-key order.
+    vertices: ArrayLike
+        ``(V, 2)`` float64 positions.
+
+        *Unit: arcsec*
+    values: ArrayLike
+        ``(V, 2)`` float64 ``mu_tot`` and the lens mesh's local resolution
+        at each vertex (:func:`~.magnification._total_magnification`).
+    leaves: ArrayLike
+        ``(L, 3)`` int64 closed, conforming, positively oriented leaves.
+    leaf_origin: ArrayLike
+        ``(L,)`` int64 origin of each leaf.
+    origin_leaves: ArrayLike
+        ``(N, 3)`` int64 pre-closure leaves.
+    origin_level: ArrayLike
+        ``(N,)`` int64.
+    origin_cls: ArrayLike
+        ``(N,)`` int64.
+    cell_valid: ArrayLike
+        ``(R, R)`` bool per level-0 cell (:func:`_cell_validity`).
+    """
+
+    lattice: Lattice
+    max_level: int
+    vertices_ij: ArrayLike
+    vertices: ArrayLike
+    values: ArrayLike
+    leaves: ArrayLike
+    leaf_origin: ArrayLike
+    origin_leaves: ArrayLike
+    origin_level: ArrayLike
+    origin_cls: ArrayLike
+    cell_valid: ArrayLike
+
+
+def _corner(lat):
+    """The position of lattice point ``(0, 0)``, ``(2,)``."""
+    return lattice_xy(lat, mesh_backend.zeros((2,), dtype=mesh_backend.int64))
+
+
+def _boundary_box(mesh):
+    """The lower and upper corners of the image of ``mesh``'s fov boundary, its finite points only."""
+    poly = mesh.vertices_source[_fov_boundary(mesh)]
+    poly = poly[
+        mesh_backend.flatnonzero(mesh_backend.all(mesh_backend.isfinite(poly), dim=1))
+    ]
+    return mesh_backend.min(poly, dim=0), mesh_backend.max(poly, dim=0)
+
+
+def _key_level_cap(init_res):
+    """The deepest ``max_level`` whose lattice, one level finer, int64 keys hold (:func:`~.lattice.check_lattice_keys`)."""
+    level = 0
+    while ((int(init_res) << (level + 2)) + 1) ** 2 < MAX_KEY:
+        level += 1
+    return level
+
+
+def _source_lattice(mesh, tables):
+    """
+    The source lattice, and its finest level.
+
+    The lattice covers the square around the image of ``mesh``'s fov
+    boundary, centered on it, in the lens mesh's ``init_res`` level-0 cells
+    per axis. The finest level is the first whose triangles are no longer
+    than the smallest positive leaf image, ``tables.size``, capped where
+    int64 keys run out.
+    """
+    lo, hi = _boundary_box(mesh)
+    side = float(mesh_backend.to_numpy(mesh_backend.max(hi - lo)))
+    x0, y0 = mesh_backend.to_numpy(0.5 * (lo + hi)).tolist()
+    init_res = lattice_init_res(mesh.lattice)
+    usable = mesh_backend.isfinite(tables.size) & (tables.size > 0)
+    smallest = mesh_backend.min(mesh_backend.where(usable, tables.size, math.inf))
+    max_level = min(
+        depth_floor(side / init_res, float(mesh_backend.to_numpy(smallest))),
+        _key_level_cap(init_res),
+    )
+    return make_lattice(side, x0, y0, init_res, max_level + 1), max_level
+
+
+def _sampler(mesh, tables):
+    """``(N, 2)`` positions to ``(N, 2)`` float64 ``(mu_tot, size)``, as :func:`~.refine.refine`'s ``sample``."""
+
+    def sample(xy):
+        mu, size = _total_magnification(mesh, tables, xy)
+        return mesh_backend.stack((mu, size), dim=-1)
+
+    return sample
+
+
+def _cells_of_boxes(lo, hi, corner, side, n_cells):
+    """
+    Cells of a grid each box overlaps, an edge it touches included, as flat indices ``i * n_cells + j``.
+
+    The grid has ``n_cells`` square cells of side ``side`` per axis from
+    ``corner``. Boxes are ``(K, 2)`` lower and upper corners; parts outside
+    the grid are dropped.
+    """
+    int64 = mesh_backend.int64
+    device = mesh_backend.device(lo)
+    u = (lo - corner) / side
+    a = mesh_backend.long(mesh_backend.floor(u))
+    # A box whose lower edge lies on a cell line touches the cell below it too.
+    a = a - mesh_backend.long(u == mesh_backend.to(a, dtype=u.dtype))
+    b = mesh_backend.long(mesh_backend.floor((hi - corner) / side))
+    a = mesh_backend.clamp(a, 0, None)
+    b = mesh_backend.clamp(b, None, n_cells - 1)
+    nx = mesh_backend.clamp(b[:, 0] - a[:, 0] + 1, 0, None)
+    ny = mesh_backend.clamp(b[:, 1] - a[:, 1] + 1, 0, None)
+    count = nx * ny
+    box = mesh_backend.repeat(
+        mesh_backend.arange(lo.shape[0], dtype=int64, device=device), count, axis=0
+    )
+    k = mesh_backend.arange(
+        box.shape[0], dtype=int64, device=device
+    ) - mesh_backend.repeat(mesh_backend.cumsum(count, dim=0) - count, count, axis=0)
+    return (a[box, 0] + k // ny[box]) * n_cells + a[box, 1] + k % ny[box]
+
+
+def _cell_validity(mesh, lat):
+    """
+    Which level-0 cells of ``lat`` lie wholly inside the image of ``mesh``'s fov boundary, ``(R, R)`` bool.
+
+    A cell is valid when its four corners pass
+    :func:`~.lens_mesh.inside_fov_image` and no segment of the boundary's
+    image has a bounding box touching it. Corners inside are not enough:
+    the boundary's image need not be convex, and can dent into a cell
+    between them. Every descendant of a cell inherits its validity, so no
+    sample is tested again. A segment with a non-finite end is skipped, as
+    :func:`~.lens_mesh.inside_fov_image` skips it.
+    """
+    int64 = mesh_backend.int64
+    r = lattice_init_res(lat)
+    g = mesh_backend.arange(r + 1, dtype=int64) * (1 << lat.level)
+    gi, gj = mesh_backend.meshgrid(g, g, indexing="ij")
+    corners = lattice_xy(
+        lat, mesh_backend.stack((gi.reshape(-1), gj.reshape(-1)), dim=-1)
+    )
+    inside = inside_fov_image(mesh, corners).reshape(r + 1, r + 1)
+    valid = inside[:-1, :-1] & inside[1:, :-1] & inside[:-1, 1:] & inside[1:, 1:]
+    poly = mesh.vertices_source[_fov_boundary(mesh)]
+    nxt = mesh_backend.roll(poly, -1, 0)
+    lo, hi = mesh_backend.minimum(poly, nxt), mesh_backend.maximum(poly, nxt)
+    finite = mesh_backend.flatnonzero(
+        mesh_backend.all(mesh_backend.isfinite(lo) & mesh_backend.isfinite(hi), dim=1)
+    )
+    cut = _cells_of_boxes(lo[finite], hi[finite], _corner(lat), lattice_h0(lat), r)
+    return mesh_backend.fill_at_indices(valid.reshape(-1), cut, False).reshape(r, r)
+
+
+def _caustic_marks(curves, lat, max_level):
+    """
+    The cells each true caustic marks, as sorted flat cell indices, one array per level ``0 .. max_level - 1``.
+
+    Only the segments between two consecutive crossings of ``det A = 0``
+    (both ``hole == -1``) are caustic: ``mu_tot`` jumps across them.
+    Pseudo-caustics and hole arcs are skipped, as ``mu_tot`` is continuous
+    across them: the image appearing there has ``mu -> 0``. A segment of
+    length ``l`` marks, at every level whose triangles are longer than
+    ``l``, the cells its bounding box touches, so along a caustic a triangle
+    splits until it is no longer than the caustic's own segments.
+    """
+    int64, f64 = mesh_backend.int64, mesh_backend.float64
+    n_points = curves.source.shape[0]
+    if n_points == 0:
+        return [mesh_backend.zeros((0,), dtype=int64) for _ in range(max_level)]
+    curve, nxt = ring_next(curves.offsets, n_points)
+    point = mesh_backend.arange(n_points, dtype=int64)
+    has_next = (point != curves.offsets[1:][curve] - 1) | curves.closed[curve]
+    keep = mesh_backend.flatnonzero(
+        has_next & (curves.hole == -1) & (curves.hole[nxt] == -1)
+    )
+    a = mesh_backend.to(curves.source[keep], dtype=f64)
+    b = mesh_backend.to(curves.source[nxt[keep]], dtype=f64)
+    length = mesh_backend.norm(b - a, dim=-1)
+    lo, hi = mesh_backend.minimum(a, b), mesh_backend.maximum(a, b)
+    h0, r, corner = lattice_h0(lat), lattice_init_res(lat), _corner(lat)
+    marks = []
+    for level in range(max_level):
+        sel = mesh_backend.flatnonzero(length < math.sqrt(2.0) * h0 / 2**level)
+        cells = _cells_of_boxes(lo[sel], hi[sel], corner, h0 / 2**level, r << level)
+        marks.append(mesh_backend.unique(cells))
+    return marks
+
+
+def _straddles(mu6, c):
+    """True where the six samples of a row lie on both sides of ``c``, ``>= c`` counting as above."""
+    above = mu6 >= c
+    return mesh_backend.any(above, dim=1) & mesh_backend.any(~above, dim=1)
+
+
+def _source_split(lat, valid, marks, mu_min, mu_max):
+    """
+    The source mesh's criterion as :func:`~.refine.refine`'s ``split``.
+
+    A triangle splits when its level-0 cell is valid and either the
+    threshold can cross it -- ``mu_tot - mu_min``, or ``mu_tot - mu_max``,
+    changes sign among its six samples -- while it is longer than the
+    smallest leaf image at them; or a caustic marks its cell
+    (:func:`_caustic_marks`) and not every sample exceeds the upper
+    threshold, ``mu_max`` or, without it, ``mu_min``. The second rule
+    catches the strip by a fold where ``mu_tot``, diverging like ``1 /
+    sqrt(d)``, exceeds the threshold although every sample near it is below.
+    """
+    r, h0 = lattice_init_res(lat), lattice_h0(lat)
+    upper = mu_min if mu_max is None else mu_max
+
+    def split(ij, values6, cls, level):
+        mu, size = values6[..., 0], values6[..., 1]
+        corner = mesh_backend.min(ij, dim=1)
+        cell = corner // (1 << lat.level)
+        ok = valid[cell[:, 0], cell[:, 1]]
+        edge = (
+            math.sqrt(2.0) * h0 / mesh_backend.to(2**level, dtype=mesh_backend.float64)
+        )
+        crossed = _straddles(mu, mu_min)
+        if mu_max is not None:
+            crossed = crossed | _straddles(mu, mu_max)
+        coarse = edge > mesh_backend.min(size, dim=1)
+        marked = mesh_backend.zeros_like(ok)
+        for l in mesh_backend.to_numpy(mesh_backend.unique(level)).tolist():
+            rows = mesh_backend.flatnonzero(level == l)
+            at = corner[rows] // (1 << (lat.level - l))
+            marked = mesh_backend.fill_at_indices(
+                marked, rows, is_member(marks[l], at[:, 0] * (r << l) + at[:, 1])
+            )
+        caustic = marked & ~mesh_backend.all(mu > upper, dim=1)
+        return ok & ((crossed & coarse) | caustic)
+
+    return split
+
+
+def _freeze_source(lat, max_level, cache, store, valid):
+    """Close a source refinement into a :class:`SourceMesh`."""
+    used, leaves, leaf_origin, origin, origin_leaves = close(lat, cache, store)
+    ij = cache.ij[used]
+    return SourceMesh(
+        lattice=lat,
+        max_level=max_level,
+        vertices_ij=ij,
+        vertices=lattice_xy(lat, ij),
+        values=cache.values[used],
+        leaves=leaves,
+        leaf_origin=leaf_origin,
+        origin_leaves=origin_leaves,
+        origin_level=store.level[origin],
+        origin_cls=store.cls[origin],
+        cell_valid=valid,
+    )
+
+
+def _source_mesh(mesh, curves, mu_min, mu_max):
+    """The :class:`SourceMesh` of one ``(mu_min, mu_max)``; ``mesh`` and ``curves`` on the build device."""
+    tables = leaf_tables(mesh)
+    lat, max_level = _source_lattice(mesh, tables)
+    sample = _sampler(mesh, tables)
+    valid = _cell_validity(mesh, lat)
+    split = _source_split(
+        lat, valid, _caustic_marks(curves, lat, max_level), mu_min, mu_max
+    )
+    ij, cls = initial_triangles(lattice_init_res(lat), lat.level, ROOT_CLASS)
+    cache, store, rows = add_roots(
+        empty_cache(2), empty_store(), lat, ij, cls, sample, None
+    )
+    cache, store = refine(cache, store, rows, lat, sample, split, max_level, None)
+    return _freeze_source(lat, max_level, cache, store, valid)
