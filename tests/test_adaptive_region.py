@@ -9,6 +9,7 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, ExternalShear, Point, PseudoJaffe, SinglePlane
 from caustics.lenses.func.adaptive import (
     build_closed_lens_mesh,
+    build_closed_magnification_region,
     build_lens_mesh,
     critical_curves_and_caustics,
     magnification_region,
@@ -52,6 +53,7 @@ from adaptive_maps import (
     AFFINE,
     affine,
     affine_jacobian,
+    assert_same,
     broken_where,
     build,
     f64,
@@ -485,3 +487,49 @@ def test_an_extended_source_mesh_bounds_the_region_the_grown_lens_mesh_holds(gro
     )
     assert to_np(region.closed).all()
     assert region.area == pytest.approx(4.0 * math.pi, rel=1e-2)
+
+
+def test_the_closed_build_grows_the_fov_until_the_region_is_bounded():
+    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    mesh, curves, region = build_closed_magnification_region(
+        lens_.raytrace,
+        lens_.jacobian_lens_equation,
+        6.0,
+        16,
+        0.02,
+        1.5,
+        centers=[(0.0, 0.0)],
+    )
+    assert lattice_fov(to_mesh(mesh).lattice) > 6.0
+    assert to_np(region.closed).all()
+    assert region.area == pytest.approx(4.0 * math.pi, rel=1e-2)
+
+
+def test_a_bounded_region_costs_no_extension_beyond_the_closed_lens_mesh():
+    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    args = (lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, 0.02)
+    mesh, curves, region = build_closed_magnification_region(
+        *args, 3.0, centers=[(0.0, 0.0)]
+    )
+    closed_mesh, closed_curves = build_closed_lens_mesh(*args, centers=[(0.0, 0.0)])
+    assert_same(mesh, closed_mesh)
+    assert_same(curves, closed_curves)
+    assert_same(region, magnification_region(closed_mesh, closed_curves, 3.0))
+
+
+def test_the_closed_build_warns_when_no_fov_bounds_the_region():
+    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    with pytest.warns(
+        UserWarning, match="still reaches the edge of the valid source domain"
+    ):
+        _, _, region = build_closed_magnification_region(
+            lens_.raytrace,
+            lens_.jacobian_lens_equation,
+            6.0,
+            16,
+            0.02,
+            0.5,
+            max_iters=1,
+            centers=[(0.0, 0.0)],
+        )
+    assert math.isnan(region.area)

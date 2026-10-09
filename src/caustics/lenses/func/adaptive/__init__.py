@@ -55,12 +55,17 @@ from .lens_mesh import (
 )
 from .images import forward_raytrace
 from .magnification import total_magnification
-from .region import MagnificationRegion, magnification_region
+from .region import (
+    MagnificationRegion,
+    build_closed_magnification_region,
+    magnification_region,
+)
 
 __all__ = (
     "build_lens_mesh",
     "extend_lens_mesh",
     "build_closed_lens_mesh",
+    "build_closed_magnification_region",
     "forward_raytrace",
     "total_magnification",
     "magnification_region",

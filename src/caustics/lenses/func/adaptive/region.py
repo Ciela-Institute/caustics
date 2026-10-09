@@ -16,6 +16,7 @@ the source mesh, until the region is bounded.
 
 import math
 from typing import NamedTuple
+from warnings import warn
 
 from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
@@ -51,8 +52,18 @@ from .refine import (
     empty_store,
     refine,
 )
-from .lens_mesh import _fov_boundary, inside_fov_image
-from .curves import chain_segments, edge_zeros, triangle_segments
+from .lens_mesh import (
+    _build_closed_lens_mesh,
+    _extend_lens_mesh,
+    _fov_boundary,
+    inside_fov_image,
+)
+from .curves import (
+    _critical_curves_and_caustics,
+    chain_segments,
+    edge_zeros,
+    triangle_segments,
+)
 from .magnification import _total_magnification, leaf_tables
 
 
@@ -584,3 +595,131 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
         cache, store, untested, lat, sample, split, src.max_level, None
     )
     return _freeze_source(lat, src.max_level, cache, store, valid)
+
+
+def build_closed_magnification_region(
+    raytrace,
+    jacobian,
+    fov,
+    init_res,
+    min_img_sep,
+    mu_min,
+    mu_max=None,
+    max_depth=25,
+    *,
+    growth=1.5,
+    max_iters=10,
+    x0=0.0,
+    y0=0.0,
+    centers=None,
+    device=None,
+    batch_size=None,
+):
+    """
+    Build a closed lens mesh, then grow its fov until the region ``mu_min <= mu_tot <= mu_max`` is bounded.
+
+    :func:`~.lens_mesh.build_closed_lens_mesh` runs first, unchanged. Then,
+    while the region reaches outside the valid cells of its source mesh
+    (:func:`magnification_region`), and fewer than ``max_iters`` further
+    extensions have run, :func:`~.lens_mesh.extend_lens_mesh` grows the fov
+    by ``growth``, and the source mesh is extended over the new image of
+    the fov boundary rather than built again. When ``mu_min`` is at or
+    below the far-field ``mu_tot``, no fov bounds the region.
+
+    Parameters
+    ----------
+    raytrace, jacobian, fov, init_res, min_img_sep, max_depth, x0, y0, centers, device, batch_size:
+        As for :func:`~.lens_mesh.build_lens_mesh`.
+    mu_min, mu_max:
+        As for :func:`magnification_region`.
+    growth: float
+        Factor each extension asks to multiply the fov by.
+    max_iters: int
+        Most extensions to run in each of the two loops.
+
+    Returns
+    -------
+    mesh: LensMesh
+    curves: CriticalCurvesAndCaustics
+        The last mesh's.
+    region: MagnificationRegion
+    """
+    mesh, curves, region = _build_closed_magnification_region(
+        raytrace,
+        jacobian,
+        to_mesh(fov),
+        to_mesh(init_res),
+        to_mesh(min_img_sep),
+        float(mu_min),
+        None if mu_max is None else float(mu_max),
+        to_mesh(max_depth),
+        growth=to_mesh(growth),
+        max_iters=max_iters,
+        x0=to_mesh(x0),
+        y0=to_mesh(y0),
+        centers=to_mesh(centers),
+        device=device,
+        batch_size=batch_size,
+    )
+    return to_user(mesh, device), to_user(curves, device), to_user(region, device)
+
+
+def _build_closed_magnification_region(
+    raytrace,
+    jacobian,
+    fov,
+    init_res,
+    min_img_sep,
+    mu_min,
+    mu_max,
+    max_depth,
+    *,
+    growth,
+    max_iters,
+    x0,
+    y0,
+    centers,
+    device,
+    batch_size,
+):
+    """:func:`build_closed_magnification_region` on ``mesh_backend`` arrays, on the build device."""
+    mesh, curves = _build_closed_lens_mesh(
+        raytrace,
+        jacobian,
+        fov,
+        init_res,
+        min_img_sep,
+        max_depth,
+        growth=growth,
+        max_iters=max_iters,
+        x0=x0,
+        y0=y0,
+        centers=centers,
+        device=device,
+        batch_size=batch_size,
+    )
+    src = _source_mesh(mesh, curves, mu_min, mu_max)
+    region = _region(src, mu_min, mu_max)
+    for _ in range(max_iters):
+        if not math.isnan(region.area):
+            break
+        mesh = _extend_lens_mesh(
+            mesh,
+            raytrace,
+            jacobian,
+            growth * lattice_fov(mesh.lattice),
+            device=device,
+            batch_size=batch_size,
+        )
+        curves = _critical_curves_and_caustics(mesh)
+        src = _extend_source_mesh(src, mesh, curves, mu_min, mu_max)
+        region = _region(src, mu_min, mu_max)
+    if math.isnan(region.area):
+        warn(
+            f"The region still reaches the edge of the valid source domain after "
+            f"{max_iters} extension(s), at fov={lattice_fov(mesh.lattice):g}; raise "
+            "max_iters or growth to grow it further. No fov bounds a region whose "
+            "mu_min is at or below the far-field total magnification.",
+            stacklevel=3,
+        )
+    return mesh, curves, region
