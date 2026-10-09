@@ -98,6 +98,9 @@ class SourceMesh(NamedTuple):
         ``(N,)`` int64.
     cell_valid: ArrayLike
         ``(R, R)`` bool per level-0 cell (:func:`_cell_validity`).
+    cell_caustic: ArrayLike
+        ``(R, R)`` bool per level-0 cell, True where a true caustic touches
+        it (:func:`_caustic_cells`).
     """
 
     lattice: Lattice
@@ -111,6 +114,7 @@ class SourceMesh(NamedTuple):
     origin_level: ArrayLike
     origin_cls: ArrayLike
     cell_valid: ArrayLike
+    cell_caustic: ArrayLike
 
 
 def _corner(lat):
@@ -228,22 +232,20 @@ def _cell_validity(mesh, lat):
     return mesh_backend.fill_at_indices(valid.reshape(-1), cut, False).reshape(r, r)
 
 
-def _caustic_marks(curves, lat, max_level):
+def _caustic_segments(curves):
     """
-    The cells each true caustic marks, as sorted flat cell indices, one array per level ``0 .. max_level - 1``.
+    The true caustic segments of ``curves``: their bounding boxes' lower and upper corners, ``(K, 2)`` each, and their lengths, ``(K,)``.
 
     Only the segments between two consecutive crossings of ``det A = 0``
     (both ``hole == -1``) are caustic: ``mu_tot`` jumps across them.
     Pseudo-caustics and hole arcs are skipped, as ``mu_tot`` is continuous
-    across them: the image appearing there has ``mu -> 0``. A segment of
-    length ``l`` marks, at every level whose triangles are longer than
-    ``l``, the cells its bounding box touches, so along a caustic a triangle
-    splits until it is no longer than the caustic's own segments.
+    across them: the image appearing there has ``mu -> 0``.
     """
     int64, f64 = mesh_backend.int64, mesh_backend.float64
     n_points = curves.source.shape[0]
     if n_points == 0:
-        return [mesh_backend.zeros((0,), dtype=int64) for _ in range(max_level)]
+        empty = mesh_backend.zeros((0, 2), dtype=f64)
+        return empty, empty, mesh_backend.zeros((0,), dtype=f64)
     curve, nxt = ring_next(curves.offsets, n_points)
     point = mesh_backend.arange(n_points, dtype=int64)
     has_next = (point != curves.offsets[1:][curve] - 1) | curves.closed[curve]
@@ -252,8 +254,32 @@ def _caustic_marks(curves, lat, max_level):
     )
     a = mesh_backend.to(curves.source[keep], dtype=f64)
     b = mesh_backend.to(curves.source[nxt[keep]], dtype=f64)
-    length = mesh_backend.norm(b - a, dim=-1)
-    lo, hi = mesh_backend.minimum(a, b), mesh_backend.maximum(a, b)
+    return (
+        mesh_backend.minimum(a, b),
+        mesh_backend.maximum(a, b),
+        mesh_backend.norm(b - a, dim=-1),
+    )
+
+
+def _caustic_cells(curves, lat):
+    """True at the level-0 cells of ``lat`` a true caustic segment's bounding box touches, ``(R, R)`` bool."""
+    lo, hi, _ = _caustic_segments(curves)
+    r = lattice_init_res(lat)
+    cells = _cells_of_boxes(lo, hi, _corner(lat), lattice_h0(lat), r)
+    marked = mesh_backend.zeros((r * r,), dtype=mesh_backend.bool)
+    return mesh_backend.fill_at_indices(marked, cells, True).reshape(r, r)
+
+
+def _caustic_marks(curves, lat, max_level):
+    """
+    The cells each true caustic (:func:`_caustic_segments`) marks, as sorted flat cell indices, one array per level ``0 .. max_level - 1``.
+
+    A segment of length ``l`` marks, at every level whose triangles are
+    longer than ``l``, the cells its bounding box touches, so along a
+    caustic a triangle splits until it is no longer than the caustic's own
+    segments.
+    """
+    lo, hi, length = _caustic_segments(curves)
     h0, r, corner = lattice_h0(lat), lattice_init_res(lat), _corner(lat)
     marks = []
     for level in range(max_level):
@@ -310,7 +336,7 @@ def _source_split(lat, valid, marks, mu_min, mu_max):
     return split
 
 
-def _freeze_source(lat, max_level, cache, store, valid):
+def _freeze_source(lat, max_level, cache, store, valid, caustic):
     """Close a source refinement into a :class:`SourceMesh`."""
     used, leaves, leaf_origin, origin, origin_leaves = close(lat, cache, store)
     ij = cache.ij[used]
@@ -326,6 +352,7 @@ def _freeze_source(lat, max_level, cache, store, valid):
         origin_level=store.level[origin],
         origin_cls=store.cls[origin],
         cell_valid=valid,
+        cell_caustic=caustic,
     )
 
 
@@ -343,7 +370,8 @@ def _source_mesh(mesh, curves, mu_min, mu_max):
         empty_cache(2), empty_store(), lat, ij, cls, sample, None
     )
     cache, store = refine(cache, store, rows, lat, sample, split, max_level, None)
-    return _freeze_source(lat, max_level, cache, store, valid)
+    caustic = _caustic_cells(curves, lat)
+    return _freeze_source(lat, max_level, cache, store, valid, caustic)
 
 
 class MagnificationRegion(NamedTuple):
@@ -389,11 +417,16 @@ class MagnificationRegion(NamedTuple):
     mu_max: float
 
 
-def _leaf_valid(src):
-    """True where a source leaf's level-0 cell is valid, ``(L,)``."""
-    cell = mesh_backend.min(src.vertices_ij[src.leaves], dim=1) // (
+def _leaf_cell(src):
+    """The level-0 cell of each source leaf: the lower corner of its lattice bounding box at level 0, ``(L, 2)``."""
+    return mesh_backend.min(src.vertices_ij[src.leaves], dim=1) // (
         1 << src.lattice.level
     )
+
+
+def _leaf_valid(src):
+    """True where a source leaf's level-0 cell is valid, ``(L,)``."""
+    cell = _leaf_cell(src)
     return src.cell_valid[cell[:, 0], cell[:, 1]]
 
 
@@ -421,18 +454,24 @@ def _region(src, mu_min, mu_max):
     The :class:`MagnificationRegion` a source mesh holds.
 
     Contours are traced over the leaves of valid cells only, so one reaching
-    an invalid cell ends there, open. The region is bounded when no vertex
-    of an invalid leaf lies in it, so that it lies wholly in the valid
-    cells; this also covers a region with no contour at all, such as one
-    whose ``mu_min`` is at or below the far-field ``mu_tot``. Its area is
-    then the sum of its contours' signed shoelace areas (Green's theorem),
-    exactly the area of the region of the source mesh's piecewise-linear
-    field; otherwise NaN.
+    an invalid cell ends there, open. The region is bounded when it meets no
+    invalid leaf, so that it lies wholly in the valid cells: a linear field
+    meets ``[mu_min, mu_max]`` on a triangle exactly when its vertices'
+    extremes straddle the interval, which also covers a region with no
+    contour at all, such as one whose ``mu_min`` is at or below the
+    far-field ``mu_tot``. Invalid cells are never refined, so by a fold,
+    where ``mu_tot`` diverges between samples, an invalid leaf whose cell a
+    caustic touches meets the region unless every one of its vertices
+    exceeds the upper threshold, as :func:`_source_split` reasons. An open
+    contour means the same. The area is then the sum of the contours'
+    signed shoelace areas (Green's theorem), exactly the area of the region
+    of the source mesh's piecewise-linear field; otherwise NaN.
     """
     f64 = mesh_backend.float64
     mu = src.values[:, 0]
     upper = math.inf if mu_max is None else float(mu_max)
-    leaf_valid = _leaf_valid(src)
+    cell = _leaf_cell(src)
+    leaf_valid = src.cell_valid[cell[:, 0], cell[:, 1]]
     fields = [(mu - mu_min, mu_min)]
     if mu_max is not None:
         fields.append((mu_max - mu, upper))
@@ -449,11 +488,17 @@ def _region(src, mu_min, mu_max):
         ],
         dim=0,
     )
-    invalid = src.leaves[mesh_backend.flatnonzero(~leaf_valid)].reshape(-1)
-    in_invalid = mesh_backend.fill_at_indices(
-        mesh_backend.zeros((mu.shape[0],), dtype=mesh_backend.bool), invalid, True
+    out = mesh_backend.flatnonzero(~leaf_valid)
+    mu3 = mu[src.leaves[out]]
+    meets = (mesh_backend.max(mu3, dim=1) >= mu_min) & (
+        mesh_backend.min(mu3, dim=1) <= upper
     )
-    reaches = bool(mesh_backend.any(in_invalid & (mu >= mu_min) & (mu <= upper)))
+    by_caustic = src.cell_caustic[cell[out, 0], cell[out, 1]] & ~mesh_backend.all(
+        mu3 > upper, dim=1
+    )
+    reaches = bool(mesh_backend.any(meets | by_caustic)) or not bool(
+        mesh_backend.all(closed)
+    )
     return MagnificationRegion(
         source=points,
         offsets=offsets,
@@ -594,7 +639,8 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
     cache, store = refine(
         cache, store, untested, lat, sample, split, src.max_level, None
     )
-    return _freeze_source(lat, src.max_level, cache, store, valid)
+    caustic = _caustic_cells(curves, lat)
+    return _freeze_source(lat, src.max_level, cache, store, valid, caustic)
 
 
 def build_closed_magnification_region(

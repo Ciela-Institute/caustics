@@ -43,6 +43,7 @@ from caustics.lenses.func.adaptive.region import (
     _caustic_marks,
     _cell_validity,
     _extend_source_mesh,
+    _leaf_valid,
     _region,
     _sampler,
     _source_lattice,
@@ -343,6 +344,38 @@ def test_a_region_inside_cells_the_broken_boundary_leaves_invalid_has_nan_area()
     assert math.isnan(
         magnification_region(mesh, critical_curves_and_caustics(mesh), 3.0).area
     )
+
+
+def test_a_region_crossing_an_invalid_leaf_between_its_vertices_has_nan_area(point):
+    """A caustic's jump can straddle both thresholds along one edge of an invalid leaf."""
+    mesh, curves = point
+    src = _source_mesh(mesh, curves, 3.0, 10.0)
+    assert math.isfinite(_region(src, 3.0, 10.0).area)
+    valid, leaves = to_np(_leaf_valid(src)), to_np(src.leaves)
+    in_valid = np.zeros(src.vertices.shape[0], dtype=bool)
+    in_valid[leaves[valid].ravel()] = True
+    a, b = next(
+        (tri[i], tri[(i + 1) % 3])
+        for tri in leaves[~valid]
+        for i in range(3)
+        if in_valid[tri[i]] and in_valid[tri[(i + 1) % 3]]
+    )
+    values = to_np(src.values).copy()
+    values[a, 0], values[b, 0] = 0.0, 100.0
+    region = _region(src._replace(values=f64(values)), 3.0, 10.0)
+    assert not to_np(region.closed).all()
+    assert math.isnan(region.area)
+
+
+def test_a_strip_by_a_caustic_in_invalid_cells_leaves_the_area_unknown():
+    """At fov 4 the cored sphere's radial caustic, radius about 0.66, lies in the invalid cells
+    round the small image of the fov boundary, which are never refined, so no vertex sees the
+    strip of mu_tot >= 30 along its bright side."""
+    mesh = _user_mesh(
+        sie_like, sie_like_jacobian, fov=4.0, init_res=8, min_img_sep=0.05
+    )
+    region = magnification_region(mesh, critical_curves_and_caustics(mesh), 30.0)
+    assert math.isnan(region.area)
 
 
 COSMO = FlatLambdaCDM(name="cosmo")
