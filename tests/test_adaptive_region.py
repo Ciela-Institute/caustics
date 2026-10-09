@@ -5,8 +5,14 @@ import math
 import numpy as np
 import pytest
 
+from caustics.cosmology import FlatLambdaCDM
+from caustics.lenses import SIE, ExternalShear, Point, PseudoJaffe, SinglePlane
 from caustics.lenses.func.adaptive import (
+    build_closed_lens_mesh,
     build_lens_mesh,
+    critical_curves_and_caustics,
+    magnification_region,
+    total_magnification,
 )
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
 from caustics.lenses.func.adaptive.geometry import ROOT_SHAPES
@@ -39,6 +45,10 @@ from caustics.lenses.func.adaptive.region import (
     _source_split,
 )
 from adaptive_maps import (
+    AFFINE,
+    affine,
+    affine_jacobian,
+    broken_where,
     build,
     f64,
     i64,
@@ -244,3 +254,170 @@ def test_source_vertices_carry_mu_tot_and_cost_no_lens_call():
     mu, size = _total_magnification(mesh, leaf_tables(mesh), src.vertices)
     np.testing.assert_array_equal(to_np(src.values[:, 0]), to_np(mu))
     np.testing.assert_array_equal(to_np(src.values[:, 1]), to_np(size))
+
+
+def _user_mesh(fn, jac, fov=6.0, init_res=16, min_img_sep=0.02, **kw):
+    lens_, _ = numpy_lens(fn, jac)
+    return build_lens_mesh(
+        lens_.raytrace, lens_.jacobian_lens_equation, fov, init_res, min_img_sep, **kw
+    )
+
+
+def _signed_areas(region):
+    points, offsets = to_np(region.source), to_np(region.offsets)
+    areas = []
+    for lo, hi in zip(offsets[:-1], offsets[1:]):
+        p = points[lo:hi]
+        q = np.roll(p, -1, axis=0)
+        areas.append(0.5 * np.sum(p[:, 0] * q[:, 1] - q[:, 0] * p[:, 1]))
+    return np.array(areas)
+
+
+@pytest.mark.parametrize(
+    "fn, jac, mu_min, radius",
+    [
+        (sis_raytrace, sis_jacobian, 3.0, 2.0 / 3.0),
+        (sis_raytrace, sis_jacobian, 2.5, 0.8),
+        (point_raytrace, point_jacobian, 3.0, point_radius(3.0)),
+        (point_raytrace, point_jacobian, 1.5, point_radius(1.5)),
+    ],
+    ids=["sis-inside", "sis-across-pseudo-caustic", "point-3", "point-1.5"],
+)
+def test_the_region_of_an_axisymmetric_lens_is_its_analytic_disk(
+    fn, jac, mu_min, radius
+):
+    mesh = _user_mesh(fn, jac)
+    region = magnification_region(mesh, critical_curves_and_caustics(mesh), mu_min)
+    assert to_np(region.closed).tolist() == [True]
+    assert region.area == pytest.approx(math.pi * radius**2, rel=1e-2)
+    assert np.abs(np.linalg.norm(to_np(region.source), axis=1) - radius).max() < 2e-2
+    assert (region.mu_min, region.mu_max) == (mu_min, math.inf)
+    assert to_np(region.level).tolist() == [mu_min]
+
+
+def test_mu_max_cuts_a_hole_whose_contour_runs_clockwise():
+    mesh = _user_mesh(point_raytrace, point_jacobian)
+    region = magnification_region(mesh, critical_curves_and_caustics(mesh), 1.5, 3.0)
+    want = math.pi * (point_radius(1.5) ** 2 - point_radius(3.0) ** 2)
+    assert region.area == pytest.approx(want, rel=2e-2)
+    assert to_np(region.level).tolist() == [1.5, 3.0]
+    outer, hole = _signed_areas(region)
+    assert outer > 0 > hole
+    assert region.area == pytest.approx(outer + hole, rel=1e-12)
+
+
+def test_a_region_reaching_past_the_valid_cells_has_nan_area_and_open_contours():
+    """At fov 6 the SIS boundary's image has a radius of about 2, the disk's own."""
+    mesh = _user_mesh(sis_raytrace, sis_jacobian)
+    region = magnification_region(mesh, critical_curves_and_caustics(mesh), 1.5)
+    assert math.isnan(region.area)
+    assert not to_np(region.closed).all()
+
+
+def test_a_threshold_below_the_far_field_magnification_bounds_nothing():
+    mesh = _user_mesh(sis_raytrace, sis_jacobian)
+    region = magnification_region(mesh, critical_curves_and_caustics(mesh), 0.5)
+    assert math.isnan(region.area)
+    assert to_np(region.offsets).tolist() == [0]
+
+
+def test_a_lens_of_constant_magnification_gives_an_empty_or_an_unbounded_region():
+    mesh = _user_mesh(affine, affine_jacobian, fov=4.0, init_res=4, min_img_sep=0.25)
+    curves = critical_curves_and_caustics(mesh)
+    mu = 1.0 / abs(np.linalg.det(AFFINE))
+    above = magnification_region(mesh, curves, 1.1 * mu)
+    assert above.area == 0.0 and to_np(above.offsets).tolist() == [0]
+    assert math.isnan(magnification_region(mesh, curves, 0.9 * mu).area)
+
+
+def test_a_region_inside_cells_the_broken_boundary_leaves_invalid_has_nan_area():
+    """The lens is not finite on the fov's right side, so the boundary's image has a gap."""
+    fn, jac = broken_where(sie_like, sie_like_jacobian, lambda p: p[:, 0] > 1.8)
+    mesh = _user_mesh(fn, jac, fov=4.0, init_res=8, min_img_sep=0.05)
+    assert math.isnan(
+        magnification_region(mesh, critical_curves_and_caustics(mesh), 3.0).area
+    )
+
+
+COSMO = FlatLambdaCDM(name="cosmo")
+
+
+def _plane(main, g1, g2):
+    shear = ExternalShear(
+        name="shear",
+        cosmology=COSMO,
+        z_l=0.5,
+        z_s=1.5,
+        x0=0.0,
+        y0=0.0,
+        gamma_1=g1,
+        gamma_2=g2,
+    )
+    return SinglePlane(
+        name="plane", cosmology=COSMO, lenses=(main, shear), z_l=0.5, z_s=1.5
+    )
+
+
+def _fold_lens(name):
+    """A lens with fold caustics: the lens, its centers and a fov its curves close in."""
+    if name == "sie+shear":
+        main = SIE(
+            name="sie",
+            cosmology=COSMO,
+            z_l=0.5,
+            z_s=1.5,
+            x0=0.0,
+            y0=0.0,
+            q=0.6,
+            phi=0.4,
+            Rein=1.0,
+        )
+        return _plane(main, 0.05, -0.03), [(0.0, 0.0)], 5.0
+    if name == "pseudo-jaffe+shear":
+        main = PseudoJaffe(
+            name="pj",
+            cosmology=COSMO,
+            z_l=0.5,
+            z_s=1.5,
+            x0=0.0,
+            y0=0.0,
+            mass=1e12,
+            Rc=0.1,
+            Rs=5.0,
+        )
+        return _plane(main, 0.03, 0.06), None, 5.0
+    main = Point(name="pt", cosmology=COSMO, z_l=0.5, z_s=1.5, x0=0.0, y0=0.0, Rein=1.0)
+    return _plane(main, 0.2, 0.1), None, 6.0
+
+
+@pytest.fixture(
+    scope="module", params=["sie+shear", "pseudo-jaffe+shear", "point+shear"]
+)
+def fold(request):
+    lens, centers, fov = _fold_lens(request.param)
+    return build_closed_lens_mesh(
+        lens.raytrace, lens.jacobian_lens_equation, fov, 16, 0.02, centers=centers
+    )
+
+
+@pytest.mark.filterwarnings("ignore:Lens model")
+@pytest.mark.parametrize("mu_min, mu_max", [(3.0, None), (30.0, None), (3.0, 10.0)])
+def test_a_region_s_area_matches_counting_mu_tot_on_a_fine_grid(fold, mu_min, mu_max):
+    """At mu_min = 30 the region is strips by the folds that the caustic marks find."""
+    mesh, curves = fold
+    region = magnification_region(mesh, curves, mu_min, mu_max)
+    assert to_np(region.closed).all() and math.isfinite(region.area)
+    points, offsets = to_np(region.source), to_np(region.offsets)
+    lo = points.min(axis=0) - 0.05
+    n = 600
+    dx = float((points.max(axis=0) + 0.05 - lo).max()) / n
+    axis = (np.arange(n) + 0.5) * dx
+    gx, gy = np.meshgrid(lo[0] + axis, lo[1] + axis, indexing="ij")
+    mu = to_np(total_magnification(gx, gy, mesh))
+    upper = math.inf if mu_max is None else mu_max
+    counted = np.count_nonzero((mu >= mu_min) & (mu <= upper)) * dx * dx
+    perimeter = sum(
+        np.linalg.norm(np.roll(points[a:b], -1, axis=0) - points[a:b], axis=1).sum()
+        for a, b in zip(offsets[:-1], offsets[1:])
+    )
+    assert abs(region.area - counted) <= perimeter * dx

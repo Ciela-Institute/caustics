@@ -17,9 +17,16 @@ the source mesh, until the region is bounded.
 import math
 from typing import NamedTuple
 
-from ....backend_obj import ArrayLike
-from .mesh_backend import mesh_backend
-from .geometry import ROOT_CLASS, is_member, ring_next
+from ....backend_obj import ArrayLike, backend
+from .mesh_backend import mesh_backend, to_mesh, to_user
+from .geometry import (
+    ROOT_CLASS,
+    build_device,
+    csr_offsets,
+    is_member,
+    ring_next,
+    to_device,
+)
 from .lattice import (
     MAX_KEY,
     Lattice,
@@ -32,6 +39,7 @@ from .lattice import (
 )
 from .refine import add_roots, close, empty_cache, empty_store, refine
 from .lens_mesh import _fov_boundary, inside_fov_image
+from .curves import chain_segments, edge_zeros, triangle_segments
 from .magnification import _total_magnification, leaf_tables
 
 
@@ -312,3 +320,173 @@ def _source_mesh(mesh, curves, mu_min, mu_max):
     )
     cache, store = refine(cache, store, rows, lat, sample, split, max_level, None)
     return _freeze_source(lat, max_level, cache, store, valid)
+
+
+class MagnificationRegion(NamedTuple):
+    """
+    The region ``{mu_min <= mu_tot <= mu_max}`` of the source plane: its contours and area.
+
+    Contour ``c`` is rows ``offsets[c]:offsets[c + 1]`` of ``source``. Every
+    contour keeps the region on its left; the ``mu_min`` contours come
+    first, then the ``mu_max`` ones. A contour is the zero set of ``mu_tot -
+    mu_min``, or of ``mu_max - mu_tot``, linear on each source-mesh leaf;
+    where a caustic's jump in ``mu_tot`` straddles a threshold, it runs
+    along the caustic, within one source-mesh leaf of it.
+
+    Parameters
+    ----------
+    source: ArrayLike
+        ``(P, 2)`` float64 contour points.
+
+        *Unit: arcsec*
+    offsets: ArrayLike
+        ``(C + 1,)`` int64 CSR offsets, ``offsets[0] == 0``.
+    closed: ArrayLike
+        ``(C,)`` bool, True where the contour is a loop.
+    level: ArrayLike
+        ``(C,)`` float64, the threshold each contour belongs to.
+    area: float
+        The region's area: the sum of its contours' signed shoelace areas.
+        NaN when the region reaches outside the valid cells of the source
+        mesh, where its extent is unknown.
+
+        *Unit: arcsec^2*
+    mu_min: float
+    mu_max: float
+        ``inf`` when not given.
+    """
+
+    source: ArrayLike
+    offsets: ArrayLike
+    closed: ArrayLike
+    level: ArrayLike
+    area: float
+    mu_min: float
+    mu_max: float
+
+
+def _leaf_valid(src):
+    """True where a source leaf's level-0 cell is valid, ``(L,)``."""
+    cell = mesh_backend.min(src.vertices_ij[src.leaves], dim=1) // (
+        1 << src.lattice.level
+    )
+    return src.cell_valid[cell[:, 0], cell[:, 1]]
+
+
+def _contours(src, field, leaf_valid):
+    """The zero set of ``field`` over the valid leaves, positive side on the left: points, offsets, closed."""
+    tri = src.leaves[mesh_backend.flatnonzero(leaf_valid)]
+    start, end = triangle_segments(tri, field >= 0)
+    edges, offsets, closed = chain_segments(start, end, src.vertices.shape[0])
+    (points,) = edge_zeros(edges, field, (src.vertices,))
+    return points, offsets, closed
+
+
+def _shoelace(points, offsets):
+    """The sum of the signed areas of closed polylines, counter-clockwise positive."""
+    if points.shape[0] == 0:
+        return 0.0
+    _, nxt = ring_next(offsets, points.shape[0])
+    q = points[nxt]
+    twice = mesh_backend.sum(points[:, 0] * q[:, 1] - q[:, 0] * points[:, 1])
+    return 0.5 * float(mesh_backend.to_numpy(twice))
+
+
+def _region(src, mu_min, mu_max):
+    """
+    The :class:`MagnificationRegion` a source mesh holds.
+
+    Contours are traced over the leaves of valid cells only, so one reaching
+    an invalid cell ends there, open. The region is bounded when no vertex
+    of an invalid leaf lies in it, so that it lies wholly in the valid
+    cells; this also covers a region with no contour at all, such as one
+    whose ``mu_min`` is at or below the far-field ``mu_tot``. Its area is
+    then the sum of its contours' signed shoelace areas (Green's theorem),
+    exactly the area of the region of the source mesh's piecewise-linear
+    field; otherwise NaN.
+    """
+    f64 = mesh_backend.float64
+    mu = src.values[:, 0]
+    upper = math.inf if mu_max is None else float(mu_max)
+    leaf_valid = _leaf_valid(src)
+    fields = [(mu - mu_min, mu_min)]
+    if mu_max is not None:
+        fields.append((mu_max - mu, upper))
+    parts = [(_contours(src, field, leaf_valid), value) for field, value in fields]
+    points = mesh_backend.concatenate([p for (p, _, _), _ in parts], dim=0)
+    offsets = csr_offsets(
+        mesh_backend.concatenate([o[1:] - o[:-1] for (_, o, _), _ in parts], dim=0)
+    )
+    closed = mesh_backend.concatenate([c for (_, _, c), _ in parts], dim=0)
+    level = mesh_backend.concatenate(
+        [
+            mesh_backend.zeros((c.shape[0],), dtype=f64) + value
+            for (_, _, c), value in parts
+        ],
+        dim=0,
+    )
+    invalid = src.leaves[mesh_backend.flatnonzero(~leaf_valid)].reshape(-1)
+    in_invalid = mesh_backend.fill_at_indices(
+        mesh_backend.zeros((mu.shape[0],), dtype=mesh_backend.bool), invalid, True
+    )
+    reaches = bool(mesh_backend.any(in_invalid & (mu >= mu_min) & (mu <= upper)))
+    return MagnificationRegion(
+        source=points,
+        offsets=offsets,
+        closed=closed,
+        level=level,
+        area=math.nan if reaches else _shoelace(points, offsets),
+        mu_min=float(mu_min),
+        mu_max=upper,
+    )
+
+
+def magnification_region(mesh, curves, mu_min, mu_max=None):
+    """
+    The region of the source plane where ``mu_min <= mu_tot <= mu_max``, its contours and its area.
+
+    A source mesh is refined over the image of ``mesh``'s fov boundary
+    wherever a threshold, or a caustic the region hugs, can pass, down to
+    the source-plane size of the lens mesh's leaves there, with ``mu_tot``
+    from the lens mesh alone (:func:`~.magnification.total_magnification`);
+    the region's boundary is traced through it, and its area summed from the
+    contours. No lens call is made, and nothing is kept for another
+    ``(mu_min, mu_max)``.
+
+    The region is bounded only when ``mu_min`` exceeds the far-field
+    ``mu_tot``: ``1 / |(1 - kappa)**2 - gamma**2|`` of any external
+    convergence and shear, 1 without them. When it reaches outside the
+    valid cells, those wholly inside the image of the fov boundary, its
+    area is NaN and the contours reaching there are open; grow the fov
+    (:func:`build_closed_magnification_region`). A closed contour smaller
+    than a level-0 cell with no caustic inside can be missed, as the lens
+    mesh's ``init_res`` must resolve the lens's smallest structure.
+
+    Parameters
+    ----------
+    mesh: LensMesh
+    curves: CriticalCurvesAndCaustics
+        ``mesh``'s, from :func:`~.lens_mesh.build_closed_lens_mesh` or
+        :func:`~.curves.critical_curves_and_caustics`.
+    mu_min: float
+    mu_max: Optional[float]
+
+    Returns
+    -------
+    MagnificationRegion
+    """
+    device = backend.device(mesh.vertices_lens)
+    region = _magnification_region(
+        to_mesh(mesh),
+        to_mesh(curves),
+        float(mu_min),
+        None if mu_max is None else float(mu_max),
+    )
+    return to_user(region, device)
+
+
+def _magnification_region(mesh, curves, mu_min, mu_max):
+    """:func:`magnification_region` on ``mesh_backend`` arrays."""
+    mesh = to_device(mesh, build_device())
+    curves = to_device(curves, build_device())
+    return _region(_source_mesh(mesh, curves, mu_min, mu_max), mu_min, mu_max)
