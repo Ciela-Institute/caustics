@@ -29,6 +29,7 @@ from caustics.lenses.func.adaptive.curves import (
     pseudo_caustics,
 )
 from caustics.lenses.func.adaptive.lens_mesh import (
+    _extend_lens_mesh,
     _fov_boundary,
     inside_fov_image,
 )
@@ -36,9 +37,12 @@ from caustics.lenses.func.adaptive.magnification import (
     _total_magnification,
     leaf_tables,
 )
+from caustics.lenses.func.adaptive import region as region_module
 from caustics.lenses.func.adaptive.region import (
     _caustic_marks,
     _cell_validity,
+    _extend_source_mesh,
+    _region,
     _sampler,
     _source_lattice,
     _source_mesh,
@@ -421,3 +425,63 @@ def test_a_region_s_area_matches_counting_mu_tot_on_a_fine_grid(fold, mu_min, mu
         for a, b in zip(offsets[:-1], offsets[1:])
     )
     assert abs(region.area - counted) <= perimeter * dx
+
+
+@pytest.fixture(scope="module")
+def grown():
+    """An SIS source mesh for mu_min = 1.5 at fov 6, and its extension with the lens mesh to fov 9."""
+    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    mesh = to_mesh(
+        build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, 0.02)
+    )
+    src = _source_mesh(mesh, _critical_curves_and_caustics(mesh), 1.5, None)
+    bigger = _extend_lens_mesh(
+        mesh,
+        lens_.raytrace,
+        lens_.jacobian_lens_equation,
+        9.0,
+        device=None,
+        batch_size=None,
+    )
+    return src, bigger
+
+
+def test_extending_a_source_mesh_samples_no_vertex_it_holds_and_keeps_every_one(
+    grown, monkeypatch
+):
+    src, bigger = grown
+    seen = []
+    real = region_module._sampler
+
+    def recording(mesh, tables):
+        sample = real(mesh, tables)
+
+        def record(xy):
+            seen.append(to_np(xy))
+            return sample(xy)
+
+        return record
+
+    monkeypatch.setattr(region_module, "_sampler", recording)
+    before = to_np(src.values).copy()
+    out = _extend_source_mesh(
+        src, bigger, _critical_curves_and_caustics(bigger), 1.5, None
+    )
+    old = {tuple(p) for p in to_np(src.vertices).tolist()}
+    assert seen and not any(tuple(p) in old for p in np.concatenate(seen).tolist())
+    assert old <= {tuple(p) for p in to_np(out.vertices).tolist()}
+    np.testing.assert_array_equal(to_np(src.values), before)
+
+
+def test_an_extended_source_mesh_bounds_the_region_the_grown_lens_mesh_holds(grown):
+    src, bigger = grown
+    assert math.isnan(_region(src, 1.5, None).area)
+    region = _region(
+        _extend_source_mesh(
+            src, bigger, _critical_curves_and_caustics(bigger), 1.5, None
+        ),
+        1.5,
+        None,
+    )
+    assert to_np(region.closed).all()
+    assert region.area == pytest.approx(4.0 * math.pi, rel=1e-2)

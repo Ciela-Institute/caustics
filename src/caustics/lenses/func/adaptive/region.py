@@ -30,14 +30,27 @@ from .geometry import (
 from .lattice import (
     MAX_KEY,
     Lattice,
+    check_lattice_keys,
     depth_floor,
+    extend_lattice,
     initial_triangles,
+    lattice_fov,
     lattice_h0,
     lattice_init_res,
+    lattice_key,
     lattice_xy,
     make_lattice,
+    ring_triangles,
 )
-from .refine import add_roots, close, empty_cache, empty_store, refine
+from .refine import (
+    LeafStore,
+    VertexCache,
+    add_roots,
+    close,
+    empty_cache,
+    empty_store,
+    refine,
+)
 from .lens_mesh import _fov_boundary, inside_fov_image
 from .curves import chain_segments, edge_zeros, triangle_segments
 from .magnification import _total_magnification, leaf_tables
@@ -490,3 +503,84 @@ def _magnification_region(mesh, curves, mu_min, mu_max):
     mesh = to_device(mesh, build_device())
     curves = to_device(curves, build_device())
     return _region(_source_mesh(mesh, curves, mu_min, mu_max), mu_min, mu_max)
+
+
+def _seed_source(src, lat, k):
+    """
+    :func:`~.refine.refine`'s state from a source mesh, on its lattice grown by ``k``.
+
+    The vertices are in lattice-key order, which a uniform shift keeps, so
+    they are the cache as they stand, every one a leaf vertex; the origins
+    are the store, row for row.
+    """
+    int64 = mesh_backend.int64
+    ij = src.vertices_ij + (int(k) << lat.level)
+    n_vertices, n_origins = ij.shape[0], src.origin_leaves.shape[0]
+    cache = VertexCache(
+        keys=lattice_key(lat, ij),
+        slots=mesh_backend.arange(n_vertices, dtype=int64),
+        ij=ij,
+        values=src.values,
+        active=mesh_backend.ones((n_vertices,), dtype=mesh_backend.bool),
+    )
+    store = LeafStore(
+        v=src.origin_leaves,
+        level=src.origin_level,
+        cls=src.origin_cls,
+        valid=mesh_backend.ones((n_origins,), dtype=mesh_backend.bool),
+    )
+    return cache, store
+
+
+def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
+    """
+    Grow a source mesh over the image of an extended lens mesh's fov boundary.
+
+    Whole level-0 cells are added about the same center, the fewest that
+    cover the new image's bounding box; the cell size and finest level stay
+    the first build's. Old vertices keep their ``(mu_tot, size)``; the new
+    ring's roots, and the rows of every cell that was invalid and is valid
+    now, are refined against the extended lens mesh. The lens extension's
+    balance can split old lens leaves along its seam, and a few old vertices
+    by the old boundary's image keep values read before that split, so the
+    result matches a fresh build only to the mesh's accuracy.
+    """
+    int64 = mesh_backend.int64
+    old = src.lattice
+    lo, hi = _boundary_box(mesh)
+    corner = _corner(old)
+    over = mesh_backend.max(
+        mesh_backend.concatenate((corner - lo, hi - corner - lattice_fov(old)), dim=0)
+    )
+    k = max(0, math.ceil(float(mesh_backend.to_numpy(over)) / lattice_h0(old) - 1e-9))
+    lat = extend_lattice(old, k)
+    check_lattice_keys(
+        lattice_init_res(lat),
+        src.max_level,
+        "Build the lens mesh at a larger fov to begin with.",
+    )
+    tables = leaf_tables(mesh)
+    sample = _sampler(mesh, tables)
+    cache, store = _seed_source(src, lat, k)
+    valid = _cell_validity(mesh, lat)
+    r0 = lattice_init_res(old)
+    was = mesh_backend.fill_at_indices(
+        mesh_backend.zeros_like(valid),
+        (slice(k, k + r0), slice(k, k + r0)),
+        src.cell_valid,
+    )
+    rows = mesh_backend.arange(store.v.shape[0], dtype=int64)
+    cell = mesh_backend.min(cache.ij[store.v], dim=1) // (1 << lat.level)
+    newly = valid[cell[:, 0], cell[:, 1]] & ~was[cell[:, 0], cell[:, 1]]
+    untested = rows[mesh_backend.flatnonzero(newly)]
+    if k:
+        ij, cls = ring_triangles(lattice_init_res(lat), k, lat.level, ROOT_CLASS)
+        cache, store, ring = add_roots(cache, store, lat, ij, cls, sample, None)
+        untested = mesh_backend.concatenate((ring, untested), dim=0)
+    split = _source_split(
+        lat, valid, _caustic_marks(curves, lat, src.max_level), mu_min, mu_max
+    )
+    cache, store = refine(
+        cache, store, untested, lat, sample, split, src.max_level, None
+    )
+    return _freeze_source(lat, src.max_level, cache, store, valid)
