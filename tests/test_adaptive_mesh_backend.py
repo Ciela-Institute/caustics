@@ -18,10 +18,14 @@ from adaptive_maps import (
 from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive import (
     build_closed_lens_mesh,
+    build_closed_magnification_region,
     build_lens_mesh,
+    caustic_area,
     critical_curves_and_caustics,
     extend_lens_mesh,
     forward_raytrace,
+    magnification_region,
+    total_magnification,
 )
 from caustics.lenses.func.adaptive.mesh_backend import (
     TorchMeshBackend,
@@ -199,3 +203,36 @@ def test_scalars_of_the_users_backend_build_what_plain_floats_do():
 
     for got, want in zip(built(scalar), built(float)):
         assert_same(got, want)
+
+
+def test_the_magnification_functions_return_the_users_arrays():
+    mesh = build_lens_mesh(_cored, _cored_jacobian, 4.0, 8, 0.1)
+    curves = critical_curves_and_caustics(mesh)
+    bx = backend.as_array([0.05, 0.3], dtype=backend.float64)
+    by = backend.as_array([0.02, -0.1], dtype=backend.float64)
+    results = [
+        total_magnification(bx, by, mesh),
+        magnification_region(mesh, curves, 3.0),
+        *build_closed_magnification_region(_cored, _cored_jacobian, 4.0, 8, 0.1, 3.0),
+    ]
+    for value in results:
+        for a in _arrays(value):
+            assert isinstance(a, backend.array_type), type(a)
+    assert isinstance(caustic_area(curves), float)
+    assert isinstance(results[1].area, float)
+
+
+def test_a_magnification_region_leaves_the_mesh_it_was_given_unchanged():
+    mesh = build_lens_mesh(_cored, _cored_jacobian, 4.0, 8, 0.1)
+    curves = critical_curves_and_caustics(mesh)
+    before = [to_np(a).copy() for a in _arrays((mesh, curves))]
+    magnification_region(mesh, curves, 3.0, 10.0)
+    for a, b in zip(_arrays((mesh, curves)), before):
+        np.testing.assert_array_equal(to_np(a), b)
+
+
+def test_total_magnification_takes_numpy_sources():
+    lens_, _ = numpy_lens(sie_like, sie_like_jacobian)
+    mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 8, 0.1)
+    mu = total_magnification(np.array([0.1, 0.2]), np.array([0.0, 0.1]), mesh)
+    assert isinstance(mu, backend.array_type) and to_np(mu).shape == (2,)
