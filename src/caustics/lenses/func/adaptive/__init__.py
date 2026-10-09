@@ -6,7 +6,9 @@ triangulation of the lens plane that carries the lens map at its vertices.
 It is built once and then answers source-plane questions without further
 lens calls, except for root finding: every image of a source
 (:func:`forward_raytrace`), the critical curves, caustics and pseudo-caustics
-(:func:`critical_curves_and_caustics`).
+(:func:`critical_curves_and_caustics`) and the area they bound
+(:func:`caustic_area`), and the total magnification of a source
+(:func:`total_magnification`).
 
 The modules, lowest layer first; each imports only from those before it:
 
@@ -23,6 +25,7 @@ The modules, lowest layer first; each imports only from those before it:
 - :mod:`.curves` -- critical curves and caustics.
 - :mod:`.lens_mesh` -- :class:`LensMesh`: build, extend, closed build.
 - :mod:`.images` -- :func:`forward_raytrace`.
+- :mod:`.magnification` -- :func:`total_magnification`.
 """
 
 from .criterion import (
@@ -47,12 +50,14 @@ from .lens_mesh import (
     extend_lens_mesh,
 )
 from .images import forward_raytrace
+from .magnification import total_magnification
 
 __all__ = (
     "build_lens_mesh",
     "extend_lens_mesh",
     "build_closed_lens_mesh",
     "forward_raytrace",
+    "total_magnification",
     "critical_curves_and_caustics",
     "caustic_area",
     "LensMesh",

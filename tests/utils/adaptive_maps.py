@@ -215,6 +215,22 @@ def sis_jacobian(p, b=1.0):
         return (1.0 - b / r) * np.eye(2) + b * p[:, :, None] * p[:, None, :] / r**3
 
 
+def point_raytrace(p, b=1.0):
+    """Point mass ``beta = theta - b**2 theta / |theta|**2``, non-finite at ``theta = 0``."""
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return p - b * b * p / np.sum(p * p, axis=-1, keepdims=True)
+
+
+def point_jacobian(p, b=1.0):
+    """``I - b**2 (|theta|**2 I - 2 theta theta^T) / |theta|**4``, non-finite at the origin too."""
+    with np.errstate(divide="ignore", invalid="ignore"):
+        r2 = np.sum(p * p, axis=-1)[:, None, None]
+        return (
+            np.eye(2)
+            - b * b * (r2 * np.eye(2) - 2.0 * p[:, :, None] * p[:, None, :]) / r2**2
+        )
+
+
 def brute_hits(vertices, triangles, rows, beta, grow=None):
     """
     ``index_hits``'s answer, found by testing every one of ``rows`` against every point.
