@@ -3,9 +3,10 @@ Triangle maths shared by both meshes, and small array helpers.
 
 The red-refinement child ordering and its integer group tables, the smallest
 singular value that scales the lens criterion, the minimum angle closure
-compares, the containment test, nearest boundary points and barycentric
-coordinates every source-plane lookup reads, and the segment crossing and
-winding tests. Nothing here calls the lens or knows about a mesh.
+compares, the containment tests -- closed and by a fill rule -- nearest
+boundary points and barycentric coordinates every source-plane lookup
+reads, the segment crossing and winding tests, and the area of a union of
+closed polylines. Nothing here calls the lens or knows about a mesh.
 """
 
 from .mesh_backend import map_arrays, mesh_backend
@@ -299,6 +300,44 @@ def contains(w):
     return nonneg | nonpos
 
 
+def contains_half_open(tri, w):
+    """
+    Containment by a top-left fill rule: a point on an edge two same-orientation triangles share is in exactly one.
+
+    :func:`contains` puts a point on a shared edge in both triangles. Here a
+    point strictly inside is inside, and a point on an edge only when the
+    triangle owns the edge: taken counter-clockwise, a left edge, pointing
+    down, or a top edge, horizontal and pointing left. Two triangles of one
+    orientation run a shared edge in opposite directions, so exactly one owns
+    it, and of a fan about a vertex exactly one owns both edges at it.
+    Source-plane triangles flip orientation across critical curves, so each
+    is first turned counter-clockwise; one of zero area contains nothing.
+    :func:`triangle_weights` negates shared-edge weights exactly, so both
+    triangles agree on which points lie on the edge.
+
+    Parameters
+    ----------
+    tri: ArrayLike
+        ``(K, 3, 2)`` triangle vertices.
+
+        *Unit: arcsec*
+    w: ArrayLike
+        ``(K, 3)`` their :func:`triangle_weights` at one point each.
+
+    Returns
+    -------
+    ArrayLike
+        ``(K,)`` bool.
+    """
+    sigma = mesh_backend.sign(w[:, 0] + w[:, 1] + w[:, 2])
+    w = w * mesh_backend.unsqueeze(sigma, -1)
+    # Edge i, opposite vertex i, runs from vertex i + 1 to vertex i + 2.
+    edge = (tri[:, [2, 0, 1]] - tri[:, [1, 2, 0]]) * sigma[:, None, None]
+    owned = (edge[..., 1] < 0) | ((edge[..., 1] == 0) & (edge[..., 0] < 0))
+    inside = (w > 0) | ((w == 0) & owned)
+    return (sigma != 0) & mesh_backend.all(inside, dim=1)
+
+
 def edge_nearest(tri, beta):
     """
     The point of each triangle's boundary nearest each point: its distance and barycentric coordinates.
@@ -424,6 +463,116 @@ def winding_number(polygon, points):
     up = (a[..., 1] <= p[..., 1]) & (b[..., 1] > p[..., 1]) & (side > 0)
     down = (a[..., 1] > p[..., 1]) & (b[..., 1] <= p[..., 1]) & (side < 0)
     return mesh_backend.sum(mesh_backend.long(up) - mesh_backend.long(down), dim=1)
+
+
+def ring_next(offsets, n_points):
+    """
+    Each point's polyline, and the point after it; a polyline's last point is followed by its first.
+
+    Parameters
+    ----------
+    offsets: ArrayLike
+        ``(C + 1,)`` int64 CSR offsets of ``n_points`` points in ``C`` polylines.
+    n_points: int
+
+    Returns
+    -------
+    curve: ArrayLike
+        ``(n_points,)`` int64 polyline of each point.
+    nxt: ArrayLike
+        ``(n_points,)`` int64 the point after it.
+    """
+    int64 = mesh_backend.int64
+    device = mesh_backend.device(offsets)
+    counts = offsets[1:] - offsets[:-1]
+    curve = mesh_backend.repeat(
+        mesh_backend.arange(counts.shape[0], dtype=int64, device=device), counts, axis=0
+    )
+    point = mesh_backend.arange(n_points, dtype=int64, device=device)
+    last = offsets[1:][curve] - 1
+    return curve, mesh_backend.where(point == last, offsets[:-1][curve], point + 1)
+
+
+def union_area(points, offsets):
+    """
+    Area of the union of the nonzero-winding interiors of closed polylines.
+
+    A point is covered when some polyline winds about it
+    (:func:`winding_number` nonzero), whichever its orientation, so a part a
+    polyline winds about twice counts once, and so does a part two
+    polylines both cover. The plane is cut into vertical strips at every
+    vertex's x. At each strip's mid-line the segments spanning it are sorted
+    by height; walking up, each polyline's winding changes by one at each
+    of its crossings, and the covered length is the sum of the gaps between
+    crossings where some polyline's winding is nonzero. The area is the sum
+    of each strip's width times that length.
+
+    Exact in every strip no two segments cross inside: the covered length
+    is linear across it. In a strip where two cross, the error is at most
+    the strip's width times the change in covered length across it, of
+    order the width squared, so polylines whose segments are short, as
+    traced curves are, make it negligible. Vertical and zero-length
+    segments have no width and are dropped.
+
+    Parameters
+    ----------
+    points: ArrayLike
+        ``(P, 2)`` vertices, polyline by polyline, each closing back to its
+        first point.
+
+        *Unit: arcsec*
+    offsets: ArrayLike
+        ``(C + 1,)`` int64 CSR offsets.
+
+    Returns
+    -------
+    float
+
+        *Unit: arcsec^2*
+    """
+    int64, f64 = mesh_backend.int64, mesh_backend.float64
+    device = mesh_backend.device(points)
+    if points.shape[0] == 0:
+        return 0.0
+    points = mesh_backend.to(points, dtype=f64)
+    curve, nxt = ring_next(offsets, points.shape[0])
+    a, b = points, points[nxt]
+    keep = mesh_backend.flatnonzero(a[:, 0] != b[:, 0])
+    a, b, curve = a[keep], b[keep], curve[keep]
+    if a.shape[0] == 0:
+        return 0.0
+    x0 = mesh_backend.minimum(a[:, 0], b[:, 0])
+    x1 = mesh_backend.maximum(a[:, 0], b[:, 0])
+    rightward = mesh_backend.where(b[:, 0] > a[:, 0], 1, -1)
+    edges = mesh_backend.unique(mesh_backend.concatenate((x0, x1), dim=0))
+    first = mesh_backend.searchsorted(edges, x0)
+    span = mesh_backend.searchsorted(edges, x1) - first
+    total = int(mesh_backend.to_numpy(mesh_backend.sum(span)))
+    seg = mesh_backend.repeat(
+        mesh_backend.arange(a.shape[0], dtype=int64, device=device), span, axis=0
+    )
+    strip = (
+        first[seg]
+        + mesh_backend.arange(total, dtype=int64, device=device)
+        - mesh_backend.repeat(mesh_backend.cumsum(span, dim=0) - span, span, axis=0)
+    )
+    mid = 0.5 * (edges[strip] + edges[strip + 1])
+    y = a[seg, 1] + (mid - a[seg, 0]) / (b[seg, 0] - a[seg, 0]) * (
+        b[seg, 1] - a[seg, 1]
+    )
+    order = mesh_backend.lexsort([y, strip])
+    strip, seg, y = strip[order], seg[order], y[order]
+    # A closed polyline crosses a strip's mid-line with a net winding of
+    # zero, so one running sum over every strip in turn gives each
+    # polyline's winding just above each crossing.
+    rows = mesh_backend.arange(total, dtype=int64, device=device)
+    step = mesh_backend.zeros((total, offsets.shape[0] - 1), dtype=int64, device=device)
+    step = mesh_backend.fill_at_indices(step, (rows, curve[seg]), rightward[seg])
+    covered = mesh_backend.any(mesh_backend.cumsum(step, dim=0) != 0, dim=1)
+    gap = (strip[1:] == strip[:-1]) & covered[:-1]
+    width = edges[strip[:-1] + 1] - edges[strip[:-1]]
+    area = mesh_backend.sum(mesh_backend.where(gap, (y[1:] - y[:-1]) * width, 0.0))
+    return float(mesh_backend.to_numpy(area))
 
 
 def sanitize_bary(w, d):

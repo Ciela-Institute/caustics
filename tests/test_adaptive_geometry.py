@@ -22,16 +22,19 @@ from caustics.lenses.func.adaptive.geometry import (
     area2,
     child_matrix_tables,
     contains,
+    contains_half_open,
     csr_offsets,
     edge_nearest,
     is_member,
     min_angle,
+    ring_next,
     sanitize_bary,
     segments_cross,
     shape_matrix,
     sigma_min_2x2,
     to_device,
     triangle_weights,
+    union_area,
     winding_number,
 )
 from caustics.lenses.func.adaptive.index import (
@@ -1045,3 +1048,143 @@ def test_index_hits_find_points_on_the_cell_lines_of_every_level():
     assert_hits_equal(
         index_hits(idx, vs, leaves, beta), brute_hits(vs, leaves, rows, beta)
     )
+
+
+# ---------------------------------------------------------------------------
+# contains_half_open: the fill rule
+# ---------------------------------------------------------------------------
+
+# Two counter-clockwise triangles sharing the diagonal (0,0)-(1,1) of the unit square.
+SQUARE_HALVES = [
+    [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+    [[0.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+]
+
+
+def _half_open(triangles, point):
+    tri = f64(triangles)
+    beta = f64([point] * len(triangles))
+    return to_np(contains_half_open(tri, triangle_weights(tri, beta))).tolist()
+
+
+@pytest.mark.parametrize("flip", [False, True])
+@pytest.mark.parametrize("point", [[0.5, 0.5], [0.25, 0.25], [0.875, 0.875]])
+def test_a_point_on_a_shared_edge_is_in_exactly_one_triangle(point, flip):
+    triangles = [t[::-1] for t in SQUARE_HALVES] if flip else SQUARE_HALVES
+    assert sum(_half_open(triangles, point)) == 1
+
+
+def test_a_point_strictly_inside_is_in_its_triangle_alone():
+    assert _half_open(SQUARE_HALVES, [0.6, 0.2]) == [True, False]
+    assert _half_open(SQUARE_HALVES, [0.2, 0.6]) == [False, True]
+    assert _half_open(SQUARE_HALVES, [1.5, 0.5]) == [False, False]
+
+
+@pytest.mark.parametrize("flip", [False, True])
+def test_the_center_of_a_fan_is_in_exactly_one_of_its_triangles(flip):
+    angle = np.linspace(0.0, 2.0 * np.pi, 7)[:-1]
+    ring = np.stack((np.cos(angle), np.sin(angle)), axis=-1)
+    fan = [[[0.0, 0.0], ring[k], ring[(k + 1) % 6]] for k in range(6)]
+    if flip:
+        fan = [t[::-1] for t in fan]
+    assert sum(_half_open(fan, [0.0, 0.0])) == 1
+
+
+def test_a_triangle_of_zero_area_contains_nothing():
+    tri = f64([[[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]])
+    w = triangle_weights(tri, f64([[1.0, 1.0]]))
+    assert to_np(contains(w)).tolist() == [True]
+    assert to_np(contains_half_open(tri, w)).tolist() == [False]
+
+
+def test_away_from_edges_the_fill_rule_is_plain_containment():
+    rng = np.random.default_rng(5)
+    tri = f64(rng.uniform(-1.0, 1.0, (500, 3, 2)))
+    w = triangle_weights(tri, f64(rng.uniform(-1.0, 1.0, (500, 2))))
+    np.testing.assert_array_equal(to_np(contains_half_open(tri, w)), to_np(contains(w)))
+
+
+# ---------------------------------------------------------------------------
+# ring_next and union_area
+# ---------------------------------------------------------------------------
+
+
+def _loops(*polylines):
+    """Closed polylines as mesh-backend ``(points, offsets)``."""
+    points = np.concatenate([np.asarray(p, dtype=np.float64) for p in polylines])
+    offsets = np.concatenate(([0], np.cumsum([len(p) for p in polylines])))
+    return f64(points), i64(offsets)
+
+
+def _densify(polygon, n):
+    """``polygon`` with each edge cut into ``n`` equal pieces."""
+    p = np.asarray(polygon, dtype=np.float64)
+    t = np.arange(n)[None, :, None] / n
+    return (p[:, None] + t * (np.roll(p, -1, 0) - p)[:, None]).reshape(-1, 2)
+
+
+SQUARE_2X2 = [[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]]
+
+
+def test_ring_next_wraps_each_polyline_to_its_first_point():
+    curve, nxt = ring_next(i64([0, 3, 5]), 5)
+    assert to_np(curve).tolist() == [0, 0, 0, 1, 1]
+    assert to_np(nxt).tolist() == [1, 2, 0, 4, 3]
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_the_union_of_one_square_is_its_area_either_way_round(reverse):
+    assert union_area(*_loops(SQUARE_2X2[::-1] if reverse else SQUARE_2X2)) == 4.0
+
+
+def test_two_overlapping_squares_count_their_overlap_once():
+    shifted = (np.asarray(SQUARE_2X2) + 1.0).tolist()
+    assert union_area(*_loops(SQUARE_2X2, shifted)) == 7.0
+
+
+def test_a_loop_inside_another_adds_nothing_whichever_its_orientation():
+    inner = [[0.5, 0.5], [1.0, 0.5], [1.0, 1.0], [0.5, 1.0]]
+    assert union_area(*_loops(SQUARE_2X2, inner)) == 4.0
+    assert union_area(*_loops(SQUARE_2X2, inner[::-1])) == 4.0
+
+
+def test_a_part_a_loop_winds_about_twice_counts_once():
+    assert union_area(*_loops(SQUARE_2X2 + SQUARE_2X2)) == 4.0
+
+
+def test_both_lobes_of_a_figure_eight_count():
+    bowtie = _densify([[0.0, 0.0], [2.0, 2.0], [2.0, 0.0], [0.0, 2.0]], 200)
+    assert union_area(*_loops(bowtie)) == pytest.approx(2.0, rel=1e-12)
+
+
+def test_vertical_and_zero_length_segments_add_nothing():
+    unit = [[0.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 1.0]]
+    assert union_area(*_loops(unit)) == 1.0
+
+
+def test_a_regular_polygon_has_its_exact_area():
+    n = 2000
+    angle = 2.0 * np.pi * np.arange(n) / n
+    ring = np.stack((np.cos(angle), np.sin(angle)), axis=-1)
+    assert union_area(*_loops(ring)) == pytest.approx(
+        0.5 * n * math.sin(2.0 * math.pi / n), rel=1e-12
+    )
+
+
+def test_no_polyline_has_no_area():
+    assert union_area(f64(np.zeros((0, 2))), i64([0])) == 0.0
+
+
+@pytest.mark.parametrize("seed", range(4))
+def test_self_crossing_polygons_cover_what_a_winding_count_covers(seed):
+    rng = np.random.default_rng(seed)
+    first, second = rng.uniform(0.0, 3.0, (12, 2)), rng.uniform(1.0, 4.0, (9, 2))
+    area = union_area(*_loops(_densify(first, 100), _densify(second, 100)))
+    n = 600
+    axis = (np.arange(n) + 0.5) * 4.0 / n
+    gx, gy = np.meshgrid(axis, axis, indexing="ij")
+    grid = f64(np.stack((gx.ravel(), gy.ravel()), axis=-1))
+    covered = (to_np(winding_number(f64(first), grid)) != 0) | (
+        to_np(winding_number(f64(second), grid)) != 0
+    )
+    assert area == pytest.approx(covered.mean() * 16.0, abs=0.02)
