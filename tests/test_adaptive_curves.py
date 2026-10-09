@@ -17,7 +17,9 @@ from caustics.lenses.func.adaptive import (
     CriticalBand,
     CriticalCurvesAndCaustics,
     LensMesh,
+    build_closed_lens_mesh,
     build_lens_mesh,
+    caustic_area,
     critical_curves_and_caustics,
 )
 from caustics.lenses.func.adaptive.curves import (
@@ -39,7 +41,17 @@ from caustics.lenses.func.adaptive.holes import (
     sample_holes,
 )
 from caustics.lenses.func.adaptive.lens_mesh import make_sampler
-from adaptive_maps import requested, to_np
+from adaptive_maps import (
+    affine,
+    affine_jacobian,
+    numpy_lens,
+    requested,
+    sie_like,
+    sie_like_jacobian,
+    sis_jacobian as sis_map_jacobian,
+    sis_raytrace as sis_map,
+    to_np,
+)
 
 
 def _arr(x):
@@ -1832,3 +1844,34 @@ def test_holes_land_on_the_mesh_device(device):
         assert mesh_backend.device(getattr(mesh.holes, field)) == mesh_backend.device(
             mesh.vertices_lens
         ), field
+
+
+def test_the_caustic_area_of_an_sis_is_the_disk_its_pseudo_caustic_bounds():
+    """The hole curve of radius ``rho`` maps to the circle of radius ``1 - rho``."""
+    lens_, _ = numpy_lens(sis_map, sis_map_jacobian)
+    mesh, curves = build_closed_lens_mesh(
+        lens_.raytrace,
+        lens_.jacobian_lens_equation,
+        6.0,
+        16,
+        0.02,
+        centers=[(0.0, 0.0)],
+    )
+    rho = float(to_np(to_mesh(mesh).holes.radius)[0])
+    area = caustic_area(curves)
+    assert isinstance(area, float)
+    assert area == pytest.approx(math.pi * (1.0 - rho) ** 2, rel=1e-4)
+
+
+def test_an_open_curve_leaves_the_caustic_area_unknown():
+    lens_, _ = numpy_lens(sie_like, sie_like_jacobian)
+    mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 2.0, 8, 0.05)
+    curves = critical_curves_and_caustics(mesh)
+    assert not to_np(curves.closed).all()
+    assert math.isnan(caustic_area(curves))
+
+
+def test_a_lens_without_caustics_bounds_no_area():
+    lens_, _ = numpy_lens(affine, affine_jacobian)
+    mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 4, 0.25)
+    assert caustic_area(critical_curves_and_caustics(mesh)) == 0.0

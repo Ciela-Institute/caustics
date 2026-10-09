@@ -35,7 +35,11 @@ from .criterion import (
 )
 from .band import CriticalBand
 from .holes import CenterHoles
-from .curves import CriticalCurvesAndCaustics, critical_curves_and_caustics
+from .curves import (
+    CriticalCurvesAndCaustics,
+    caustic_area,
+    critical_curves_and_caustics,
+)
 from .lens_mesh import (
     LensMesh,
     build_closed_lens_mesh,
@@ -50,6 +54,7 @@ __all__ = (
     "build_closed_lens_mesh",
     "forward_raytrace",
     "critical_curves_and_caustics",
+    "caustic_area",
     "LensMesh",
     "CriticalBand",
     "CenterHoles",

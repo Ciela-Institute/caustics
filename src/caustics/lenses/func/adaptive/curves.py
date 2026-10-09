@@ -20,6 +20,9 @@ at a lens center, so the curves are cut at each hole's circle and re-joined
 along the stored hole curve (:func:`join_at_holes`), and each hole curve
 that is a pseudo-caustic is added whole, as a loop of its own
 (:func:`pseudo_caustics`). That too is a function of the mesh alone.
+
+:func:`caustic_area` gives the area the curves bound: the union of the
+interiors of their source-plane polylines.
 """
 
 import math
@@ -27,7 +30,7 @@ from typing import NamedTuple
 
 from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
-from .geometry import _CHILD_VERTEX_INDEX_TABLE, csr_offsets
+from .geometry import _CHILD_VERTEX_INDEX_TABLE, csr_offsets, union_area
 
 
 class CriticalCurvesAndCaustics(NamedTuple):
@@ -724,3 +727,35 @@ def _critical_curves_and_caustics(mesh):
     if mesh.holes.centers.shape[0] == 0:
         return curves
     return _append(join_at_holes(curves, mesh.holes), pseudo_caustics(mesh.holes))
+
+
+def caustic_area(curves):
+    """
+    Area of the region the caustics and pseudo-caustics bound.
+
+    The union of the interiors of every curve's ``source`` polyline --
+    caustics, pseudo-caustics and curves joined through holes -- each the
+    points it winds about (:func:`~.geometry.union_area`). For a closed lens
+    mesh this is the multiply imaged region, to within the curves' accuracy.
+
+    Parameters
+    ----------
+    curves: CriticalCurvesAndCaustics
+        As :func:`critical_curves_and_caustics` returns them.
+
+    Returns
+    -------
+    float
+        NaN when any curve is open: the fov or missing data cut it, and the
+        region it bounds is unknown.
+
+        *Unit: arcsec^2*
+    """
+    return _caustic_area(to_mesh(curves))
+
+
+def _caustic_area(curves):
+    """:func:`caustic_area` on ``mesh_backend`` arrays."""
+    if not bool(mesh_backend.all(curves.closed)):
+        return math.nan
+    return union_area(curves.source, curves.offsets)
