@@ -43,14 +43,13 @@ from .lattice import (
     warn_depth_limited,
 )
 from .refine import (
-    LeafStore,
-    VertexCache,
     add_roots,
     cache_lookup,
     close,
     empty_cache,
     empty_store,
     refine,
+    resume,
     sample_points,
 )
 from .index import MeshIndex, build_index
@@ -507,19 +506,15 @@ def _seed(mesh, lat, k):
     """
     :func:`~.refine.refine`'s state, and :func:`_freeze`'s ``seed``, from a mesh on its lattice grown by ``k``.
 
-    The mesh's vertices are in lattice-key order, which a uniform shift
-    keeps, so they are the cache as they stand, every one a leaf vertex; its
-    origins are the store, row for row.
+    The cache and store are :func:`~.refine.resume`'s.
     """
     mesh = to_device(mesh, build_device())
     int64 = mesh_backend.int64
-    ij = mesh.vertices_ij + (int(k) << lat.level)
-    n_vertices, n_origins = ij.shape[0], mesh.origin_leaves.shape[0]
-    cache = VertexCache(
-        keys=lattice_key(lat, ij),
-        slots=mesh_backend.arange(n_vertices, dtype=int64),
-        ij=ij,
-        values=mesh_backend.concatenate(
+    cache, store = resume(
+        lat,
+        k,
+        mesh.vertices_ij,
+        mesh_backend.concatenate(
             (
                 mesh.vertices_source,
                 mesh_backend.unsqueeze(mesh.vertices_det, -1),
@@ -527,16 +522,12 @@ def _seed(mesh, lat, k):
             ),
             dim=1,
         ),
-        active=mesh_backend.ones((n_vertices,), dtype=mesh_backend.bool),
-    )
-    store = LeafStore(
-        v=mesh.origin_leaves,
-        level=mesh.origin_level,
-        cls=mesh.origin_cls,
-        valid=mesh_backend.ones((n_origins,), dtype=mesh_backend.bool),
+        mesh.origin_leaves,
+        mesh.origin_level,
+        mesh.origin_cls,
     )
     band = mesh.critical_band
-    bij = ij[mesh.origin_leaves[band.leaves]]
+    bij = cache.ij[mesh.origin_leaves[band.leaves]]
     keys6 = mesh_backend.concatenate(
         (lattice_key(lat, bij), lattice_key(lat, midpoint_ij(bij))), dim=1
     )

@@ -39,19 +39,17 @@ from .lattice import (
     lattice_fov,
     lattice_h0,
     lattice_init_res,
-    lattice_key,
     lattice_xy,
     make_lattice,
     ring_triangles,
 )
 from .refine import (
-    LeafStore,
-    VertexCache,
     add_roots,
     close,
     empty_cache,
     empty_store,
     refine,
+    resume,
 )
 from .lens_mesh import (
     _build_closed_lens_mesh,
@@ -554,33 +552,6 @@ def _magnification_region(mesh, curves, mu_min, mu_max):
     return _region(_source_mesh(mesh, curves, mu_min, mu_max), mu_min, mu_max)
 
 
-def _seed_source(src, lat, k):
-    """
-    :func:`~.refine.refine`'s state from a source mesh, on its lattice grown by ``k``.
-
-    The vertices are in lattice-key order, which a uniform shift keeps, so
-    they are the cache as they stand, every one a leaf vertex; the origins
-    are the store, row for row.
-    """
-    int64 = mesh_backend.int64
-    ij = src.vertices_ij + (int(k) << lat.level)
-    n_vertices, n_origins = ij.shape[0], src.origin_leaves.shape[0]
-    cache = VertexCache(
-        keys=lattice_key(lat, ij),
-        slots=mesh_backend.arange(n_vertices, dtype=int64),
-        ij=ij,
-        values=src.values,
-        active=mesh_backend.ones((n_vertices,), dtype=mesh_backend.bool),
-    )
-    store = LeafStore(
-        v=src.origin_leaves,
-        level=src.origin_level,
-        cls=src.origin_cls,
-        valid=mesh_backend.ones((n_origins,), dtype=mesh_backend.bool),
-    )
-    return cache, store
-
-
 def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
     """
     Grow a source mesh over the image of an extended lens mesh's fov boundary.
@@ -612,7 +583,15 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
     )
     tables = leaf_tables(mesh)
     sample = _sampler(mesh, tables)
-    cache, store = _seed_source(src, lat, k)
+    cache, store = resume(
+        lat,
+        k,
+        src.vertices_ij,
+        src.values,
+        src.origin_leaves,
+        src.origin_level,
+        src.origin_cls,
+    )
     valid = _cell_validity(mesh, lat)
     r0 = lattice_init_res(old)
     was = mesh_backend.fill_at_indices(

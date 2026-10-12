@@ -205,6 +205,38 @@ def add_roots(cache, store, lat, ij, cls, sample, batch_size):
     return activate(cache, v.reshape(-1)), store, rows
 
 
+def resume(lat, k, vertices_ij, values, origin_leaves, origin_level, origin_cls):
+    """
+    The refinement state of a frozen mesh, on its lattice grown by ``k`` level-0 cells a side.
+
+    The vertices are in lattice-key order, which a uniform shift keeps, so
+    shifted by ``k << lat.level`` they are the cache as they stand, every one
+    a leaf vertex; the origins are the store, row for row.
+
+    Returns
+    -------
+    cache: VertexCache
+    store: LeafStore
+    """
+    int64 = mesh_backend.int64
+    ij = vertices_ij + (int(k) << lat.level)
+    n_vertices, n_origins = ij.shape[0], origin_leaves.shape[0]
+    cache = VertexCache(
+        keys=lattice_key(lat, ij),
+        slots=mesh_backend.arange(n_vertices, dtype=int64),
+        ij=ij,
+        values=values,
+        active=mesh_backend.ones((n_vertices,), dtype=mesh_backend.bool),
+    )
+    store = LeafStore(
+        v=origin_leaves,
+        level=origin_level,
+        cls=origin_cls,
+        valid=mesh_backend.ones((n_origins,), dtype=mesh_backend.bool),
+    )
+    return cache, store
+
+
 def red_split(v, m, cls):
     """
     The four children of each triangle, triangle-major.
