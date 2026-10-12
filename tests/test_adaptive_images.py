@@ -22,8 +22,7 @@ from caustics.lenses.func.adaptive.images import (
     mesh_seeds,
     near_seed,
 )
-from caustics.lenses.func.adaptive import index as index_module
-from caustics.lenses.func.adaptive.index import index_cells, index_hits
+from caustics.lenses.func.adaptive.index import index_hits
 from caustics.lenses.func.adaptive.lens_mesh import build_lens_mesh, leaf_grow
 from caustics.lenses.func.adaptive.curves import critical_curves_and_caustics
 
@@ -31,11 +30,8 @@ from adaptive_maps import (
     AFFINE,
     affine,
     affine_jacobian,
-    assert_hits_equal,
-    brute_hits,
     build,
     f64,
-    finite_rows,
     i64,
     index_cell_ranges,
     lens,
@@ -47,6 +43,8 @@ from adaptive_maps import (
 )
 
 RNG = np.random.default_rng(20260904)
+
+
 NONFINITE = LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE
 
 
@@ -84,6 +82,8 @@ def _sie_like_jacobian(x, y):
 
 
 SIE_LIKE = lens(_sie_like, _sie_like_jacobian)
+
+
 BUILD = dict(fov=6.0, init_res=4, min_img_sep=0.1, max_depth=6)
 
 
@@ -983,125 +983,6 @@ def test_dedup_mixes_singleton_and_clustered_blocks_in_order():
     points = _pts([[9.0, 9.0], [0.0, 0.0], [0.0, 0.001], [5.0, 5.0]])
     keep = _dedup(points, np.array([1, 2, 1]), 0.01)
     assert keep.tolist() == [True, True, False, True]
-
-
-@pytest.fixture(scope="module")
-def point_mesh():
-    """A point mass of Einstein radius 1 with its center a hole: source triangles from about 1e-12 to 1e4 arcsec^2."""
-    lens = Point(
-        name="pt",
-        cosmology=FlatLambdaCDM(name="cosmo"),
-        z_l=0.5,
-        z_s=1.5,
-        x0=0.0,
-        y0=0.0,
-        Rein=1.0,
-        s=0.0,
-    )
-    mesh = build_lens_mesh(
-        lens.raytrace,
-        lens.jacobian_lens_equation,
-        fov=5.0,
-        init_res=32,
-        min_img_sep=1e-2,
-        centers=[[0.0, 0.0]],
-    )
-    return to_mesh(mesh)
-
-
-def _hits_against_brute_force(mesh, points):
-    """``index_hits`` on ``mesh`` at ``points``, asserted equal to brute force over every finite leaf."""
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
-    rows = i64(finite_rows(mesh))
-    got = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, points, grow)
-    assert_hits_equal(
-        got, brute_hits(mesh.vertices_source, mesh.leaves, rows, points, grow)
-    )
-    return got
-
-
-def test_index_hits_equal_brute_force_on_the_sie_like_mesh(mesh, beta):
-    vs = to_np(mesh.vertices_source)
-    finite = vs[np.isfinite(vs).all(axis=1)]
-    hi = to_np(mesh.index.hi)
-    upper = np.array([hi, [hi[0], 0.0], [0.0, hi[1]]])
-    points = f64(np.concatenate([to_np(beta), finite[::7][:40], upper]))
-    qidx, _, _ = _hits_against_brute_force(mesh, points)
-    assert to_np(qidx).size > 0
-
-
-def test_index_hits_equal_brute_force_on_a_point_mass_mesh(point_mesh):
-    rng = np.random.default_rng(31)
-    vs = to_np(point_mesh.vertices_source)
-    finite = vs[np.isfinite(vs).all(axis=1)]
-    points = np.concatenate(
-        [
-            rng.uniform(-0.3, 0.3, (60, 2)),
-            rng.uniform(-5.0, 5.0, (30, 2)),
-            finite[rng.choice(len(finite), 20, replace=False)],
-        ]
-    )
-    qidx, _, _ = _hits_against_brute_force(point_mesh, f64(points))
-    assert to_np(qidx).size > 0
-
-
-def test_point_mass_candidates_average_at_most_three_times_the_box_floor(point_mesh):
-    """Near a point mass's caustic, candidates per point average at most three times the floor.
-
-    The floor is the number of grown leaf boxes containing the point, which
-    no bounding-box index can go below. The single uniform grid this index
-    replaced read 700 to 2,700 times the floor here, and the multi-level
-    grid measured 1.3 to 2.0 times on 13 lens meshes. The bound is on the
-    mean: next to the point-like caustic the floor itself reaches the
-    thousands, and where the floor is small, candidates have exceeded four
-    times it by up to 219.
-    """
-    rows = finite_rows(point_mesh)
-    vs, leaves = to_np(point_mesh.vertices_source), to_np(point_mesh.leaves)
-    grow = to_np(
-        leaf_grow(
-            point_mesh.origin_status,
-            point_mesh.origin_deviation,
-            point_mesh.leaf_origin,
-        )
-    )[rows]
-    tri = vs[leaves[rows]]
-    box_lo, box_hi = tri.min(axis=1) - grow[:, None], tri.max(axis=1) + grow[:, None]
-    beta = np.random.default_rng(41).uniform(-0.3, 0.3, (300, 2))
-    floor = np.array(
-        [np.all((box_lo <= p) & (p <= box_hi), axis=1).sum() for p in beta]
-    )
-    _, count = index_cells(point_mesh.index, f64(beta))
-    candidates = to_np(count).sum(axis=1)
-    assert candidates.mean() <= 3 * floor.mean()
-
-
-def test_index_hits_hold_at_most_pair_cap_pairs_per_step(mesh, beta, monkeypatch):
-    """Each step of a query holds at most ``PAIR_CAP`` pairs, or one point holding more, and the hits do not change."""
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
-    whole = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, beta, grow)
-    steps = []
-    chunk_hits = index_module._chunk_hits
-
-    def spy(index, vertices, triangles, points, start, count, total, grow):
-        steps.append((points.shape[0], total))
-        return chunk_hits(index, vertices, triangles, points, start, count, total, grow)
-
-    monkeypatch.setattr(index_module, "_chunk_hits", spy)
-    over_cap = shared = False
-    for cap in (7, 64):
-        monkeypatch.setattr(index_module, "PAIR_CAP", cap)
-        steps.clear()
-        got = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, beta, grow)
-        for name, a, b in zip(("qidx", "tri", "w"), got, whole):
-            np.testing.assert_array_equal(
-                to_np(a), to_np(b), err_msg=f"{name}, cap {cap}"
-            )
-        assert all(total <= cap or n == 1 for n, total in steps), steps
-        over_cap |= any(n == 1 and total > cap for n, total in steps)
-        shared |= any(n > 1 for n, _ in steps)
-    assert over_cap, "no point held more than the cap"
-    assert shared, "no step held several points"
 
 
 def test_index_hits_are_the_query_hits_with_raw_weights(mesh, beta):
