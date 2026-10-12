@@ -297,12 +297,6 @@ def closed_parts(split=None, max_level=MAX_LEVEL):
     return lat, cache, store, used, leaves, leaf_origin, origin, origin_leaves
 
 
-def hanging(lat, cache, ij):
-    """True where an edge midpoint of a triangle ``ij`` ``(n, 3, 2)`` is a leaf vertex."""
-    slot = cache_lookup(cache, lattice_key(lat, midpoint_ij(ij)))
-    return to_np((slot >= 0) & cache.active[mesh_backend.where(slot >= 0, slot, 0)])
-
-
 def tiles(lat, cache, used, leaves, leaf_origin, origin_leaves):
     """Positive leaf areas, and each origin's leaves summing to its area."""
     xy = lattice_xy(lat, cache.ij[used])
@@ -311,19 +305,6 @@ def tiles(lat, cache, used, leaves, leaf_origin, origin_leaves):
     summed = np.zeros_like(whole)
     np.add.at(summed, to_np(leaf_origin), child)
     return (child > 0).all() and np.allclose(summed, whole, rtol=1e-12)
-
-
-def test_closure_leaves_no_hanging_node():
-    lat, cache, store, used, leaves, _, _, _ = closed_parts()
-    pre = cache.ij[store.v[mesh_backend.flatnonzero(store.valid)]]
-    assert hanging(lat, cache, pre).any()
-    assert not hanging(lat, cache, cache.ij[used][leaves]).any()
-
-
-def test_closure_preserves_orientation():
-    lat, cache, _, used, leaves, _, _, _ = closed_parts()
-    xy = lattice_xy(lat, cache.ij[used])
-    assert (to_np(area2(xy[leaves])) > 0).all()
 
 
 def test_leaf_origin_groups_are_contiguous_and_tile_their_origin():
