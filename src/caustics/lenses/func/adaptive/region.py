@@ -653,9 +653,7 @@ def build_closed_magnification_region(
     mesh, curves, region = _build_closed_magnification_region(
         raytrace,
         jacobian,
-        to_mesh(fov),
-        to_mesh(init_res),
-        to_mesh(min_img_sep),
+        *to_mesh((fov, init_res, min_img_sep)),
         float(mu_min),
         None if mu_max is None else float(mu_max),
         to_mesh(max_depth),

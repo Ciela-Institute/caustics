@@ -314,10 +314,7 @@ def build_lens_mesh(
     mesh = _build_lens_mesh(
         raytrace,
         jacobian,
-        to_mesh(fov),
-        to_mesh(init_res),
-        to_mesh(min_img_sep),
-        to_mesh(max_depth),
+        *to_mesh((fov, init_res, min_img_sep, max_depth)),
         x0=to_mesh(x0),
         y0=to_mesh(y0),
         centers=to_mesh(centers),
@@ -881,10 +878,7 @@ def build_closed_lens_mesh(
     mesh, curves = _build_closed_lens_mesh(
         raytrace,
         jacobian,
-        to_mesh(fov),
-        to_mesh(init_res),
-        to_mesh(min_img_sep),
-        to_mesh(max_depth),
+        *to_mesh((fov, init_res, min_img_sep, max_depth)),
         growth=to_mesh(growth),
         max_iters=max_iters,
         x0=to_mesh(x0),

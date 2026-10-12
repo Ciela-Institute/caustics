@@ -365,8 +365,7 @@ def forward_raytrace(
     """
     device = backend.device(mesh.vertices_lens)
     found = _forward_raytrace(
-        to_mesh(bx),
-        to_mesh(by),
+        *to_mesh((bx, by)),
         raytrace,
         to_mesh(mesh),
         device=device,

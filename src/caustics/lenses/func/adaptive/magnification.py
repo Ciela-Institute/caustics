@@ -203,9 +203,7 @@ def total_magnification(bx, by, mesh, *, batch_size=None):
         ``(B,)`` float64.
     """
     device = backend.device(mesh.vertices_lens)
-    mu = _total_magnification_at(
-        to_mesh(bx), to_mesh(by), to_mesh(mesh), batch_size=batch_size
-    )
+    mu = _total_magnification_at(*to_mesh((bx, by, mesh)), batch_size=batch_size)
     return to_user(mu, device)
 
 
