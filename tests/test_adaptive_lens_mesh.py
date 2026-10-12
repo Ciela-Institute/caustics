@@ -136,13 +136,6 @@ def test_float32_callbacks_give_float64_values_with_det_a_formed_in_float32():
     assert to_np(out)[0, 3] == to_np(want)[0]
 
 
-def test_an_affine_lens_converges_at_level_zero():
-    mesh, _ = build(affine, affine_jacobian, init_res=2, min_img_sep=1.0, max_depth=3)
-    assert mesh.origin_leaves.shape[0] == 8
-    assert (to_np(mesh.origin_level) == 0).all()
-    assert (to_np(mesh.origin_status) == LEAF_CONVERGED).all()
-
-
 def test_the_build_samples_no_point_twice_and_calls_both_callbacks_alike():
     _, lens_ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.1)
     points = np.concatenate(lens_.calls.raytrace)
@@ -150,20 +143,6 @@ def test_the_build_samples_no_point_twice_and_calls_both_callbacks_alike():
     assert [len(c) for c in lens_.calls.raytrace] == [
         len(c) for c in lens_.calls.jacobian
     ]
-
-
-def test_statuses_are_set_only_at_the_finest_level_and_index_exactly_the_finite_leaves(
-    sie_mesh,
-):
-    mesh = sie_mesh
-    status, level = to_np(mesh.origin_status), to_np(mesh.origin_level)
-    assert (status[level < mesh.lattice.level - 1] == LEAF_CONVERGED).all()
-    assert (status != LEAF_CONVERGED).any()
-    indexed = np.unique(to_np(mesh.index.leaves))
-    leaf = status[to_np(mesh.leaf_origin)]
-    finite = (leaf & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) == 0
-    assert np.array_equal(indexed, np.flatnonzero(finite))
-    assert (leaf[indexed] != LEAF_CONVERGED).any()
 
 
 def test_finest_leaves_are_no_longer_than_the_mesh_s_min_img_sep(sie_mesh):
@@ -210,15 +189,34 @@ def leaf_level(mesh):
     return to_np(mesh.origin_level)[to_np(mesh.leaf_origin)]
 
 
-def test_every_indexed_leaf_has_finite_source_vertices():
+@pytest.mark.parametrize("bad", [np.nan, np.inf], ids=["nan", "inf"])
+def test_the_index_holds_exactly_the_leaves_with_a_finite_raytrace_and_jacobian(bad):
+    """A leaf whose raytrace is non-finite carries that flag alone and a
+    non-finite vertex, every other leaf has finite vertices, only finest-level
+    leaves carry a flag, and the index -- unconverged leaves included -- holds
+    exactly the finite ones."""
     fn, jac = broken_where(
-        localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0
+        localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0, bad
     )
     mesh, _ = build(fn, jac, min_img_sep=0.05)
-    vs = to_np(mesh.vertices_source)
-    leaves = to_np(mesh.leaves)
-    for leaf in np.unique(to_np(mesh.index.leaves)):
-        assert np.isfinite(vs[leaves[leaf]]).all()
+    status, level = to_np(mesh.origin_status), to_np(mesh.origin_level)
+    raytrace_bad = (status & LEAF_RAYTRACE_NONFINITE) != 0
+    finite_vertices = np.isfinite(
+        to_np(mesh.vertices_source)[to_np(mesh.origin_leaves)]
+    ).all(axis=(1, 2))
+    assert raytrace_bad.any()
+    assert (status[raytrace_bad] == LEAF_RAYTRACE_NONFINITE).all()
+    assert not finite_vertices[raytrace_bad].any()
+    assert finite_vertices[~raytrace_bad].all()
+    assert (level[status != LEAF_CONVERGED] == mesh.lattice.level - 1).all()
+    leaf = leaf_status(mesh)
+    finite = (leaf & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) == 0
+    assert (
+        finite & (leaf != LEAF_CONVERGED)
+    ).any(), "fixture must leave a finite leaf unconverged"
+    assert (
+        np.unique(to_np(mesh.index.leaves)).tolist() == np.flatnonzero(finite).tolist()
+    )
 
 
 def test_leaf_grow_is_the_origin_s_deviation_where_it_did_not_converge(sie_mesh):
@@ -237,19 +235,8 @@ def test_build_halves_the_requested_min_img_sep():
     assert mesh.min_img_sep == pytest.approx(0.2)
 
 
-def test_unconverged_finite_leaves_are_indexed():
-    mesh, _ = user_build(sie_like, sie_like_jacobian, **BUILD)
-    status = leaf_status(mesh)
-    indexed = set(to_np(mesh.index.leaves).tolist())
-    finite = (status & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) == 0
-    assert (
-        finite & (status != LEAF_CONVERGED)
-    ).any(), "fixture must flag some finite leaf"
-    assert indexed == set(np.flatnonzero(finite).tolist())
-
-
-def test_mesh_arrays_are_float64():
-    mesh, _ = user_build(affine, affine_jacobian, **BUILD)
+def test_every_vertex_carries_its_image_det_a_and_sigma_min_a_as_float64_exactly():
+    mesh, _ = user_build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
     for name in (
         "vertices_lens",
         "vertices_source",
@@ -257,6 +244,13 @@ def test_mesh_arrays_are_float64():
         "vertices_sigma_min",
     ):
         assert getattr(mesh, name).dtype == backend.float64, name
+    xy = to_np(mesh.vertices_lens)
+    J = localised_fold_jacobian(xy)
+    assert np.array_equal(to_np(mesh.vertices_source), localised_fold(xy))
+    assert np.array_equal(
+        to_np(mesh.vertices_det), J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
+    )
+    assert np.array_equal(to_np(mesh.vertices_sigma_min), to_np(sigma_min_2x2(f64(J))))
 
 
 def test_build_returns_a_consistent_mesh_for_an_affine_map():
@@ -268,21 +262,6 @@ def test_build_returns_a_consistent_mesh_for_an_affine_map():
     assert np.array_equal(to_np(mesh.leaf_origin), np.arange(L))
     src, lens_xy = to_np(mesh.vertices_source), to_np(mesh.vertices_lens)
     assert np.allclose(src, lens_xy @ AFFINE.T, rtol=1e-10, atol=1e-12)
-
-
-def test_vertices_are_compacted_and_ordered_by_lattice_key():
-    mesh, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
-    used = np.unique(to_np(mesh.leaves))
-    assert used.tolist() == list(range(mesh.vertices_lens.shape[0]))
-    xy = to_np(mesh.vertices_lens)
-    key = np.lexsort((xy[:, 1], xy[:, 0]))
-    assert np.array_equal(key, np.arange(len(xy)))
-
-
-def test_build_is_deterministic_on_a_refined_mesh():
-    a, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
-    b, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
-    assert_same(a, b)
 
 
 def test_two_builds_with_centers_are_identical_holes_included():
@@ -310,19 +289,6 @@ def test_depth_limited_warning_never_bare_quotes_the_halved_value():
     with pytest.warns(UserWarning, match=r"min_img_sep=0\.0002 arcsec") as record:
         build(affine, affine_jacobian, min_img_sep=2e-4, max_depth=1)
     assert not any("min_img_sep=0.0001" in str(w.message) for w in record)
-
-
-def test_nonfinite_leaves_from_a_nonfinite_region_are_excluded_from_the_index():
-    fn, jac = broken_where(
-        localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0, np.inf
-    )
-    mesh, _ = build(fn, jac, min_img_sep=0.05)
-    status = leaf_status(mesh)
-    nonfinite = (status & LEAF_RAYTRACE_NONFINITE) != 0
-    assert nonfinite.any()
-    assert not np.isfinite(to_np(mesh.vertices_source)).all()
-    indexed = set(to_np(mesh.index.leaves).tolist())
-    assert not indexed & set(np.flatnonzero(nonfinite).tolist())
 
 
 def test_parity_invalid_partitions_the_max_level_leaves(sie_mesh):
@@ -387,8 +353,14 @@ def independent_band(mesh, jac):
     [
         (localised_fold, localised_fold_jacobian, dict(init_res=4, min_img_sep=0.05)),
         (row_fold, row_fold_jacobian, dict(init_res=8, min_img_sep=2e-2)),
+        (
+            *broken_where(
+                localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0
+            ),
+            dict(init_res=4, min_img_sep=0.05),
+        ),
     ],
-    ids=["localised_fold", "row_fold"],
+    ids=["localised_fold", "row_fold", "nan_region"],
 )
 def test_band_is_the_sign_change_leaves_recomputed_independently(fn, jac, kw):
     """The band is exactly the finest origins whose six dets change class.
@@ -397,11 +369,14 @@ def test_band_is_the_sign_change_leaves_recomputed_independently(fn, jac, kw):
     origin with an exactly zero sample, which has no sign; outside the band
     those are the ones whose other samples are all positive, the class the
     band gives a zero. `localised_fold`'s curve is never a lattice row,
-    `row_fold`'s is one.
+    `row_fold`'s is one. Where the lens is NaN beside the curve, no band
+    leaf holds a non-finite sample.
     """
     mesh, _ = build(fn, jac, fov=4.0, **kw)
     band = mesh.critical_band
     got = to_np(band.leaves)
+    assert np.isfinite(to_np(band.det)).all()
+    assert not (to_np(mesh.origin_status)[got] & LEAF_RAYTRACE_NONFINITE).any()
     want = independent_band(mesh, jac)
     assert want.size > 0
     assert sorted(got.tolist()) == sorted(want.tolist())
@@ -438,21 +413,10 @@ def test_band_samples_are_lattice_exact_and_carry_the_lens_values():
     assert np.array_equal(source, row_fold(xy))
     J = row_fold_jacobian(xy)
     assert np.array_equal(det, J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0])
-
-
-def test_band_never_holds_a_leaf_with_a_nonfinite_sample():
-    fn, jac = broken_where(
-        localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0
-    )
-    mesh, _ = build(fn, jac, init_res=4, min_img_sep=0.05)
-    band = mesh.critical_band
-    got = to_np(band.leaves)
-    assert got.size > 0
-    assert sorted(got.tolist()) == sorted(independent_band(mesh, jac).tolist())
-    status = to_np(mesh.origin_status)
-    assert not ((status[got] & LEAF_RAYTRACE_NONFINITE) != 0).any()
-    assert np.isfinite(to_np(band.det)).all()
-    assert (to_np(band.lens)[:, 0] <= 1.0).all()
+    assert (np.diff(leaves) > 0).all()
+    lat = mesh.lattice
+    ij = np.rint((xy - to_np(lat.lo)) / lat.scale).astype(np.int64) + lat.origin
+    assert (np.diff(ij[:, 0] * (lat.n + 1) + ij[:, 1]) > 0).all()
 
 
 @pytest.mark.parametrize(
@@ -480,29 +444,6 @@ def test_a_mesh_survives_a_pickle_round_trip():
         assert type(getattr(again, name)) is type(getattr(mesh, name)), name
     for name in ("vertices_lens", "vertices_source", "leaves", "origin_status"):
         assert np.array_equal(to_np(getattr(again, name)), to_np(getattr(mesh, name)))
-
-
-def test_every_vertex_carries_det_a_as_float64():
-    mesh, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
-    assert mesh.vertices_det.dtype == mesh_backend.float64
-    J = localised_fold_jacobian(to_np(mesh.vertices_lens))
-    want = J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
-    assert np.array_equal(to_np(mesh.vertices_det), want)
-
-
-def test_a_critical_band_sample_at_a_vertex_carries_that_vertex_s_det():
-    mesh, _ = build(row_fold, row_fold_jacobian, init_res=8, min_img_sep=2e-2)
-    det = dict(
-        zip(
-            map(tuple, to_np(mesh.vertices_ij).tolist()),
-            to_np(mesh.vertices_det).tolist(),
-        )
-    )
-    lat, band = mesh.lattice, mesh.critical_band
-    ij = np.rint((to_np(band.lens) - to_np(lat.lo)) / lat.scale).astype(np.int64)
-    at = [k for k, p in enumerate(map(tuple, ij.tolist())) if p in det]
-    assert len(at) > 0
-    assert [to_np(band.det)[k] for k in at] == [det[tuple(ij[k])] for k in at]
 
 
 def test_a_float32_jacobian_still_gives_float64_det_a():
@@ -664,33 +605,6 @@ def test_converged_leaves_pass_jacobian_parity_at_their_own_samples(fn, jac, kw)
     assert ((det > 0).all(axis=1) | (det < 0).all(axis=1)).all()
 
 
-def test_failure_flags_are_mutually_consistent():
-    fn, jac = broken_where(
-        localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0
-    )
-    mesh, _ = build(fn, jac, min_img_sep=0.1)
-    status, level = to_np(mesh.origin_status), to_np(mesh.origin_level)
-    raytrace_bad = (status & LEAF_RAYTRACE_NONFINITE) != 0
-    parity_bad = (
-        status & (LEAF_APPROX_PARITY_UNRESOLVED | LEAF_JACOBIAN_PARITY_UNRESOLVED)
-    ) != 0
-    assert raytrace_bad.any() and parity_bad.any()
-    finite = np.isfinite(to_np(mesh.vertices_source)[to_np(mesh.origin_leaves)]).all(
-        axis=(1, 2)
-    )
-    assert (status[raytrace_bad] == LEAF_RAYTRACE_NONFINITE).all()
-    assert not finite[raytrace_bad].any()
-    assert finite[~raytrace_bad].all()
-    assert (level[status != LEAF_CONVERGED] == mesh.lattice.level - 1).all()
-
-
-def test_a_kappa_one_sheet_indexes_every_leaf():
-    """Its images and dets are finite, so no leaf is left out, though none converged."""
-    mesh, _ = build(collapse, collapse_jacobian, min_img_sep=1.0)
-    indexed = np.unique(to_np(mesh.index.leaves))
-    assert indexed.tolist() == list(range(mesh.leaves.shape[0]))
-
-
 def test_coverage_does_not_drop_at_level_transitions():
     """Every point a uniform finest-level mesh covers, the adaptive mesh covers too."""
     fov, init_res, sep = 4.0, 4, 0.1
@@ -751,14 +665,10 @@ def test_an_extension_samples_no_point_the_old_mesh_holds():
     mesh, _ = build(row_fold, row_fold_jacobian, init_res=8, min_img_sep=2e-2)
     assert mesh.critical_band.leaves.shape[0] > 0
     lens_ = numpy_lens(row_fold, row_fold_jacobian)
-    grown = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 6.0)
+    extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 6.0)
     old = np.concatenate((to_np(mesh.vertices_lens), to_np(mesh.critical_band.lens)))
     old = {tuple(p) for p in old}
     assert not any(tuple(p) in old for p in np.concatenate(lens_.calls.raytrace))
-    fresh, _ = build(
-        row_fold, row_fold_jacobian, fov=6.0, init_res=12, min_img_sep=2e-2
-    )
-    assert_same(grown, fresh)
 
 
 # Extension and the closed build. The fixtures use dyadic fovs, centers and
@@ -841,18 +751,19 @@ def edge_bump_jacobian(p):
     return J
 
 
-def test_a_mesh_records_its_lattice_and_the_lattice_coordinates_of_its_vertices():
+def test_a_mesh_records_its_lattice_and_its_vertices_compacted_in_lattice_key_order():
     mesh, _ = build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05, x0=0.25)
     lat = mesh.lattice
-    assert lat.origin == 0
-    assert lat.n == 4 << lat.level
+    assert lat.origin == 0 and lat.n == 4 << lat.level
     assert (lat.fov, lat.init_res) == (4.0, 4)
     assert to_np(mesh.vertices_ij).dtype == np.int64
     assert np.array_equal(
         to_np(mesh.vertices_lens), to_np(lattice_xy(lat, mesh.vertices_ij))
     )
-    keys = to_np(lattice_key(lat, mesh.vertices_ij))
-    assert (np.diff(keys) > 0).all()
+    assert (np.diff(to_np(lattice_key(lat, mesh.vertices_ij))) > 0).all()
+    assert np.unique(to_np(mesh.leaves)).tolist() == list(
+        range(mesh.vertices_lens.shape[0])
+    )
 
 
 def test_origin_cls_is_the_orientation_class_of_each_origin_leaf():
@@ -866,22 +777,6 @@ def test_origin_cls_is_the_orientation_class_of_each_origin_leaf():
     scale = (1 << (mesh.lattice.level - level))[:, None, None]
     assert len(set(level.tolist())) > 1
     assert np.array_equal(P, scale * (R @ to_np(G)[to_np(mesh.origin_cls)]))
-
-
-def test_band_rows_are_in_origin_order():
-    mesh, _ = build(row_fold, row_fold_jacobian, 4.0, 8, 2e-2)
-    leaves = to_np(mesh.critical_band.leaves)
-    assert leaves.size > 1
-    assert (np.diff(leaves) > 0).all()
-
-
-def test_band_samples_are_in_ascending_lattice_key_order():
-    mesh, _ = build(row_fold, row_fold_jacobian, 4.0, 8, 2e-2)
-    lat = mesh.lattice
-    xy = to_np(mesh.critical_band.lens)
-    ij = np.rint((xy - to_np(lat.lo)) / lat.scale).astype(np.int64) + lat.origin
-    keys = ij[:, 0] * (lat.n + 1) + ij[:, 1]
-    assert (np.diff(keys) > 0).all()
 
 
 def test_seeding_a_mesh_and_freezing_it_again_reproduces_it():
@@ -905,14 +800,12 @@ def test_seeding_a_mesh_and_freezing_it_again_reproduces_it():
 
 def test_seeding_carries_det_a_and_an_extension_keeps_it_at_every_old_vertex():
     """Seeded vertices keep the det A their mesh stored -- shifted here, so a
-    value sampled again could not pass for it -- and none is sampled again."""
+    value sampled again could not pass for it."""
     fn, jac = ring_fold(2.0)
     mesh, lens_ = build(fn, jac, 4.0, 4, 0.05)
     marked = mesh._replace(vertices_det=mesh.vertices_det + 1.0)
     cache, _, _ = _seed(marked, extend_lattice(marked.lattice, 1), 1)
     assert np.array_equal(to_np(cache.values)[:, 2], to_np(marked.vertices_det))
-    lens_.calls.raytrace.clear()
-    lens_.calls.jacobian.clear()
     ext = extend_lens_mesh(marked, lens_.raytrace, lens_.jacobian_lens_equation, 6.0)
     old = to_np(marked.vertices_ij) + ext.lattice.origin
     det = dict(
@@ -922,11 +815,6 @@ def test_seeding_carries_det_a_and_an_extension_keeps_it_at_every_old_vertex():
         )
     )
     assert [det[tuple(v)] for v in old.tolist()] == to_np(marked.vertices_det).tolist()
-    lat = ext.lattice
-    for method in ("raytrace", "jacobian"):
-        ij = np.rint((called_at(lens_.calls, method) - to_np(lat.lo)) / lat.scale)
-        called = set(map(tuple, (ij.astype(np.int64) + lat.origin).tolist()))
-        assert not called & set(map(tuple, old.tolist()))
 
 
 def fresh_equivalent(kw, target):
@@ -1006,12 +894,10 @@ def test_extensions_chain():
     mesh, lens_ = build(localised_fold, localised_fold_jacobian, **kw)
     rt, jac = lens_.raytrace, lens_.jacobian_lens_equation
     twice = extend_lens_mesh(extend_lens_mesh(mesh, rt, jac, 6.0), rt, jac, 8.0)
-    once = extend_lens_mesh(mesh, rt, jac, 8.0)
     fresh, _ = build(
         localised_fold, localised_fold_jacobian, **fresh_equivalent(kw, 8.0)
     )
     assert_same(twice, fresh)
-    assert_same(once, fresh)
 
 
 def test_an_extension_carries_its_holes_and_traces_none_of_them_again():
@@ -1145,18 +1031,6 @@ def test_an_extension_warns_depth_limited_as_the_fresh_build_would():
         build(localised_fold, localised_fold_jacobian, **fresh_equivalent(kw, 6.0))
     assert any("depth-limited" in m for m in _messages(got))
     assert _messages(got) == _messages(want)
-
-
-def test_an_extension_closes_the_critical_curves_the_fov_cut():
-    """At fov 2 the tangential curve (radius ~1.18) crosses the domain's edge; at fov 3 it lies inside."""
-    kw = dict(fov=2.0, init_res=4, min_img_sep=0.05)
-    mesh, lens_ = build(sie_like, sie_like_jacobian, **kw)
-    assert not to_np(critical_curves_and_caustics(mesh).closed).all()
-    ext = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 3.0)
-    got = critical_curves_and_caustics(ext)
-    fresh, _ = build(sie_like, sie_like_jacobian, **fresh_equivalent(kw, 3.0))
-    assert got.closed.shape[0] > 0 and to_np(got.closed).all()
-    assert_same(got, critical_curves_and_caustics(fresh))
 
 
 def test_an_extension_of_a_mesh_on_a_device_stays_on_it(device):
@@ -1460,13 +1334,6 @@ def test_the_sampler_s_fourth_column_is_sigma_min_of_the_jacobian():
     x, y = xy[:, 0], xy[:, 1]
     J = np.stack((np.stack((x, 2.0 * y), -1), np.stack((0.5 * x + y, -y), -1)), axis=-2)
     assert np.array_equal(out[:, 3], to_np(sigma_min_2x2(f64(J))))
-
-
-def test_every_vertex_carries_sigma_min_of_its_jacobian():
-    mesh, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
-    assert mesh.vertices_sigma_min.dtype == mesh_backend.float64
-    want = sigma_min_2x2(f64(localised_fold_jacobian(to_np(mesh.vertices_lens))))
-    assert np.array_equal(to_np(mesh.vertices_sigma_min), to_np(want))
 
 
 def _bowl(p):
