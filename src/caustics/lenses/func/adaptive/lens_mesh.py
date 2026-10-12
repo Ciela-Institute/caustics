@@ -31,10 +31,7 @@ from .lattice import (
     depth_floor,
     extend_lattice,
     initial_triangles,
-    lattice_fov,
-    lattice_h0,
     lattice_ij_from_key,
-    lattice_init_res,
     lattice_key,
     lattice_xy,
     make_lattice,
@@ -86,8 +83,8 @@ class LensMesh(NamedTuple):
     ----------
     lattice: Lattice
         The lattice every vertex lives on. ``lattice.level - 1`` is the
-        finest level, :func:`~.lattice.lattice_fov` the fov and
-        :func:`~.lattice.lattice_init_res` the level-0 cells per axis.
+        finest level, ``lattice.fov`` the fov and ``lattice.init_res`` the
+        level-0 cells per axis.
     vertices_ij: ArrayLike
         ``(V, 2)`` int64 lattice coordinates, in ascending lattice-key order.
     vertices_lens: ArrayLike
@@ -446,7 +443,7 @@ def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None
         values6[..., 3],
         store.cls[young],
         store.level[young],
-        lattice_h0(lat),
+        lat.h0,
         min_img_sep,
     )
     status = mesh_backend.fill_at_indices(status, young, young_status)
@@ -596,12 +593,12 @@ def extend_lens_mesh(mesh, raytrace, jacobian, fov, *, batch_size=None):
 
 def _extend_lens_mesh(mesh, raytrace, jacobian, fov, *, device, batch_size):
     """:func:`extend_lens_mesh` on ``mesh_backend`` arrays; ``device`` is the lens's."""
-    h0 = lattice_h0(mesh.lattice)
-    k = max(0, math.ceil((float(fov) - lattice_fov(mesh.lattice)) / (2.0 * h0) - 1e-9))
+    h0 = mesh.lattice.h0
+    k = max(0, math.ceil((float(fov) - mesh.lattice.fov) / (2.0 * h0) - 1e-9))
     if k == 0:
         return mesh
     lat = extend_lattice(to_device(mesh.lattice, build_device()), k)
-    init_res, max_level = lattice_init_res(lat), lat.level - 1
+    init_res, max_level = lat.init_res, lat.level - 1
     check_lattice_keys(
         init_res,
         max_level,
@@ -948,7 +945,7 @@ def _build_closed_lens_mesh(
             mesh,
             raytrace,
             jacobian,
-            growth * lattice_fov(mesh.lattice),
+            growth * mesh.lattice.fov,
             device=device,
             batch_size=batch_size,
         )
@@ -965,7 +962,7 @@ def _build_closed_lens_mesh(
         what = " and ".join(why)
         warn(
             f"{what[0].upper()}{what[1:]} after {max_iters} extension(s), at "
-            f"fov={lattice_fov(mesh.lattice):g}; raise max_iters or growth to grow "
+            f"fov={mesh.lattice.fov:g}; raise max_iters or growth to grow "
             "it further.",
             stacklevel=3,
         )

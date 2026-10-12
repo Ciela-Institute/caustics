@@ -1,5 +1,5 @@
 """
-The dyadic integer lattice every mesh vertex lives on, and triangles on it.
+The dyadic integer lattice every mesh vertex lives on, its sizes, and triangles on it.
 
 Keys and lens-plane positions, growth by whole level-0 cells, the depth
 floor and the int64 key limit, the level-0 triangles of a grid or of the ring
@@ -43,25 +43,12 @@ def warn_depth_limited(what, request, h0, tol, max_level):
     )
 
 
-def lattice_h0(lat):
-    """Level-0 cell size, ``fov / init_res``.
-
-    *Unit: arcsec*
-    """
-    return lat.scale * (1 << lat.level)
-
-
-def lattice_fov(lat):
-    """Side of the square the lattice covers.
-
-    *Unit: arcsec*
-    """
-    return lat.n * lat.scale
-
-
-def lattice_init_res(lat):
-    """Level-0 cells per axis."""
-    return lat.n >> lat.level
+def max_key_level(init_res):
+    """The deepest ``max_level`` whose lattice, one level finer, int64 keys hold; ``-1`` if not even level 0's."""
+    level = -1
+    while ((int(init_res) << (level + 2)) + 1) ** 2 < MAX_KEY:
+        level += 1
+    return level
 
 
 def check_lattice_keys(init_res, max_level, remedy):
@@ -72,8 +59,8 @@ def check_lattice_keys(init_res, max_level, remedy):
     :class:`Lattice`), so that is the one sized here. ``remedy`` ends the
     message: what the caller can change.
     """
-    n = init_res * (1 << (max_level + 1))
-    if (n + 1) ** 2 >= MAX_KEY:
+    if max_level > max_key_level(init_res):
+        n = init_res * (1 << (max_level + 1))
         raise ValueError(
             f"lattice too fine to key in int64: init_res={init_res} at level "
             f"{max_level} needs a lattice of {n + 1} points per axis, one level "
@@ -118,6 +105,35 @@ class Lattice(NamedTuple):
     scale: float
     lo: ArrayLike
     origin: int = 0
+
+    @property
+    def h0(self):
+        """Level-0 cell size, ``fov / init_res``.
+
+        *Unit: arcsec*
+        """
+        return self.scale * (1 << self.level)
+
+    @property
+    def fov(self):
+        """Side of the square the lattice covers.
+
+        *Unit: arcsec*
+        """
+        return self.n * self.scale
+
+    @property
+    def init_res(self):
+        """Level-0 cells per axis."""
+        return self.n >> self.level
+
+    @property
+    def corner(self):
+        """Position of lattice point ``(0, 0)``, ``(2,)``.
+
+        *Unit: arcsec*
+        """
+        return lattice_xy(self, mesh_backend.zeros((2,), dtype=mesh_backend.int64))
 
 
 def make_lattice(fov, x0, y0, init_res, lattice_level):
@@ -207,6 +223,25 @@ def lattice_xy(lat, ij):
     )
 
 
+def level0_cell(ij, lattice_level):
+    """
+    The level-0 cell of each triangle: the lower corner of its lattice bounding box, in level-0 cells.
+
+    Parameters
+    ----------
+    ij: ArrayLike
+        ``(n, 3, 2)`` int64 lattice coordinates.
+    lattice_level: int
+        The level the lattice is built at.
+
+    Returns
+    -------
+    ArrayLike
+        ``(n, 2)`` int64.
+    """
+    return mesh_backend.min(ij, dim=1) // (1 << int(lattice_level))
+
+
 def initial_triangles(init_res, lattice_level, root_class):
     """
     Level-0 triangles: two per cell, split on the ``(0,0)-(1,1)`` diagonal.
@@ -276,8 +311,7 @@ def ring_triangles(init_res, k, lattice_level, root_class):
         ``(T,)`` int64 orientation classes.
     """
     ij, cls = initial_triangles(init_res, lattice_level, root_class)
-    # Both root shapes put theta_1 at their cell's (0, 0) corner.
-    cell = ij[:, 0, :] // (1 << int(lattice_level))
+    cell = level0_cell(ij, lattice_level)
     inner = (cell >= k) & (cell < init_res - k)
     keep = mesh_backend.flatnonzero(~(inner[:, 0] & inner[:, 1]))
     return ij[keep], cls[keep]

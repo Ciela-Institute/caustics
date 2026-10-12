@@ -30,17 +30,15 @@ from .geometry import (
     to_device,
 )
 from .lattice import (
-    MAX_KEY,
     Lattice,
     check_lattice_keys,
     depth_floor,
     extend_lattice,
     initial_triangles,
-    lattice_fov,
-    lattice_h0,
-    lattice_init_res,
     lattice_xy,
+    level0_cell,
     make_lattice,
+    max_key_level,
     ring_triangles,
 )
 from .refine import (
@@ -116,11 +114,6 @@ class SourceMesh(NamedTuple):
     cell_caustic: ArrayLike
 
 
-def _corner(lat):
-    """The position of lattice point ``(0, 0)``, ``(2,)``."""
-    return lattice_xy(lat, mesh_backend.zeros((2,), dtype=mesh_backend.int64))
-
-
 def _boundary_box(mesh):
     """The lower and upper corners of the image of ``mesh``'s fov boundary, its finite points only."""
     poly = mesh.vertices_source[_fov_boundary(mesh)]
@@ -128,14 +121,6 @@ def _boundary_box(mesh):
         mesh_backend.flatnonzero(mesh_backend.all(mesh_backend.isfinite(poly), dim=1))
     ]
     return mesh_backend.min(poly, dim=0), mesh_backend.max(poly, dim=0)
-
-
-def _key_level_cap(init_res):
-    """The deepest ``max_level`` whose lattice, one level finer, int64 keys hold (:func:`~.lattice.check_lattice_keys`)."""
-    level = 0
-    while ((int(init_res) << (level + 2)) + 1) ** 2 < MAX_KEY:
-        level += 1
-    return level
 
 
 def _source_lattice(mesh, tables):
@@ -151,12 +136,12 @@ def _source_lattice(mesh, tables):
     lo, hi = _boundary_box(mesh)
     side = float(mesh_backend.to_numpy(mesh_backend.max(hi - lo)))
     x0, y0 = mesh_backend.to_numpy(0.5 * (lo + hi)).tolist()
-    init_res = lattice_init_res(mesh.lattice)
+    init_res = mesh.lattice.init_res
     usable = mesh_backend.isfinite(tables.size) & (tables.size > 0)
     smallest = mesh_backend.min(mesh_backend.where(usable, tables.size, math.inf))
     max_level = min(
         depth_floor(side / init_res, float(mesh_backend.to_numpy(smallest))),
-        _key_level_cap(init_res),
+        max_key_level(init_res),
     )
     return make_lattice(side, x0, y0, init_res, max_level + 1), max_level
 
@@ -205,7 +190,7 @@ def _cell_validity(mesh, lat):
     :func:`~.lens_mesh.inside_fov_image` skips it.
     """
     int64 = mesh_backend.int64
-    r = lattice_init_res(lat)
+    r = lat.init_res
     g = mesh_backend.arange(r + 1, dtype=int64) * (1 << lat.level)
     gi, gj = mesh_backend.meshgrid(g, g, indexing="ij")
     corners = lattice_xy(
@@ -219,7 +204,7 @@ def _cell_validity(mesh, lat):
     finite = mesh_backend.flatnonzero(
         mesh_backend.all(mesh_backend.isfinite(lo) & mesh_backend.isfinite(hi), dim=1)
     )
-    cut = _cells_of_boxes(lo[finite], hi[finite], _corner(lat), lattice_h0(lat), r)
+    cut = _cells_of_boxes(lo[finite], hi[finite], lat.corner, lat.h0, r)
     return mesh_backend.fill_at_indices(valid.reshape(-1), cut, False).reshape(r, r)
 
 
@@ -255,8 +240,8 @@ def _caustic_segments(curves):
 def _caustic_cells(curves, lat):
     """True at the level-0 cells of ``lat`` a true caustic segment's bounding box touches, ``(R, R)`` bool."""
     lo, hi, _ = _caustic_segments(curves)
-    r = lattice_init_res(lat)
-    cells = _cells_of_boxes(lo, hi, _corner(lat), lattice_h0(lat), r)
+    r = lat.init_res
+    cells = _cells_of_boxes(lo, hi, lat.corner, lat.h0, r)
     marked = mesh_backend.zeros((r * r,), dtype=mesh_backend.bool)
     return mesh_backend.fill_at_indices(marked, cells, True).reshape(r, r)
 
@@ -271,7 +256,7 @@ def _caustic_marks(curves, lat, max_level):
     segments.
     """
     lo, hi, length = _caustic_segments(curves)
-    h0, r, corner = lattice_h0(lat), lattice_init_res(lat), _corner(lat)
+    h0, r, corner = lat.h0, lat.init_res, lat.corner
     marks = []
     for level in range(max_level):
         sel = mesh_backend.flatnonzero(length < math.sqrt(2.0) * h0 / 2**level)
@@ -299,13 +284,13 @@ def _source_split(lat, valid, marks, mu_min, mu_max):
     catches the strip by a fold where ``mu_tot``, diverging like ``1 /
     sqrt(d)``, exceeds the threshold although every sample near it is below.
     """
-    r, h0 = lattice_init_res(lat), lattice_h0(lat)
+    r, h0 = lat.init_res, lat.h0
     upper = mu_min if mu_max is None else mu_max
 
     def split(ij, values6, cls, level):
         mu, size = values6[..., 0], values6[..., 1]
         corner = mesh_backend.min(ij, dim=1)
-        cell = corner // (1 << lat.level)
+        cell = level0_cell(ij, lat.level)
         ok = valid[cell[:, 0], cell[:, 1]]
         edge = (
             math.sqrt(2.0) * h0 / mesh_backend.to(2**level, dtype=mesh_backend.float64)
@@ -356,7 +341,7 @@ def _source_mesh(mesh, curves, mu_min, mu_max):
     split = _source_split(
         lat, valid, _caustic_marks(curves, lat, max_level), mu_min, mu_max
     )
-    ij, cls = initial_triangles(lattice_init_res(lat), lat.level, ROOT_CLASS)
+    ij, cls = initial_triangles(lat.init_res, lat.level, ROOT_CLASS)
     cache, store, rows = add_roots(
         empty_cache(2), empty_store(), lat, ij, cls, sample, None
     )
@@ -408,19 +393,6 @@ class MagnificationRegion(NamedTuple):
     mu_max: float
 
 
-def _leaf_cell(src):
-    """The level-0 cell of each source leaf: the lower corner of its lattice bounding box at level 0, ``(L, 2)``."""
-    return mesh_backend.min(src.vertices_ij[src.leaves], dim=1) // (
-        1 << src.lattice.level
-    )
-
-
-def _leaf_valid(src):
-    """True where a source leaf's level-0 cell is valid, ``(L,)``."""
-    cell = _leaf_cell(src)
-    return src.cell_valid[cell[:, 0], cell[:, 1]]
-
-
 def _contours(src, field, leaf_valid):
     """The zero set of ``field`` over the valid leaves, positive side on the left: points, offsets, closed."""
     tri = src.leaves[mesh_backend.flatnonzero(leaf_valid)]
@@ -461,7 +433,7 @@ def _region(src, mu_min, mu_max):
     f64 = mesh_backend.float64
     mu = src.values[:, 0]
     upper = math.inf if mu_max is None else float(mu_max)
-    cell = _leaf_cell(src)
+    cell = level0_cell(src.vertices_ij[src.leaves], src.lattice.level)
     leaf_valid = src.cell_valid[cell[:, 0], cell[:, 1]]
     fields = [(mu - mu_min, mu_min)]
     if mu_max is not None:
@@ -570,14 +542,14 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
     int64 = mesh_backend.int64
     old = src.lattice
     lo, hi = _boundary_box(mesh)
-    corner = _corner(old)
+    corner = old.corner
     over = mesh_backend.max(
-        mesh_backend.concatenate((corner - lo, hi - corner - lattice_fov(old)), dim=0)
+        mesh_backend.concatenate((corner - lo, hi - corner - old.fov), dim=0)
     )
-    k = max(0, math.ceil(float(mesh_backend.to_numpy(over)) / lattice_h0(old) - 1e-9))
+    k = max(0, math.ceil(float(mesh_backend.to_numpy(over)) / old.h0 - 1e-9))
     lat = extend_lattice(old, k)
     check_lattice_keys(
-        lattice_init_res(lat),
+        lat.init_res,
         src.max_level,
         "Build the lens mesh at a larger fov to begin with.",
     )
@@ -593,14 +565,14 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
         src.origin_cls,
     )
     valid = _cell_validity(mesh, lat)
-    r0 = lattice_init_res(old)
+    r0 = old.init_res
     was = mesh_backend.fill_at_indices(
         mesh_backend.zeros_like(valid),
         (slice(k, k + r0), slice(k, k + r0)),
         src.cell_valid,
     )
     rows = mesh_backend.arange(store.v.shape[0], dtype=int64)
-    cell = mesh_backend.min(cache.ij[store.v], dim=1) // (1 << lat.level)
+    cell = level0_cell(cache.ij[store.v], lat.level)
     held = was[cell[:, 0], cell[:, 1]]
     newly = valid[cell[:, 0], cell[:, 1]] & ~held
     untested = rows[mesh_backend.flatnonzero(newly)]
@@ -618,7 +590,7 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
         )
     )
     if k:
-        ij, cls = ring_triangles(lattice_init_res(lat), k, lat.level, ROOT_CLASS)
+        ij, cls = ring_triangles(lat.init_res, k, lat.level, ROOT_CLASS)
         cache, store, ring = add_roots(cache, store, lat, ij, cls, sample, None)
         untested = mesh_backend.concatenate((ring, untested), dim=0)
     split = _source_split(
@@ -741,7 +713,7 @@ def _build_closed_magnification_region(
             mesh,
             raytrace,
             jacobian,
-            growth * lattice_fov(mesh.lattice),
+            growth * mesh.lattice.fov,
             device=device,
             batch_size=batch_size,
         )
@@ -751,7 +723,7 @@ def _build_closed_magnification_region(
     if math.isnan(region.area):
         warn(
             f"The region still reaches the edge of the valid source domain after "
-            f"{max_iters} extension(s), at fov={lattice_fov(mesh.lattice):g}; raise "
+            f"{max_iters} extension(s), at fov={mesh.lattice.fov:g}; raise "
             "max_iters or growth to grow it further. No fov bounds a region whose "
             "mu_min is at or below the far-field total magnification.",
             stacklevel=3,

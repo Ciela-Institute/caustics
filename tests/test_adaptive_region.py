@@ -18,10 +18,8 @@ from caustics.lenses.func.adaptive import (
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
 from caustics.lenses.func.adaptive.geometry import ROOT_SHAPES
 from caustics.lenses.func.adaptive.lattice import (
-    lattice_fov,
-    lattice_h0,
-    lattice_init_res,
     lattice_xy,
+    level0_cell,
     make_lattice,
     midpoint_ij,
 )
@@ -43,7 +41,6 @@ from caustics.lenses.func.adaptive.region import (
     _caustic_marks,
     _cell_validity,
     _extend_source_mesh,
-    _leaf_valid,
     _region,
     _sampler,
     _source_lattice,
@@ -162,15 +159,13 @@ def test_the_source_lattice_spans_the_fov_boundary_image_down_to_the_smallest_le
     mesh = point[0]
     tables = leaf_tables(mesh)
     lat, max_level = _source_lattice(mesh, tables)
-    assert lattice_init_res(lat) == lattice_init_res(mesh.lattice)
+    assert lat.init_res == mesh.lattice.init_res
     poly = to_np(mesh.vertices_source[_fov_boundary(mesh)])
     corner = to_np(lattice_xy(lat, i64([0, 0])))
-    assert (poly >= corner - 1e-12).all() and (
-        poly <= corner + lattice_fov(lat) + 1e-12
-    ).all()
+    assert (poly >= corner - 1e-12).all() and (poly <= corner + lat.fov + 1e-12).all()
     size = to_np(tables.size)
     smallest = size[np.isfinite(size) & (size > 0)].min()
-    edge = math.sqrt(2.0) * lattice_h0(lat)
+    edge = math.sqrt(2.0) * lat.h0
     assert edge / 2**max_level <= smallest < edge / 2 ** (max_level - 1)
 
 
@@ -179,7 +174,7 @@ def test_every_point_of_a_valid_cell_lies_inside_the_fov_boundary_image(sis):
     lat, _ = _source_lattice(mesh, leaf_tables(mesh))
     valid = to_np(_cell_validity(mesh, lat))
     assert 0 < valid.sum() < valid.size
-    corner, h0 = to_np(lattice_xy(lat, i64([0, 0]))), lattice_h0(lat)
+    corner, h0 = to_np(lattice_xy(lat, i64([0, 0]))), lat.h0
     t = (np.arange(6) + 0.5) / 6
     u = np.stack(np.meshgrid(t, t, indexing="ij"), axis=-1).reshape(-1, 2)
     points = corner + h0 * (np.argwhere(valid)[:, None, :] + u[None])
@@ -190,7 +185,7 @@ def test_a_cell_the_fov_boundary_image_runs_through_is_invalid(sis):
     mesh = sis[0]
     lat, _ = _source_lattice(mesh, leaf_tables(mesh))
     valid = to_np(_cell_validity(mesh, lat))
-    corner, h0 = to_np(lattice_xy(lat, i64([0, 0]))), lattice_h0(lat)
+    corner, h0 = to_np(lattice_xy(lat, i64([0, 0]))), lat.h0
     poly = to_np(mesh.vertices_source[_fov_boundary(mesh)])
     cell = np.clip(np.floor((poly - corner) / h0).astype(int), 0, valid.shape[0] - 1)
     assert not valid[cell[:, 0], cell[:, 1]].any()
@@ -204,8 +199,8 @@ def test_every_caustic_segment_marks_its_cell_at_every_level_coarser_than_it():
     marks = [set(to_np(m).tolist()) for m in _caustic_marks(curves, lat, max_level)]
     corner, h0, r = (
         to_np(lattice_xy(lat, i64([0, 0]))),
-        lattice_h0(lat),
-        lattice_init_res(lat),
+        lat.h0,
+        lat.init_res,
     )
     source, offsets = to_np(curves.source), to_np(curves.offsets)
     for lo, hi in zip(offsets[:-1], offsets[1:]):
@@ -351,7 +346,9 @@ def test_a_region_crossing_an_invalid_leaf_between_its_vertices_has_nan_area(poi
     mesh, curves = point
     src = _source_mesh(mesh, curves, 3.0, 10.0)
     assert math.isfinite(_region(src, 3.0, 10.0).area)
-    valid, leaves = to_np(_leaf_valid(src)), to_np(src.leaves)
+    leaves = to_np(src.leaves)
+    cell = to_np(level0_cell(src.vertices_ij[src.leaves], src.lattice.level))
+    valid = to_np(src.cell_valid)[cell[:, 0], cell[:, 1]]
     in_valid = np.zeros(src.vertices.shape[0], dtype=bool)
     in_valid[leaves[valid].ravel()] = True
     a, b = next(
@@ -539,7 +536,7 @@ def test_the_closed_build_grows_the_fov_until_the_region_is_bounded():
         1.5,
         centers=[(0.0, 0.0)],
     )
-    assert lattice_fov(to_mesh(mesh).lattice) > 6.0
+    assert to_mesh(mesh).lattice.fov > 6.0
     assert to_np(region.closed).all()
     assert region.area == pytest.approx(4.0 * math.pi, rel=1e-2)
 

@@ -53,10 +53,7 @@ from caustics.lenses.func.adaptive.lattice import (
     depth_floor,
     extend_lattice,
     initial_triangles,
-    lattice_fov,
-    lattice_h0,
     lattice_ij_from_key,
-    lattice_init_res,
     lattice_key,
     lattice_xy,
     make_lattice,
@@ -726,12 +723,14 @@ def test_to_device_maps_every_array_field_of_nested_named_tuples():
 
 def test_the_derived_lattice_sizes_match_the_build_arguments():
     lat = make_lattice(4.0, 0.25, -0.5, 8, 5)
-    assert lattice_init_res(lat) == 8
-    assert lattice_h0(lat) == 0.5
-    assert lattice_fov(lat) == 4.0
+    assert lat.init_res == 8
+    assert lat.h0 == 0.5
+    assert lat.fov == 4.0
     grown = extend_lattice(lat, 2)
-    assert lattice_init_res(grown) == 12 and lattice_fov(grown) == 6.0
-    assert lattice_h0(grown) == 0.5
+    assert grown.init_res == 12 and grown.fov == 6.0
+    assert grown.h0 == 0.5
+    assert to_np(lat.corner).tolist() == [-1.75, -2.5]
+    assert to_np(grown.corner).tolist() == [-2.75, -3.5]
 
 
 def test_keys_round_trip_without_a_stride_field():

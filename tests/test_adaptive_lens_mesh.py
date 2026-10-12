@@ -36,9 +36,6 @@ from caustics.lenses.func.adaptive.geometry import (
 from caustics.lenses.func.adaptive.index import index_hits
 from caustics.lenses.func.adaptive.lattice import (
     extend_lattice,
-    lattice_fov,
-    lattice_h0,
-    lattice_init_res,
     lattice_key,
     lattice_xy,
     make_lattice,
@@ -1208,7 +1205,7 @@ def test_a_mesh_records_its_lattice_and_the_lattice_coordinates_of_its_vertices(
     lat = mesh.lattice
     assert lat.origin == 0
     assert lat.n == 4 << lat.level
-    assert (lattice_fov(lat), lattice_init_res(lat)) == (4.0, 4)
+    assert (lat.fov, lat.init_res) == (4.0, 4)
     assert to_np(mesh.vertices_ij).dtype == np.int64
     assert np.array_equal(
         to_np(mesh.vertices_lens), to_np(lattice_xy(lat, mesh.vertices_ij))
@@ -1359,7 +1356,7 @@ def test_an_extension_is_the_fresh_build_of_the_larger_fov(case):
     mesh, lens_, _ = xbuild(fn, jac, **kw)
     got = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, target)
     want, _, _ = xbuild(fn, jac, **fresh_equivalent(kw, target))
-    assert lattice_init_res(got.lattice) > lattice_init_res(mesh.lattice)
+    assert got.lattice.init_res > mesh.lattice.init_res
     assert_same(got, want)
 
 
@@ -1464,8 +1461,8 @@ def affine_mesh():
 def test_the_requested_fov_rounds_up_to_whole_cells(affine_mesh, fov, want):
     mesh, lens_, _ = affine_mesh
     ext = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, fov)
-    assert lattice_fov(ext.lattice) == want
-    assert lattice_init_res(ext.lattice) == round(want / 0.5)
+    assert ext.lattice.fov == want
+    assert ext.lattice.init_res == round(want / 0.5)
 
 
 @pytest.mark.parametrize("fov", [4.0, 4.0 - 1e-12, 3.9])
@@ -1483,7 +1480,7 @@ def test_an_extension_int64_keys_cannot_hold_raises():
     mesh, lens_, _ = xbuild(affine, affine_jacobian, 1.0, 1, 1e-7)
     assert mesh.lattice.level - 1 == 25
     rt, jac = lens_.raytrace, lens_.jacobian_lens_equation
-    assert lattice_init_res(extend_lens_mesh(mesh, rt, jac, 45.0).lattice) == 45
+    assert extend_lens_mesh(mesh, rt, jac, 45.0).lattice.init_res == 45
     with pytest.raises(ValueError, match="lattice too fine.*Extend by less"):
         extend_lens_mesh(mesh, rt, jac, 46.0)
 
@@ -1573,7 +1570,7 @@ def closed_build(fn, jac, fov, init_res, min_img_sep, **kw):
 
 
 def fov_and_init_res(mesh):
-    return lattice_fov(mesh.lattice), lattice_init_res(mesh.lattice)
+    return mesh.lattice.fov, mesh.lattice.init_res
 
 
 def test_the_fov_boundary_runs_counter_clockwise_along_leaf_edges_through_every_edge_vertex():
@@ -1955,7 +1952,7 @@ def test_origin_deviation_and_sigma_min_match_their_samples_recomputed_independe
         f64(sigma6),
         mesh.origin_cls,
         mesh.origin_level,
-        lattice_h0(mesh.lattice),
+        mesh.lattice.h0,
         mesh.min_img_sep,
     )
     assert np.array_equal(to_np(mesh.origin_deviation), to_np(dev))
