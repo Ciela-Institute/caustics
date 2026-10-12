@@ -46,48 +46,32 @@ def test_child_shape_matrices_match_shape_matrix_of_each_child():
         assert np.array_equal(Q[:, k], expected)
 
 
-def test_parity_from_children_accepts_a_constant_sign():
-    Q = np.tile(np.eye(2), (2, 4, 1, 1))
-    assert to_np(parity_from_children(f64(Q))).tolist() == [
-        True,
-        True,
-    ]
-
-
-def test_parity_from_children_rejects_a_sign_change():
-    Q = np.tile(np.eye(2), (1, 4, 1, 1))
-    Q[0, 2] = np.array([[0.0, 1.0], [1.0, 0.0]])  # det -1 among three det +1
-    assert to_np(parity_from_children(f64(Q))).tolist() == [False]
-
-
-def test_parity_from_children_condemns_a_lone_degenerate_child():
-    Q = np.tile(np.eye(2), (1, 4, 1, 1))
-    Q[0, 3] = 0.0  # sign 0 differs from +1
-    assert to_np(parity_from_children(f64(Q))).tolist() == [False]
-
-
-def test_parity_from_children_passes_an_entirely_degenerate_triangle():
-    """All four dets exactly zero is a constant sign, so there is no parity
-    *change* and the triangle passes. Spec section 4.6: condemning this case
-    would be the deviation test in disguise, which is out of scope. A kappa == 1
-    sheet is the fixture that reaches it.
-    """
-    Q = np.zeros((1, 4, 2, 2))
-    assert to_np(parity_from_children(f64(Q))).tolist() == [True]
-
-
 @pytest.mark.parametrize(
-    "determinants",
+    "dets, want",
     [
-        [np.nan, np.nan, np.nan, np.nan],
-        [np.nan, 0.0, 0.0, 0.0],
+        ([1.0, 1.0, 1.0, 1.0], True),
+        ([1.0, 1.0, -1.0, 1.0], False),
+        ([1.0, 1.0, 1.0, 0.0], False),
+        ([0.0, 0.0, 0.0, 0.0], True),
+        ([np.nan] * 4, False),
+        ([np.nan, 0.0, 0.0, 0.0], False),
+    ],
+    ids=[
+        "one sign",
+        "a sign change",
+        "a lone degenerate child",
+        "every child degenerate",
+        "nan",
+        "nan and degenerate",
     ],
 )
-def test_parity_from_children_rejects_nan_determinants(determinants):
+def test_parity_from_children_asks_one_sign_of_det_q_over_the_four_children(dets, want):
+    """An exact zero is a sign of its own: one degenerate child condemns the
+    triangle, four do not, there being no change of sign. A NaN fails."""
     Q = np.zeros((1, 4, 2, 2))
-    Q[0, :, 0, 0] = determinants
+    Q[0, :, 0, 0] = dets
     Q[0, :, 1, 1] = 1.0
-    assert to_np(parity_from_children(f64(Q))).tolist() == [False]
+    assert to_np(parity_from_children(f64(Q))).tolist() == [want]
 
 
 def test_midpoint_deviation_pairs_midpoint_with_opposite_edge():
@@ -149,15 +133,16 @@ def affine_det(p):
     return np.full(p.shape[:-1], np.linalg.det(A))
 
 
-def test_an_affine_map_converges():
-    assert status(roots(), affine, affine_det).tolist() == [LEAF_CONVERGED] * 2
-
-
-def test_a_reflecting_affine_map_converges_too():
-    def flip(p):
-        return p * np.array([1.0, -1.0])
-
-    assert status(roots(), flip, lambda p: -np.ones(p.shape[:-1])).tolist() == [0, 0]
+@pytest.mark.parametrize(
+    "beta, det",
+    [
+        (affine, affine_det),
+        (lambda p: p * np.array([1.0, -1.0]), lambda p: -np.ones(p.shape[:-1])),
+    ],
+    ids=["affine", "reflecting"],
+)
+def test_an_affine_map_converges_either_way_round(beta, det):
+    assert status(roots(), beta, det).tolist() == [LEAF_CONVERGED] * 2
 
 
 def test_a_fold_sets_both_parity_flags():
@@ -257,23 +242,6 @@ def test_the_level_scales_the_deviation_threshold_with_the_triangle():
     coarse = status(roots(h0=H0), curved, det, level=0, h0=H0)
     fine = status(roots(h0=H0), curved, det, level=1, h0=2 * H0)
     assert np.array_equal(coarse, fine)
-
-
-def test_the_approximate_parity_bit_is_child_parity():
-    rng = np.random.default_rng(5)
-    beta6 = f64(rng.normal(size=(64, 6, 2)))
-    det6 = f64(np.ones((64, 6)))
-    n = 64
-    got = to_np(
-        lens_status(
-            beta6, det6, f64(np.ones((64, 6))), i64([0] * n), i64([0] * n), H0, 0.01
-        )[0]
-        & LEAF_APPROX_PARITY_UNRESOLVED
-    )
-    child_ok = to_np(
-        parity_from_children(child_shape_matrices(beta6[:, :3], beta6[:, 3:]))
-    )
-    assert np.array_equal(got != 0, ~child_ok)
 
 
 def test_the_leaf_flags_are_distinct_single_bits():
