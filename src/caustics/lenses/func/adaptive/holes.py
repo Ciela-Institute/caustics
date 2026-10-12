@@ -102,18 +102,19 @@ class CenterHoles(NamedTuple):
     pseudo_caustic: ArrayLike
 
 
-def empty_holes(device=None):
+def empty_holes():
     """A :class:`CenterHoles` with no hole."""
+    f64 = mesh_backend.float64
     return CenterHoles(
-        centers=mesh_backend.zeros((0, 2), dtype=mesh_backend.float64, device=device),
-        radius=mesh_backend.zeros((0,), dtype=mesh_backend.float64, device=device),
-        offsets=mesh_backend.zeros((1,), dtype=mesh_backend.int64, device=device),
-        angle=mesh_backend.zeros((0,), dtype=mesh_backend.float64, device=device),
-        lens=mesh_backend.zeros((0, 2), dtype=mesh_backend.float64, device=device),
-        source=mesh_backend.zeros((0, 2), dtype=mesh_backend.float64, device=device),
-        growth=mesh_backend.zeros((0,), dtype=mesh_backend.float64, device=device),
-        growth_err=mesh_backend.zeros((0,), dtype=mesh_backend.float64, device=device),
-        pseudo_caustic=mesh_backend.zeros((0,), dtype=mesh_backend.bool, device=device),
+        centers=mesh_backend.zeros((0, 2), dtype=f64),
+        radius=mesh_backend.zeros((0,), dtype=f64),
+        offsets=mesh_backend.zeros((1,), dtype=mesh_backend.int64),
+        angle=mesh_backend.zeros((0,), dtype=f64),
+        lens=mesh_backend.zeros((0, 2), dtype=f64),
+        source=mesh_backend.zeros((0, 2), dtype=f64),
+        growth=mesh_backend.zeros((0,), dtype=f64),
+        growth_err=mesh_backend.zeros((0,), dtype=f64),
+        pseudo_caustic=mesh_backend.zeros((0,), dtype=mesh_backend.bool),
     )
 
 
