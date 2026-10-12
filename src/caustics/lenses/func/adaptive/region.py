@@ -594,12 +594,14 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
 
     Whole level-0 cells are added about the same center, the fewest that
     cover the new image's bounding box; the cell size and finest level stay
-    the first build's. Old vertices keep their ``(mu_tot, size)``; the new
-    ring's roots, and the rows of every cell that was invalid and is valid
-    now, are refined against the extended lens mesh. The lens extension's
-    balance can split old lens leaves along its seam, and a few old vertices
-    by the old boundary's image keep values read before that split, so the
-    result matches a fresh build only to the mesh's accuracy.
+    the first build's. A vertex of a leaf of a valid cell lies inside the
+    old image of the fov boundary and keeps its ``(mu_tot, size)``; every
+    other old vertex, where the old lens mesh could miss images, is sampled
+    again. The new ring's roots, and the rows of every cell that was invalid
+    and is valid now, are refined against the extended lens mesh. The lens
+    extension's balance can split old lens leaves along its seam, and a few
+    old vertices by the old boundary's image keep values read before that
+    split, so the result matches a fresh build only to the mesh's accuracy.
     """
     int64 = mesh_backend.int64
     old = src.lattice
@@ -627,8 +629,22 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
     )
     rows = mesh_backend.arange(store.v.shape[0], dtype=int64)
     cell = mesh_backend.min(cache.ij[store.v], dim=1) // (1 << lat.level)
-    newly = valid[cell[:, 0], cell[:, 1]] & ~was[cell[:, 0], cell[:, 1]]
+    held = was[cell[:, 0], cell[:, 1]]
+    newly = valid[cell[:, 0], cell[:, 1]] & ~held
     untested = rows[mesh_backend.flatnonzero(newly)]
+    kept = mesh_backend.fill_at_indices(
+        mesh_backend.zeros((cache.ij.shape[0],), dtype=mesh_backend.bool),
+        store.v[mesh_backend.flatnonzero(held)].reshape(-1),
+        True,
+    )
+    stale = mesh_backend.flatnonzero(~kept)
+    cache = cache._replace(
+        values=mesh_backend.fill_at_indices(
+            mesh_backend.copy(cache.values),
+            stale,
+            sample(lattice_xy(lat, cache.ij[stale])),
+        )
+    )
     if k:
         ij, cls = ring_triangles(lattice_init_res(lat), k, lat.level, ROOT_CLASS)
         cache, store, ring = add_roots(cache, store, lat, ij, cls, sample, None)

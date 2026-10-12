@@ -481,9 +481,10 @@ def grown():
     return src, bigger
 
 
-def test_extending_a_source_mesh_samples_no_vertex_it_holds_and_keeps_every_one(
+def test_extending_a_source_mesh_samples_again_exactly_the_vertices_no_valid_leaf_holds(
     grown, monkeypatch
 ):
+    """A vertex of a leaf of a valid cell was sampled inside the old image of the fov boundary; any other was sampled where the old lens mesh could miss images."""
     src, bigger = grown
     seen = []
     real = region_module._sampler
@@ -502,8 +503,13 @@ def test_extending_a_source_mesh_samples_no_vertex_it_holds_and_keeps_every_one(
     out = _extend_source_mesh(
         src, bigger, _critical_curves_and_caustics(bigger), 1.5, None
     )
-    old = {tuple(p) for p in to_np(src.vertices).tolist()}
-    assert seen and not any(tuple(p) in old for p in np.concatenate(seen).tolist())
+    vertices, leaves = to_np(src.vertices), to_np(src.origin_leaves)
+    cell = to_np(src.vertices_ij)[leaves].min(axis=1) // (1 << src.lattice.level)
+    held = np.unique(leaves[to_np(src.cell_valid)[cell[:, 0], cell[:, 1]]])
+    kept = {tuple(p) for p in vertices[held].tolist()}
+    old = {tuple(p) for p in vertices.tolist()}
+    sampled = {tuple(p) for p in np.concatenate(seen).tolist()}
+    assert old - kept and old - kept <= sampled and not kept & sampled
     assert old <= {tuple(p) for p in to_np(out.vertices).tolist()}
     np.testing.assert_array_equal(to_np(src.values), before)
 
@@ -536,6 +542,22 @@ def test_the_closed_build_grows_the_fov_until_the_region_is_bounded():
     assert lattice_fov(to_mesh(mesh).lattice) > 6.0
     assert to_np(region.closed).all()
     assert region.area == pytest.approx(4.0 * math.pi, rel=1e-2)
+
+
+def test_the_closed_build_traces_no_hole_where_an_earlier_source_mesh_was_invalid():
+    """At mu_min = 1.2 the SIS region is ``|beta| <= 5``, which covers the invalid cells of the fov 6 source mesh, whose outer vertices have no image in that fov."""
+    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    mesh, curves, region = build_closed_magnification_region(
+        lens_.raytrace,
+        lens_.jacobian_lens_equation,
+        6.0,
+        16,
+        0.02,
+        1.2,
+        centers=[(0.0, 0.0)],
+    )
+    assert to_np(region.closed).tolist() == [True]
+    assert region.area == pytest.approx(25.0 * math.pi, rel=1e-2)
 
 
 def test_a_bounded_region_costs_no_extension_beyond_the_closed_lens_mesh():
