@@ -129,11 +129,13 @@ class Lattice(NamedTuple):
 
     @property
     def corner(self):
-        """Position of lattice point ``(0, 0)``, ``(2,)``.
+        """Position of lattice point ``(0, 0)``, ``(2,)``, in the backend and on the device of ``lo``.
+
+        :func:`lattice_xy` of ``(0, 0)``, operation for operation.
 
         *Unit: arcsec*
         """
-        return lattice_xy(self, mesh_backend.zeros((2,), dtype=mesh_backend.int64))
+        return self.lo + float(-self.origin) * self.scale
 
 
 def make_lattice(fov, x0, y0, init_res, lattice_level):

@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 
 from adaptive_maps import (
+    affine,
+    affine_jacobian,
     assert_same,
     numpy_lens,
     sie_like,
@@ -14,6 +16,7 @@ from adaptive_maps import (
     SIE_LIKE_LENS,
     stack_2x2,
     to_np,
+    user_build,
 )
 
 from caustics.backend_obj import backend
@@ -232,3 +235,14 @@ def test_total_magnification_takes_numpy_sources():
     mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 8, 0.1)
     mu = total_magnification(np.array([0.1, 0.2]), np.array([0.0, 0.1]), mesh)
     assert isinstance(mu, backend.array_type) and to_np(mu).shape == (2,)
+
+
+def test_a_user_mesh_s_lattice_gives_its_corner_in_the_user_s_backend():
+    """On an extended lattice, whose origin is not lattice point ``(0, 0)``."""
+    mesh, lens_ = user_build(affine, affine_jacobian)
+    grown = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 6.0)
+    lat = grown.lattice
+    assert lat.origin > 0
+    corner = lat.corner
+    assert isinstance(corner, backend.array_type)
+    np.testing.assert_array_equal(to_np(corner), to_np(lat.lo) - lat.origin * lat.scale)
