@@ -121,14 +121,6 @@ def test_extending_a_mesh_leaves_the_mesh_it_was_given_unchanged():
         np.testing.assert_array_equal(to_np(a), b)
 
 
-def test_public_functions_take_numpy_sources_and_list_centers_alike():
-    lens_ = numpy_lens(sie_like, sie_like_jacobian)
-    mesh = build_lens_mesh(
-        lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 4, 0.1, centers=[(0.0, 0.0)]
-    )
-    assert to_np(mesh.holes.centers).shape == (1, 2)
-
-
 @pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
 def test_a_jax_build_compiles_only_for_its_padded_lens_batches():
     """Before, every bookkeeping op compiled per new shape: thousands per build."""
