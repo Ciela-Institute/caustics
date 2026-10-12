@@ -27,10 +27,6 @@ from caustics.lenses.func.adaptive.geometry import (
 from adaptive_maps import f64, i64, to_np, AFFINE, affine
 
 
-def _arr(x):
-    return f64(x)
-
-
 def test_child_shape_matrices_match_shape_matrix_of_each_child():
     """Q_k must be exactly the edge matrix of child k, bit for bit.
 
@@ -42,17 +38,17 @@ def test_child_shape_matrices_match_shape_matrix_of_each_child():
     rng = np.random.default_rng(0)
     beta_v = rng.normal(size=(5, 3, 2))
     beta_m = rng.normal(size=(5, 3, 2))
-    Q = to_np(child_shape_matrices(_arr(beta_v), _arr(beta_m)))
+    Q = to_np(child_shape_matrices(f64(beta_v), f64(beta_m)))
     assert Q.shape == (5, 4, 2, 2)
     six = np.concatenate([beta_v, beta_m], axis=1)
     for k, idx in enumerate(CHILD_VERTEX_INDICES):
-        expected = to_np(shape_matrix(_arr(six[:, list(idx)])))
+        expected = to_np(shape_matrix(f64(six[:, list(idx)])))
         assert np.array_equal(Q[:, k], expected)
 
 
 def test_parity_from_children_accepts_a_constant_sign():
     Q = np.tile(np.eye(2), (2, 4, 1, 1))
-    assert to_np(parity_from_children(_arr(Q))).tolist() == [
+    assert to_np(parity_from_children(f64(Q))).tolist() == [
         True,
         True,
     ]
@@ -61,13 +57,13 @@ def test_parity_from_children_accepts_a_constant_sign():
 def test_parity_from_children_rejects_a_sign_change():
     Q = np.tile(np.eye(2), (1, 4, 1, 1))
     Q[0, 2] = np.array([[0.0, 1.0], [1.0, 0.0]])  # det -1 among three det +1
-    assert to_np(parity_from_children(_arr(Q))).tolist() == [False]
+    assert to_np(parity_from_children(f64(Q))).tolist() == [False]
 
 
 def test_parity_from_children_condemns_a_lone_degenerate_child():
     Q = np.tile(np.eye(2), (1, 4, 1, 1))
     Q[0, 3] = 0.0  # sign 0 differs from +1
-    assert to_np(parity_from_children(_arr(Q))).tolist() == [False]
+    assert to_np(parity_from_children(f64(Q))).tolist() == [False]
 
 
 def test_parity_from_children_passes_an_entirely_degenerate_triangle():
@@ -77,7 +73,7 @@ def test_parity_from_children_passes_an_entirely_degenerate_triangle():
     sheet is the fixture that reaches it.
     """
     Q = np.zeros((1, 4, 2, 2))
-    assert to_np(parity_from_children(_arr(Q))).tolist() == [True]
+    assert to_np(parity_from_children(f64(Q))).tolist() == [True]
 
 
 @pytest.mark.parametrize(
@@ -91,16 +87,16 @@ def test_parity_from_children_rejects_nan_determinants(determinants):
     Q = np.zeros((1, 4, 2, 2))
     Q[0, :, 0, 0] = determinants
     Q[0, :, 1, 1] = 1.0
-    assert to_np(parity_from_children(_arr(Q))).tolist() == [False]
+    assert to_np(parity_from_children(f64(Q))).tolist() == [False]
 
 
 def test_midpoint_deviation_pairs_midpoint_with_opposite_edge():
     v = np.array([[[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]])
     m = np.array([[[0.5, 0.5], [0.0, 0.5], [0.5, 0.0]]])  # exact affine images
-    assert np.allclose(to_np(midpoint_deviation(_arr(v), _arr(m))), 0.0)
+    assert np.allclose(to_np(midpoint_deviation(f64(v), f64(m))), 0.0)
     shifted = m.copy()
     shifted[0, 1] += np.array([0.0, 0.25])
-    got = to_np(midpoint_deviation(_arr(v), _arr(shifted)))
+    got = to_np(midpoint_deviation(f64(v), f64(shifted)))
     assert np.allclose(got, [[0.0, 0.25, 0.0]])
 
 

@@ -23,10 +23,6 @@ from caustics.lenses.func.adaptive.lattice import (
 from adaptive_maps import i64, to_np
 
 
-def _i64(x):
-    return i64(x)
-
-
 def _grid(n):
     """Every point of an ``(n + 1) x (n + 1)`` lattice, shape ``((n + 1)**2, 2)``."""
     axis = np.arange(n + 1)
@@ -106,7 +102,7 @@ def test_initial_triangles_tile_the_square_and_are_positively_oriented():
 
 def test_midpoints_are_exact_integers_and_opposite_their_vertex():
     ij = np.array([[[0, 0], [4, 0], [0, 4]]], dtype=np.int64)
-    m = midpoint_ij(_i64(ij))
+    m = midpoint_ij(i64(ij))
     assert to_np(m)[0].tolist() == [[2, 2], [0, 2], [2, 0]]
 
 

@@ -57,13 +57,12 @@ from adaptive_maps import (
     f64,
     i64,
     numpy_lens,
-    point_jacobian,
-    point_raytrace,
+    point_mass,
     sie_like,
     sie_like_jacobian,
-    sis_jacobian,
-    sis_raytrace,
+    sis,
     to_np,
+    user_build,
 )
 
 
@@ -73,18 +72,16 @@ def point_radius(mu):
 
 
 @pytest.fixture(scope="module")
-def point():
+def point_mesh():
     """A unit point mass at fov 6: its mesh and curves, on the mesh backend."""
-    mesh, _ = build(
-        point_raytrace, point_jacobian, fov=6.0, init_res=16, min_img_sep=0.02
-    )
+    mesh, _ = build(*point_mass(), fov=6.0, init_res=16, min_img_sep=0.02)
     return mesh, _critical_curves_and_caustics(mesh)
 
 
 @pytest.fixture(scope="module")
-def sis():
+def sis_mesh():
     """A unit SIS at fov 6, without a hole: its mesh and curves, on the mesh backend."""
-    mesh, _ = build(sis_raytrace, sis_jacobian, fov=6.0, init_res=16, min_img_sep=0.02)
+    mesh, _ = build(*sis(), fov=6.0, init_res=16, min_img_sep=0.02)
     return mesh, _critical_curves_and_caustics(mesh)
 
 
@@ -154,9 +151,9 @@ def test_mu_max_crossings_split_too():
 
 
 def test_the_source_lattice_spans_the_fov_boundary_image_down_to_the_smallest_leaf_image(
-    point,
+    point_mesh,
 ):
-    mesh = point[0]
+    mesh = point_mesh[0]
     tables = leaf_tables(mesh)
     lat, max_level = _source_lattice(mesh, tables)
     assert lat.init_res == mesh.lattice.init_res
@@ -169,8 +166,8 @@ def test_the_source_lattice_spans_the_fov_boundary_image_down_to_the_smallest_le
     assert edge / 2**max_level <= smallest < edge / 2 ** (max_level - 1)
 
 
-def test_every_point_of_a_valid_cell_lies_inside_the_fov_boundary_image(sis):
-    mesh = sis[0]
+def test_every_point_of_a_valid_cell_lies_inside_the_fov_boundary_image(sis_mesh):
+    mesh = sis_mesh[0]
     lat, _ = _source_lattice(mesh, leaf_tables(mesh))
     valid = to_np(_cell_validity(mesh, lat))
     assert 0 < valid.sum() < valid.size
@@ -181,8 +178,8 @@ def test_every_point_of_a_valid_cell_lies_inside_the_fov_boundary_image(sis):
     assert to_np(inside_fov_image(mesh, f64(points.reshape(-1, 2)))).all()
 
 
-def test_a_cell_the_fov_boundary_image_runs_through_is_invalid(sis):
-    mesh = sis[0]
+def test_a_cell_the_fov_boundary_image_runs_through_is_invalid(sis_mesh):
+    mesh = sis_mesh[0]
     lat, _ = _source_lattice(mesh, leaf_tables(mesh))
     valid = to_np(_cell_validity(mesh, lat))
     corner, h0 = to_np(lattice_xy(lat, i64([0, 0]))), lat.h0
@@ -214,7 +211,7 @@ def test_every_caustic_segment_marks_its_cell_at_every_level_coarser_than_it():
 
 
 def test_pseudo_caustics_mark_nothing():
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    lens_ = numpy_lens(*sis())
     mesh = to_mesh(
         build_lens_mesh(
             lens_.raytrace,
@@ -230,8 +227,8 @@ def test_pseudo_caustics_mark_nothing():
     assert all(m.shape[0] == 0 for m in marks)
 
 
-def test_every_source_leaf_below_the_finest_level_passes_the_split(point):
-    mesh, curves = point
+def test_every_source_leaf_below_the_finest_level_passes_the_split(point_mesh):
+    mesh, curves = point_mesh
     src = _source_mesh(mesh, curves, 3.0, None)
     rows = i64(np.flatnonzero(to_np(src.origin_level) < src.max_level))
     ij = src.vertices_ij[src.origin_leaves[rows]]
@@ -246,23 +243,18 @@ def test_every_source_leaf_below_the_finest_level_passes_the_split(point):
 
 
 def test_source_vertices_carry_mu_tot_and_cost_no_lens_call():
-    mesh, calls = build(
-        point_raytrace, point_jacobian, fov=6.0, init_res=16, min_img_sep=0.02
-    )
+    mesh, lens_ = build(*point_mass(), fov=6.0, init_res=16, min_img_sep=0.02)
     curves = _critical_curves_and_caustics(mesh)
-    made = (len(calls.raytrace), len(calls.jacobian))
+    made = (len(lens_.calls.raytrace), len(lens_.calls.jacobian))
     src = _source_mesh(mesh, curves, 3.0, None)
-    assert (len(calls.raytrace), len(calls.jacobian)) == made
+    assert (len(lens_.calls.raytrace), len(lens_.calls.jacobian)) == made
     mu, size = _total_magnification(mesh, leaf_tables(mesh), src.vertices)
     np.testing.assert_array_equal(to_np(src.values[:, 0]), to_np(mu))
     np.testing.assert_array_equal(to_np(src.values[:, 1]), to_np(size))
 
 
 def _user_mesh(fn, jac, fov=6.0, init_res=16, min_img_sep=0.02, **kw):
-    lens_, _ = numpy_lens(fn, jac)
-    return build_lens_mesh(
-        lens_.raytrace, lens_.jacobian_lens_equation, fov, init_res, min_img_sep, **kw
-    )
+    return user_build(fn, jac, fov, init_res, min_img_sep, **kw)[0]
 
 
 def _signed_areas(region):
@@ -278,10 +270,10 @@ def _signed_areas(region):
 @pytest.mark.parametrize(
     "fn, jac, mu_min, radius",
     [
-        (sis_raytrace, sis_jacobian, 3.0, 2.0 / 3.0),
-        (sis_raytrace, sis_jacobian, 2.5, 0.8),
-        (point_raytrace, point_jacobian, 3.0, point_radius(3.0)),
-        (point_raytrace, point_jacobian, 1.5, point_radius(1.5)),
+        (*sis(), 3.0, 2.0 / 3.0),
+        (*sis(), 2.5, 0.8),
+        (*point_mass(), 3.0, point_radius(3.0)),
+        (*point_mass(), 1.5, point_radius(1.5)),
     ],
     ids=["sis-inside", "sis-across-pseudo-caustic", "point-3", "point-1.5"],
 )
@@ -298,7 +290,7 @@ def test_the_region_of_an_axisymmetric_lens_is_its_analytic_disk(
 
 
 def test_mu_max_cuts_a_hole_whose_contour_runs_clockwise():
-    mesh = _user_mesh(point_raytrace, point_jacobian)
+    mesh = _user_mesh(*point_mass())
     region = magnification_region(mesh, critical_curves_and_caustics(mesh), 1.5, 3.0)
     want = math.pi * (point_radius(1.5) ** 2 - point_radius(3.0) ** 2)
     assert region.area == pytest.approx(want, rel=2e-2)
@@ -310,14 +302,14 @@ def test_mu_max_cuts_a_hole_whose_contour_runs_clockwise():
 
 def test_a_region_reaching_past_the_valid_cells_has_nan_area_and_open_contours():
     """At fov 6 the SIS boundary's image has a radius of about 2, the disk's own."""
-    mesh = _user_mesh(sis_raytrace, sis_jacobian)
+    mesh = _user_mesh(*sis())
     region = magnification_region(mesh, critical_curves_and_caustics(mesh), 1.5)
     assert math.isnan(region.area)
     assert not to_np(region.closed).all()
 
 
 def test_a_threshold_below_the_far_field_magnification_bounds_nothing():
-    mesh = _user_mesh(sis_raytrace, sis_jacobian)
+    mesh = _user_mesh(*sis())
     region = magnification_region(mesh, critical_curves_and_caustics(mesh), 0.5)
     assert math.isnan(region.area)
     assert to_np(region.offsets).tolist() == [0]
@@ -341,9 +333,11 @@ def test_a_region_inside_cells_the_broken_boundary_leaves_invalid_has_nan_area()
     )
 
 
-def test_a_region_crossing_an_invalid_leaf_between_its_vertices_has_nan_area(point):
+def test_a_region_crossing_an_invalid_leaf_between_its_vertices_has_nan_area(
+    point_mesh,
+):
     """A caustic's jump can straddle both thresholds along one edge of an invalid leaf."""
-    mesh, curves = point
+    mesh, curves = point_mesh
     src = _source_mesh(mesh, curves, 3.0, 10.0)
     assert math.isfinite(_region(src, 3.0, 10.0).area)
     leaves = to_np(src.leaves)
@@ -462,7 +456,7 @@ def test_a_region_s_area_matches_counting_mu_tot_on_a_fine_grid(fold, mu_min, mu
 @pytest.fixture(scope="module")
 def grown():
     """An SIS source mesh for mu_min = 1.5 at fov 6, and its extension with the lens mesh to fov 9."""
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    lens_ = numpy_lens(*sis())
     mesh = to_mesh(
         build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, 0.02)
     )
@@ -526,7 +520,7 @@ def test_an_extended_source_mesh_bounds_the_region_the_grown_lens_mesh_holds(gro
 
 
 def test_the_closed_build_grows_the_fov_until_the_region_is_bounded():
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    lens_ = numpy_lens(*sis())
     mesh, curves, region = build_closed_magnification_region(
         lens_.raytrace,
         lens_.jacobian_lens_equation,
@@ -543,7 +537,7 @@ def test_the_closed_build_grows_the_fov_until_the_region_is_bounded():
 
 def test_the_closed_build_traces_no_hole_where_an_earlier_source_mesh_was_invalid():
     """At mu_min = 1.2 the SIS region is ``|beta| <= 5``, which covers the invalid cells of the fov 6 source mesh, whose outer vertices have no image in that fov."""
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    lens_ = numpy_lens(*sis())
     mesh, curves, region = build_closed_magnification_region(
         lens_.raytrace,
         lens_.jacobian_lens_equation,
@@ -558,7 +552,7 @@ def test_the_closed_build_traces_no_hole_where_an_earlier_source_mesh_was_invali
 
 
 def test_a_bounded_region_costs_no_extension_beyond_the_closed_lens_mesh():
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    lens_ = numpy_lens(*sis())
     args = (lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, 0.02)
     mesh, curves, region = build_closed_magnification_region(
         *args, 3.0, centers=[(0.0, 0.0)]
@@ -570,7 +564,7 @@ def test_a_bounded_region_costs_no_extension_beyond_the_closed_lens_mesh():
 
 
 def test_the_closed_build_warns_when_no_fov_bounds_the_region():
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
+    lens_ = numpy_lens(*sis())
     with pytest.warns(
         UserWarning, match="still reaches the edge of the valid source domain"
     ):

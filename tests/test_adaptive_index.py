@@ -23,19 +23,19 @@ from adaptive_maps import (
     assert_hits_equal,
     assert_same,
     brute_hits,
+    build,
+    collapse,
+    collapse_jacobian,
     f64,
+    finite_rows,
     i64,
     index_cell,
     index_cell_ranges,
     index_point_cells,
-    to_np,
-    collapse,
-    collapse_jacobian,
-    lens,
-    build,
     localised_fold,
     localised_fold_jacobian,
-    finite_rows,
+    SIE_LIKE_LENS,
+    to_np,
 )
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Point
@@ -318,30 +318,15 @@ def test_a_kappa_one_sheet_s_single_source_point_hits_every_leaf():
     assert to_np(hit).tolist() == list(range(mesh.leaves.shape[0]))
 
 
-def _sie_like(x, y):
-    r = (x * x + y * y + 0.05) ** 0.5
-    return x - 1.2 * x / r, y - 1.2 * y / r
-
-
-def _sie_like_jacobian(x, y):
-    r = (x * x + y * y + 0.05) ** 0.5
-    k = 1.2 / r**3
-    xx, yy, xy = 1.0 - 1.2 / r + k * x * x, 1.0 - 1.2 / r + k * y * y, k * x * y
-    return backend.stack(
-        (backend.stack((xx, xy), dim=-1), backend.stack((xy, yy), dim=-1)), dim=-2
-    )
-
-
-SIE_LIKE = lens(_sie_like, _sie_like_jacobian)
-
-
 BUILD = dict(fov=6.0, init_res=4, min_img_sep=0.1, max_depth=6)
 
 
 @pytest.fixture(scope="module")
 def mesh():
     return to_mesh(
-        build_lens_mesh(SIE_LIKE.raytrace, SIE_LIKE.jacobian_lens_equation, **BUILD)
+        build_lens_mesh(
+            SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, **BUILD
+        )
     )
 
 

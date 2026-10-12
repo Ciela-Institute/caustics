@@ -60,8 +60,8 @@ def numpy_lens(fn, jac):
     A lens over numpy maps, recording every point each method is called on.
 
     ``fn`` maps ``(N, 2) -> (N, 2)`` and ``jac`` gives its ``(N, 2, 2)``
-    Jacobian. Returns the lens and ``calls``, whose ``raytrace`` and
-    ``jacobian`` lists hold the numpy ``(N, 2)`` points of each call.
+    Jacobian. ``calls.raytrace`` and ``calls.jacobian`` hold the numpy
+    ``(N, 2)`` points of each call (:func:`requested`).
     """
     calls = SimpleNamespace(raytrace=[], jacobian=[])
 
@@ -76,18 +76,26 @@ def numpy_lens(fn, jac):
         calls.jacobian.append(requested(xy))
         return backend.as_array(jac(xy), dtype=x.dtype, device=backend.device(x))
 
-    return lens(raytrace, jacobian), calls
+    return SimpleNamespace(
+        raytrace=raytrace, jacobian_lens_equation=jacobian, calls=calls
+    )
 
 
-def build(fn, jac, fov=4.0, init_res=4, min_img_sep=0.25, **kw):
-    """``build_lens_mesh`` of numpy maps, and the recorded calls."""
+def user_build(fn, jac, fov=4.0, init_res=4, min_img_sep=0.25, **kw):
+    """``build_lens_mesh`` of numpy maps, in the user's backend, and its recording lens."""
     from caustics.lenses.func.adaptive.lens_mesh import build_lens_mesh
 
-    lens_, calls = numpy_lens(fn, jac)
+    lens_ = numpy_lens(fn, jac)
     mesh = build_lens_mesh(
         lens_.raytrace, lens_.jacobian_lens_equation, fov, init_res, min_img_sep, **kw
     )
-    return to_mesh(mesh), calls
+    return mesh, lens_
+
+
+def build(fn, jac, fov=4.0, init_res=4, min_img_sep=0.25, **kw):
+    """:func:`user_build` with the mesh on ``mesh_backend``."""
+    mesh, lens_ = user_build(fn, jac, fov, init_res, min_img_sep, **kw)
+    return to_mesh(mesh), lens_
 
 
 def assert_same(a, b, path="mesh"):
@@ -176,6 +184,44 @@ def affine_jacobian(p):
     return np.tile(AFFINE, (p.shape[0], 1, 1))
 
 
+def _sie_like_xy(x, y):
+    r = (x * x + y * y + 0.05) ** 0.5
+    return x - 1.2 * x / r, y - 1.2 * y / r
+
+
+def _sie_like_jacobian_xy(x, y):
+    r = (x * x + y * y + 0.05) ** 0.5
+    k = 1.2 / r**3
+    return stack_2x2(
+        1.0 - 1.2 / r + k * x * x, k * x * y, k * x * y, 1.0 - 1.2 / r + k * y * y
+    )
+
+
+def _sis_xy(x, y):
+    r = (x * x + y * y) ** 0.5
+    return x - x / r, y - y / r
+
+
+def _sis_jacobian_xy(x, y):
+    r = (x * x + y * y) ** 0.5
+    k = 1.0 / r**3
+    return stack_2x2(
+        1.0 - 1.0 / r + k * x * x, k * x * y, k * x * y, 1.0 - 1.0 / r + k * y * y
+    )
+
+
+def localised_fold_xy(x, y):
+    """:func:`localised_fold` on backend arrays, traceable for the root finding."""
+    bend = backend.where(backend.abs(y) < 0.5, y * y - 0.25, 0.0 * y)
+    return x, 0.6 * y + bend
+
+
+# Backend-native lenses, for the maps forward_raytrace solves on: under jax its
+# solve traces the raytrace, which numpy maps cannot be.
+SIE_LIKE_LENS = lens(_sie_like_xy, _sie_like_jacobian_xy)
+SIS_LENS = lens(_sis_xy, _sis_jacobian_xy)
+
+
 def collapse(p):
     """A ``kappa == 1`` sheet: the whole lens plane maps to one point."""
     return np.zeros_like(p)
@@ -201,34 +247,57 @@ def broken_where(fn, jac, where, value=np.nan):
     return broken, broken_jacobian
 
 
-def sis_raytrace(p, b=1.0):
-    """SIS deflection ``beta = theta (1 - b/|theta|)``, non-finite at ``theta = 0``."""
-    with np.errstate(divide="ignore", invalid="ignore"):
-        r = np.linalg.norm(p, axis=-1, keepdims=True)
-        return p * (1.0 - b / r)
+def sis(centers=((0.0, 0.0),), b=1.0):
+    """
+    Singular isothermal spheres of Einstein radius ``b`` at ``centers``, and their Jacobian.
+
+    ``b`` is one radius for every center, or one per center. Non-finite at
+    each center.
+    """
+    centers = np.asarray(centers, dtype=np.float64).reshape(-1, 2)
+    radii = np.broadcast_to(np.asarray(b, dtype=np.float64), (centers.shape[0],))
+
+    def fn(p):
+        out = p.copy()
+        with np.errstate(divide="ignore", invalid="ignore"):
+            for c, rein in zip(centers, radii):
+                d = p - c
+                out = out - rein * d / np.linalg.norm(d, axis=-1, keepdims=True)
+        return out
+
+    def jac(p):
+        diag = np.ones((p.shape[0], 1, 1))
+        outer = np.zeros((p.shape[0], 2, 2))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            for c, rein in zip(centers, radii):
+                d = p - c
+                r = np.linalg.norm(d, axis=-1)[:, None, None]
+                diag = diag - rein / r
+                outer = outer + rein * d[:, :, None] * d[:, None, :] / r**3
+            return diag * np.eye(2) + outer
+
+    return fn, jac
 
 
-def sis_jacobian(p, b=1.0):
-    """``(1 - b/r) I + b theta theta^T / r**3``, non-finite at the origin too."""
-    with np.errstate(divide="ignore", invalid="ignore"):
-        r = np.linalg.norm(p, axis=-1)[:, None, None]
-        return (1.0 - b / r) * np.eye(2) + b * p[:, :, None] * p[:, None, :] / r**3
+def point_mass(c=(0.0, 0.0), b=1.0):
+    """A point mass of Einstein radius ``b`` at ``c``, and its Jacobian; non-finite at ``c``."""
+    c = np.asarray(c, dtype=np.float64)
 
+    def fn(p):
+        d = p - c
+        with np.errstate(divide="ignore", invalid="ignore"):
+            return p - b * b * d / np.sum(d * d, axis=-1, keepdims=True)
 
-def point_raytrace(p, b=1.0):
-    """Point mass ``beta = theta - b**2 theta / |theta|**2``, non-finite at ``theta = 0``."""
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return p - b * b * p / np.sum(p * p, axis=-1, keepdims=True)
+    def jac(p):
+        d = p - c
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r2 = np.sum(d * d, axis=-1)[:, None, None]
+            return (
+                np.eye(2)
+                - b * b * (r2 * np.eye(2) - 2.0 * d[:, :, None] * d[:, None, :]) / r2**2
+            )
 
-
-def point_jacobian(p, b=1.0):
-    """``I - b**2 (|theta|**2 I - 2 theta theta^T) / |theta|**4``, non-finite at the origin too."""
-    with np.errstate(divide="ignore", invalid="ignore"):
-        r2 = np.sum(p * p, axis=-1)[:, None, None]
-        return (
-            np.eye(2)
-            - b * b * (r2 * np.eye(2) - 2.0 * p[:, :, None] * p[:, None, :]) / r2**2
-        )
+    return fn, jac
 
 
 def brute_hits(vertices, triangles, rows, beta, grow=None):

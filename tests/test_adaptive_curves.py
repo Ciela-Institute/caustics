@@ -7,14 +7,12 @@ import pytest
 
 from types import SimpleNamespace
 from scipy.spatial import cKDTree
-from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
 from caustics.lenses.func.adaptive import (
     CenterHoles,
     CriticalBand,
     CriticalCurvesAndCaustics,
     build_closed_lens_mesh,
-    build_lens_mesh,
     caustic_area,
     critical_curves_and_caustics,
 )
@@ -34,19 +32,18 @@ from caustics.lenses.func.adaptive.holes import empty_holes
 from adaptive_maps import (
     affine,
     affine_jacobian,
+    broken_where,
+    build,
+    f64,
     numpy_lens,
+    row_fold,
+    row_fold_jacobian,
     sie_like,
     sie_like_jacobian,
-    sis_jacobian as sis_map_jacobian,
-    sis_raytrace as sis_map,
+    sis,
     to_np,
+    user_build,
 )
-
-
-def _arr(x):
-    return mesh_backend.as_array(
-        np.asarray(x, dtype=np.float64), dtype=mesh_backend.float64
-    )
 
 
 def _band(samples, lens, det, source=None):
@@ -57,10 +54,10 @@ def _band(samples, lens, det, source=None):
             np.arange(samples.shape[0]), dtype=mesh_backend.int64
         ),
         samples=mesh_backend.as_array(samples, dtype=mesh_backend.int64),
-        lens=_arr(lens),
-        source=_arr(lens if source is None else source),
-        det=_arr(det),
-        sigma_min=_arr(np.ones(np.shape(det))),
+        lens=f64(lens),
+        source=f64(lens if source is None else source),
+        det=f64(det),
+        sigma_min=f64(np.ones(np.shape(det))),
     )
 
 
@@ -281,14 +278,14 @@ def _one_hole(radius=0.1, n=64, shift=(5.0, 0.0)):
     angle = 2.0 * np.pi * np.arange(n) / n
     lens = radius * np.stack([np.cos(angle), np.sin(angle)], axis=-1)
     return CenterHoles(
-        centers=_arr([[0.0, 0.0]]),
-        radius=_arr([radius]),
+        centers=f64([[0.0, 0.0]]),
+        radius=f64([radius]),
         offsets=mesh_backend.as_array(np.array([0, n]), dtype=mesh_backend.int64),
-        angle=_arr(angle),
-        lens=_arr(lens),
-        source=_arr(lens + np.array(shift)),
-        growth=_arr([0.0]),
-        growth_err=_arr([0.0]),
+        angle=f64(angle),
+        lens=f64(lens),
+        source=f64(lens + np.array(shift)),
+        growth=f64([0.0]),
+        growth_err=f64([0.0]),
         pseudo_caustic=mesh_backend.as_array(np.array([True]), dtype=mesh_backend.bool),
     )
 
@@ -301,8 +298,8 @@ def _traced(*curves):
     pts = np.concatenate([np.asarray(p, dtype=np.float64) for p, _ in curves])
     offsets = np.cumsum([0] + [len(p) for p, _ in curves])
     return CriticalCurvesAndCaustics(
-        lens=_arr(pts),
-        source=_arr(2.0 * pts),
+        lens=f64(pts),
+        source=f64(2.0 * pts),
         offsets=mesh_backend.as_array(offsets, dtype=mesh_backend.int64),
         closed=mesh_backend.as_array(
             np.array([c for _, c in curves]), dtype=mesh_backend.bool
@@ -493,16 +490,16 @@ def _hole_pair(n=64):
     lens = np.concatenate([np.asarray(_A) + u, np.asarray(_B) + u])
     shift = np.repeat([[5.0, 0.0], [0.0, 5.0]], n, axis=0)
     return CenterHoles(
-        centers=_arr([_A, _B]),
-        radius=_arr([0.1, 0.1]),
+        centers=f64([_A, _B]),
+        radius=f64([0.1, 0.1]),
         offsets=mesh_backend.as_array(
             np.array([0, n, 2 * n]), dtype=mesh_backend.int64
         ),
-        angle=_arr(np.concatenate([angle, angle])),
-        lens=_arr(lens),
-        source=_arr(lens + shift),
-        growth=_arr([0.0, 0.0]),
-        growth_err=_arr([0.0, 0.0]),
+        angle=f64(np.concatenate([angle, angle])),
+        lens=f64(lens),
+        source=f64(lens + shift),
+        growth=f64([0.0, 0.0]),
+        growth_err=f64([0.0, 0.0]),
         pseudo_caustic=mesh_backend.as_array(
             np.array([True, True]), dtype=mesh_backend.bool
         ),
@@ -704,68 +701,6 @@ def test_holes_without_a_pseudo_caustic_give_no_curve(holes):
 # ---------------------------------------------------------------------------
 
 
-def _stack_2x2(a, b, c, d):
-    """``[[a, b], [c, d]]`` at every point, shape ``(N, 2, 2)``."""
-    return backend.stack(
-        (backend.stack((a, b), dim=-1), backend.stack((c, d), dim=-1)), dim=-2
-    )
-
-
-def _cored_isothermal(x, y):
-    """``alpha = 1.2 theta / sqrt(theta**2 + 0.05)``: two circular critical curves."""
-    r = (x * x + y * y + 0.05) ** 0.5
-    return x - 1.2 * x / r, y - 1.2 * y / r
-
-
-def _cored_isothermal_jacobian(x, y):
-    r = (x * x + y * y + 0.05) ** 0.5
-    k = 1.2 / r**3
-    return _stack_2x2(
-        1.0 - 1.2 / r + k * x * x, k * x * y, k * x * y, 1.0 - 1.2 / r + k * y * y
-    )
-
-
-def _row_fold(x, y):
-    """``det A = 1 - 2y``: zero on ``y = 0.5``, a lattice row for ``fov=4``."""
-    return x * 1.0, y - y * y
-
-
-def _row_fold_jacobian(x, y):
-    one, zero = backend.ones_like(x), backend.zeros_like(x)
-    return _stack_2x2(one, zero, zero, 1.0 - 2.0 * y)
-
-
-def _broken_fold(x, y):
-    """``det A = 0.6 + 2y``, zero on ``y = -0.3``, and NaN wherever ``x > 1``."""
-    nan = backend.where(
-        x > 1.0, backend.zeros_like(x) + float("nan"), backend.zeros_like(x)
-    )
-    return x + nan, 0.6 * y + y * y + nan
-
-
-def _broken_fold_jacobian(x, y):
-    nan = backend.where(
-        x > 1.0, backend.zeros_like(x) + float("nan"), backend.zeros_like(x)
-    )
-    one, zero = backend.ones_like(x), backend.zeros_like(x)
-    return _stack_2x2(one + nan, zero, zero, 0.6 + 2.0 * y + nan)
-
-
-CORED = SimpleNamespace(
-    raytrace=_cored_isothermal, jacobian_lens_equation=_cored_isothermal_jacobian
-)
-
-
-ROW_FOLD = SimpleNamespace(
-    raytrace=_row_fold, jacobian_lens_equation=_row_fold_jacobian
-)
-
-
-BROKEN_FOLD = SimpleNamespace(
-    raytrace=_broken_fold, jacobian_lens_equation=_broken_fold_jacobian
-)
-
-
 # Tangential: 1 - 1.2 / r = 0 at r = sqrt(theta**2 + 0.05) = 1.2. Radial:
 # 1 - 1.2 * 0.05 / r**3 = 0. The tangential caustic is the origin; the radial
 # one is a circle of radius theta * |1 - 1.2 / r| there.
@@ -812,13 +747,7 @@ def test_cored_isothermal_curves_match_the_analytic_answers():
     counter-clockwise.
     """
     min_img_sep = 1e-2
-    mesh = build_lens_mesh(
-        CORED.raytrace,
-        CORED.jacobian_lens_equation,
-        fov=4.0,
-        init_res=16,
-        min_img_sep=min_img_sep,
-    )
+    mesh, _ = user_build(sie_like, sie_like_jacobian, 4.0, 16, min_img_sep)
     curves = _curves(mesh)
     assert len(curves) == 2 and all(closed for _, _, closed in curves)
     (t_lens, t_src, _), (r_lens, r_src, _) = sorted(
@@ -832,15 +761,7 @@ def test_cored_isothermal_curves_match_the_analytic_answers():
 
 
 def test_without_holes_the_curves_are_trace_band_s_and_follow_no_hole():
-    mesh = to_mesh(
-        build_lens_mesh(
-            CORED.raytrace,
-            CORED.jacobian_lens_equation,
-            fov=4.0,
-            init_res=16,
-            min_img_sep=1e-2,
-        )
-    )
+    mesh, _ = build(sie_like, sie_like_jacobian, 4.0, 16, 1e-2)
     got = critical_curves_and_caustics(mesh)
     raw = trace_band(mesh.critical_band)
     for field in ("lens", "source", "offsets", "closed"):
@@ -863,13 +784,7 @@ def test_the_fov_cuts_the_tangential_circle_into_four_open_arcs():
     Every end sits on a boundary edge, whose two samples share the boundary
     coordinate exactly, so the end is on the boundary exactly.
     """
-    mesh = build_lens_mesh(
-        CORED.raytrace,
-        CORED.jacobian_lens_equation,
-        fov=2.0,
-        init_res=8,
-        min_img_sep=1e-2,
-    )
+    mesh, _ = user_build(sie_like, sie_like_jacobian, 2.0, 8, 1e-2)
     curves = _curves(mesh)
     arcs = [lens for lens, _, closed in curves if not closed]
     loops = [lens for lens, _, closed in curves if closed]
@@ -889,13 +804,7 @@ def test_a_curve_through_lattice_points_is_traced_exactly_along_the_row():
     which tracing a curve through lattice points produces -- are kept, not
     removed.
     """
-    mesh = build_lens_mesh(
-        ROW_FOLD.raytrace,
-        ROW_FOLD.jacobian_lens_equation,
-        fov=4.0,
-        init_res=8,
-        min_img_sep=2e-2,
-    )
+    mesh, _ = user_build(row_fold, row_fold_jacobian, 4.0, 8, 2e-2)
     curves = _curves(mesh)
     assert len(curves) == 1
     lens, _, closed = curves[0]
@@ -903,6 +812,18 @@ def test_a_curve_through_lattice_points_is_traced_exactly_along_the_row():
     assert np.abs(lens[:, 1] - 0.5).max() < 1e-12
     assert lens[0, 0] == 2.0 and lens[-1, 0] == -2.0
     assert (np.diff(lens, axis=0) == 0).all(axis=1).any()
+
+
+def fold(p):
+    """``(x, 0.6 y + y**2)``: ``det A = 0.6 + 2y``, zero on ``y = -0.3`` alone."""
+    return np.stack([p[:, 0], 0.6 * p[:, 1] + p[:, 1] ** 2], axis=-1)
+
+
+def fold_jacobian(p):
+    J = np.zeros((p.shape[0], 2, 2))
+    J[:, 0, 0] = 1.0
+    J[:, 1, 1] = 0.6 + 2.0 * p[:, 1]
+    return J
 
 
 def test_a_curve_ends_where_the_lens_turns_nonfinite():
@@ -913,13 +834,8 @@ def test_a_curve_ends_where_the_lens_turns_nonfinite():
     edge of ``x = 1``.
     """
     min_img_sep = 0.05
-    mesh = build_lens_mesh(
-        BROKEN_FOLD.raytrace,
-        BROKEN_FOLD.jacobian_lens_equation,
-        fov=4.0,
-        init_res=4,
-        min_img_sep=min_img_sep,
-    )
+    fn, jac = broken_where(fold, fold_jacobian, lambda p: p[:, 0] > 1.0)
+    mesh, _ = user_build(fn, jac, 4.0, 4, min_img_sep)
     curves = _curves(mesh)
     assert len(curves) == 1
     lens, _, closed = curves[0]
@@ -942,49 +858,6 @@ TWO_SIS = [(0.0, 0.0), (0.6, 0.0)]
 
 
 TWO_SIS_BUILD = dict(fov=5.0, init_res=10, min_img_sep=2e-2)
-
-
-def _einstein_radii(centers, b):
-    """``b`` for every center: one radius for all, or one per center."""
-    return [b] * len(centers) if np.isscalar(b) else list(b)
-
-
-def _sis_pair(centers, b=1.0):
-    """A lens-like object: singular isothermal spheres of Einstein radius ``b``.
-
-    ``b`` is one radius for every center, or a sequence of one per center.
-    """
-    radii = _einstein_radii(centers, b)
-
-    def raytrace(x, y):
-        bx, by = x * 1.0, y * 1.0
-        for (cx, cy), rein in zip(centers, radii):
-            dx, dy = x - cx, y - cy
-            r = (dx * dx + dy * dy) ** 0.5
-            bx, by = bx - rein * dx / r, by - rein * dy / r
-        return bx, by
-
-    def jacobian(x, y):
-        a00, a01, a11 = x * 0.0 + 1.0, x * 0.0, x * 0.0 + 1.0
-        for (cx, cy), rein in zip(centers, radii):
-            dx, dy = x - cx, y - cy
-            r = (dx * dx + dy * dy) ** 0.5
-            k = rein / r**3
-            a00 = a00 - rein / r + k * dx * dx
-            a01 = a01 + k * dx * dy
-            a11 = a11 - rein / r + k * dy * dy
-        return _stack_2x2(a00, a01, a01, a11)
-
-    return SimpleNamespace(raytrace=raytrace, jacobian_lens_equation=jacobian)
-
-
-def _sis_pair_map(p, centers, b=1.0):
-    """``_sis_pair`` on numpy points ``(N, 2)``."""
-    out = p.copy()
-    for c, rein in zip(centers, _einstein_radii(centers, b)):
-        d = p - np.asarray(c)
-        out -= rein * d / np.hypot(d[:, 0], d[:, 1])[:, None]
-    return out
 
 
 def _with_holes(curves, holes):
@@ -1100,12 +973,7 @@ def _brute_counts(fn, grid, lo, hi, h, singular, excl):
 
 @pytest.fixture(scope="module")
 def two_sis():
-    lens = _sis_pair(TWO_SIS)
-    mesh = to_mesh(
-        build_lens_mesh(
-            lens.raytrace, lens.jacobian_lens_equation, **TWO_SIS_BUILD, centers=TWO_SIS
-        )
-    )
+    mesh, _ = build(*sis(TWO_SIS), **TWO_SIS_BUILD, centers=TWO_SIS)
     return mesh, _with_holes(critical_curves_and_caustics(mesh), mesh.holes)
 
 
@@ -1131,7 +999,7 @@ def test_the_count_from_the_repaired_curves_matches_a_brute_force_count(two_sis)
     _, curves = two_sis
     grid = _grid_of(curves)
     truth = _brute_counts(
-        lambda p: _sis_pair_map(p, TWO_SIS),
+        sis(TWO_SIS)[0],
         grid,
         lo=-4.0,
         hi=4.6,
@@ -1147,12 +1015,7 @@ def test_the_count_from_the_repaired_curves_matches_a_brute_force_count(two_sis)
 def test_moving_a_center_off_the_lattice_leaves_the_count_unchanged(two_sis):
     _, curves = two_sis
     shifted = [(0.0003, 0.0002), TWO_SIS[1]]
-    lens = _sis_pair(shifted)
-    mesh = to_mesh(
-        build_lens_mesh(
-            lens.raytrace, lens.jacobian_lens_equation, **TWO_SIS_BUILD, centers=shifted
-        )
-    )
+    mesh, _ = build(*sis(shifted), **TWO_SIS_BUILD, centers=shifted)
     moved = _with_holes(critical_curves_and_caustics(mesh), mesh.holes)
     grid = _grid_of(curves)
     band = _curve_mask(curves, grid, 0.06) | _curve_mask(moved, grid, 0.06)
@@ -1181,17 +1044,7 @@ def test_an_sis_pseudo_caustic_no_critical_curve_reaches_is_among_the_curves():
     The pseudo-caustic still comes out, as the hole's whole curve after the
     critical circle.
     """
-    lens = _sis_pair([(0.0, 0.0)])
-    mesh = to_mesh(
-        build_lens_mesh(
-            lens.raytrace,
-            lens.jacobian_lens_equation,
-            fov=4.0,
-            init_res=8,
-            min_img_sep=1e-2,
-            centers=[(0.0, 0.0)],
-        )
-    )
+    mesh, _ = build(*sis(), 4.0, 8, 1e-2, centers=[(0.0, 0.0)])
     curves = critical_curves_and_caustics(mesh)
     assert to_np(mesh.holes.pseudo_caustic).tolist() == [True]
     assert to_np(curves.closed).tolist() == [True, True]
@@ -1301,12 +1154,8 @@ def _assert_closed_and_chord_free(mesh, curves):
 
 @pytest.fixture(scope="module")
 def bridged_sis():
-    lens = _sis_pair(WITH_COMPANION, b=WITH_COMPANION_B)
-    mesh = build_lens_mesh(
-        lens.raytrace,
-        lens.jacobian_lens_equation,
-        **TWO_SIS_BUILD,
-        centers=WITH_COMPANION,
+    mesh, _ = user_build(
+        *sis(WITH_COMPANION, WITH_COMPANION_B), **TWO_SIS_BUILD, centers=WITH_COMPANION
     )
     return mesh, _with_holes(critical_curves_and_caustics(mesh), mesh.holes)
 
@@ -1328,7 +1177,7 @@ def test_the_count_through_a_bridged_hole_matches_a_brute_force_count(bridged_si
     _, curves = bridged_sis
     grid = _grid_of(curves)
     truth = _brute_counts(
-        lambda p: _sis_pair_map(p, WITH_COMPANION, b=WITH_COMPANION_B),
+        sis(WITH_COMPANION, WITH_COMPANION_B)[0],
         grid,
         lo=-4.0,
         hi=4.6,
@@ -1348,12 +1197,7 @@ def test_curves_bridged_to_a_regular_center_come_out_closed_and_chord_free():
     goes from it straight into the origin's.
     """
     centers = TWO_SIS + [(-0.01241, 0.01688)]
-    lens = _sis_pair(TWO_SIS)
-    mesh = to_mesh(
-        build_lens_mesh(
-            lens.raytrace, lens.jacobian_lens_equation, **TWO_SIS_BUILD, centers=centers
-        )
-    )
+    mesh, _ = build(*sis(TWO_SIS), **TWO_SIS_BUILD, centers=centers)
     assert _hole_to_hole_steps(mesh) > 0
     _assert_closed_and_chord_free(mesh, critical_curves_and_caustics(mesh))
 
@@ -1401,9 +1245,9 @@ def test_chain_segments_of_nothing_is_no_curve():
 
 def test_edge_zeros_interpolate_the_zero_in_every_plane():
     edges = mesh_backend.as_array([[0, 1]], dtype=mesh_backend.int64)
-    field = _arr([-1.0, 3.0])
-    a = _arr([[0.0, 0.0], [4.0, 0.0]])
-    b = _arr([[0.0, 1.0], [0.0, 5.0]])
+    field = f64([-1.0, 3.0])
+    a = f64([[0.0, 0.0], [4.0, 0.0]])
+    b = f64([[0.0, 1.0], [0.0, 5.0]])
     za, zb = edge_zeros(edges, field, (a, b))
     assert to_np(za).tolist() == [[1.0, 0.0]]
     assert to_np(zb).tolist() == [[0.0, 2.0]]
@@ -1411,7 +1255,7 @@ def test_edge_zeros_interpolate_the_zero_in_every_plane():
 
 def test_the_caustic_area_of_an_sis_is_the_disk_its_pseudo_caustic_bounds():
     """The hole curve of radius ``rho`` maps to the circle of radius ``1 - rho``."""
-    lens_, _ = numpy_lens(sis_map, sis_map_jacobian)
+    lens_ = numpy_lens(*sis())
     mesh, curves = build_closed_lens_mesh(
         lens_.raytrace,
         lens_.jacobian_lens_equation,
@@ -1427,14 +1271,12 @@ def test_the_caustic_area_of_an_sis_is_the_disk_its_pseudo_caustic_bounds():
 
 
 def test_an_open_curve_leaves_the_caustic_area_unknown():
-    lens_, _ = numpy_lens(sie_like, sie_like_jacobian)
-    mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 2.0, 8, 0.05)
+    mesh, _ = user_build(sie_like, sie_like_jacobian, 2.0, 8, 0.05)
     curves = critical_curves_and_caustics(mesh)
     assert not to_np(curves.closed).all()
     assert math.isnan(caustic_area(curves))
 
 
 def test_a_lens_without_caustics_bounds_no_area():
-    lens_, _ = numpy_lens(affine, affine_jacobian)
-    mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 4, 0.25)
+    mesh, _ = user_build(affine, affine_jacobian, 4.0, 4, 0.25)
     assert caustic_area(critical_curves_and_caustics(mesh)) == 0.0

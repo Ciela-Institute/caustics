@@ -40,10 +40,6 @@ from adaptive_maps import f64, i64, to_np
 RNG = np.random.default_rng(20260918)
 
 
-def _arr(x):
-    return f64(x)
-
-
 def signed_area(tri):
     """Twice the signed area of a (..., 3, 2) numpy triangle."""
     e1 = tri[..., 1, :] - tri[..., 0, :]
@@ -61,7 +57,7 @@ def np_red_split(tri):
 
 def test_sigma_min_of_zero_matrix_is_exactly_zero():
     A = np.zeros((4, 2, 2))
-    got = to_np(sigma_min_2x2(_arr(A)))
+    got = to_np(sigma_min_2x2(f64(A)))
     assert (got == 0.0).all()
     assert not np.isnan(got).any()
 
@@ -69,13 +65,13 @@ def test_sigma_min_of_zero_matrix_is_exactly_zero():
 def test_sigma_min_propagates_nan():
     A = np.zeros((1, 2, 2))
     A[0, 0, 0] = np.nan
-    assert np.isnan(to_np(sigma_min_2x2(_arr(A)))).all()
+    assert np.isnan(to_np(sigma_min_2x2(f64(A)))).all()
 
 
 def test_sigma_min_matches_svd():
     A = RNG.normal(size=(2000, 2, 2))
     expected = np.linalg.svd(A, compute_uv=False)[:, -1]
-    assert np.allclose(to_np(sigma_min_2x2(_arr(A))), expected, rtol=1e-9, atol=1e-12)
+    assert np.allclose(to_np(sigma_min_2x2(f64(A))), expected, rtol=1e-9, atol=1e-12)
 
 
 def test_sigma_min_near_and_exactly_singular():
@@ -86,12 +82,12 @@ def test_sigma_min_near_and_exactly_singular():
     # which tests the degenerate branch, not the near-degenerate one.
     for eps in (1e-4, 1e-7):
         A = np.stack([a, a + eps * perp], axis=1)
-        got = to_np(sigma_min_2x2(_arr(A)))
+        got = to_np(sigma_min_2x2(f64(A)))
         expected = np.linalg.svd(A, compute_uv=False)[:, -1]
         assert np.isfinite(got).all()
         assert np.allclose(got, expected, rtol=1e-5, atol=0.0)
     exact = np.stack([a, 2.0 * a], axis=1)  # rank 1: det is exactly 0 in IEEE
-    assert (to_np(sigma_min_2x2(_arr(exact))) == 0.0).all()
+    assert (to_np(sigma_min_2x2(f64(exact))) == 0.0).all()
 
 
 def test_sigma_min_handles_conformal_ulp_negativity():
@@ -109,7 +105,7 @@ def test_sigma_min_handles_conformal_ulp_negativity():
     F = (A.astype(np.float32) ** 2).sum(axis=(-2, -1))
     D = np.abs(A[:, 0, 0] * A[:, 1, 1] - A[:, 0, 1] * A[:, 1, 0])
     assert (F - 2 * D < 0).any(), "test fixture no longer exercises the guard"
-    got = to_np(sigma_min_2x2(_arr(A.astype(np.float64))))
+    got = to_np(sigma_min_2x2(f64(A.astype(np.float64))))
     assert np.isfinite(got).all()
 
 
@@ -136,8 +132,8 @@ def test_group_tables_close_and_have_order_six():
     # exactly six distinct elements
     assert len({G[c].tobytes() for c in range(6)}) == 6
     # both root shapes lie in one orbit
-    R0 = to_np(shape_matrix(_arr(ROOT_SHAPES[0])))
-    R1 = to_np(shape_matrix(_arr(ROOT_SHAPES[1])))
+    R0 = to_np(shape_matrix(f64(ROOT_SHAPES[0])))
+    R1 = to_np(shape_matrix(f64(ROOT_SHAPES[1])))
     assert np.allclose(R0 @ G[ROOT_CLASS[1]], R1)
 
 
@@ -171,7 +167,7 @@ def test_pinv_table_scales_by_two_to_the_level():
         for _ in range(5):
             kids = np_red_split(tri)
             for k in range(4):
-                direct = to_np(mesh_backend.linalg.inv(shape_matrix(_arr(kids[k]))))
+                direct = to_np(mesh_backend.linalg.inv(shape_matrix(f64(kids[k]))))
                 table = (2.0 ** (level + 1) / h0) * PINV0[COMPOSE[cls, k]]
                 assert np.allclose(direct, table, rtol=1e-12, atol=1e-12)
             tri, cls, level = kids[0], COMPOSE[cls, 0], level + 1
@@ -191,7 +187,7 @@ def test_the_inverse_table_recovers_the_affine_map():
     lens_map = RNG.normal(size=(2, 2))
     for k in range(4):
         q = kids[k] @ lens_map.T
-        Q = to_np(shape_matrix(_arr(q)))
+        Q = to_np(shape_matrix(f64(q)))
         table = Q @ ((2.0 ** (level + 1) / h0) * PINV0[COMPOSE[cls, k]])
         assert np.allclose(table, lens_map, rtol=1e-10, atol=1e-12)
 
@@ -199,8 +195,8 @@ def test_the_inverse_table_recovers_the_affine_map():
 def test_weights_sum_to_twice_the_signed_area():
     tri = RNG.normal(size=(500, 3, 2))
     beta = RNG.normal(size=(500, 2))
-    w = to_np(triangle_weights(_arr(tri), _arr(beta)))
-    P = to_np(shape_matrix(_arr(tri)))
+    w = to_np(triangle_weights(f64(tri), f64(beta)))
+    P = to_np(shape_matrix(f64(tri)))
     d = P[:, 0, 0] * P[:, 1, 1] - P[:, 0, 1] * P[:, 1, 0]
     assert np.allclose(w.sum(axis=1), d, rtol=1e-9, atol=1e-12)
 
@@ -212,7 +208,7 @@ def test_containment_agrees_with_barycentric_truth_on_both_parities(flip):
         tri = tri[:, ::-1, :]
     pts = RNG.uniform(-0.5, 1.5, size=(4000, 2))
     tiled = np.repeat(tri, len(pts), axis=0)
-    hit = to_np(contains(triangle_weights(_arr(tiled), _arr(pts))))
+    hit = to_np(contains(triangle_weights(f64(tiled), f64(pts))))
     truth = (pts[:, 0] >= 0) & (pts[:, 1] >= 0) & (pts[:, 0] + pts[:, 1] <= 1)
     assert (hit == truth).all()
 
@@ -223,8 +219,8 @@ def test_shared_edge_weights_are_exactly_negated():
     left = verts[[0, 1, 2]][None]
     right = verts[[1, 3, 2]][None]  # shares the edge (1, 2), opposite traversal
     beta = np.array([[0.62, 0.71]])
-    wl = to_np(triangle_weights(_arr(left), _arr(beta)))
-    wr = to_np(triangle_weights(_arr(right), _arr(beta)))
+    wl = to_np(triangle_weights(f64(left), f64(beta)))
+    wr = to_np(triangle_weights(f64(right), f64(beta)))
     # left's weight opposite vertex 0 uses the (1, 2) edge; right's opposite
     # vertex 3 uses (2, 1). They must be bit-exact negatives.
     assert wl[0, 0] == -wr[0, 1]
@@ -246,7 +242,7 @@ SEGMENT_PAIRS = [
 def test_segments_cross_counts_a_touch_and_nothing_apart(a, b, want):
     """Either segment, either way round, gives the same answer."""
     cases = [(a, b), (a[::-1], b), (b, a), (b[::-1], a[::-1])]
-    a0, a1, b0, b1 = (_arr([c[k][e] for c in cases]) for k in (0, 1) for e in (0, 1))
+    a0, a1, b0, b1 = (f64([c[k][e] for c in cases]) for k in (0, 1) for e in (0, 1))
     assert to_np(segments_cross(a0, a1, b0, b1)).tolist() == [want] * 4
 
 
@@ -256,10 +252,10 @@ def test_segments_cross_broadcasts_to_a_table_of_every_pair():
         [[[0, 2], [2, 0]], [[1, 0], [1, 1]], [[5, 5], [6, 6]]], dtype=np.float64
     )
     got = segments_cross(
-        _arr(a[:, None, 0]),
-        _arr(a[:, None, 1]),
-        _arr(b[None, :, 0]),
-        _arr(b[None, :, 1]),
+        f64(a[:, None, 0]),
+        f64(a[:, None, 1]),
+        f64(b[None, :, 0]),
+        f64(b[None, :, 1]),
     )
     assert to_np(got).tolist() == [[True, True, False], [False, True, False]]
 
@@ -273,7 +269,7 @@ def test_sanitize_bary_is_always_in_the_simplex():
     """
     w = RNG.normal(size=(1000, 3)) * 1e-300
     d = w.sum(axis=1)
-    bary = to_np(sanitize_bary(_arr(w), _arr(d)))
+    bary = to_np(sanitize_bary(f64(w), f64(d)))
     assert np.isfinite(bary).all()
     assert (bary >= 0).all() and (bary <= 1).all()
     assert np.allclose(bary.sum(axis=1), 1.0, rtol=0, atol=1e-12)
@@ -282,7 +278,7 @@ def test_sanitize_bary_is_always_in_the_simplex():
 def test_sanitize_bary_falls_back_to_the_centroid_on_total_degeneracy():
     w = np.zeros((4, 3))
     d = np.zeros(4)
-    bary = to_np(sanitize_bary(_arr(w), _arr(d)))
+    bary = to_np(sanitize_bary(f64(w), f64(d)))
     assert np.array_equal(bary, np.full((4, 3), 1.0 / 3.0))
 
 
@@ -293,8 +289,8 @@ def test_sanitize_bary_selects_per_row_between_normalized_and_centroid():
     every row degenerate -- so neither would catch an implementation that decided
     the fallback once for the whole batch instead of per row.
     """
-    w = _arr([[3.0, 1.5, 1.5], [0.0, 0.0, 0.0], [2.0, 1.0, 1.0], [0.0, 0.0, 0.0]])
-    d = _arr([6.0, 0.0, 4.0, 0.0])
+    w = f64([[3.0, 1.5, 1.5], [0.0, 0.0, 0.0], [2.0, 1.0, 1.0], [0.0, 0.0, 0.0]])
+    d = f64([6.0, 0.0, 4.0, 0.0])
     bary = to_np(sanitize_bary(w, d))
     assert np.allclose(bary[[0, 2]], [[0.5, 0.25, 0.25], [0.5, 0.25, 0.25]])
     assert np.allclose(bary[[1, 3]], 1.0 / 3.0)
@@ -304,8 +300,8 @@ def test_sanitize_bary_selects_per_row_between_normalized_and_centroid():
 def test_sanitize_bary_recovers_ordinary_coordinates():
     tri = np.array([[[0.0, 0.0], [2.0, 0.0], [0.0, 3.0]]])
     beta = np.array([[0.5, 0.75]])
-    w = triangle_weights(_arr(tri), _arr(beta))
-    d = _arr([2.0 * 3.0])
+    w = triangle_weights(f64(tri), f64(beta))
+    d = f64([2.0 * 3.0])
     bary = to_np(sanitize_bary(w, d))
     assert np.allclose(bary @ tri[0], beta, rtol=1e-12, atol=1e-14)
 

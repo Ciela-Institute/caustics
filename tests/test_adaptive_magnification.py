@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from caustics.backend_obj import backend
-from caustics.lenses.func.adaptive import build_lens_mesh, total_magnification
+from caustics.lenses.func.adaptive import total_magnification
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.geometry import contains_half_open
 from caustics.lenses.func.adaptive.index import index_hits
@@ -22,12 +22,10 @@ from adaptive_maps import (
     build,
     f64,
     i64,
-    numpy_lens,
-    point_jacobian,
-    point_raytrace,
-    sis_jacobian,
-    sis_raytrace,
+    point_mass,
+    sis,
     to_np,
+    user_build,
 )
 
 RNG = np.random.default_rng(20261009)
@@ -47,10 +45,7 @@ def _mu(mesh, points):
 
 
 def _sis_user_mesh(min_img_sep=0.02):
-    lens_, _ = numpy_lens(sis_raytrace, sis_jacobian)
-    return build_lens_mesh(
-        lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, min_img_sep
-    )
+    return user_build(*sis(), 6.0, 16, min_img_sep)[0]
 
 
 def test_an_affine_lens_has_one_over_det_a_everywhere():
@@ -61,7 +56,7 @@ def test_an_affine_lens_has_one_over_det_a_everywhere():
 
 @pytest.mark.parametrize(
     "fn, jac, want",
-    [(sis_raytrace, sis_jacobian, sis_mu), (point_raytrace, point_jacobian, point_mu)],
+    [(*sis(), sis_mu), (*point_mass(), point_mu)],
     ids=["sis", "point"],
 )
 def test_mu_tot_matches_the_analytic_lens(fn, jac, want):
@@ -90,7 +85,7 @@ def test_hits_interpolate_det_a_where_it_keeps_its_sign_and_take_the_area_ratio_
 
 
 def test_the_local_resolution_is_the_smallest_image_among_the_leaves_holding_a_point():
-    mesh, _ = build(sis_raytrace, sis_jacobian, fov=6.0, init_res=16, min_img_sep=0.04)
+    mesh, _ = build(*sis(), fov=6.0, init_res=16, min_img_sep=0.04)
     tables = leaf_tables(mesh)
     beta = f64(RNG.uniform(-1.5, 1.5, (300, 2)))
     _, size = _total_magnification(mesh, tables, beta)
@@ -103,7 +98,7 @@ def test_the_local_resolution_is_the_smallest_image_among_the_leaves_holding_a_p
 
 def test_mu_tot_on_a_symmetry_axis_matches_mu_tot_just_off_it():
     """The images of the lens-plane axes lie on lattice lines: a point there is on shared edges."""
-    mesh, _ = build(sis_raytrace, sis_jacobian, fov=6.0, init_res=16, min_img_sep=0.04)
+    mesh, _ = build(*sis(), fov=6.0, init_res=16, min_img_sep=0.04)
     x = np.linspace(0.2, 1.8, 41)
     on = _mu(mesh, np.stack((x, 0.0 * x), axis=-1))
     off = _mu(mesh, np.stack((x, 0.0 * x + 1e-9), axis=-1))

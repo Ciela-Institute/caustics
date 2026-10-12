@@ -34,11 +34,12 @@ from adaptive_maps import (
     f64,
     i64,
     index_cell_ranges,
-    lens,
     localised_fold,
     localised_fold_jacobian,
-    sis_jacobian,
-    sis_raytrace,
+    localised_fold_xy,
+    SIE_LIKE_LENS,
+    sis,
+    SIS_LENS,
     to_np,
 )
 
@@ -67,48 +68,7 @@ def leaf_status(mesh):
     return to_np(mesh.origin_status)[to_np(mesh.leaf_origin)]
 
 
-def _sie_like(x, y):
-    r = (x * x + y * y + 0.05) ** 0.5
-    return x - 1.2 * x / r, y - 1.2 * y / r
-
-
-def _sie_like_jacobian(x, y):
-    r = (x * x + y * y + 0.05) ** 0.5
-    k = 1.2 / r**3
-    xx, yy, xy = 1.0 - 1.2 / r + k * x * x, 1.0 - 1.2 / r + k * y * y, k * x * y
-    return backend.stack(
-        (backend.stack((xx, xy), dim=-1), backend.stack((xy, yy), dim=-1)), dim=-2
-    )
-
-
-SIE_LIKE = lens(_sie_like, _sie_like_jacobian)
-
-
 BUILD = dict(fov=6.0, init_res=4, min_img_sep=0.1, max_depth=6)
-
-
-def _sis(x, y):
-    """A singular isothermal sphere of Einstein radius 1, non-finite at the origin."""
-    r = (x * x + y * y) ** 0.5
-    return x - x / r, y - y / r
-
-
-def _sis_jacobian(x, y):
-    r = (x * x + y * y) ** 0.5
-    k = 1.0 / r**3
-    xx, yy, xy = 1.0 - 1.0 / r + k * x * x, 1.0 - 1.0 / r + k * y * y, k * x * y
-    return backend.stack(
-        (backend.stack((xx, xy), dim=-1), backend.stack((xy, yy), dim=-1)), dim=-2
-    )
-
-
-SIS = lens(_sis, _sis_jacobian)
-
-
-def _fold(x, y):
-    """``localised_fold`` on backend arrays: inside ``|y| < 0.5``, ``beta_y = 0.6 y + y**2 - 0.25``."""
-    bend = backend.where(backend.abs(y) < 0.5, y * y - 0.25, 0.0 * y)
-    return x, 0.6 * y + bend
 
 
 def _missed(images, counts, want, tol):
@@ -126,7 +86,9 @@ def _missed(images, counts, want, tol):
 @pytest.fixture(scope="module")
 def mesh():
     return to_mesh(
-        build_lens_mesh(SIE_LIKE.raytrace, SIE_LIKE.jacobian_lens_equation, **BUILD)
+        build_lens_mesh(
+            SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, **BUILD
+        )
     )
 
 
@@ -135,12 +97,6 @@ def beta():
     rng = np.random.default_rng(21)
     return mesh_backend.as_array(
         rng.uniform(-1.5, 1.5, (64, 2)), dtype=mesh_backend.float64
-    )
-
-
-def _beta(points):
-    return mesh_backend.as_array(
-        np.asarray(points, dtype=np.float64), dtype=mesh_backend.float64
     )
 
 
@@ -185,20 +141,22 @@ def sie():
 
 
 def test_images_solve_the_lens_equation(mesh):
-    beta = _beta([[0.05, 0.02], [0.4, -0.3]])
-    img, counts = fr(mesh, beta, _sie_like)
+    beta = f64([[0.05, 0.02], [0.4, -0.3]])
+    img, counts = fr(mesh, beta, SIE_LIKE_LENS.raytrace)
     _img_np = to_np(img)
-    bx, by = _sie_like(img[:, 0], img[:, 1])
+    bx, by = SIE_LIKE_LENS.raytrace(img[:, 0], img[:, 1])
     got = np.stack((to_np(bx), to_np(by)), axis=-1)
     want = np.repeat(to_np(beta), to_np(counts), axis=0)
     assert np.abs(got - want).max() < 1e-6
 
 
 def test_forward_raytrace_is_invariant_to_batch_size(mesh):
-    beta = _beta(np.random.default_rng(4).uniform(-1, 1, (12, 2)))
-    whole = [to_np(t) for t in fr(mesh, beta, _sie_like)]
+    beta = f64(np.random.default_rng(4).uniform(-1, 1, (12, 2)))
+    whole = [to_np(t) for t in fr(mesh, beta, SIE_LIKE_LENS.raytrace)]
     for size in (1, 3, 100):
-        got = [to_np(t) for t in fr(mesh, beta, _sie_like, batch_size=size)]
+        got = [
+            to_np(t) for t in fr(mesh, beta, SIE_LIKE_LENS.raytrace, batch_size=size)
+        ]
         assert got[1].tolist() == whole[1].tolist()
         assert np.allclose(got[0], whole[0])
 
@@ -207,23 +165,23 @@ def test_forward_raytrace_raises_for_a_source_outside_the_image_of_the_fov_bound
     mesh,
 ):
     with pytest.raises(ValueError, match="1 source position"):
-        fr(mesh, _beta([[1e6, 1e6]]), _sie_like)
+        fr(mesh, f64([[1e6, 1e6]]), SIE_LIKE_LENS.raytrace)
     with pytest.raises(ValueError, match="1 source position"):
-        fr(mesh, _beta([[0.05, 0.02], [1e6, 1e6]]), _sie_like)
+        fr(mesh, f64([[0.05, 0.02], [1e6, 1e6]]), SIE_LIKE_LENS.raytrace)
     with pytest.raises(ValueError, match="1 source position"):
-        fr(mesh, _beta([[0.05, 0.02], [1e6, 1e6]]), _sie_like, batch_size=1)
+        fr(mesh, f64([[0.05, 0.02], [1e6, 1e6]]), SIE_LIKE_LENS.raytrace, batch_size=1)
 
 
 def test_forward_raytrace_raises_for_a_nan_source(mesh):
     with pytest.raises(ValueError, match="1 source position"):
-        fr(mesh, _beta([[np.nan, 0.0]]), _sie_like)
+        fr(mesh, f64([[np.nan, 0.0]]), SIE_LIKE_LENS.raytrace)
 
 
 def test_forward_raytrace_handles_empty_input(mesh):
     img, counts = fr(
         mesh,
         mesh_backend.as_array(np.zeros((0, 2)), dtype=mesh_backend.float64),
-        _sie_like,
+        SIE_LIKE_LENS.raytrace,
     )
     assert to_np(counts).size == 0
     assert to_np(img).shape == (0, 2)
@@ -373,7 +331,7 @@ def test_forward_raytrace_finds_no_spurious_sie_images(sie):
     """
     lens, mesh = sie
     for sp in ([0.2, 0.2], [0.05, -0.05]):
-        images, counts = fr(mesh, _beta([sp]), lens.raytrace)
+        images, counts = fr(mesh, f64([sp]), lens.raytrace)
         images = to_np(images)
         assert to_np(counts).tolist() == [images.shape[0]]
         assert images.shape[0] > 0, f"{sp}: no images found"
@@ -402,7 +360,7 @@ def test_forward_raytrace_covers_every_sie_image(sie):
     """
     lens, mesh = sie
     for sp in ([0.2, 0.2], [0.05, -0.05]):
-        images, _ = fr(mesh, _beta([sp]), lens.raytrace)
+        images, _ = fr(mesh, f64([sp]), lens.raytrace)
         images = to_np(images)
         # The reference path is float32-only: `LensBase.forward_raytrace` raises
         # "expected scalar type Float but found Double" on float64 input. The mesh
@@ -416,7 +374,7 @@ def test_forward_raytrace_covers_every_sie_image(sie):
 
 
 def test_forward_raytrace_finds_every_sis_inner_image_beyond_min_img_sep():
-    """Every inner image more than ``min_img_sep`` from the SIS center comes back.
+    """Every inner image more than ``min_img_sep`` from the SIS_LENS center comes back.
 
     ``|theta_minus| = b - beta``, so a source at ``beta = b - k * min_img_sep``
     has its inner image ``k * min_img_sep`` from the center, ``k > 1`` here.
@@ -429,13 +387,17 @@ def test_forward_raytrace_finds_every_sis_inner_image_beyond_min_img_sep():
     """
     sep = 0.05
     mesh = build_lens_mesh(
-        SIS.raytrace, SIS.jacobian_lens_equation, fov=4.0, init_res=4, min_img_sep=sep
+        SIS_LENS.raytrace,
+        SIS_LENS.jacobian_lens_equation,
+        fov=4.0,
+        init_res=4,
+        min_img_sep=sep,
     )
     rng = np.random.default_rng(7)
     k = rng.uniform(1.0, 4.0, 600)
     phi = rng.uniform(0.0, 2 * np.pi, 600)
     u = np.stack((np.cos(phi), np.sin(phi)), axis=-1)
-    images, counts = fr(mesh, (1.0 - k * sep)[:, None] * u, _sis)
+    images, counts = fr(mesh, (1.0 - k * sep)[:, None] * u, SIS_LENS.raytrace)
     missed = _missed(images, counts, -(k * sep)[:, None] * u, sep / 4)
     assert (
         not missed
@@ -488,7 +450,7 @@ def test_forward_raytrace_finds_one_image_of_a_source_below_the_fold_s_caustic()
     bx = rng.uniform(-1.5, 1.5, 200)
     near = [2e-6, 1e-5, 1e-3]
     by = -0.34 - np.concatenate((rng.uniform(1.5 * tol, 0.2, 197), near))
-    images, counts = fr(mesh, np.stack((bx, by), axis=-1), _fold)
+    images, counts = fr(mesh, np.stack((bx, by), axis=-1), localised_fold_xy)
     assert to_np(counts).tolist() == [1] * 200
     assert np.allclose(to_np(images), np.stack((bx, by / 0.6), axis=-1), atol=1e-6)
 
@@ -518,7 +480,7 @@ def test_forward_raytrace_recovers_the_analytic_point_mass_pair():
         min_img_sep=1e-2,
     )
     b = 0.4
-    images, counts = fr(mesh, _beta([[b, 0.0]]), lens.raytrace)
+    images, counts = fr(mesh, f64([[b, 0.0]]), lens.raytrace)
     images = to_np(images)
     assert to_np(counts).tolist() == [2], f"expected 2 images, got {images}"
     expected = np.sort([(b + np.sqrt(b**2 + 4)) / 2, (b - np.sqrt(b**2 + 4)) / 2])
@@ -534,13 +496,13 @@ def test_forward_raytrace_batches_independently(sie):
     """
     lens, mesh = sie
     points = [[0.2, 0.2], [0.05, -0.05], [0.4, -0.3]]
-    images, counts = fr(mesh, _beta(points), lens.raytrace)
+    images, counts = fr(mesh, f64(points), lens.raytrace)
     counts = to_np(counts)
     assert counts.shape == (3,)
     assert counts.sum() == to_np(images).shape[0]
     offsets = np.concatenate(([0], np.cumsum(counts)))
     for i, sp in enumerate(points):
-        one, one_counts = fr(mesh, _beta([sp]), lens.raytrace)
+        one, one_counts = fr(mesh, f64([sp]), lens.raytrace)
         assert to_np(one_counts).tolist() == [counts[i]], f"{sp}: count differs"
         block = to_np(images)[offsets[i] : offsets[i + 1]]
         assert np.allclose(block, to_np(one), atol=1e-8), f"{sp}: images differ"
@@ -549,7 +511,7 @@ def test_forward_raytrace_batches_independently(sie):
 def test_query_seeds_an_inner_image_that_runs_into_the_lens_center():
     """The coverage the old terminate-on-non-finite policy destroyed.
 
-    For the SIS the inner image runs continuously into the lens center as the
+    For the SIS_LENS the inner image runs continuously into the lens center as the
     source approaches the cut: ``|theta_minus| = b - beta``. Terminating the six
     level-0 triangles that share the origin therefore removed a hexagon of
     half-width ``fov / init_res`` from the spatial index -- 1.0 arcsec on this
@@ -565,7 +527,7 @@ def test_query_seeds_an_inner_image_that_runs_into_the_lens_center():
     Compose the public ``mesh_query`` and ``mesh_seeds`` interfaces so this
     regression exercises the same seeding path used by forward raytracing.
     """
-    mesh, _ = build(sis_raytrace, sis_jacobian, min_img_sep=0.05)
+    mesh, _ = build(*sis(), min_img_sep=0.05)
     idx, offsets, bary = query_np(mesh, np.array([[0.8, 0.0]]))
     seed = to_np(
         mesh_seeds(mesh, mesh_backend.as_array(idx), mesh_backend.as_array(bary))
@@ -579,7 +541,7 @@ def test_query_seeds_an_inner_image_that_runs_into_the_lens_center():
 def test_query_returns_the_leaves_around_a_lattice_point_where_det_a_is_exactly_zero():
     """A critical curve through a lattice point must not cost the leaves around it.
 
-    The SIS's critical curve ``|theta| = 1`` runs through the level-0 vertex
+    The SIS_LENS's critical curve ``|theta| = 1`` runs through the level-0 vertex
     ``(1, 0)``, where ``A = diag(1, 0)`` and ``det A`` is exactly zero. Hand-derived:
     ``beta = (0.005, 0)`` has its images at ``theta = 1.005`` and
     ``theta = -0.995`` on the x axis, since ``1.005 * (1 - 1/1.005) = 0.005`` and
@@ -588,7 +550,7 @@ def test_query_returns_the_leaves_around_a_lattice_point_where_det_a_is_exactly_
     return a leaf containing each: the solve alone does not show it, since
     unconverged neighbours reach the images too.
     """
-    mesh, _ = build(sis_raytrace, sis_jacobian, min_img_sep=0.05)
+    mesh, _ = build(*sis(), min_img_sep=0.05)
     idx, _, _ = query_np(mesh, np.array([[0.005, 0.0]]))
     tri = mesh_backend.as_array(to_np(mesh.vertices_lens)[to_np(mesh.leaves)[idx]])
     for image in ([1.005, 0.0], [-0.995, 0.0]):
@@ -598,7 +560,7 @@ def test_query_returns_the_leaves_around_a_lattice_point_where_det_a_is_exactly_
 
 
 def test_forward_raytrace_returns_the_converged_root_of_an_image_by_a_point_caustic():
-    """The SIS's caustic is a point, so near it a residual says little about position.
+    """The SIS_LENS's caustic is a point, so near it a residual says little about position.
 
     Hand-derived: ``beta = 1e-4 (cos 30, sin 30)`` has its images at
     ``theta = (1 + 1e-4) u`` and ``theta = (1e-4 - 1) u``, ``u`` the direction of
@@ -608,9 +570,13 @@ def test_forward_raytrace_returns_the_converged_root_of_an_image_by_a_point_caus
     """
     t, u = 1e-4, np.array([np.cos(np.pi / 6), np.sin(np.pi / 6)])
     mesh = build_lens_mesh(
-        SIS.raytrace, SIS.jacobian_lens_equation, fov=4.0, init_res=8, min_img_sep=0.02
+        SIS_LENS.raytrace,
+        SIS_LENS.jacobian_lens_equation,
+        fov=4.0,
+        init_res=8,
+        min_img_sep=0.02,
     )
-    images, counts = fr(mesh, _beta([t * u]), _sis)
+    images, counts = fr(mesh, f64([t * u]), SIS_LENS.raytrace)
     assert to_np(counts).tolist() == [2]
     for image in ((1 + t) * u, (t - 1) * u):
         gap = np.linalg.norm(to_np(images) - image, axis=1).min()
@@ -808,34 +774,28 @@ def test_bary_reconstructs_beta_on_every_hit_leaf():
     ).all()
 
 
-def _pts(x):
-    return mesh_backend.as_array(
-        np.asarray(x, dtype=np.float64), dtype=mesh_backend.float64
-    )
-
-
 def _dedup(points, counts, tol):
     """``dedup_representatives`` with every residual equal: each cluster keeps its earliest point."""
-    residual2 = _pts(np.zeros(points.shape[0]))
+    residual2 = f64(np.zeros(points.shape[0]))
     return to_np(dedup_representatives(points, residual2, counts, tol))
 
 
 def test_dedup_collapses_points_closer_than_the_tolerance():
-    pts = _pts([[0.0, 0.0], [0.05, 0.0], [1.0, 0.0]])
+    pts = f64([[0.0, 0.0], [0.05, 0.0], [1.0, 0.0]])
     keep = _dedup(pts, np.array([3]), 0.1)
     assert keep.tolist() == [True, False, True]
 
 
 def test_dedup_keeps_the_point_of_smallest_residual_in_each_cluster():
     """Not the earliest: the earliest root of an image can be the least converged."""
-    pts = _pts([[0.0, 0.0], [0.005, 0.0], [1.0, 0.0], [1.005, 0.0]])
-    residual2 = _pts([4e-12, 1e-30, 1.0, 1.0])
+    pts = f64([[0.0, 0.0], [0.005, 0.0], [1.0, 0.0], [1.005, 0.0]])
+    residual2 = f64([4e-12, 1e-30, 1.0, 1.0])
     keep = to_np(dedup_representatives(pts, residual2, np.array([4]), 0.01))
     assert keep.tolist() == [False, True, True, False]
 
 
 def test_dedup_keeps_points_separated_by_exactly_the_tolerance():
-    pts = _pts([[0.0, 0.0], [0.1, 0.0]])
+    pts = f64([[0.0, 0.0], [0.1, 0.0]])
     keep = _dedup(pts, np.array([2]), 0.1)
     assert keep.tolist() == [True, True]
 
@@ -898,10 +858,10 @@ def test_dedup_counts_connected_components_regardless_of_point_order():
     """
     p = np.array([[0.0, 0.0], [0.009, 0.0], [0.018, 0.0]])
     counts = np.array([3])
-    base = _dedup(_pts(p), counts, 0.01).sum()
+    base = _dedup(f64(p), counts, 0.01).sum()
     assert base == 1, f"one chained component expected, got {base}"
     for order in ([1, 0, 2], [2, 1, 0], [0, 2, 1], [2, 0, 1]):
-        got = _dedup(_pts(p[order]), counts, 0.01).sum()
+        got = _dedup(f64(p[order]), counts, 0.01).sum()
         assert got == base, f"order {order} gave {got}, not {base}"
 
 
@@ -914,14 +874,14 @@ def test_dedup_keeps_identical_points_in_different_blocks_distinct():
     padded ``(B, M, M)`` formulation makes cross-block bleed the natural bug
     here, and it would silently halve a multiplicity map.
     """
-    points = _pts([[0.0, 0.0], [0.0, 0.0]])
+    points = f64([[0.0, 0.0], [0.0, 0.0]])
     keep = _dedup(points, np.array([1, 1]), 0.01)
     assert keep.sum() == 2, "identical points in different blocks are distinct"
 
 
 def test_dedup_handles_ragged_blocks_and_empty_blocks():
     """Padding must not invent images in a block that found none."""
-    points = _pts([[0.0, 0.0], [5.0, 5.0], [5.0, 5.0005]])
+    points = f64([[0.0, 0.0], [5.0, 5.0], [5.0, 5.0005]])
     keep = _dedup(points, np.array([1, 0, 2]), 0.01)
     assert keep.tolist() == [True, True, False]
 
@@ -948,14 +908,14 @@ def test_dedup_is_unchanged_by_bucketing_on_randomised_blocks():
     cases += [rng.integers(0, 6, size=rng.integers(1, 12)) for _ in range(20)]
     for counts in cases:
         pts = rng.normal(scale=0.01, size=(int(counts.sum()), 2)).reshape(-1, 2)
-        res = _pts(rng.random(int(counts.sum())))
-        got = to_np(dedup_representatives(_pts(pts), res, counts, 0.01))
+        res = f64(rng.random(int(counts.sum())))
+        got = to_np(dedup_representatives(f64(pts), res, counts, 0.01))
         starts = np.cumsum(counts) - counts
         want = np.concatenate(
             [
                 to_np(
                     dedup_representatives(
-                        _pts(pts[s : s + c]), res[s : s + c], np.array([c]), 0.01
+                        f64(pts[s : s + c]), res[s : s + c], np.array([c]), 0.01
                     )
                 )
                 for s, c in zip(starts, counts)
@@ -967,7 +927,7 @@ def test_dedup_is_unchanged_by_bucketing_on_randomised_blocks():
 
 def test_dedup_keeps_exactly_one_point_per_singleton_block():
     """Blocks of one bypass the clustering kernel; they must still be kept."""
-    points = _pts([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]])
+    points = f64([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]])
     keep = _dedup(points, np.array([1, 1, 1]), 0.01)
     assert keep.tolist() == [True, True, True]
 
@@ -980,7 +940,7 @@ def test_dedup_mixes_singleton_and_clustered_blocks_in_order():
     clustered ones would pass every count-based assertion and still return the
     representatives in the wrong rows.
     """
-    points = _pts([[9.0, 9.0], [0.0, 0.0], [0.0, 0.001], [5.0, 5.0]])
+    points = f64([[9.0, 9.0], [0.0, 0.0], [0.0, 0.001], [5.0, 5.0]])
     keep = _dedup(points, np.array([1, 2, 1]), 0.01)
     assert keep.tolist() == [True, True, False, True]
 
@@ -997,10 +957,10 @@ def test_index_hits_are_the_query_hits_with_raw_weights(mesh, beta):
 
 
 def test_forward_raytrace_reads_a_scalar_source_and_empty_sources(mesh):
-    x, y, counts = forward_raytrace(0.05, 0.02, _sie_like, mesh)
+    x, y, counts = forward_raytrace(0.05, 0.02, SIE_LIKE_LENS.raytrace, mesh)
     assert counts.shape == (1,) and int(to_np(counts)[0]) >= 1
     assert x.shape == y.shape == (int(to_np(counts)[0]),)
-    x, y, counts = forward_raytrace(f64([]), f64([]), _sie_like, mesh)
+    x, y, counts = forward_raytrace(f64([]), f64([]), SIE_LIKE_LENS.raytrace, mesh)
     assert x.shape == y.shape == (0,) and counts.shape == (0,)
 
 
