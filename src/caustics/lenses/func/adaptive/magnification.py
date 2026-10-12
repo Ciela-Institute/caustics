@@ -12,7 +12,7 @@ from typing import NamedTuple
 
 from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
-from .geometry import area2, contains_half_open, expand, map_chunks
+from .geometry import area2, contains_half_open, map_chunks
 from .index import as_points, index_hits
 from .lens_mesh import inside_fov_image
 
@@ -106,8 +106,12 @@ def _per_point_sum(qidx, values, n):
     """
     device = mesh_backend.device(values)
     counts = mesh_backend.bincount(qidx, minlength=n)
-    # qidx is non-decreasing, so a hit's place in its point's block is its rank.
-    _, rank = expand(counts, qidx.shape[0])
+    # qidx is non-decreasing: a hit's rank is its offset from its point's first.
+    # A gather, not expand: this runs on every total_magnification chunk.
+    rank = (
+        mesh_backend.arange(qidx.shape[0], dtype=mesh_backend.int64, device=device)
+        - (mesh_backend.cumsum(counts, dim=0) - counts)[qidx]
+    )
     total = mesh_backend.zeros((n,), dtype=values.dtype, device=device)
     deepest = (
         int(mesh_backend.to_numpy(mesh_backend.max(counts))) if qidx.shape[0] else 0
