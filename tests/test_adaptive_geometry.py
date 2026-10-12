@@ -28,6 +28,7 @@ from caustics.lenses.func.adaptive.geometry import (
     edge_nearest,
     expand,
     is_member,
+    map_chunks,
     min_angle,
     ring_next,
     sanitize_bary,
@@ -699,6 +700,23 @@ def test_component_labels_name_each_component_by_its_smallest_node():
         mesh_backend.as_array(np.stack([adjacent, np.eye(6, dtype=bool)]))
     )
     assert to_np(both).tolist() == [[0, 0, 0, 3, 4, 4], list(range(6))]
+
+
+def test_map_chunks_runs_fn_on_chunks_of_at_most_batch_size_rows_and_concatenates():
+    points = f64(np.arange(14.0).reshape(7, 2))
+    seen = []
+
+    def fn(chunk):
+        seen.append(chunk.shape[0])
+        return 2.0 * chunk[:, 0], chunk[:, 1:]
+
+    for batch_size, sizes in ((None, [7]), (3, [3, 3, 1]), (10, [7])):
+        seen.clear()
+        doubled, rest = map_chunks(fn, points, batch_size)
+        assert seen == sizes
+        assert to_np(doubled).tolist() == np.arange(0.0, 28.0, 4.0).tolist()
+        assert to_np(rest).tolist() == np.arange(1.0, 14.0, 2.0)[:, None].tolist()
+    assert tuple(map_chunks(lambda c: c[:, 0], points[:0], 3).shape) == (0,)
 
 
 def test_sorted_find_gives_each_value_s_position_and_whether_it_is_there():

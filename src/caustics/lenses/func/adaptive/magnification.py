@@ -12,7 +12,7 @@ from typing import NamedTuple
 
 from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
-from .geometry import area2, contains_half_open, expand
+from .geometry import area2, contains_half_open, expand, map_chunks
 from .index import as_points, index_hits
 from .lens_mesh import inside_fov_image
 
@@ -214,10 +214,7 @@ def _total_magnification_at(bx, by, mesh, *, batch_size):
     device = mesh_backend.device(mesh.vertices_lens)
     beta = as_points(bx, by, device)
     tables = leaf_tables(mesh)
-    n = beta.shape[0]
-    step = max(n, 1) if batch_size is None else max(1, int(batch_size))
-    parts = [mesh_backend.zeros((0,), dtype=mesh_backend.float64, device=device)]
-    for lo in range(0, n, step):
-        parts.append(_total_magnification(mesh, tables, beta[lo : lo + step])[0])
-    mu = mesh_backend.concatenate(parts, dim=0)
+    mu = map_chunks(
+        lambda chunk: _total_magnification(mesh, tables, chunk)[0], beta, batch_size
+    )
     return mesh_backend.where(inside_fov_image(mesh, beta), mu, math.nan)

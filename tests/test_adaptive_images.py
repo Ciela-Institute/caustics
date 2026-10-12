@@ -57,11 +57,11 @@ def fr(mesh, beta, raytrace, **kw):
     return backend.stack((x, y), dim=-1), counts
 
 
-def query_np(mesh, beta, batch_size=None):
+def query_np(mesh, beta):
     beta = mesh_backend.as_array(
         np.asarray(beta, dtype=np.float64), dtype=mesh_backend.float64
     )
-    idx, off, bary = mesh_query(mesh, beta, batch_size=batch_size)
+    idx, off, bary = mesh_query(mesh, beta)
     return to_np(idx), to_np(off), to_np(bary)
 
 
@@ -731,14 +731,10 @@ def test_query_handles_empty_input_and_misses():
     assert off.tolist() == [0, 0, 0]
 
 
-def test_query_is_invariant_to_batch_size_and_point_order():
+def test_query_is_invariant_to_point_order():
     mesh, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
     beta = RNG.uniform(-1.5, 1.5, size=(97, 2))
     ref = query_np(mesh, beta)
-    for bs in (1, 7, 96, 97, 1000):
-        got = query_np(mesh, beta, batch_size=bs)
-        for a, b in zip(ref, got):
-            assert np.array_equal(a, b)
     perm = RNG.permutation(97)
     pidx, poff, pbary = query_np(mesh, beta[perm])
     for pos, old in enumerate(perm):

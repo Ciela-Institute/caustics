@@ -18,6 +18,7 @@ from .geometry import (
     contains,
     csr_offsets,
     edge_nearest,
+    map_chunks,
     sanitize_bary,
     triangle_weights,
 )
@@ -25,7 +26,7 @@ from .index import as_points, index_hits
 from .lens_mesh import inside_fov, inside_fov_image, leaf_grow, make_sampler
 
 
-def mesh_query(mesh, beta, batch_size=None):
+def mesh_query(mesh, beta):
     """
     Leaves whose source-plane triangle contains each point, or reaches it.
 
@@ -42,8 +43,6 @@ def mesh_query(mesh, beta, batch_size=None):
         ``(B, 2)`` source-plane points.
 
         *Unit: arcsec*
-    batch_size: Optional[int]
-        Most points per chunk; the result does not depend on it.
 
     Returns
     -------
@@ -59,39 +58,19 @@ def mesh_query(mesh, beta, batch_size=None):
     device = mesh_backend.device(mesh.vertices_lens)
     beta = mesh_backend.as_array(beta, dtype=mesh_backend.float64, device=device)
     grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
-    n = beta.shape[0]
-    step = max(n, 1) if batch_size is None else max(1, int(batch_size))
-    leaves = [mesh_backend.zeros((0,), dtype=mesh_backend.int64, device=device)]
-    bary = [mesh_backend.zeros((0, 3), dtype=mesh_backend.float64, device=device)]
-    counts = [mesh_backend.zeros((0,), dtype=mesh_backend.int64, device=device)]
-    for lo in range(0, n, step):
-        chunk = beta[lo : lo + step]
-        qidx, cand, w = index_hits(
-            mesh.index, mesh.vertices_source, mesh.leaves, chunk, grow
-        )
-        counts.append(
-            mesh_backend.long(mesh_backend.bincount(qidx, minlength=chunk.shape[0]))
-        )
-        leaves.append(cand)
-        tri = mesh.vertices_source[mesh.leaves[cand]]
-        inside = contains(w)
-        outside = mesh_backend.flatnonzero(~inside)
-        _, found = edge_nearest(tri[outside], chunk[qidx[outside]])
-        nearest = mesh_backend.fill_at_indices(
-            mesh_backend.zeros_like(w), outside, found
-        )
-        bary.append(
-            mesh_backend.where(
-                mesh_backend.unsqueeze(inside, -1),
-                sanitize_bary(w, area2(tri)),
-                nearest,
-            )
-        )
-    return (
-        mesh_backend.concatenate(leaves, dim=0),
-        csr_offsets(mesh_backend.concatenate(counts, dim=0)),
-        mesh_backend.concatenate(bary, dim=0),
+    qidx, leaves, w = index_hits(
+        mesh.index, mesh.vertices_source, mesh.leaves, beta, grow
     )
+    tri = mesh.vertices_source[mesh.leaves[leaves]]
+    inside = contains(w)
+    outside = mesh_backend.flatnonzero(~inside)
+    _, found = edge_nearest(tri[outside], beta[qidx[outside]])
+    nearest = mesh_backend.fill_at_indices(mesh_backend.zeros_like(w), outside, found)
+    bary = mesh_backend.where(
+        mesh_backend.unsqueeze(inside, -1), sanitize_bary(w, area2(tri)), nearest
+    )
+    counts = mesh_backend.long(mesh_backend.bincount(qidx, minlength=beta.shape[0]))
+    return leaves, csr_offsets(counts), bary
 
 
 def mesh_seeds(mesh, leaf_indices, bary):
@@ -415,17 +394,9 @@ def _forward_raytrace(
         )
     tol = float(residual_tol)
     lm_kwargs = {"jit": True, "stopping": 1e-10, **(lm_kwargs or {})}
-    n = beta.shape[0]
-    step = max(n, 1) if batch_size is None else max(1, int(batch_size))
-    images = [
-        mesh_backend.zeros((0, 2), dtype=mesh_backend.float64, device=mesh_device)
-    ]
-    counts = [mesh_backend.zeros((0,), dtype=mesh_backend.int64, device=mesh_device)]
-    for lo in range(0, n, step):
-        found, count = _images(
-            mesh, beta[lo : lo + step], raytrace, tol, lm_kwargs, device
-        )
-        images.append(found)
-        counts.append(count)
-    images = mesh_backend.concatenate(images, dim=0)
-    return images[:, 0], images[:, 1], mesh_backend.concatenate(counts, dim=0)
+    images, counts = map_chunks(
+        lambda chunk: _images(mesh, chunk, raytrace, tol, lm_kwargs, device),
+        beta,
+        batch_size,
+    )
+    return images[:, 0], images[:, 1], counts

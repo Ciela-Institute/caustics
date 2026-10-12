@@ -267,6 +267,22 @@ def component_labels(adjacent):
         label = new
 
 
+def map_chunks(fn, points, batch_size):
+    """
+    ``fn`` on consecutive chunks of at most ``batch_size`` rows of ``points``, its outputs concatenated.
+
+    One call when ``batch_size`` is None, and one on the empty ``points``.
+    ``fn`` returns an array, or a tuple of arrays concatenated position by
+    position.
+    """
+    n = points.shape[0]
+    step = max(n, 1) if batch_size is None else max(1, int(batch_size))
+    parts = [fn(points[lo : lo + step]) for lo in range(0, max(n, 1), step)]
+    if isinstance(parts[0], tuple):
+        return tuple(mesh_backend.concatenate(p, dim=0) for p in zip(*parts))
+    return mesh_backend.concatenate(parts, dim=0)
+
+
 def sigma_min_2x2(A):
     """
     Smallest singular value of a batch of 2x2 matrices, in closed form.
