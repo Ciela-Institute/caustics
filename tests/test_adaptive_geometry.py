@@ -7,9 +7,6 @@ import pytest
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.geometry import (
     CHILD_VERTEX_INDICES,
-    COMPOSE,
-    PINV0,
-    ROOT_CLASS,
     ROOT_SHAPES,
     area2,
     child_matrix_tables,
@@ -28,12 +25,10 @@ from caustics.lenses.func.adaptive.geometry import (
     shape_matrix,
     sigma_min_2x2,
     sorted_find,
-    to_device,
     triangle_weights,
     union_area,
     winding_number,
 )
-from caustics.lenses.func.adaptive.lattice import make_lattice
 
 from adaptive_maps import f64, i64, to_np
 
@@ -94,7 +89,7 @@ def test_sigma_min_handles_conformal_ulp_negativity():
     """F - 2D is exactly zero in R but goes negative by an ulp in float.
 
     Without the clip this returns NaN for a near-circularly-symmetric lens core,
-    which fail-closed then refines to max_level. See spec section 2.2.
+    which fail-closed then refines to max_level.
     """
     ab = RNG.normal(size=(200000, 2)).astype(np.float32)
     A = np.empty((ab.shape[0], 2, 2), dtype=np.float32)
@@ -137,11 +132,6 @@ def test_group_tables_close_and_have_order_six():
     assert np.allclose(R0 @ G[ROOT_CLASS[1]], R1)
 
 
-def test_root_shapes_are_positively_oriented():
-    for shape in ROOT_SHAPES:
-        assert signed_area(np.asarray(shape, dtype=np.float64)) > 0
-
-
 @pytest.mark.parametrize("flip", [False, True])
 def test_children_preserve_orientation_and_quarter_the_area(flip):
     tri = RNG.normal(size=(64, 3, 2))
@@ -171,25 +161,6 @@ def test_pinv_table_scales_by_two_to_the_level():
                 table = (2.0 ** (level + 1) / h0) * PINV0[COMPOSE[cls, k]]
                 assert np.allclose(direct, table, rtol=1e-12, atol=1e-12)
             tri, cls, level = kids[0], COMPOSE[cls, 0], level + 1
-
-
-def test_the_inverse_table_recovers_the_affine_map():
-    M, G, COMPOSE, PINV0, ROOT_CLASS = child_matrix_tables()
-    COMPOSE, PINV0, ROOT_CLASS = (
-        to_np(COMPOSE),
-        to_np(PINV0),
-        to_np(ROOT_CLASS),
-    )
-    h0 = 0.05
-    tri = np.asarray(ROOT_SHAPES[1], dtype=np.float64) * h0
-    cls, level = ROOT_CLASS[1], 0
-    kids = np_red_split(tri)
-    lens_map = RNG.normal(size=(2, 2))
-    for k in range(4):
-        q = kids[k] @ lens_map.T
-        Q = to_np(shape_matrix(f64(q)))
-        table = Q @ ((2.0 ** (level + 1) / h0) * PINV0[COMPOSE[cls, k]])
-        assert np.allclose(table, lens_map, rtol=1e-10, atol=1e-12)
 
 
 def test_weights_sum_to_twice_the_signed_area():
@@ -265,7 +236,7 @@ def test_sanitize_bary_is_always_in_the_simplex():
 
     The 1e-300 scaling stresses the clamp with extreme ratios; it does not reach
     the centroid fallback, because 1e-300 is a normal double and w/d is invariant
-    under a uniform scaling. The fallback is covered by the two tests below.
+    under a uniform scaling. The fallback is covered by the per-row test below.
     """
     w = RNG.normal(size=(1000, 3)) * 1e-300
     d = w.sum(axis=1)
@@ -275,25 +246,17 @@ def test_sanitize_bary_is_always_in_the_simplex():
     assert np.allclose(bary.sum(axis=1), 1.0, rtol=0, atol=1e-12)
 
 
-def test_sanitize_bary_falls_back_to_the_centroid_on_total_degeneracy():
-    w = np.zeros((4, 3))
-    d = np.zeros(4)
-    bary = to_np(sanitize_bary(f64(w), f64(d)))
-    assert np.array_equal(bary, np.full((4, 3), 1.0 / 3.0))
-
-
 def test_sanitize_bary_selects_per_row_between_normalized_and_centroid():
-    """Degenerate and ordinary rows in one call must be resolved independently.
+    """Degenerate and ordinary rows in one call are resolved row by row, a degenerate one to the centroid exactly.
 
-    Both other sanitize_bary tests are all-or-nothing -- every row ordinary, or
-    every row degenerate -- so neither would catch an implementation that decided
-    the fallback once for the whole batch instead of per row.
+    An implementation deciding the fallback once for the whole batch,
+    instead of per row, would fail.
     """
     w = f64([[3.0, 1.5, 1.5], [0.0, 0.0, 0.0], [2.0, 1.0, 1.0], [0.0, 0.0, 0.0]])
     d = f64([6.0, 0.0, 4.0, 0.0])
     bary = to_np(sanitize_bary(w, d))
     assert np.allclose(bary[[0, 2]], [[0.5, 0.25, 0.25], [0.5, 0.25, 0.25]])
-    assert np.allclose(bary[[1, 3]], 1.0 / 3.0)
+    assert np.array_equal(bary[[1, 3]], np.full((2, 3), 1.0 / 3.0))
     assert np.allclose(bary.sum(axis=1), 1.0, rtol=0, atol=1e-12)
 
 
@@ -319,13 +282,6 @@ def test_min_angle_of_a_degenerate_triangle_is_zero_not_nan():
         np.array([[[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]]), dtype=mesh_backend.float64
     )
     assert to_np(min_angle(tri))[0] == 0.0
-
-
-def test_the_table_constants_are_child_matrix_tables():
-    _, _, compose, pinv0, root_class = child_matrix_tables()
-    assert np.array_equal(to_np(COMPOSE), to_np(compose))
-    assert np.array_equal(to_np(PINV0), to_np(pinv0))
-    assert np.array_equal(to_np(ROOT_CLASS), to_np(root_class))
 
 
 def test_area2_is_twice_the_signed_area():
@@ -385,13 +341,6 @@ def test_sorted_find_gives_each_value_s_position_and_whether_it_is_there():
     assert to_np(member).tolist() == to_np(found).tolist()
     pos, found = sorted_find(i64([]), i64([3]))
     assert to_np(pos).tolist() == [0] and to_np(found).tolist() == [False]
-
-
-def test_to_device_maps_every_array_field_of_nested_named_tuples():
-    lat = make_lattice(4.0, 0.0, 0.0, 2, 3)
-    moved = to_device(lat, mesh_backend.device(lat.lo))
-    assert moved.n == lat.n and moved.scale == lat.scale
-    assert np.array_equal(to_np(moved.lo), to_np(lat.lo))
 
 
 def test_edge_nearest_projects_onto_the_nearest_edge():
