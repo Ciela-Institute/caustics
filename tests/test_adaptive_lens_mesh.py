@@ -22,7 +22,6 @@ from caustics.lenses.func.adaptive.criterion import (
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
     child_shape_matrices,
-    deviation_and_sigma_min,
     lens_status,
     parity_from_children,
 )
@@ -124,7 +123,7 @@ def status(theta6, beta, det, level=0, h0=H0, min_img_sep=0.01, sigma=None):
             i64([level] * n),
             h0,
             min_img_sep,
-        )
+        )[0]
     )
 
 
@@ -253,7 +252,7 @@ def test_the_approximate_parity_bit_is_child_parity():
     got = to_np(
         lens_status(
             beta6, det6, f64(np.ones((64, 6))), i64([0] * n), i64([0] * n), H0, 0.01
-        )
+        )[0]
         & LEAF_APPROX_PARITY_UNRESOLVED
     )
     child_ok = to_np(
@@ -1832,6 +1831,24 @@ def test_a_small_sigma_min_at_one_sample_fails_the_deviation_on_its_row_alone():
     ]
 
 
+def test_a_nan_or_zero_sigma_min_fails_the_deviation_check():
+    """``deviation < sigma_min * min_img_sep`` fails on a NaN, and on ``0 < 0``."""
+
+    def sigma(value):
+        def fn(p):
+            out = np.ones(p.shape[:-1])
+            out[1, 2] = value
+            return out
+
+        return fn
+
+    for value in (np.nan, 0.0):
+        assert status(roots(), affine, affine_det, sigma=sigma(value)).tolist() == [
+            LEAF_CONVERGED,
+            LEAF_CONVERGENCE_FAILED,
+        ]
+
+
 def test_the_sampler_s_fourth_column_is_sigma_min_of_the_jacobian():
     xy = np.random.default_rng(9).normal(size=(5, 2))
 
@@ -1884,18 +1901,24 @@ def test_sigma_min_of_the_jacobian_drives_refinement():
     assert (to_np(starved.origin_status) == LEAF_CONVERGENCE_FAILED).all()
 
 
-def test_deviation_and_sigma_min_on_an_affine_map_and_on_a_collapse():
+def test_lens_status_s_deviation_and_sigma_min_on_an_affine_map_and_on_a_collapse():
     theta6 = roots()
     n = theta6.shape[0]
-    level = i64([0] * n)
+    level, det6 = i64([0] * n), f64(np.ones((n, 6)))
     s = np.linalg.svd(A, compute_uv=False).min()
-    dev, sig = deviation_and_sigma_min(
-        f64(affine(theta6)), f64(np.full((n, 6), s)), ROOT_CLASS, level, H0
+    _, dev, sig = lens_status(
+        f64(affine(theta6)), det6, f64(np.full((n, 6), s)), ROOT_CLASS, level, H0, 0.01
     )
     assert np.allclose(to_np(dev), 0.0, atol=1e-15)
     assert np.allclose(to_np(sig), s)
-    dev, sig = deviation_and_sigma_min(
-        f64(np.zeros_like(theta6)), f64(np.zeros((n, 6))), ROOT_CLASS, level, H0
+    _, dev, sig = lens_status(
+        f64(np.zeros_like(theta6)),
+        det6,
+        f64(np.zeros((n, 6))),
+        ROOT_CLASS,
+        level,
+        H0,
+        0.01,
     )
     assert to_np(sig).tolist() == [0.0, 0.0]
     assert to_np(affine_error(dev, sig)).tolist() == [np.inf, np.inf]
@@ -1909,13 +1932,11 @@ def test_affine_error_is_below_min_img_sep_exactly_where_the_deviation_checks_pa
     sigma6 = rng.uniform(0.05, 1.0, (n, 6))
     cls = mesh_backend.repeat(ROOT_CLASS, n // 2, axis=0)
     level = i64([0] * n)
-    got = to_np(
-        lens_status(f64(beta6), f64(np.ones((n, 6))), f64(sigma6), cls, level, H0, 0.01)
+    got, deviation, sigma_min = lens_status(
+        f64(beta6), f64(np.ones((n, 6))), f64(sigma6), cls, level, H0, 0.01
     )
-    passed = (got & LEAF_CONVERGENCE_FAILED) == 0
-    error = to_np(
-        affine_error(*deviation_and_sigma_min(f64(beta6), f64(sigma6), cls, level, H0))
-    )
+    passed = (to_np(got) & LEAF_CONVERGENCE_FAILED) == 0
+    error = to_np(affine_error(deviation, sigma_min))
     assert 0 < passed.sum() < n
     assert np.array_equal(error < 0.01, passed)
 
@@ -1928,12 +1949,14 @@ def test_origin_deviation_and_sigma_min_match_their_samples_recomputed_independe
     sigma6 = to_np(
         sigma_min_2x2(f64(localised_fold_jacobian(xy.reshape(-1, 2))))
     ).reshape(-1, 6)
-    dev, sig = deviation_and_sigma_min(
+    _, dev, sig = lens_status(
         f64(beta6),
+        f64(numpy_det(localised_fold_jacobian, xy)),
         f64(sigma6),
         mesh.origin_cls,
         mesh.origin_level,
         lattice_h0(mesh.lattice),
+        mesh.min_img_sep,
     )
     assert np.array_equal(to_np(mesh.origin_deviation), to_np(dev))
     assert np.array_equal(to_np(mesh.origin_sigma_min), to_np(sig))

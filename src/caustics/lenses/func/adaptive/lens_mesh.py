@@ -58,7 +58,6 @@ from .criterion import (
     LEAF_CONVERGED,
     LEAF_JACOBIAN_NONFINITE,
     LEAF_RAYTRACE_NONFINITE,
-    deviation_and_sigma_min,
     lens_status,
 )
 from .band import CriticalBand, build_band, in_band
@@ -122,7 +121,7 @@ class LensMesh(NamedTuple):
         criterion's verdict at it.
     origin_deviation: ArrayLike
         ``(N,)`` float64 largest midpoint deviation of each origin, from
-        :func:`~.criterion.deviation_and_sigma_min`.
+        :func:`~.criterion.lens_status`.
 
         *Unit: arcsec*
     origin_sigma_min: ArrayLike
@@ -224,7 +223,7 @@ def _lens_split(h0, min_img_sep):
     """The lens criterion as :func:`~.refine.refine`'s ``split``."""
 
     def split(ij, values6, cls, level):
-        status = lens_status(
+        status, _, _ = lens_status(
             values6[..., :2],
             values6[..., 2],
             values6[..., 3],
@@ -385,12 +384,11 @@ def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None
     """
     Close and index a refinement, finishing its finest level.
 
-    Each origin not carried over in ``seed`` gets its deviation and smallest
-    singular value from :func:`~.criterion.deviation_and_sigma_min` on its
-    six samples: below the finest level its midpoints are in the cache,
-    ``refine`` having tested it; at the finest level they are sampled here
-    and never cached, and they also give its status
-    (:func:`~.criterion.lens_status`) and the band. ``seed`` is
+    Each origin not carried over in ``seed`` gets its status, deviation and
+    smallest singular value from :func:`~.criterion.lens_status` on its six
+    samples: below the finest level its midpoints are in the cache,
+    ``refine`` having tested and passed it; at the finest level they are
+    sampled here and never cached, and they also give the band. ``seed`` is
     ``(status, deviation, sigma_min, band_rows, mid_keys, mid_values)`` from
     :func:`_seed`: the statuses, deviations and smallest singular values of
     the store's first rows, the store rows of the old band, and the old
@@ -443,28 +441,21 @@ def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None
 
     keys6 = mesh_backend.concatenate((lattice_key(lat, ij), mid), dim=1)
     values6 = table_values[mesh_backend.searchsorted(table_keys, keys6)]
-    h0 = lattice_h0(lat)
-    young_deviation, young_sigma_min = deviation_and_sigma_min(
-        values6[..., :2], values6[..., 3], store.cls[young], store.level[young], h0
+    young_status, young_deviation, young_sigma_min = lens_status(
+        values6[..., :2],
+        values6[..., 2],
+        values6[..., 3],
+        store.cls[young],
+        store.level[young],
+        lattice_h0(lat),
+        min_img_sep,
     )
+    status = mesh_backend.fill_at_indices(status, young, young_status)
     deviation = mesh_backend.fill_at_indices(deviation, young, young_deviation)
     sigma_min = mesh_backend.fill_at_indices(sigma_min, young, young_sigma_min)
-    values6 = values6[finest]
-    status = mesh_backend.fill_at_indices(
-        status,
-        fresh,
-        lens_status(
-            values6[..., :2],
-            values6[..., 2],
-            values6[..., 3],
-            store.cls[fresh],
-            store.level[fresh],
-            h0,
-            min_img_sep,
-        ),
-    )
     band_rows = mesh_backend.concatenate(
-        (band_rows, fresh[mesh_backend.flatnonzero(in_band(values6[..., 2]))]), dim=0
+        (band_rows, fresh[mesh_backend.flatnonzero(in_band(values6[finest][..., 2]))]),
+        dim=0,
     )
 
     origin_of_row = mesh_backend.fill_at_indices(

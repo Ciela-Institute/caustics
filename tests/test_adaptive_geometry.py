@@ -9,7 +9,6 @@ from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.criterion import (
     child_shape_matrices,
-    converged_from_deviation,
     midpoint_deviation,
     parity_from_children,
 )
@@ -260,17 +259,6 @@ def test_the_inverse_table_recovers_the_affine_map():
         Q = to_np(shape_matrix(_arr(q)))
         table = Q @ ((2.0 ** (level + 1) / h0) * PINV0[COMPOSE[cls, k]])
         assert np.allclose(table, lens_map, rtol=1e-10, atol=1e-12)
-
-
-def test_converged_from_deviation_fails_closed():
-    r = np.zeros((3, 3))
-    assert to_np(converged_from_deviation(_arr(r), _arr([1.0, 1.0, 1.0]), 1.0)).all()
-    # NaN must take the split branch, not the converged branch
-    assert not to_np(
-        converged_from_deviation(_arr(r), _arr(np.full(3, np.nan)), 1.0)
-    ).any()
-    # s == 0 with r == 0 gives 0 < 0, False, split -- the conservative direction
-    assert not to_np(converged_from_deviation(_arr(r), _arr(np.zeros(3)), 1.0)).any()
 
 
 def test_child_shape_matrices_match_shape_matrix_of_each_child():

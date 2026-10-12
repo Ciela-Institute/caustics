@@ -71,37 +71,6 @@ def midpoint_deviation(beta_v, beta_m):
     return mesh_backend.norm(predicted - beta_m, dim=-1)
 
 
-def converged_from_deviation(r, s, min_img_sep):
-    """
-    True where every midpoint deviation is below ``s * min_img_sep``.
-
-    ``s * min_img_sep`` is the lens-plane tolerance carried to the source
-    plane, which stays defined at ``s == 0``. The test is written as
-    ``r < threshold`` so that a ``NaN`` fails it, and an exactly singular
-    triangle, ``0 < 0``, fails too.
-
-    Parameters
-    ----------
-    r: ArrayLike
-        Midpoint deviations, shape ``(n, 3)``.
-
-        *Unit: arcsec*
-
-    s: ArrayLike
-        A smallest singular value per row, shape ``(n,)``.
-    min_img_sep: float
-        Lens-plane tolerance.
-
-        *Unit: arcsec*
-
-    Returns
-    -------
-    ArrayLike
-        Shape ``(n,)`` bool.
-    """
-    return mesh_backend.all(r < (s * min_img_sep)[:, None], dim=1)
-
-
 def child_shape_matrices(beta_v, beta_m):
     """
     Source-plane edge matrices ``Q_k`` of the four red-split children.
@@ -187,18 +156,22 @@ def children_sigma_min(Q, cls, level, h0):
 
 def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
     """
-    Why each triangle's affine model of the lens map is not trusted, as a ``LEAF_*`` bitmask.
+    Why each triangle's affine model of the lens map is not trusted, and the deviation and smallest singular value its error bound reads.
 
-    ``LEAF_CONVERGED`` -- zero -- only where every one of these holds:
+    The status is a ``LEAF_*`` bitmask, ``LEAF_CONVERGED`` -- zero -- only
+    where every one of these holds:
 
     - every image is finite; otherwise ``LEAF_RAYTRACE_NONFINITE`` is the
       row's only flag;
     - the four red-split children's source-plane edge matrices share a
       sign of determinant (``LEAF_APPROX_PARITY_UNRESOLVED``);
-    - every mapped midpoint lies within ``s * min_img_sep`` of its affine
-      prediction, both for ``s`` the smallest singular value of the
-      children's affine maps and for ``s`` the smallest ``sigma_min(A)`` at
-      the six samples (``LEAF_CONVERGENCE_FAILED``);
+    - the largest mapped-midpoint deviation from its affine prediction is
+      below ``sigma_min * min_img_sep`` (``LEAF_CONVERGENCE_FAILED``), with
+      ``sigma_min`` the smaller of the children's affine maps' smallest
+      singular value and the smallest ``sigma_min(A)`` at the six samples:
+      the lens-plane tolerance carried to the source plane. Written as
+      ``deviation < threshold``, so that a NaN fails, and so does an
+      exactly singular triangle, ``0 < 0``;
     - ``det A`` is finite at all six samples (``LEAF_JACOBIAN_NONFINITE``)
       and of one strict sign, an exact zero having none
       (``LEAF_JACOBIAN_PARITY_UNRESOLVED``).
@@ -229,44 +202,8 @@ def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
 
     Returns
     -------
-    ArrayLike
+    status: ArrayLike
         ``(n,)`` int64.
-    """
-    beta_v, beta_m = beta6[:, :3], beta6[:, 3:]
-    Q = child_shape_matrices(beta_v, beta_m)
-    deviation = midpoint_deviation(beta_v, beta_m)
-    deviation_ok = converged_from_deviation(
-        deviation, children_sigma_min(Q, cls, level, h0), min_img_sep
-    ) & converged_from_deviation(
-        deviation, mesh_backend.min(sigma6, dim=1), min_img_sep
-    )
-    det_ok = mesh_backend.all(mesh_backend.isfinite(det6), dim=1)
-    one_sign = mesh_backend.all(det6 > 0, dim=1) | mesh_backend.all(det6 < 0, dim=1)
-    status = (
-        mesh_backend.long(~parity_from_children(Q)) * LEAF_APPROX_PARITY_UNRESOLVED
-        | mesh_backend.long(~deviation_ok) * LEAF_CONVERGENCE_FAILED
-        | mesh_backend.long(~det_ok) * LEAF_JACOBIAN_NONFINITE
-        | mesh_backend.long(det_ok & ~one_sign) * LEAF_JACOBIAN_PARITY_UNRESOLVED
-    )
-    finite = mesh_backend.all(mesh_backend.isfinite(beta6), dim=(1, 2))
-    return mesh_backend.where(finite, status, LEAF_RAYTRACE_NONFINITE)
-
-
-def deviation_and_sigma_min(beta6, sigma6, cls, level, h0):
-    """
-    The largest midpoint deviation of each triangle, and the smaller of its two smallest singular values.
-
-    The two values the lens mesh stores per origin, from which
-    :func:`affine_error` forms how far its affine model's seeds can lie from
-    their images.
-
-    Parameters
-    ----------
-    beta6, sigma6, cls, level, h0:
-        As for :func:`lens_status`.
-
-    Returns
-    -------
     deviation: ArrayLike
         ``(n,)``, the largest of :func:`midpoint_deviation`.
 
@@ -276,12 +213,23 @@ def deviation_and_sigma_min(beta6, sigma6, cls, level, h0):
         of ``sigma6``.
     """
     beta_v, beta_m = beta6[:, :3], beta6[:, 3:]
+    Q = child_shape_matrices(beta_v, beta_m)
     deviation = mesh_backend.max(midpoint_deviation(beta_v, beta_m), dim=1)
     sigma_min = mesh_backend.minimum(
-        children_sigma_min(child_shape_matrices(beta_v, beta_m), cls, level, h0),
-        mesh_backend.min(sigma6, dim=1),
+        children_sigma_min(Q, cls, level, h0), mesh_backend.min(sigma6, dim=1)
     )
-    return deviation, sigma_min
+    det_ok = mesh_backend.all(mesh_backend.isfinite(det6), dim=1)
+    one_sign = mesh_backend.all(det6 > 0, dim=1) | mesh_backend.all(det6 < 0, dim=1)
+    status = (
+        mesh_backend.long(~parity_from_children(Q)) * LEAF_APPROX_PARITY_UNRESOLVED
+        | mesh_backend.long(~(deviation < sigma_min * min_img_sep))
+        * LEAF_CONVERGENCE_FAILED
+        | mesh_backend.long(~det_ok) * LEAF_JACOBIAN_NONFINITE
+        | mesh_backend.long(det_ok & ~one_sign) * LEAF_JACOBIAN_PARITY_UNRESOLVED
+    )
+    finite = mesh_backend.all(mesh_backend.isfinite(beta6), dim=(1, 2))
+    status = mesh_backend.where(finite, status, LEAF_RAYTRACE_NONFINITE)
+    return status, deviation, sigma_min
 
 
 def affine_error(deviation, sigma_min):
@@ -296,11 +244,11 @@ def affine_error(deviation, sigma_min):
     Parameters
     ----------
     deviation: ArrayLike
-        ``(n,)`` from :func:`deviation_and_sigma_min`.
+        ``(n,)`` from :func:`lens_status`.
 
         *Unit: arcsec*
     sigma_min: ArrayLike
-        ``(n,)`` from :func:`deviation_and_sigma_min`.
+        ``(n,)`` from :func:`lens_status`.
 
     Returns
     -------
