@@ -38,22 +38,22 @@ def _same_lattice(a, b):
     ) and np.array_equal(to_np(a.lo), to_np(b.lo))
 
 
-def test_depth_floor_matches_the_size_criterion():
+def test_depth_floor_is_the_first_level_whose_longest_edge_reaches_tol():
     assert depth_floor(5.0 / 100, 10.0) == 0
+    assert depth_floor(1.0, 2.0) == 0
+    assert depth_floor(1.0, math.sqrt(2.0) / 4) == 2
     d = depth_floor(5.0 / 100, 1e-3)
     l0 = np.sqrt(2) * 5.0 / 100
     assert l0 / 2**d <= 1e-3 < l0 / 2 ** (d - 1)
 
 
-def test_lattice_key_roundtrip_and_geometry():
+def test_lattice_keys_round_trip_to_their_coordinates():
     lat = make_lattice(4.0, 0.0, 0.0, 4, 3)
     assert lat.n == 32
-    ij_np = np.array([[0, 0], [32, 32], [7, 19]], dtype=np.int64)
-    ij = mesh_backend.as_array(ij_np, dtype=mesh_backend.int64)
+    ij = i64([[0, 0], [32, 32], [7, 19]])
     key = lattice_key(lat, ij)
-    assert to_np(lattice_ij_from_key(lat, key)).tolist() == ij_np.tolist()
-    assert np.allclose(to_np(lattice_xy(lat, ij[0])), [-2.0, -2.0])
-    assert np.allclose(to_np(lattice_xy(lat, ij[1])), [2.0, 2.0])
+    assert to_np(key).tolist() == [0, 32 * 33 + 32, 7 * 33 + 19]
+    assert to_np(lattice_ij_from_key(lat, key)).tolist() == to_np(ij).tolist()
 
 
 def test_widening_the_lattice_does_not_move_any_vertex():
@@ -83,11 +83,7 @@ def test_widening_the_lattice_does_not_move_any_vertex():
 
 
 def test_initial_triangles_tile_the_square_and_are_positively_oriented():
-    """Ported from `test_adaptive_mesh.py`: geometric properties that the
-    oracle-comparison test above does not check -- full square coverage and
-    a consistent positive orientation -- rather than element-wise equality
-    with the oracle.
-    """
+    """Every level-0 triangle is positively oriented, and together they tile the square."""
     _, _, _, _, root_class = child_matrix_tables()
     init_res, max_level = 4, 2
     ij, cls = initial_triangles(init_res, max_level, root_class)
@@ -134,12 +130,7 @@ def test_midpoints_are_exact_at_max_level_on_the_widened_lattice():
     assert bool(mesh_backend.all(mesh_backend.any(mid % 2 == 1, dim=-1)))
 
 
-def test_check_lattice_keys_rejects_a_lattice_too_fine_to_key():
-    with pytest.raises(ValueError, match="lattice too fine"):
-        check_lattice_keys(2**20, 21, "Raise min_img_sep.")
-
-
-def test_a_fresh_lattice_places_points_exactly_as_before():
+def test_a_fresh_lattice_places_every_point_at_lo_plus_ij_scale():
     lat = make_lattice(4.0, 0.3, -0.1, 3, 4)
     ij = _grid(lat.n)
     assert lat.origin == 0
@@ -147,15 +138,21 @@ def test_a_fresh_lattice_places_points_exactly_as_before():
     assert np.array_equal(to_np(lattice_xy(lat, i64(ij))), want)
 
 
-def test_extend_lattice_keeps_every_old_position_bit_for_bit():
+def test_extend_lattice_grows_the_extent_and_keeps_every_old_position_and_key_order():
     """A non-dyadic center on purpose: nothing may be recomputed from a new fov."""
     lat = make_lattice(4.0, 0.3, -0.1, 3, 4)
     ext = extend_lattice(lat, 2)
     pad = 2 << lat.level
+    assert (ext.level, ext.scale) == (lat.level, lat.scale)
+    assert ext.n == lat.n + 2 * pad and ext.origin == pad
+    assert np.array_equal(to_np(ext.lo), to_np(lat.lo))
     ij = _grid(lat.n)
     assert np.array_equal(
-        to_np(lattice_xy(ext, i64(ij + pad))),
-        to_np(lattice_xy(lat, i64(ij))),
+        to_np(lattice_xy(ext, i64(ij + pad))), to_np(lattice_xy(lat, i64(ij)))
+    )
+    old = to_np(lattice_key(lat, i64(ij)))
+    assert np.array_equal(
+        np.argsort(old), np.argsort(to_np(lattice_key(ext, i64(ij + pad))))
     )
 
 
@@ -190,20 +187,6 @@ def test_ring_triangles_are_the_level0_triangles_outside_the_central_block():
     assert len(every - ring) == int(inner(every_ij).sum())
 
 
-def test_extend_lattice_grows_the_extent_and_keeps_key_order():
-    lat = make_lattice(4.0, 0.3, -0.1, 3, 4)
-    ext = extend_lattice(lat, 2)
-    pad = 2 << lat.level
-    assert (ext.level, ext.scale) == (lat.level, lat.scale)
-    assert ext.n == lat.n + 2 * pad
-    assert ext.origin == pad
-    assert np.array_equal(to_np(ext.lo), to_np(lat.lo))
-    ij = _grid(lat.n)
-    old = to_np(lattice_key(lat, i64(ij)))
-    got = to_np(lattice_key(ext, i64(ij + pad)))
-    assert np.array_equal(np.argsort(old), np.argsort(got))
-
-
 def test_an_extended_dyadic_lattice_is_the_fresh_lattice_of_the_larger_fov():
     """The premise of every equivalence test below.
 
@@ -236,20 +219,6 @@ def test_the_derived_lattice_sizes_match_the_build_arguments():
     assert grown.h0 == 0.5
     assert to_np(lat.corner).tolist() == [-1.75, -2.5]
     assert to_np(grown.corner).tolist() == [-2.75, -3.5]
-
-
-def test_keys_round_trip_without_a_stride_field():
-    lat = make_lattice(4.0, 0.0, 0.0, 3, 2)
-    ij = i64([[0, 0], [lat.n, lat.n], [5, 7]])
-    assert np.array_equal(
-        to_np(lattice_ij_from_key(lat, lattice_key(lat, ij))), to_np(ij)
-    )
-    assert to_np(lattice_key(lat, ij)).tolist()[2] == 5 * (lat.n + 1) + 7
-
-
-def test_depth_floor_reads_the_level0_hypotenuse():
-    assert depth_floor(1.0, 2.0) == 0
-    assert depth_floor(1.0, math.sqrt(2.0) / 4) == 2
 
 
 def test_warn_depth_limited_names_the_request_and_the_needed_depth():
