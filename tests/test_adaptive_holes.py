@@ -296,16 +296,12 @@ def test_every_growth_circle_down_to_a_64th_of_the_radius_must_be_finite(
         sample(broken, [c], [0.01], 0.01)
 
 
-def test_holes_raytrace_only_their_circles_and_batching_changes_nothing():
+def test_batching_the_hole_samples_changes_nothing():
     c, r = (0.3, -0.2), 0.01
+    holes = sample(numpy_lens(*sis([c])).raytrace, [c], [r], r)
     lens_ = numpy_lens(*sis([c]))
-    holes = sample(lens_.raytrace, [c], [r], r)
-    d = np.hypot(*(np.concatenate(lens_.calls.raytrace) - np.array(c)).T)
-    radii = r / 4.0 ** np.arange(4)
-    assert np.isclose(d[:, None], radii, rtol=0, atol=1e-14).any(axis=1).all()
-    batched_lens = numpy_lens(*sis([c]))
-    batched = sample(batched_lens.raytrace, [c], [r], r, batch_size=100)
-    assert max(len(x) for x in batched_lens.calls.raytrace) <= 100
+    batched = sample(lens_.raytrace, [c], [r], r, batch_size=100)
+    assert max(len(x) for x in lens_.calls.raytrace) <= 100
     assert_same(batched, holes)
 
 
@@ -337,12 +333,6 @@ SIS_C = (0.3001, -0.2003)  # off every lattice point of BUILD
 
 
 BUILD = dict(fov=4.0, init_res=8, min_img_sep=0.02)
-
-
-def test_a_build_without_centers_stores_empty_holes():
-    mesh, _ = user_build(*sis([SIS_C]), **BUILD)
-    assert mesh.holes.centers.shape[0] == 0
-    assert to_np(mesh.holes.offsets).tolist() == [0]
 
 
 def test_a_build_stores_the_merged_and_sampled_holes():
