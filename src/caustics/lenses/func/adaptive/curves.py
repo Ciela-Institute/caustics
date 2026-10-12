@@ -30,7 +30,7 @@ from typing import NamedTuple
 
 from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
-from .geometry import _CHILD_VERTEX_INDEX_TABLE, csr_offsets, union_area
+from .geometry import _CHILD_VERTEX_INDEX_TABLE, csr_offsets, expand, union_area
 
 
 class CriticalCurvesAndCaustics(NamedTuple):
@@ -450,9 +450,7 @@ def join_at_holes(curves, holes):
 
     # Per-point curve bookkeeping.
     counts = curves.offsets[1:] - curves.offsets[:-1]
-    curve = mesh_backend.repeat(
-        mesh_backend.arange(counts.shape[0], dtype=int64, device=device), counts, axis=0
-    )
+    curve, _ = expand(counts, n_points)
     first = curves.offsets[:-1][curve]
     last = curves.offsets[1:][curve] - 1
     point = mesh_backend.arange(n_points, dtype=int64, device=device)
@@ -591,15 +589,13 @@ def join_at_holes(curves, holes):
         (curves.source[perm], mesh_backend.to(holes.source, dtype=curves.source.dtype)),
         dim=0,
     )
-    samples = holes.offsets[1:] - holes.offsets[:-1]
+    hole_of_sample, _ = expand(
+        holes.offsets[1:] - holes.offsets[:-1], holes.lens.shape[0]
+    )
     pool_hole = mesh_backend.concatenate(
         (
             mesh_backend.zeros((n_points,), dtype=int64, device=device) - 1,
-            mesh_backend.repeat(
-                mesh_backend.arange(n_holes, dtype=int64, device=device),
-                samples,
-                axis=0,
-            ),
+            hole_of_sample,
         ),
         dim=0,
     )
@@ -654,14 +650,9 @@ def pseudo_caustics(holes):
     CriticalCurvesAndCaustics
         ``pseudo_caustic`` True on every curve.
     """
-    int64 = mesh_backend.int64
     device = mesh_backend.device(holes.offsets)
     counts = holes.offsets[1:] - holes.offsets[:-1]
-    hole = mesh_backend.repeat(
-        mesh_backend.arange(counts.shape[0], dtype=int64, device=device),
-        counts,
-        axis=0,
-    )
+    hole, _ = expand(counts, holes.lens.shape[0])
     rows = mesh_backend.flatnonzero(holes.pseudo_caustic[hole])
     flagged = mesh_backend.flatnonzero(holes.pseudo_caustic)
     loops = mesh_backend.ones(

@@ -15,7 +15,7 @@ import numpy as np
 
 from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
-from .geometry import contains, edge_nearest, triangle_weights
+from .geometry import contains, edge_nearest, expand, triangle_weights
 
 # Level-0 cells divide the larger side of the index's extent into 2**KEY_BITS:
 # the finest grid whose cell keys, with their level, fit in an int64.
@@ -96,26 +96,6 @@ def _cell_key(level, ix, iy):
     return level * (1 << (2 * KEY_BITS)) + ix * (1 << KEY_BITS) + iy
 
 
-def _expand(counts, total=None):
-    """
-    The block of each of ``counts.sum()`` entries, and its position in the
-    block, for consecutive blocks of ``counts`` ``(n,)`` int64 entries.
-
-    ``total`` is ``counts.sum()`` where the caller already read it on the host.
-    """
-    device = mesh_backend.device(counts)
-    int64 = mesh_backend.int64
-    if total is None:
-        total = int(mesh_backend.to_numpy(mesh_backend.sum(counts)))
-    block = mesh_backend.repeat(
-        mesh_backend.arange(counts.shape[0], dtype=int64, device=device), counts, axis=0
-    )
-    within = mesh_backend.arange(
-        total, dtype=int64, device=device
-    ) - mesh_backend.repeat(mesh_backend.cumsum(counts, dim=0) - counts, counts, axis=0)
-    return block, within
-
-
 def build_index(vertices, triangles, rows, grow=None):
     """
     The :class:`MeshIndex` over the bounding boxes of ``triangles[rows]``, each grown by its ``grow``.
@@ -179,9 +159,9 @@ def build_index(vertices, triangles, rows, grow=None):
     i1 = _cell_of(box_hi, lo, side, top)
 
     # Each box's columns of cells, keyed by their bottom cell, then each column's cells.
-    column, dx = _expand(i1[:, 0] - i0[:, 0] + 1)
+    column, dx = expand(i1[:, 0] - i0[:, 0] + 1)
     column_key = _cell_key(level, i0[:, 0], i0[:, 1])[column] + dx * (1 << KEY_BITS)
-    cell, dy = _expand((i1[:, 1] - i0[:, 1] + 1)[column])
+    cell, dy = expand((i1[:, 1] - i0[:, 1] + 1)[column])
     key = column_key[cell] + dy
     # A stable sort keeps each cell's triangles in ascending row order.
     order = mesh_backend.argsort(key)
@@ -263,7 +243,7 @@ def _chunk_hits(index, vertices, triangles, beta, start, count, total, grow):
 
     ``total`` is ``count.sum()``, read on the host by the caller.
     """
-    block, within = _expand(count.reshape(-1), total)
+    block, within = expand(count.reshape(-1), total)
     cand = index.leaves[start.reshape(-1)[block] + within]
     qidx = block // start.shape[1]
     tri = vertices[triangles[cand]]

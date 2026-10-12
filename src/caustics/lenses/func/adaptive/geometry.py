@@ -204,6 +204,32 @@ def csr_offsets(counts):
     )
 
 
+def expand(counts, total=None):
+    """
+    The block of each entry of consecutive blocks of ``counts`` ``(n,)`` int64 entries, and its position in the block.
+
+    ``total`` is ``counts.sum()`` where the caller already read it on the host.
+
+    Returns
+    -------
+    block: ArrayLike
+        ``(total,)`` int64.
+    within: ArrayLike
+        ``(total,)`` int64.
+    """
+    device = mesh_backend.device(counts)
+    int64 = mesh_backend.int64
+    if total is None:
+        total = int(mesh_backend.to_numpy(mesh_backend.sum(counts)))
+    block = mesh_backend.repeat(
+        mesh_backend.arange(counts.shape[0], dtype=int64, device=device), counts, axis=0
+    )
+    within = mesh_backend.arange(
+        total, dtype=int64, device=device
+    ) - mesh_backend.repeat(mesh_backend.cumsum(counts, dim=0) - counts, counts, axis=0)
+    return block, within
+
+
 def sigma_min_2x2(A):
     """
     Smallest singular value of a batch of 2x2 matrices, in closed form.
@@ -484,10 +510,7 @@ def ring_next(offsets, n_points):
     """
     int64 = mesh_backend.int64
     device = mesh_backend.device(offsets)
-    counts = offsets[1:] - offsets[:-1]
-    curve = mesh_backend.repeat(
-        mesh_backend.arange(counts.shape[0], dtype=int64, device=device), counts, axis=0
-    )
+    curve, _ = expand(offsets[1:] - offsets[:-1], n_points)
     point = mesh_backend.arange(n_points, dtype=int64, device=device)
     last = offsets[1:][curve] - 1
     return curve, mesh_backend.where(point == last, offsets[:-1][curve], point + 1)
@@ -548,14 +571,8 @@ def union_area(points, offsets):
     first = mesh_backend.searchsorted(edges, x0)
     span = mesh_backend.searchsorted(edges, x1) - first
     total = int(mesh_backend.to_numpy(mesh_backend.sum(span)))
-    seg = mesh_backend.repeat(
-        mesh_backend.arange(a.shape[0], dtype=int64, device=device), span, axis=0
-    )
-    strip = (
-        first[seg]
-        + mesh_backend.arange(total, dtype=int64, device=device)
-        - mesh_backend.repeat(mesh_backend.cumsum(span, dim=0) - span, span, axis=0)
-    )
+    seg, within = expand(span, total)
+    strip = first[seg] + within
     mid = 0.5 * (edges[strip] + edges[strip + 1])
     y = a[seg, 1] + (mid - a[seg, 0]) / (b[seg, 0] - a[seg, 0]) * (
         b[seg, 1] - a[seg, 1]

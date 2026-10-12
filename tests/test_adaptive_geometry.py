@@ -25,6 +25,7 @@ from caustics.lenses.func.adaptive.geometry import (
     contains_half_open,
     csr_offsets,
     edge_nearest,
+    expand,
     is_member,
     min_angle,
     ring_next,
@@ -674,6 +675,15 @@ def test_area2_is_twice_the_signed_area():
 def test_csr_offsets_start_at_zero_and_accumulate():
     assert to_np(csr_offsets(i64([2, 0, 3]))).tolist() == [0, 2, 2, 5]
     assert to_np(csr_offsets(i64([]))).tolist() == [0]
+
+
+def test_expand_gives_each_entry_its_block_and_its_place_in_it():
+    for total in (None, 6):
+        block, within = expand(i64([2, 0, 3, 1]), total)
+        assert to_np(block).tolist() == [0, 0, 2, 2, 2, 3]
+        assert to_np(within).tolist() == [0, 1, 0, 1, 2, 0]
+    block, within = expand(i64([]))
+    assert tuple(block.shape) == tuple(within.shape) == (0,)
 
 
 def test_is_member_reads_an_ascending_array():

@@ -15,7 +15,7 @@ from typing import NamedTuple
 
 from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
-from .geometry import COMPOSE, _CHILD_VERTEX_INDEX_TABLE, min_angle
+from .geometry import COMPOSE, _CHILD_VERTEX_INDEX_TABLE, expand, min_angle
 from .lattice import lattice_ij_from_key, lattice_key, lattice_xy, midpoint_ij
 
 
@@ -402,9 +402,7 @@ def close(lat, cache, store):
     offsets = mesh_backend.cumsum(n_children, dim=0) - n_children
     total = int(mesh_backend.to_numpy(mesh_backend.sum(n_children)))
     leaves = mesh_backend.zeros((total, 3), dtype=int64)
-    leaf_origin = mesh_backend.repeat(
-        mesh_backend.arange(v.shape[0], dtype=int64), n_children, axis=0
-    )
+    leaf_origin, _ = expand(n_children, total)
 
     def xy(slots):
         return lattice_xy(lat, cache.ij[slots])

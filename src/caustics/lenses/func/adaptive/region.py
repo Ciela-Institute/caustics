@@ -24,6 +24,7 @@ from .geometry import (
     ROOT_CLASS,
     build_device,
     csr_offsets,
+    expand,
     is_member,
     ring_next,
     to_device,
@@ -180,8 +181,6 @@ def _cells_of_boxes(lo, hi, corner, side, n_cells):
     ``corner``. Boxes are ``(K, 2)`` lower and upper corners; parts outside
     the grid are dropped.
     """
-    int64 = mesh_backend.int64
-    device = mesh_backend.device(lo)
     u = (lo - corner) / side
     a = mesh_backend.long(mesh_backend.floor(u))
     # A box whose lower edge lies on a cell line touches the cell below it too.
@@ -191,13 +190,7 @@ def _cells_of_boxes(lo, hi, corner, side, n_cells):
     b = mesh_backend.clamp(b, None, n_cells - 1)
     nx = mesh_backend.clamp(b[:, 0] - a[:, 0] + 1, 0, None)
     ny = mesh_backend.clamp(b[:, 1] - a[:, 1] + 1, 0, None)
-    count = nx * ny
-    box = mesh_backend.repeat(
-        mesh_backend.arange(lo.shape[0], dtype=int64, device=device), count, axis=0
-    )
-    k = mesh_backend.arange(
-        box.shape[0], dtype=int64, device=device
-    ) - mesh_backend.repeat(mesh_backend.cumsum(count, dim=0) - count, count, axis=0)
+    box, k = expand(nx * ny)
     return (a[box, 0] + k // ny[box]) * n_cells + a[box, 1] + k % ny[box]
 
 

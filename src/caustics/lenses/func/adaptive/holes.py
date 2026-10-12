@@ -15,7 +15,7 @@ from warnings import warn
 
 from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
-from .geometry import build_device, csr_offsets, to_device
+from .geometry import build_device, csr_offsets, expand, ring_next, to_device
 from .refine import sample_points
 
 
@@ -265,6 +265,14 @@ def _extent(points):
     )
 
 
+def _even_angles(n_holes, n):
+    """``n`` even angles in ``[0, 2 pi)`` on each of ``n_holes`` holes: every sample's hole and angle, hole by hole."""
+    hole, k = expand(
+        mesh_backend.zeros((n_holes,), dtype=mesh_backend.int64) + n, n_holes * n
+    )
+    return hole, mesh_backend.to(k, dtype=mesh_backend.float64) * (2.0 * math.pi / n)
+
+
 def sample_holes(trace, centers, radius, min_img_sep, batch_size):
     """
     Trace every hole's boundary circle and its image, the hole curve.
@@ -327,23 +335,16 @@ def sample_holes(trace, centers, radius, min_img_sep, batch_size):
     n_holes = centers.shape[0]
     if n_holes == 0:
         return empty_holes()
-    int64, f64 = mesh_backend.int64, mesh_backend.float64
+    int64 = mesh_backend.int64
     two_pi = 2.0 * math.pi
-    ids = mesh_backend.arange(n_holes, dtype=int64)
-
-    hole = mesh_backend.repeat(ids, HOLE_INITIAL_SAMPLES, axis=0)
-    step = mesh_backend.arange(n_holes * HOLE_INITIAL_SAMPLES, dtype=int64)
-    angle = mesh_backend.to(step % HOLE_INITIAL_SAMPLES, dtype=f64) * (
-        two_pi / HOLE_INITIAL_SAMPLES
-    )
+    hole, angle = _even_angles(n_holes, HOLE_INITIAL_SAMPLES)
     source = _trace_hole_points(trace, centers, radius, hole, angle, batch_size)
     capped = mesh_backend.zeros((n_holes,), dtype=mesh_backend.bool)
     while True:
         counts = mesh_backend.bincount(hole, minlength=n_holes)
-        starts = mesh_backend.cumsum(counts, dim=0) - counts
         i = mesh_backend.arange(hole.shape[0], dtype=int64)
-        wrap = i == starts[hole] + counts[hole] - 1
-        nxt = mesh_backend.where(wrap, starts[hole], i + 1)
+        _, nxt = ring_next(csr_offsets(counts), hole.shape[0])
+        wrap = nxt <= i  # a hole's last sample wraps round to its first
         chord = mesh_backend.norm(source[nxt] - source, dim=-1)
         bad = mesh_backend.flatnonzero(chord > min_img_sep)
         wanted = mesh_backend.bincount(hole[bad], minlength=n_holes)
@@ -377,11 +378,7 @@ def sample_holes(trace, centers, radius, min_img_sep, batch_size):
             "coarser than min_img_sep between them"
         )
 
-    g_hole = mesh_backend.repeat(ids, HOLE_GROWTH_SAMPLES, axis=0)
-    g_step = mesh_backend.arange(n_holes * HOLE_GROWTH_SAMPLES, dtype=int64)
-    g_angle = mesh_backend.to(g_step % HOLE_GROWTH_SAMPLES, dtype=f64) * (
-        two_pi / HOLE_GROWTH_SAMPLES
-    )
+    g_hole, g_angle = _even_angles(n_holes, HOLE_GROWTH_SAMPLES)
     shape = (n_holes, HOLE_GROWTH_SAMPLES, 2)
     size = [
         _extent(
