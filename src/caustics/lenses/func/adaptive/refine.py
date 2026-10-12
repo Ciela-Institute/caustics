@@ -15,7 +15,7 @@ from typing import NamedTuple
 
 from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
-from .geometry import COMPOSE, _CHILD_VERTEX_INDEX_TABLE, expand, min_angle
+from .geometry import COMPOSE, _CHILD_VERTEX_INDEX_TABLE, expand, min_angle, sorted_find
 from .lattice import lattice_ij_from_key, lattice_key, lattice_xy, midpoint_ij
 
 
@@ -92,11 +92,10 @@ def empty_store():
 
 def cache_lookup(cache, keys):
     """Slot of each of ``keys``, ``-1`` where it is not cached."""
-    n = cache.keys.shape[0]
-    if n == 0:
+    if cache.keys.shape[0] == 0:
         return mesh_backend.zeros_like(keys) - 1
-    pos = mesh_backend.clamp(mesh_backend.searchsorted(cache.keys, keys), 0, n - 1)
-    return mesh_backend.where(cache.keys[pos] == keys, cache.slots[pos], -1)
+    pos, found = sorted_find(cache.keys, keys)
+    return mesh_backend.where(found, cache.slots[pos], -1)
 
 
 def sample_points(xy, sample, batch_size):

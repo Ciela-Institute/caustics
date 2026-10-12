@@ -15,7 +15,7 @@ import numpy as np
 
 from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
-from .geometry import contains, edge_nearest, expand, triangle_weights
+from .geometry import contains, edge_nearest, expand, sorted_find, triangle_weights
 
 # Level-0 cells divide the larger side of the index's extent into 2**KEY_BITS:
 # the finest grid whose cell keys, with their level, fit in an int64.
@@ -220,16 +220,14 @@ def index_cells(index, beta):
     top = (span[index.levels] - 1).reshape(1, n_levels, 1)
     u = _cell_of(mesh_backend.unsqueeze(beta, 1), index.lo, side, top)
     key = _cell_key(mesh_backend.unsqueeze(index.levels, 0), u[..., 0], u[..., 1])
-    pos = mesh_backend.clamp(
-        mesh_backend.searchsorted(index.keys, key), 0, index.keys.shape[0] - 1
-    )
+    pos, found = sorted_find(index.keys, key)
     inside = (
         (beta[:, 0] >= index.lo[0])
         & (beta[:, 0] <= index.hi[0])
         & (beta[:, 1] >= index.lo[1])
         & (beta[:, 1] <= index.hi[1])
     )
-    found = (index.keys[pos] == key) & mesh_backend.unsqueeze(inside, -1)
+    found = found & mesh_backend.unsqueeze(inside, -1)
     start = index.offsets[pos]
     count = mesh_backend.where(
         found, index.offsets[pos + 1] - start, mesh_backend.zeros_like(start)

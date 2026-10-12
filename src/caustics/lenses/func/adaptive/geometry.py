@@ -182,16 +182,30 @@ def to_device(value, device):
     return map_arrays(value, lambda a: mesh_backend.to(a, device=device))
 
 
+def sorted_find(sorted_values, values):
+    """
+    Where each of ``values`` sits in the ascending ``sorted_values``, and whether it is there.
+
+    Returns
+    -------
+    pos: ArrayLike
+        ``values.shape`` int64 ``searchsorted`` position, clamped to the last
+        entry; zeros when ``sorted_values`` is empty.
+    found: ArrayLike
+        ``values.shape`` bool, ``sorted_values[pos] == values``.
+    """
+    device = mesh_backend.device(values)
+    n = sorted_values.shape[0]
+    if n == 0:
+        pos = mesh_backend.zeros(values.shape, dtype=mesh_backend.int64, device=device)
+        return pos, pos != 0
+    pos = mesh_backend.clamp(mesh_backend.searchsorted(sorted_values, values), 0, n - 1)
+    return pos, sorted_values[pos] == values
+
+
 def is_member(sorted_values, values):
     """True where each of ``values`` is in the ascending ``sorted_values``."""
-    if sorted_values.shape[0] == 0:
-        return mesh_backend.zeros(
-            values.shape, dtype=mesh_backend.bool, device=mesh_backend.device(values)
-        )
-    pos = mesh_backend.clamp(
-        mesh_backend.searchsorted(sorted_values, values), 0, sorted_values.shape[0] - 1
-    )
-    return sorted_values[pos] == values
+    return sorted_find(sorted_values, values)[1]
 
 
 def csr_offsets(counts):

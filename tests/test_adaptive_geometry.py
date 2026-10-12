@@ -33,6 +33,7 @@ from caustics.lenses.func.adaptive.geometry import (
     segments_cross,
     shape_matrix,
     sigma_min_2x2,
+    sorted_find,
     to_device,
     triangle_weights,
     union_area,
@@ -686,16 +687,14 @@ def test_expand_gives_each_entry_its_block_and_its_place_in_it():
     assert tuple(block.shape) == tuple(within.shape) == (0,)
 
 
-def test_is_member_reads_an_ascending_array():
-    sorted_values = i64([1, 4, 9])
-    assert to_np(is_member(sorted_values, i64([0, 1, 5, 9, 10]))).tolist() == [
-        False,
-        True,
-        False,
-        True,
-        False,
-    ]
-    assert not to_np(is_member(i64([]), i64([3]))).any()
+def test_sorted_find_gives_each_value_s_position_and_whether_it_is_there():
+    pos, found = sorted_find(i64([1, 4, 9]), i64([0, 1, 5, 9, 10]))
+    assert to_np(pos).tolist() == [0, 0, 2, 2, 2]
+    assert to_np(found).tolist() == [False, True, False, True, False]
+    member = is_member(i64([1, 4, 9]), i64([0, 1, 5, 9, 10]))
+    assert to_np(member).tolist() == to_np(found).tolist()
+    pos, found = sorted_find(i64([]), i64([3]))
+    assert to_np(pos).tolist() == [0] and to_np(found).tolist() == [False]
 
 
 def test_to_device_maps_every_array_field_of_nested_named_tuples():
