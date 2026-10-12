@@ -21,6 +21,7 @@ from caustics.lenses.func.adaptive.geometry import (
     ROOT_SHAPES,
     area2,
     child_matrix_tables,
+    component_labels,
     contains,
     contains_half_open,
     csr_offsets,
@@ -685,6 +686,19 @@ def test_expand_gives_each_entry_its_block_and_its_place_in_it():
         assert to_np(within).tolist() == [0, 1, 0, 1, 2, 0]
     block, within = expand(i64([]))
     assert tuple(block.shape) == tuple(within.shape) == (0,)
+
+
+def test_component_labels_name_each_component_by_its_smallest_node():
+    """A chain 2-1-0, a lone node 3 and a pair 4-5; batched with a graph of no edges."""
+    adjacent = np.eye(6, dtype=bool)
+    for a, b in ((2, 1), (1, 0), (5, 4)):
+        adjacent[a, b] = adjacent[b, a] = True
+    got = component_labels(mesh_backend.as_array(adjacent))
+    assert to_np(got).tolist() == [0, 0, 0, 3, 4, 4]
+    both = component_labels(
+        mesh_backend.as_array(np.stack([adjacent, np.eye(6, dtype=bool)]))
+    )
+    assert to_np(both).tolist() == [[0, 0, 0, 3, 4, 4], list(range(6))]
 
 
 def test_sorted_find_gives_each_value_s_position_and_whether_it_is_there():

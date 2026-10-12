@@ -244,6 +244,29 @@ def expand(counts, total=None):
     return block, within
 
 
+def component_labels(adjacent):
+    """
+    The connected component of every node of symmetric adjacency matrices, ``(..., m, m) -> (..., m)`` int64.
+
+    ``adjacent`` is bool and holds every node's self-loop. Min-label
+    propagation: each node takes the smallest label among itself and its
+    neighbours until none changes, so every node ends labelled with the
+    smallest index in its component.
+    """
+    m = adjacent.shape[-1]
+    device = mesh_backend.device(adjacent)
+    label = mesh_backend.arange(
+        m, dtype=mesh_backend.int64, device=device
+    ) + mesh_backend.zeros(adjacent.shape[:-1], dtype=mesh_backend.int64, device=device)
+    while True:
+        new = mesh_backend.min(
+            mesh_backend.where(adjacent, mesh_backend.unsqueeze(label, -2), m), dim=-1
+        )
+        if bool(mesh_backend.all(new == label)):
+            return label
+        label = new
+
+
 def sigma_min_2x2(A):
     """
     Smallest singular value of a batch of 2x2 matrices, in closed form.

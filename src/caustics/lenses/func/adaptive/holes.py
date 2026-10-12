@@ -15,7 +15,14 @@ from warnings import warn
 
 from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
-from .geometry import build_device, csr_offsets, expand, ring_next, to_device
+from .geometry import (
+    build_device,
+    component_labels,
+    csr_offsets,
+    expand,
+    ring_next,
+    to_device,
+)
 from .refine import sample_points
 
 
@@ -110,27 +117,6 @@ def empty_holes(device=None):
     )
 
 
-def _components(link):
-    """
-    Connected-component label of every node of a symmetric adjacency matrix.
-
-    Min-label propagation, as in :func:`dedup_block_group`: each node takes
-    the smallest label among itself and its neighbours until nothing
-    changes, so every node ends labelled with the smallest index in its
-    component.
-    """
-    n = link.shape[0]
-    label = mesh_backend.arange(n, dtype=mesh_backend.int64)
-    reach = link | mesh_backend.eye(n, dtype=mesh_backend.bool)
-    while True:
-        new = mesh_backend.min(
-            mesh_backend.where(reach, mesh_backend.unsqueeze(label, 0), n), dim=1
-        )
-        if bool(mesh_backend.all(new == label)):
-            return label
-        label = new
-
-
 def merge_centers(centers, min_img_sep):
     """
     Merge lens centers into holes whose disks do not overlap.
@@ -178,6 +164,7 @@ def merge_centers(centers, min_img_sep):
             (0,), dtype=f64
         )
     c = c[mesh_backend.lexsort([c[:, 1], c[:, 0]])]
+    # Every center links itself, at distance 0: the self-loops component_labels reads.
     link = (
         mesh_backend.norm(
             mesh_backend.unsqueeze(c, 1) - mesh_backend.unsqueeze(c, 0), dim=-1
@@ -185,7 +172,7 @@ def merge_centers(centers, min_img_sep):
         < 2.0 * min_img_sep
     )
     while True:
-        _, member = mesh_backend.unique(_components(link), return_inverse=True)
+        _, member = mesh_backend.unique(component_labels(link), return_inverse=True)
         k = int(mesh_backend.to_numpy(mesh_backend.max(member))) + 1
         onehot = mesh_backend.unsqueeze(
             mesh_backend.arange(k, dtype=mesh_backend.int64), 1

@@ -14,6 +14,7 @@ from ....utils import batch_lm
 from .criterion import affine_error
 from .geometry import (
     area2,
+    component_labels,
     contains,
     csr_offsets,
     edge_nearest,
@@ -183,20 +184,10 @@ def dedup_block_group(points, residual2, rows, n_blocks, m, tol):
 
     delta = mesh_backend.unsqueeze(p, 2) - mesh_backend.unsqueeze(p, 1)
     # Exact on the diagonal: every point is its own neighbour.
-    adjacent = mesh_backend.long(mesh_backend.sum(delta * delta, dim=-1) < tol * tol)
-
-    # Min-label propagation. `m` is the sentinel for "no label": it exceeds
-    # every real slot index, so it never wins a minimum against a neighbour.
+    labels = component_labels(mesh_backend.sum(delta * delta, dim=-1) < tol * tol)
     index = mesh_backend.unsqueeze(
         mesh_backend.arange(m, dtype=int64, device=device), 0
     )
-    labels = index + mesh_backend.zeros((n_blocks, m), dtype=int64, device=device)
-    for _ in range(m):
-        neighbour = adjacent * mesh_backend.unsqueeze(labels, 1) + (1 - adjacent) * m
-        updated = mesh_backend.min(neighbour, dim=2)
-        if bool(mesh_backend.to_numpy(mesh_backend.all(updated == labels))):
-            break
-        labels = updated
 
     # A slot represents its component when no other slot of it is better: a
     # smaller residual, or the same one at an earlier slot.
