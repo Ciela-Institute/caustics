@@ -1,5 +1,5 @@
-from ...backend_obj import backend, ArrayLike
-from ...utils import translate_rotate, to_elliptical
+from ...backend_obj import ArrayLike, backend
+from ...utils import to_elliptical, translate_rotate
 
 
 def k_sersic(n: ArrayLike) -> ArrayLike:
