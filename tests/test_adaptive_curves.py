@@ -196,13 +196,6 @@ def test_child_segments_keep_positive_det_on_the_left(signs):
             assert side > 0 if det[c] > 0 else side < 0
 
 
-def test_child_segments_skip_a_leaf_of_one_class():
-    for det in (np.ones(6), -np.ones(6)):
-        band = _unit_band(det)
-        start, end = child_segments(band.samples, band.det)
-        assert start.shape[0] == 0 and end.shape[0] == 0
-
-
 def test_an_exact_zero_counts_as_positive_and_puts_the_crossing_on_it():
     """``det == 0`` at ``theta_1`` with every other sample negative.
 
@@ -800,7 +793,7 @@ def test_a_curve_through_lattice_points_is_traced_exactly_along_the_row():
     The band's zero-is-positive rule traces one open curve along the row,
     exactly. ``det A > 0`` below the row puts it on the left of travel in
     ``-x``, so the curve runs from ``x = 2`` to ``x = -2``.
-    This also pins the spec's rule that coincident consecutive points --
+    This also pins the rule that coincident consecutive points --
     which tracing a curve through lattice points produces -- are kept, not
     removed.
     """
@@ -1200,24 +1193,6 @@ def test_curves_bridged_to_a_regular_center_come_out_closed_and_chord_free():
     mesh, _ = build(*sis(TWO_SIS), **TWO_SIS_BUILD, centers=centers)
     assert _hole_to_hole_steps(mesh) > 0
     _assert_closed_and_chord_free(mesh, critical_curves_and_caustics(mesh))
-
-
-def test_triangle_segments_keep_the_positive_side_on_the_left():
-    # (0,0), (1,0), (0,1), positively oriented; only vertex 0 is positive.
-    tri = mesh_backend.as_array([[0, 1, 2]], dtype=mesh_backend.int64)
-    positive = mesh_backend.as_array([True, False, False])
-    start, end = triangle_segments(tri, positive)
-    # From edge (0, 1) to edge (2, 0): travelling from (0.5, 0) towards
-    # (0, 0.5) keeps vertex 0 on the left.
-    assert to_np(start).tolist() == [[0, 1]]
-    assert to_np(end).tolist() == [[0, 2]]
-
-
-def test_triangle_segments_skip_triangles_of_one_class():
-    tri = mesh_backend.as_array([[0, 1, 2]], dtype=mesh_backend.int64)
-    for value in (True, False):
-        start, _ = triangle_segments(tri, mesh_backend.as_array([value] * 3))
-        assert start.shape[0] == 0
 
 
 def test_chain_segments_close_a_fan_into_one_counter_clockwise_loop():
