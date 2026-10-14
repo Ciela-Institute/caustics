@@ -188,7 +188,7 @@ class Lens(Module):
 
         min_img_sep: float
             Lens-plane tolerance: the mesh refines to half of it, and images
-            closer than it are one image.
+            closer than half of it are one image.
 
             *Unit: arcsec*
 
