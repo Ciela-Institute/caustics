@@ -347,6 +347,14 @@ class Lens(Module):
 
         counts: ArrayLike
             ``(B,)`` int64 images per source.
+
+        Raises
+        ------
+        ValueError
+            If any source lies outside the image of the mesh's fov boundary,
+            where some of its images can lie outside the fov. The closed build
+            grows the fov only until it cuts no critical curve, so a far
+            source needs a larger ``fov``, or a ``mesh`` that covers it.
         """
         if mesh is None:
             mesh, _, _ = self.build_closed_lens_mesh(
