@@ -1612,8 +1612,8 @@ def batch_lm(
 
     # Jitted under jax, the batch is padded to one of a few sizes, so the step
     # compiles once per size. Padded rows repeat the last one and finish with it.
-    # Not by default: a caller handing over a fresh `f` every call, as
-    # `forward_raytrace` does, would compile the step anew each time.
+    # Not by default: a caller handing over a fresh `f` every call would
+    # compile the step anew each time.
     padded = backend.padded_size(B) if jit else B
     if padded > B:
         X, Y, Cinv = (backend.pad_rows(a, padded) for a in (X, Y, Cinv))

@@ -371,8 +371,8 @@ def test_batch_lm_tests_termination_inside_the_jitted_step():
 
 @pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
 def test_batch_lm_runs_eagerly_unless_asked_to_jit():
-    """``lens.forward_raytrace`` hands ``batch_lm`` a fresh closure every call: a
-    jitted step would compile again each time, where eager ops reuse jax's cache."""
+    """A caller can hand ``batch_lm`` a fresh closure every call: a jitted step
+    would compile again each time, where eager ops reuse jax's cache."""
     import jax
 
     compiles = []

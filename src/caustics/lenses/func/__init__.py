@@ -1,11 +1,4 @@
 from .base import (
-    triangle_contains,
-    triangle_area,
-    triangle_neighbors,
-    triangle_upsample,
-    triangle_equals,
-    remove_triangle_duplicates,
-    forward_raytrace_rootfind,
     physical_from_reduced_deflection_angle,
     reduced_from_physical_deflection_angle,
     time_delay_arcsec2_to_days,
@@ -103,13 +96,6 @@ from .adaptive import (
 
 __all__ = (
     "forward_raytrace",
-    "triangle_contains",
-    "triangle_area",
-    "triangle_neighbors",
-    "triangle_upsample",
-    "triangle_equals",
-    "remove_triangle_duplicates",
-    "forward_raytrace_rootfind",
     "physical_from_reduced_deflection_angle",
     "reduced_from_physical_deflection_angle",
     "time_delay_arcsec2_to_days",
