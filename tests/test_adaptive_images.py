@@ -98,13 +98,26 @@ def beta():
     )
 
 
-def dedup(points, tol):
-    """Greedy clustering; returns one representative per cluster, sorted."""
-    keep = []
-    for p in points:
-        if all(np.linalg.norm(p - q) >= tol for q in keep):
-            keep.append(p)
-    return np.array(sorted(keep, key=tuple)) if keep else np.zeros((0, 2))
+# The images of three sources under `_sie_build`'s SIE, found by the legacy
+# triangle-subdivision `forward_raytrace` (commit b47823c) and deduplicated at
+# 1e-2: a reference found without the adaptive mesh.
+SIE_IMAGES = {
+    (0.2, 0.2): [
+        [-0.406354964, -0.322011113],
+        [-0.104330279, 1.195786],
+        [-0.000538395485, -0.000447346014],
+        [0.924434245, 0.55215627],
+        [1.08214688, -0.315099537],
+    ],
+    (0.05, -0.05): [
+        [-0.673647225, -0.403054774],
+        [-0.570067227, 0.834818602],
+        [-5.65010305e-05, 3.58657526e-05],
+        [0.606700599, 0.532241642],
+        [0.696002543, -0.916224718],
+    ],
+    (1.4, 1.1): [[1.98252189, 1.65288591]],
+}
 
 
 def _sie_build(device=None):
@@ -174,7 +187,7 @@ def test_forward_raytrace_raises_for_a_source_outside_the_image_of_the_fov_bound
 
 
 def test_every_sie_image_has_a_seed_within_min_img_sep(device):
-    """Every image ``lens.forward_raytrace`` finds has a seed (:func:`mesh_seeds`) within ``min_img_sep``.
+    """Every image in :data:`SIE_IMAGES` has a seed (:func:`mesh_seeds`) within ``min_img_sep``.
 
     The central image included: for ``sp = [0.2, 0.2]`` and ``[0.05, -0.05]``
     it lies at radius ~7.0e-4 and ~6.7e-5, inside the softening radius
@@ -182,13 +195,9 @@ def test_every_sie_image_has_a_seed_within_min_img_sep(device):
     running at r ~ 0.025 -- of one sign, so the leaves holding it converge.
     Measured, the worst seed lies 1.1e-3 from its image.
     """
-    lens, mesh = _sie_build(device)
-    for sp in ([0.2, 0.2], [0.05, -0.05], [1.4, 1.1]):
-        sx = backend.as_array(sp[0], device=device)
-        sy = backend.as_array(sp[1], device=device)
-        ex, ey = lens.forward_raytrace(sx, sy)
-        expected = dedup(np.stack([to_np(ex), to_np(ey)], axis=-1), 1e-2)
-        assert expected.shape[0] > 0, f"{sp}: no reference images"
+    _, mesh = _sie_build(device)
+    for sp, images in SIE_IMAGES.items():
+        expected = np.asarray(images)
         idx, _, bary = mesh_query(mesh, f64([sp]))
         seed = to_np(mesh_seeds(mesh, idx, bary))
         nearest = np.linalg.norm(expected[:, None, :] - seed[None, :, :], axis=-1).min(
@@ -202,16 +211,13 @@ def test_every_sie_image_has_a_seed_within_min_img_sep(device):
 def test_forward_raytrace_returns_exactly_the_sie_s_images(sie):
     """Every image comes back, the central one inside the softening radius
     ``s = 1e-3`` included, and nothing else: the residual and leaf-or-ball
-    filters keep a stalled solve out. The reference, ``LensBase.forward_raytrace``,
-    takes float32 sources only."""
+    filters keep a stalled solve out. The reference is :data:`SIE_IMAGES`."""
     lens, mesh = sie
-    for sp in ([0.2, 0.2], [0.05, -0.05]):
+    for sp in ((0.2, 0.2), (0.05, -0.05)):
         images, counts = fr(mesh, f64([sp]), lens.raytrace)
         images = to_np(images)
         assert to_np(counts).tolist() == [images.shape[0]] and images.shape[0] > 0
-        ex, ey = lens.forward_raytrace(backend.as_array(sp[0]), backend.as_array(sp[1]))
-        expected = dedup(np.stack([to_np(ex), to_np(ey)], axis=-1), 1e-2)
-        assert expected.shape[0] > 0, f"{sp}: reference found no images"
+        expected = np.asarray(SIE_IMAGES[sp])
         gap = np.linalg.norm(expected[:, None, :] - images[None, :, :], axis=-1)
         assert gap.min(axis=1).max() < 1e-2, f"{sp}: an image did not come back"
         assert (
