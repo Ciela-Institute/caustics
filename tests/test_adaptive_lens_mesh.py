@@ -2,6 +2,7 @@
 
 import pickle
 import warnings
+import weakref
 import numpy as np
 import pytest
 
@@ -34,6 +35,7 @@ from caustics.lenses.func.adaptive.lattice import (
     lattice_xy,
 )
 from caustics.lenses.func.adaptive.curves import critical_curves_and_caustics
+from caustics.lenses.func.adaptive import lens_mesh as lens_mesh_module
 from caustics.lenses.func.adaptive.lens_mesh import (
     _fov_boundary,
     _freeze,
@@ -57,6 +59,7 @@ from adaptive_maps import (
     collapse,
     collapse_jacobian,
     f64,
+    i64,
     localised_fold,
     localised_fold_jacobian,
     numpy_lens,
@@ -793,9 +796,93 @@ def test_seeding_a_mesh_and_freezing_it_again_reproduces_it():
     lat = to_device(mesh.lattice, build_device())
     cache, store, seed = _seed(mesh, lat, 0)
     sample = make_sampler(lens_.raytrace, lens_.jacobian_lens_equation, None)
-    again = _freeze(lat, cache, store, sample, mesh.min_img_sep, mesh.holes, None, seed)
+    again = _freeze(
+        lat, cache, store, i64([]), sample, mesh.min_img_sep, mesh.holes, None, seed
+    )
     assert_same(again, mesh)
     assert not lens_.calls.raytrace and not lens_.calls.jacobian
+
+
+@pytest.mark.parametrize("extend", [False, True], ids=["build", "extension"])
+def test_the_status_pass_holds_at_most_status_rows_rows_per_step(extend, monkeypatch):
+    """Each step of a freeze's status pass holds at most ``STATUS_ROWS`` rows, and the mesh does not change."""
+
+    def run():
+        mesh, lens_ = build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05)
+        if extend:
+            mesh = extend_lens_mesh(
+                mesh, lens_.raytrace, lens_.jacobian_lens_equation, 6.0
+            )
+        return mesh
+
+    steps = []
+    status_rows = lens_mesh_module._status_rows
+
+    def spy(lat, cache, store, rows, *rest):
+        steps.append(rows.shape[0])
+        return status_rows(lat, cache, store, rows, *rest)
+
+    monkeypatch.setattr(lens_mesh_module, "_status_rows", spy)
+    whole = run()
+    freezes = 2 if extend else 1
+    assert len(steps) == freezes, "the default cap must hold each freeze in one step"
+    assert whole.critical_band.leaves.shape[0] > 0, "fixture must have a band"
+    monkeypatch.setattr(lens_mesh_module, "STATUS_ROWS", 7)
+    steps.clear()
+    assert_same(run(), whole)
+    assert max(steps) <= 7 and len(steps) > 2 * freezes, steps
+
+
+@pytest.mark.parametrize("extend", [False, True], ids=["build", "extension"])
+def test_the_refinement_and_the_status_table_are_freed_before_the_index_is_built(
+    extend, monkeypatch
+):
+    """The cache, the store and the table the status pass reads are gone by the index build, the largest step."""
+    held, alive = [], []
+    refine = lens_mesh_module.refine
+    status_rows = lens_mesh_module._status_rows
+    build_index = lens_mesh_module.build_index
+
+    def spy_refine(*args):
+        cache, store = refine(*args)
+        held.extend(weakref.ref(a) for a in (*cache, *store))
+        return cache, store
+
+    def spy_status_rows(lat, cache, store, rows, table_keys, table_values, sep):
+        held.extend((weakref.ref(table_keys), weakref.ref(table_values)))
+        return status_rows(lat, cache, store, rows, table_keys, table_values, sep)
+
+    def spy_build_index(*args):
+        alive.append(sum(ref() is not None for ref in held))
+        held.clear()
+        return build_index(*args)
+
+    monkeypatch.setattr(lens_mesh_module, "refine", spy_refine)
+    monkeypatch.setattr(lens_mesh_module, "_status_rows", spy_status_rows)
+    monkeypatch.setattr(lens_mesh_module, "build_index", spy_build_index)
+    mesh, lens_ = build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05)
+    if extend:
+        extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 6.0)
+    assert alive == [0] * (2 if extend else 1)
+
+
+@pytest.mark.skipif(backend.backend != "torch", reason="reads torch storages")
+def test_the_mesh_s_arrays_hold_no_memory_beyond_their_own_values():
+    """A field that is a view keeps its whole base alive: the mesh's views share bases they fill."""
+
+    def arrays(value):
+        if hasattr(value, "_fields"):
+            for v in value:
+                yield from arrays(v)
+        elif hasattr(value, "untyped_storage"):
+            yield value
+
+    mesh, _ = user_build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05)
+    held = {
+        a.untyped_storage().data_ptr(): a.untyped_storage().nbytes()
+        for a in arrays(mesh)
+    }
+    assert sum(held.values()) <= sum(a.numel() * a.element_size() for a in arrays(mesh))
 
 
 def test_seeding_carries_det_a_and_an_extension_keeps_it_at_every_old_vertex():

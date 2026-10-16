@@ -20,6 +20,7 @@ from .geometry import (
     ROOT_CLASS,
     build_device,
     is_member,
+    map_chunks,
     segments_cross,
     sigma_min_2x2,
     to_device,
@@ -62,6 +63,8 @@ from .curves import _critical_curves_and_caustics
 
 # Most segment pairs the closed build's crossing test holds at once.
 CROSSING_PAIRS = 1 << 18
+# Most rows one step of a freeze's status pass holds.
+STATUS_ROWS = 1 << 16
 
 
 class LensMesh(NamedTuple):
@@ -360,32 +363,92 @@ def _build_lens_mesh(
     cache, store, rows = add_roots(
         empty_cache(4), empty_store(), lat, ij, cls, sample, batch_size
     )
-    cache, store = refine(
-        cache,
-        store,
-        rows,
-        lat,
-        sample,
-        _lens_split(h0, min_img_sep),
-        max_level,
-        batch_size,
-    )
-    return _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size)
+    return _freeze(lat, cache, store, rows, sample, min_img_sep, holes, batch_size)
 
 
-def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None):
+def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep):
     """
-    Close and index a refinement, finishing its finest level.
+    :func:`~.criterion.lens_status` of store ``rows``, and those of them at the finest level that are in the band.
+
+    Each row's six samples are read from ``table_keys``, ascending, and
+    ``table_values``; :func:`~.band.in_band` reads their ``det A``.
+
+    Returns
+    -------
+    status, deviation, sigma_min: ArrayLike
+        ``(n,)`` each, as :func:`~.criterion.lens_status` gives them.
+    band: ArrayLike
+        int64 those of ``rows`` at the finest level in the band, in their
+        order.
+    """
+    ij = cache.ij[store.v[rows]]
+    keys6 = mesh_backend.concatenate(
+        (lattice_key(lat, ij), lattice_key(lat, midpoint_ij(ij))), dim=1
+    )
+    values6 = table_values[mesh_backend.searchsorted(table_keys, keys6)]
+    level = store.level[rows]
+    status, deviation, sigma_min = lens_status(
+        values6[..., :2],
+        values6[..., 2],
+        values6[..., 3],
+        store.cls[rows],
+        level,
+        lat.h0,
+        min_img_sep,
+    )
+    band = (level == lat.level - 1) & in_band(values6[..., 2])
+    return status, deviation, sigma_min, rows[mesh_backend.flatnonzero(band)]
+
+
+def _freeze(lat, cache, store, rows, sample, min_img_sep, holes, batch_size, seed=None):
+    """
+    Refine from store ``rows``, then close and index the result, finishing its finest level.
+
+    :func:`~.refine.refine` splits by :func:`_lens_split` down to the
+    lattice's finest level. Its state is held only while :func:`_finish`
+    reads it, so that it, and everything the status pass built, is freed
+    before the index, the largest step, is built. ``seed`` is
+    :func:`_finish`'s.
+    """
+    split = _lens_split(lat.h0, min_img_sep)
+    mesh = _finish(
+        lat,
+        *refine(cache, store, rows, lat, sample, split, lat.level - 1, batch_size),
+        sample,
+        min_img_sep,
+        holes,
+        batch_size,
+        seed,
+    )
+    return mesh._replace(index=_mesh_index(mesh))
+
+
+def _mesh_index(mesh):
+    """``mesh.index``: over the source-plane images of the leaves whose origin is finite, each grown by :func:`leaf_grow`."""
+    finite = (
+        mesh.origin_status[mesh.leaf_origin]
+        & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)
+    ) == 0
+    indexed = mesh_backend.flatnonzero(finite)
+    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
+    return build_index(mesh.vertices_source, mesh.leaves, indexed, grow[indexed])
+
+
+def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
+    """
+    Close a refinement and finish its finest level: its :class:`LensMesh`, with no index yet.
 
     Each origin not carried over in ``seed`` gets its status, deviation and
     smallest singular value from :func:`~.criterion.lens_status` on its six
     samples: below the finest level its midpoints are in the cache,
     ``refine`` having tested and passed it; at the finest level they are
-    sampled here and never cached, and they also give the band. ``seed`` is
+    sampled here and never cached, and they also give the band. The origins
+    are tested in steps of at most :data:`STATUS_ROWS` rows. ``seed`` is
     ``(status, deviation, sigma_min, band_rows, mid_keys, mid_values)`` from
     :func:`_seed`: the statuses, deviations and smallest singular values of
     the store's first rows, the store rows of the old band, and the old
-    band's midpoint samples, read here rather than sampled again.
+    band's midpoint samples, read here rather than sampled again; None for
+    a fresh build.
     """
     int64, f64 = mesh_backend.int64, mesh_backend.float64
     used, leaves, leaf_origin, origin, origin_leaves = close(lat, cache, store)
@@ -413,12 +476,10 @@ def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None
     )
     row = mesh_backend.arange(n_rows, dtype=int64)
     young = mesh_backend.flatnonzero(store.valid & (row >= n_seed))
-    finest = mesh_backend.flatnonzero(store.level[young] == lat.level - 1)
-    fresh = young[finest]
+    fresh = young[mesh_backend.flatnonzero(store.level[young] == lat.level - 1)]
 
-    ij = cache.ij[store.v[young]]
-    mid = lattice_key(lat, midpoint_ij(ij))
-    todo = mesh_backend.unique(mid[finest].reshape(-1))
+    mid = lattice_key(lat, midpoint_ij(cache.ij[store.v[fresh]]))
+    todo = mesh_backend.unique(mid.reshape(-1))
     todo = todo[~is_member(mid_keys, todo)]
     if todo.shape[0]:
         xy = lattice_xy(lat, lattice_ij_from_key(lat, todo))
@@ -432,24 +493,17 @@ def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None
     order = mesh_backend.argsort(table_keys)
     table_keys, table_values = table_keys[order], table_values[order]
 
-    keys6 = mesh_backend.concatenate((lattice_key(lat, ij), mid), dim=1)
-    values6 = table_values[mesh_backend.searchsorted(table_keys, keys6)]
-    young_status, young_deviation, young_sigma_min = lens_status(
-        values6[..., :2],
-        values6[..., 2],
-        values6[..., 3],
-        store.cls[young],
-        store.level[young],
-        lat.h0,
-        min_img_sep,
+    young_status, young_deviation, young_sigma_min, young_band = map_chunks(
+        lambda rows: _status_rows(
+            lat, cache, store, rows, table_keys, table_values, min_img_sep
+        ),
+        young,
+        STATUS_ROWS,
     )
     status = mesh_backend.fill_at_indices(status, young, young_status)
     deviation = mesh_backend.fill_at_indices(deviation, young, young_deviation)
     sigma_min = mesh_backend.fill_at_indices(sigma_min, young, young_sigma_min)
-    band_rows = mesh_backend.concatenate(
-        (band_rows, fresh[mesh_backend.flatnonzero(in_band(values6[finest][..., 2]))]),
-        dim=0,
-    )
+    band_rows = mesh_backend.concatenate((band_rows, young_band), dim=0)
 
     origin_of_row = mesh_backend.fill_at_indices(
         mesh_backend.zeros((n_rows,), dtype=int64) - 1,
@@ -465,30 +519,24 @@ def _freeze(lat, cache, store, sample, min_img_sep, holes, batch_size, seed=None
     )
     band = build_band(lat, band_leaves, band_keys6, table_keys, table_values)
 
-    origin_status = status[origin]
-    vertices_source = cache.values[used][:, :2]
-    origin_deviation = deviation[origin]
-    finite = (
-        origin_status[leaf_origin] & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)
-    ) == 0
-    indexed = mesh_backend.flatnonzero(finite)
-    grow = leaf_grow(origin_status, origin_deviation, leaf_origin)
+    # One gather: each vertex field is a view, which keeps its whole base alive.
+    values = cache.values[used]
     mesh = LensMesh(
         lattice=lat,
         vertices_ij=cache.ij[used],
         vertices_lens=lattice_xy(lat, cache.ij[used]),
-        vertices_source=vertices_source,
-        vertices_det=cache.values[used][:, 2],
-        vertices_sigma_min=cache.values[used][:, 3],
+        vertices_source=values[:, :2],
+        vertices_det=values[:, 2],
+        vertices_sigma_min=values[:, 3],
         leaves=leaves,
         leaf_origin=leaf_origin,
         origin_leaves=origin_leaves,
         origin_level=store.level[origin],
         origin_cls=store.cls[origin],
-        origin_status=origin_status,
-        origin_deviation=origin_deviation,
+        origin_status=status[origin],
+        origin_deviation=deviation[origin],
         origin_sigma_min=sigma_min[origin],
-        index=build_index(vertices_source, leaves, indexed, grow[indexed]),
+        index=None,
         critical_band=band,
         holes=holes,
         min_img_sep=float(min_img_sep),
@@ -606,12 +654,11 @@ def _extend_lens_mesh(mesh, raytrace, jacobian, fov, *, device, batch_size):
     cache, store, seed = _seed(mesh, lat, k)
     ij, cls = ring_triangles(init_res, k, lat.level, ROOT_CLASS)
     cache, store, rows = add_roots(cache, store, lat, ij, cls, sample, batch_size)
-    split = _lens_split(h0, mesh.min_img_sep)
-    cache, store = refine(cache, store, rows, lat, sample, split, max_level, batch_size)
     return _freeze(
         lat,
         cache,
         store,
+        rows,
         sample,
         mesh.min_img_sep,
         mesh.holes,
