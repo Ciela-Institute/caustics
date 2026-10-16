@@ -171,6 +171,14 @@ class Lens(Module):
         ``self.raytrace`` and its Jacobian ``self.jacobian_lens_equation``, at
         the parameter values of this call.
 
+        The center of every component, ``self.component_centers()``, is given
+        a hole, and so is each of ``centers``. A hole drops no image. Where the
+        lens map is smooth, as at a shear's, a mass sheet's or a cored
+        profile's center, its hole curve is a speck and never a
+        pseudo-caustic, so the hole changes only a critical curve crossing its
+        disk, which is re-joined round it. A component centered near or
+        outside ``fov`` widens it.
+
         Under jax, ``jacobian_lens_equation`` re-traces its autodiff at every
         call. To build many meshes, call those functions with a jitted
         Jacobian, as :func:`~caustics.lenses.func.build_lens_mesh` describes.
@@ -218,9 +226,9 @@ class Lens(Module):
             *Unit: arcsec*
 
         centers: Optional[ArrayLike]
-            ``(S, 2)`` positions where the lens map may jump, each given a
-            hole. Pass the center of every singular profile, such as an SIE
-            with ``s = 0`` or a point mass.
+            ``(S, 2)`` positions where the lens map may jump besides the
+            component centers, each given a hole too: the image-plane position
+            of a singular center in a later plane of a multiplane lens.
 
             *Unit: arcsec*
 
@@ -238,6 +246,12 @@ class Lens(Module):
         region: Optional[MagnificationRegion]
             None without ``mu_min``.
         """
+        holes = backend.to(self.component_centers(), dtype=backend.float64)
+        if centers is not None:
+            centers = backend.as_array(
+                centers, dtype=backend.float64, device=backend.device(holes)
+            )
+            holes = backend.concatenate((holes, centers), dim=0)
         # Not x0, y0: @forward would fill those from the lens's own x0, y0.
         build = dict(
             max_depth=max_depth,
@@ -245,7 +259,7 @@ class Lens(Module):
             max_iters=max_iters,
             x0=fov_x0,
             y0=fov_y0,
-            centers=centers,
+            centers=holes,
             device=device,
             batch_size=batch_size,
         )
@@ -796,6 +810,26 @@ class ThinLens(Lens):
     ):
         super().__init__(cosmology=cosmology, name=name, z_s=z_s)
         self.z_l = Param("z_l", z_l, units="unitless", valid=(0, None))
+
+    @forward
+    def component_centers(
+        self,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
+        """
+        Lens-plane center of each component of the lens: of a single profile, its own.
+
+        :meth:`build_closed_lens_mesh` cuts a hole around each.
+
+        Returns
+        -------
+        ArrayLike
+            ``(1, 2)``: ``(x0, y0)``.
+
+            *Unit: arcsec*
+        """
+        return backend.stack((x0, y0)).reshape(1, 2)
 
     @forward
     def reduced_deflection_angle(

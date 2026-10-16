@@ -1,7 +1,15 @@
 import numpy as np
 
 from caustics.cosmology import FlatLambdaCDM
-from caustics.lenses import SIE, func
+from caustics.lenses import (
+    SIE,
+    SIS,
+    BatchedPlane,
+    ExternalShear,
+    Multiplane,
+    SinglePlane,
+    func,
+)
 from caustics import test as mini_test
 from caustics.backend_obj import backend
 
@@ -58,6 +66,64 @@ def test_build_closed_lens_mesh_traces_the_region_only_given_mu_min(device):
     assert isinstance(region, func.MagnificationRegion)
     assert (region.mu_min, region.mu_max) == (10.0, 50.0)
     assert np.isfinite(region.area) and region.area > 0
+
+
+def _hole_centers(lens, device, **kwargs):
+    """The centers of the holes in ``lens``'s closed mesh, in lexicographic ``(x, y)`` order."""
+    mesh, _, _ = lens.build_closed_lens_mesh(5.0, 16, 2e-2, device=device, **kwargs)
+    return backend.to_numpy(mesh.holes.centers)
+
+
+def _sie_and_shear(cosmology, **kwargs):
+    """A singular SIE at (0.3, -0.2) and a shear about (-0.5, 0.4), in one plane."""
+    return SinglePlane(
+        cosmology=cosmology,
+        lenses=[
+            SIE(cosmology=cosmology, x0=0.3, y0=-0.2, q=0.6, phi=0.4, Rein=1.0),
+            ExternalShear(
+                cosmology=cosmology, x0=-0.5, y0=0.4, gamma_1=0.05, gamma_2=-0.02
+            ),
+        ],
+        **kwargs,
+    )
+
+
+def test_build_closed_lens_mesh_cuts_a_hole_at_every_component_center(device):
+    lens = _sie_and_shear(FlatLambdaCDM(name="cosmo"), z_l=0.5, z_s=1.5).to(device)
+    np.testing.assert_allclose(
+        _hole_centers(lens, device), [[-0.5, 0.4], [0.3, -0.2]], atol=1e-6
+    )
+
+
+def test_build_closed_lens_mesh_adds_given_centers_to_the_lens_own(device):
+    lens = _sie(device)
+    centers = _hole_centers(lens, device, centers=[[1.8, -1.5]])
+    np.testing.assert_allclose(centers, [[0.0, 0.0], [1.8, -1.5]], atol=1e-6)
+
+
+def test_build_closed_lens_mesh_cuts_a_hole_at_every_batched_lens_center(device):
+    cosmology = FlatLambdaCDM(name="cosmo")
+    sis = SIS(
+        cosmology=cosmology, x0=backend.as_array([0.9, -0.7, 0.2]), y0=0.4, Rein=0.3
+    )
+    # BatchedPlane vmaps over the batched lens's dynamic parameters.
+    sis.to_dynamic()
+    lens = BatchedPlane(cosmology=cosmology, lens=sis, z_l=0.5, z_s=1.5).to(device)
+    centers = _hole_centers(lens, device, params=lens.get_values())
+    np.testing.assert_allclose(
+        centers, [[-0.7, 0.4], [0.2, 0.4], [0.9, 0.4]], atol=1e-6
+    )
+
+
+def test_build_closed_lens_mesh_cuts_a_hole_at_every_plane_component_center(device):
+    cosmology = FlatLambdaCDM(name="cosmo")
+    first = _sie_and_shear(cosmology, z_l=0.5)
+    second = SIS(cosmology=cosmology, x0=1.2, y0=0.9, Rein=0.2, z_l=1.0)
+    lens = Multiplane(cosmology=cosmology, lenses=[first, second], z_s=2.0)
+    lens = lens.to(device)
+    np.testing.assert_allclose(
+        _hole_centers(lens, device), [[-0.5, 0.4], [0.3, -0.2], [1.2, 0.9]], atol=1e-6
+    )
 
 
 def test_forward_raytrace_on_a_given_mesh_builds_none(device, monkeypatch):

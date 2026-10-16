@@ -55,6 +55,22 @@ class SinglePlane(ThinLens):
             lens.z_s = self.z_s
 
     @forward
+    def component_centers(self) -> ArrayLike:
+        """
+        Lens-plane center of each component of every lens in the plane, lens by lens.
+
+        Returns
+        -------
+        ArrayLike
+            ``(S, 2)`` ``(x0, y0)`` rows.
+
+            *Unit: arcsec*
+        """
+        return backend.concatenate(
+            [lens.component_centers() for lens in self.lenses], dim=0
+        )
+
+    @forward
     def reduced_deflection_angle(
         self,
         x: ArrayLike,
