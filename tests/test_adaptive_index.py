@@ -385,3 +385,29 @@ def test_index_hits_hold_at_most_pair_cap_pairs_per_step(mesh, beta, monkeypatch
         shared |= any(n > 1 for n, _ in steps)
     assert over_cap, "no point held more than the cap"
     assert shared, "no step held several points"
+
+
+def test_build_index_holds_at_most_entry_cap_entries_per_step(mesh, monkeypatch):
+    """Each step of a build holds at most ``ENTRY_CAP`` entries, or one column of cells -- one level and x -- holding more, and the index does not change."""
+    rows = i64(finite_rows(mesh))
+    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)[rows]
+    steps = []
+    chunk_cells = index_module._chunk_cells
+
+    def spy(column_key, height, column_rows, total):
+        steps.append((np.unique(to_np(column_key) >> KEY_BITS).size, total))
+        return chunk_cells(column_key, height, column_rows, total)
+
+    monkeypatch.setattr(index_module, "_chunk_cells", spy)
+    whole = build_index(mesh.vertices_source, mesh.leaves, rows, grow)
+    assert len(steps) == 1, "the default cap must hold the fixture in one step"
+    over_cap = shared = False
+    for cap in (7, 64):
+        monkeypatch.setattr(index_module, "ENTRY_CAP", cap)
+        steps.clear()
+        assert_same(build_index(mesh.vertices_source, mesh.leaves, rows, grow), whole)
+        assert all(total <= cap or columns == 1 for columns, total in steps), steps
+        over_cap |= any(columns == 1 and total > cap for columns, total in steps)
+        shared |= any(columns > 1 for columns, _ in steps)
+    assert over_cap, "no column held more than the cap"
+    assert shared, "no step held several columns"
