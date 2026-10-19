@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from .base import ThinLens, CosmologyType, NameType, ZType
-from . import func
 from ..backend_obj import ArrayLike
+from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("SIS",)
 
@@ -65,17 +65,17 @@ class SIS(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the lens center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the lens center",
             True,
         ] = None,
         Rein: Annotated[
-            Optional[Union[ArrayLike, float]], "The Einstein radius of the lens", True
+            ArrayLike | float | None, "The Einstein radius of the lens", True
         ] = None,
         s: Annotated[float, "A smoothing factor"] = 0.0,
         name: NameType = None,

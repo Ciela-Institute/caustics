@@ -1,5 +1,5 @@
 from ...backend_obj import backend
-from ...constants import arcsec_to_rad, G_over_c2, rad_to_arcsec
+from ...constants import G_over_c2, arcsec_to_rad, rad_to_arcsec
 from ...utils import translate_rotate
 
 
