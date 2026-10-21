@@ -242,3 +242,41 @@ def test_forward_raytrace_reuses_its_programs_at_a_new_source_redshift(
     _, _, counts = lens.forward_raytrace(sp_x, sp_y, mesh=mesh, params=[second])
     assert calls == [] and compile_count() == before
     assert backend.to_numpy(counts).tolist() == backend.to_numpy(want).tolist()
+
+
+def test_forward_raytrace_follows_new_rein_and_q(device):
+    """Unlike z_s above, Rein and q change an SIE's map, so a build and solve
+    at new values must match a fresh lens built at those values -- not
+    silently keep the first build's or solve's. Runs under both backends:
+    the main path (not just jax's caches) must track new parameter values."""
+    sx = backend.as_array(np.asarray([0.1, -0.05], dtype=np.float32), device=device)
+    sy = backend.as_array(np.asarray([0.05, 0.1], dtype=np.float32), device=device)
+    lens = _sie(device)
+    lens.Rein.to_dynamic()
+    lens.q.to_dynamic()
+    for Rein, q in ((1.0, 0.4), (1.3, 0.6)):
+        lens.Rein, lens.q = Rein, q
+        params = lens.get_values()
+        mesh, _, _ = lens.build_closed_lens_mesh(
+            5.0, 16, 2e-2, device=device, params=params
+        )
+        x, y, n = lens.forward_raytrace(sx, sy, mesh=mesh, params=params)
+
+        fresh = _sie(device)
+        fresh.Rein.to_dynamic()
+        fresh.q.to_dynamic()
+        fresh.Rein, fresh.q = Rein, q
+        fresh_params = fresh.get_values()
+        fresh_mesh, _, _ = fresh.build_closed_lens_mesh(
+            5.0, 16, 2e-2, device=device, params=fresh_params
+        )
+        fx, fy, fn = fresh.forward_raytrace(
+            sx, sy, mesh=fresh_mesh, params=fresh_params
+        )
+
+        assert backend.to_numpy(n).tolist() == backend.to_numpy(fn).tolist()
+        np.testing.assert_allclose(
+            np.sort(backend.to_numpy(x)),
+            np.sort(backend.to_numpy(fx)),
+            atol=1e-8,
+        )
