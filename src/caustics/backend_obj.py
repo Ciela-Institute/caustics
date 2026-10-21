@@ -109,6 +109,10 @@ class Backend:
         self.any = self._any_torch
         self.padded_size = self._padded_size_torch
         self.pad_rows = self._pad_rows_torch
+        self.unpad_rows = self._unpad_rows_torch
+        self.compiles = False
+        self.while_loop = self._while_loop_torch
+        self.flag_to_host = self._flag_to_host_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -182,6 +186,10 @@ class Backend:
         self.any = self._any_jax
         self.padded_size = self._padded_size_jax
         self.pad_rows = self._pad_rows_jax
+        self.unpad_rows = self._unpad_rows_jax
+        self.compiles = True
+        self.while_loop = self._while_loop_jax
+        self.flag_to_host = self._flag_to_host_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**31 - 1)
@@ -720,8 +728,47 @@ class Backend:
         return self.module.cat((array, last), dim=0)
 
     def _pad_rows_jax(self, array, n):
+        # Padding on the device recompiles per shape; numpy pads on the host
+        # instead, so pad_rows compiles nothing regardless of n.
+        (device,) = array.devices()
         widths = [(0, n - array.shape[0])] + [(0, 0)] * (array.ndim - 1)
-        return self.module.pad(array, widths, mode="edge")
+        host = np.pad(np.asarray(array), widths, mode="edge")
+        return self.jax.device_put(host, device=device)
+
+    def _unpad_rows_torch(self, array, n):
+        return array[:n]
+
+    def _unpad_rows_jax(self, array, n):
+        (device,) = array.devices()
+        return self.jax.device_put(np.asarray(array)[:n], device=device)
+
+    def _while_loop_torch(self, cond, body, init):
+        state = init
+        while cond(state):
+            state = body(state)
+        return state
+
+    def _while_loop_jax(self, cond, body, init):
+        return self.jax.lax.while_loop(cond, body, init)
+
+    def _flag_to_host_torch(self, flag):
+        if flag.device.type != "cuda":
+            return flag
+        host = flag.to("cpu", non_blocking=True)
+        event = self.module.cuda.Event()
+        event.record()
+        return host, event
+
+    def _flag_to_host_jax(self, flag):
+        flag.copy_to_host_async()
+        return flag
+
+    def read_flag(self, handle):
+        if isinstance(handle, tuple):
+            flag, event = handle
+            event.synchronize()
+            return bool(flag)
+        return bool(handle)
 
     def _jit_torch(self, func, **kwargs):
         return func

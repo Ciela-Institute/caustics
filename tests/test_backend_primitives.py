@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from caustics.backend_obj import backend
+from jax_compiles import compile_count
 
 
 def test_sort_is_ascending():
@@ -153,3 +154,41 @@ def test_pad_rows_to_its_own_length_changes_nothing():
     x = np.arange(6, dtype=np.int64).reshape(3, 2)
     got = backend.to_numpy(backend.pad_rows(backend.as_array(x), 3))
     np.testing.assert_array_equal(got, x)
+
+
+def test_compiles_is_true_only_under_jax():
+    assert backend.compiles == (backend.backend == "jax")
+
+
+def test_read_flag_returns_the_flag_flag_to_host_copied(device):
+    for value in (True, False):
+        flag = backend.to(backend.as_array(value), device=device)
+        assert backend.read_flag(backend.flag_to_host(flag)) is value
+
+
+def test_while_loop_runs_body_until_cond_fails():
+    i, x = backend.while_loop(
+        lambda s: s[0] < 5,
+        lambda s: (s[0] + 1, s[1] * 2),
+        (backend.as_array(0), backend.as_array(1.0)),
+    )
+    assert int(backend.to_numpy(i)) == 5 and float(backend.to_numpy(x)) == 32.0
+
+
+def test_pad_rows_repeats_the_last_row_and_unpad_rows_drops_it():
+    a = backend.as_array(np.arange(6.0).reshape(3, 2))
+    padded = backend.pad_rows(a, 5)
+    assert backend.to_numpy(padded).tolist() == [[0, 1], [2, 3], [4, 5], [4, 5], [4, 5]]
+    assert backend.to_numpy(backend.unpad_rows(padded, 3)).tolist() == [
+        [0, 1],
+        [2, 3],
+        [4, 5],
+    ]
+
+
+@pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
+def test_pad_rows_and_unpad_rows_compile_nothing_at_a_new_shape():
+    a = backend.to(np.arange(14.0).reshape(7, 2))
+    before = compile_count()
+    backend.unpad_rows(backend.pad_rows(a, 64), 7)
+    assert compile_count() == before
