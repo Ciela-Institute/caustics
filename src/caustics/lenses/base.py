@@ -183,7 +183,10 @@ class Lens(Module):
 
         Under jax, the map and its Jacobian run through :func:`~caustics.jit_forward`,
         compiled once per lens object and padded batch size and reused at
-        other parameter values; a ``ThickLens`` runs eagerly.
+        other parameter values; a ``ThickLens`` runs eagerly. After a call,
+        changing a plain attribute (e.g. ``EPL.n_iter``) or the parameter
+        graph, or calling ``.to(...)``, needs a new lens object, as
+        :func:`~caustics.jit_forward` describes.
 
         Parameters
         ----------
@@ -317,7 +320,10 @@ class Lens(Module):
         Building it once and passing it to many calls saves the build. The
         images are found by :func:`~caustics.lenses.func.forward_raytrace`.
         Under jax, the solve is compiled once per lens object and padded
-        size, and reused at other parameter values.
+        size, and reused at other parameter values. After a call, changing a
+        plain attribute (e.g. ``EPL.n_iter``) or the parameter graph, or
+        calling ``.to(...)``, needs a new lens object, as
+        :func:`~caustics.jit_forward` describes.
 
         Parameters
         ----------
