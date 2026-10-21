@@ -756,7 +756,10 @@ class Backend:
             return flag
         host = flag.to("cpu", non_blocking=True)
         event = self.module.cuda.Event()
-        event.record()
+        # The copy runs on `flag.device`'s stream, not necessarily the current
+        # device's; record there so `read_flag`'s `event.synchronize()` waits
+        # for that copy and nothing else.
+        event.record(self.module.cuda.current_stream(flag.device))
         return host, event
 
     def _flag_to_host_jax(self, flag):
