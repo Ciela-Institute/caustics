@@ -1608,7 +1608,9 @@ def _lm_setup(call, X, Y, C, L, *, epsilon, L_up, L_dn, L_min, L_max):
 
 
 def _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max):
-    # One iteration and its termination test, jitted together under jax.
+    # One iteration and its termination test. Under jax with `jit=True` this
+    # runs inside `_jitted_solve`'s compiled while-loop body; otherwise (jit
+    # False, or eager) it runs as plain Python, once per call.
     Xnew, L, chi2 = v_lm_step(X, Y, Cinv, L)
     step = backend.max(backend.abs(Xnew - X), dim=-1)
 
@@ -1636,6 +1638,15 @@ def _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max):
 
 # One compiled program per `f`. A `WeakKeyDictionary` holds `f` only through
 # `weakref.ref`, so a cached solve never outlives the `f` it was built for.
+#
+# Contract: the program is traced once per `f`, against the LM settings and
+# padded size (its static arguments). Anything `f` reads besides `X`,
+# `f_args` and `f_kwargs` -- a closed-over array, a module attribute -- is
+# frozen into that program at the first solve, so a caller must route
+# anything that changes between calls (e.g. new lens-parameter values)
+# through `f_args`/`f_kwargs`, which are traced inputs, rather than through a
+# fresh `f`; `f_args`/`f_kwargs` must therefore hold arrays. `X`, `Y` and `C`
+# must be jax arrays of one float dtype that `f` preserves.
 _SOLVES: "weakref.WeakKeyDictionary[Callable, Callable]" = weakref.WeakKeyDictionary()
 
 
@@ -1708,7 +1719,7 @@ def batch_lm(
     stopping=1e-4,
     f_args=(),
     f_kwargs={},
-    jit=False,  # jax: solve once under jit, cached per f; f_args/f_kwargs are traced inputs
+    jit=False,  # jax: solve once under jit, cached per f (see _SOLVES above _jitted_solve)
 ):
     B, Din = X.shape
     B, Dout = Y.shape
@@ -1723,6 +1734,13 @@ def batch_lm(
         # call. `f_args`/`f_kwargs` are traced inputs, so new parameter
         # values reuse the cached solve instead of retracing it. Padded rows
         # repeat the last one and finish with it.
+        #
+        # `jit` defaults to False because that reuse needs a caller who keeps
+        # calling with the *same* `f` and routes what changes through
+        # `f_args`/`f_kwargs` (see the contract above `_SOLVES`). A caller
+        # that instead hands over a fresh `f` every call would still compile
+        # anew each time, paying tracing cost for no reuse, so it should pass
+        # `jit=False` (or just not pass `jit=True`).
         padded = backend.padded_size(B)
         Xp, Yp = backend.pad_rows(X, padded), backend.pad_rows(Y, padded)
         Cp = backend.pad_rows(C, padded) if C is not None else None
