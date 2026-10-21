@@ -7,6 +7,7 @@ from caskade import Module, Param, forward
 
 from ..backend_obj import backend, ArrayLike
 from ..cosmology import Cosmology
+from ..jit import jit_forward
 from .utils import magnification
 from . import func
 
@@ -179,9 +180,9 @@ class Lens(Module):
         disk, which is re-joined round it. A component centered near or
         outside ``fov`` widens it.
 
-        Under jax, ``jacobian_lens_equation`` re-traces its autodiff at every
-        call. To build many meshes, call those functions with a jitted
-        Jacobian, as :func:`~caustics.lenses.func.build_lens_mesh` describes.
+        Under jax, the map and its Jacobian run through :func:`~caustics.jit_forward`,
+        compiled once per lens object and padded batch size and reused at
+        other parameter values; a ``ThickLens`` runs eagerly.
 
         Parameters
         ----------
@@ -265,8 +266,8 @@ class Lens(Module):
         )
         if mu_min is None:
             mesh, curves = func.build_closed_lens_mesh(
-                self.raytrace,
-                self.jacobian_lens_equation,
+                jit_forward(self.raytrace),
+                jit_forward(self.jacobian_lens_equation),
                 fov,
                 init_res,
                 min_img_sep,
@@ -274,8 +275,8 @@ class Lens(Module):
             )
             return mesh, curves, None
         return func.build_closed_magnification_region(
-            self.raytrace,
-            self.jacobian_lens_equation,
+            jit_forward(self.raytrace),
+            jit_forward(self.jacobian_lens_equation),
             fov,
             init_res,
             min_img_sep,

@@ -272,13 +272,11 @@ def build_lens_mesh(
         ``raytrace(x, y) -> (bx, by)`` on 1-D arrays, e.g. ``lens.raytrace``.
     jacobian: Callable[[ArrayLike, ArrayLike], ArrayLike]
         ``jacobian(x, y) -> (N, 2, 2)``, the Jacobian of ``raytrace``, e.g.
-        ``lens.jacobian_lens_equation``. Under jax that one re-traces its
-        autodiff at every call. A jitted Jacobian taking the lens's
-        parameters as an input is much cheaper over many builds and follows
-        the parameters as they change: after ``lens.to_dynamic()``,
-        ``jac = jax.jit(lambda x, y, p: lens.jacobian_lens_equation(x, y, params=p))``
-        passed as ``lambda x, y: jac(x, y, lens.get_values())``. It must not
-        close over parameter values.
+        ``lens.jacobian_lens_equation``. A bare ``lens.jacobian_lens_equation``
+        re-traces its autodiff at every call under jax, while
+        ``caustics.jit_forward(lens.jacobian_lens_equation)``, which
+        ``Lens.build_closed_lens_mesh`` passes, compiles once per padded batch
+        size and follows the lens's parameters.
     fov: float
         Side of the square lens-plane domain.
 

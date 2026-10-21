@@ -1,4 +1,7 @@
 import numpy as np
+import pytest
+
+from jax_compiles import compile_count
 
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import (
@@ -188,3 +191,26 @@ def test_quicktest(device):
     Quick test to check that the built-in `test` module is working
     """
     mini_test(device=device)
+
+
+@pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
+def test_build_closed_lens_mesh_reuses_its_programs_at_a_new_source_redshift(
+    device, monkeypatch
+):
+    """An SIE's map does not depend on z_s, so a build at a new z_s samples the
+    same batch sizes: it traces the lens nowhere and compiles nothing."""
+    calls = []
+    kernel = func.reduced_deflection_angle_sie
+    monkeypatch.setattr(
+        func, "reduced_deflection_angle_sie", lambda *a: calls.append(1) or kernel(*a)
+    )
+    lens = _sie(device)
+    lens.z_s.to_dynamic()
+    first, second = (
+        backend.to(np.asarray(z, dtype=np.float32), device=device) for z in (1.5, 2.0)
+    )
+    lens.build_closed_lens_mesh(5.0, 16, 2e-2, device=device, params=[first])
+    calls.clear()
+    before = compile_count()
+    lens.build_closed_lens_mesh(5.0, 16, 2e-2, device=device, params=[second])
+    assert calls == [] and compile_count() == before
