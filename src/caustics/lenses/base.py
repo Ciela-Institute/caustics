@@ -409,6 +409,10 @@ class ThickLens(Lens):
         the cosmological parameters of the model.
     """
 
+    # `jit_forward` runs these eagerly: `Multiplane` sorts its planes by
+    # redshift in Python, which traced values cannot do.
+    _jit_forward_eager = True
+
     @forward
     def reduced_deflection_angle(
         self,
