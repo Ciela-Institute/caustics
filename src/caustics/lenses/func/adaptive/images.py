@@ -263,7 +263,7 @@ def _block_sums(values, offsets):
     return csum[offsets[1:]] - csum[offsets[:-1]]
 
 
-def _images(mesh, beta, raytrace, tol, lm_kwargs, device):
+def _images(mesh, beta, raytrace, tol, lm_map, lm_kwargs, device):
     """Images and their count per point, for one chunk of ``(B, 2)`` points; ``device`` is the lens's."""
     mesh_device = mesh_backend.device(mesh.vertices_lens)
     idx, offsets, bary = mesh_query(mesh, beta)
@@ -273,12 +273,10 @@ def _images(mesh, beta, raytrace, tol, lm_kwargs, device):
             (beta.shape[0],), dtype=mesh_backend.int64, device=mesh_device
         )
 
-    def to_source(xy):
-        return backend.stack(raytrace(xy[..., 0], xy[..., 1]), dim=-1)
-
+    f, f_args = lm_map
     target = mesh_backend.repeat(beta, offsets[1:] - offsets[:-1], axis=0)
     root, _, _ = batch_lm(
-        to_user(seed, device), to_user(target, device), to_source, **lm_kwargs
+        to_user(seed, device), to_user(target, device), f, f_args=f_args, **lm_kwargs
     )
     root = mesh_backend.to(to_mesh(root), device=mesh_device)
     trace = make_sampler(raytrace, None, device)
@@ -363,6 +361,22 @@ def forward_raytrace(
         gaps, so sources near them may count as outside, and growing the fov
         does not help.
     """
+    return _forward_raytrace_at_user(
+        bx,
+        by,
+        raytrace,
+        mesh,
+        None,
+        batch_size=batch_size,
+        residual_tol=residual_tol,
+        lm_kwargs=lm_kwargs,
+    )
+
+
+def _forward_raytrace_at_user(
+    bx, by, raytrace, mesh, lm_map, *, batch_size, residual_tol, lm_kwargs
+):
+    """:func:`forward_raytrace` at user-backend arrays; ``lm_map`` is ``(f, f_args)``, or None to build one from ``raytrace``."""
     device = backend.device(mesh.vertices_lens)
     found = _forward_raytrace(
         *to_mesh((bx, by)),
@@ -372,12 +386,13 @@ def forward_raytrace(
         batch_size=batch_size,
         residual_tol=residual_tol,
         lm_kwargs=lm_kwargs,
+        lm_map=lm_map,
     )
     return to_user(found, device)
 
 
 def _forward_raytrace(
-    bx, by, raytrace, mesh, *, device, batch_size, residual_tol, lm_kwargs
+    bx, by, raytrace, mesh, *, device, batch_size, residual_tol, lm_kwargs, lm_map
 ):
     """:func:`forward_raytrace` on ``mesh_backend`` arrays; ``device`` is the lens's."""
     mesh_device = mesh_backend.device(mesh.vertices_lens)
@@ -393,8 +408,16 @@ def _forward_raytrace(
         )
     tol = float(residual_tol)
     lm_kwargs = {"jit": True, "stopping": 1e-10, **(lm_kwargs or {})}
+    if lm_map is None:
+        # One map for the whole call, not one per chunk: `batch_lm`'s jitted
+        # solve is cached on `f`'s identity, so a fresh closure per chunk
+        # would recompile every chunk.
+        lm_map = (
+            lambda xy: backend.stack(raytrace(xy[..., 0], xy[..., 1]), dim=-1),
+            (),
+        )
     images, counts = map_chunks(
-        lambda chunk: _images(mesh, chunk, raytrace, tol, lm_kwargs, device),
+        lambda chunk: _images(mesh, chunk, raytrace, tol, lm_map, lm_kwargs, device),
         beta,
         batch_size,
     )

@@ -214,3 +214,31 @@ def test_build_closed_lens_mesh_reuses_its_programs_at_a_new_source_redshift(
     before = compile_count()
     lens.build_closed_lens_mesh(5.0, 16, 2e-2, device=device, params=[second])
     assert calls == [] and compile_count() == before
+
+
+@pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
+def test_forward_raytrace_reuses_its_programs_at_a_new_source_redshift(
+    device, monkeypatch
+):
+    """The mesh serves both redshifts: an SIE's map does not depend on z_s."""
+    lens = _sie(device)
+    lens.z_s.to_dynamic()
+    first, second = (
+        backend.to(np.asarray(z, dtype=np.float32), device=device) for z in (1.5, 2.0)
+    )
+    mesh, _, _ = lens.build_closed_lens_mesh(
+        5.0, 16, 2e-2, device=device, params=[first]
+    )
+    sp_x = backend.to(np.asarray([0.2]), device=device)
+    sp_y = backend.to(np.asarray([0.2]), device=device)
+    calls = []
+    kernel = func.reduced_deflection_angle_sie
+    monkeypatch.setattr(
+        func, "reduced_deflection_angle_sie", lambda *a: calls.append(1) or kernel(*a)
+    )
+    _, _, want = lens.forward_raytrace(sp_x, sp_y, mesh=mesh, params=[first])
+    calls.clear()
+    before = compile_count()
+    _, _, counts = lens.forward_raytrace(sp_x, sp_y, mesh=mesh, params=[second])
+    assert calls == [] and compile_count() == before
+    assert backend.to_numpy(counts).tolist() == backend.to_numpy(want).tolist()

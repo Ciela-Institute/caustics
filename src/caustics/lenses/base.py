@@ -10,6 +10,7 @@ from ..cosmology import Cosmology
 from ..jit import jit_forward
 from .utils import magnification
 from . import func
+from .func.adaptive.images import _forward_raytrace_at_user
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -315,6 +316,8 @@ class Lens(Module):
         unused; it must come from this lens at the same parameter values.
         Building it once and passing it to many calls saves the build. The
         images are found by :func:`~caustics.lenses.func.forward_raytrace`.
+        Under jax, the solve is compiled once per lens object and padded
+        size, and reused at other parameter values.
 
         Parameters
         ----------
@@ -385,11 +388,14 @@ class Lens(Module):
                 device=device,
                 batch_size=batch_size,
             )
-        return func.forward_raytrace(
+        raytrace = jit_forward(self.raytrace)
+        lm_map = (raytrace.on_points, (raytrace.values(),)) if raytrace.jitted else None
+        return _forward_raytrace_at_user(
             bx,
             by,
-            self.raytrace,
+            raytrace,
             mesh,
+            lm_map,
             batch_size=batch_size,
             residual_tol=residual_tol,
             lm_kwargs=lm_kwargs,

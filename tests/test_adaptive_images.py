@@ -172,6 +172,20 @@ def test_forward_raytrace_is_invariant_to_batch_size(mesh):
         assert np.allclose(got[0], whole[0])
 
 
+def test_forward_raytrace_hands_every_chunk_one_lm_map(mesh, monkeypatch):
+    """One map per call, so a jitted solve compiles once per call, not per chunk."""
+    import caustics.lenses.func.adaptive.images as images
+
+    maps = []
+    solve = images.batch_lm
+    monkeypatch.setattr(
+        images, "batch_lm", lambda X, Y, f, **kw: maps.append(f) or solve(X, Y, f, **kw)
+    )
+    beta = f64(np.random.default_rng(4).uniform(-1, 1, (12, 2)))
+    fr(mesh, beta, SIE_LIKE_LENS.raytrace, batch_size=3)
+    assert len(maps) > 1 and all(f is maps[0] for f in maps)
+
+
 def test_forward_raytrace_raises_for_a_source_outside_the_image_of_the_fov_boundary(
     mesh,
 ):
