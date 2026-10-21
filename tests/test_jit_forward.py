@@ -96,6 +96,32 @@ def test_jit_forward_follows_a_pointer_to_a_traced_value():
         )
 
 
+@only_jax
+def test_jit_forward_follows_a_pointer_that_already_cached_its_value():
+    """z_l is a pointer from the NFW to the plane's z_l. Reading `nfw.z_l.value`
+    inside an outer `ActiveContext`, before the jitted call, caches its
+    `_value`; `pure` must still reset that cache (jit.py:44-50) so the NFW
+    recomputes z_l from the traced source instead of reading the stale,
+    pre-trace concrete value."""
+    cosmology = FlatLambdaCDM(name="cosmo").to(dtype=backend.float64)
+    nfw = NFW(name="nfw", cosmology=cosmology, x0=0.0, y0=0.0, mass=1e13, c=8.0)
+    lens = SinglePlane(
+        name="plane", cosmology=cosmology, lenses=[nfw], z_l=0.5, z_s=1.5
+    )
+    lens.z_l.to_dynamic()
+    raytrace = jit_forward(lens.raytrace)
+    x, y = _points()
+    before = _state(lens)
+    for z_l in (0.5, 0.8):
+        with ActiveContext(lens):
+            lens.fill_params([_f64(z_l)])
+            _ = nfw.z_l.value  # caches the pointer's value before the jitted call
+            got = raytrace(x, y)
+            want = lens.raytrace(x, y)
+        _close(got, want, atol=1e-12)
+    assert all(a is b for a, b in zip(_state(lens), before))
+
+
 def test_jit_forward_follows_a_switch_between_static_and_dynamic():
     lens, sie, shear = _plane()
     sie.Rein.to_dynamic()
