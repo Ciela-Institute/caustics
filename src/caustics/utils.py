@@ -1580,6 +1580,33 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     return X, L, chi2
 
 
+def _lm_setup(call, X, Y, C, L, *, epsilon, L_up, L_dn, L_min, L_max):
+    # Shared between the eager and jitted paths, so a change to the covariance
+    # handling, the dtype cast or the LM settings cannot drift between them.
+    if C is None:
+        Cinv = backend.ones_like(Y)
+    elif C.ndim == 2:
+        Cinv = 1 / C
+    else:
+        Cinv = backend.linalg.inv(C)
+    Cinv = backend.to(Cinv, dtype=X.dtype)
+
+    v_lm_step = backend.vmap(
+        partial(
+            _lm_step,
+            call,
+            Lup=L_up,
+            Ldn=L_dn,
+            epsilon=epsilon,
+            L_min=L_min,
+            L_max=L_max,
+        )
+    )
+
+    L = L * backend.ones(X.shape[0], device=backend.device(X), dtype=X.dtype)
+    return v_lm_step, Cinv, L
+
+
 def _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max):
     # One iteration and its termination test, jitted together under jax.
     Xnew, L, chi2 = v_lm_step(X, Y, Cinv, L)
@@ -1622,27 +1649,18 @@ def _jitted_solve(f):
     f_ref = weakref.ref(f)
 
     def solve(X, Y, C, L, f_args, f_kwargs, *, epsilon, L_up, L_dn, max_iter, L_min, L_max, stopping):  # fmt: skip
-        if C is None:
-            Cinv = backend.ones_like(Y)
-        elif C.ndim == 2:
-            Cinv = 1 / C
-        else:
-            Cinv = backend.linalg.inv(C)
-        Cinv = backend.to(Cinv, dtype=X.dtype)
-
-        v_lm_step = backend.vmap(
-            partial(
-                _lm_step,
-                lambda x: f_ref()(x, *f_args, **f_kwargs),
-                Lup=L_up,
-                Ldn=L_dn,
-                epsilon=epsilon,
-                L_min=L_min,
-                L_max=L_max,
-            )
+        v_lm_step, Cinv, L = _lm_setup(
+            lambda x: f_ref()(x, *f_args, **f_kwargs),
+            X,
+            Y,
+            C,
+            L,
+            epsilon=epsilon,
+            L_up=L_up,
+            L_dn=L_dn,
+            L_min=L_min,
+            L_max=L_max,
         )
-
-        L = L * backend.ones(X.shape[0], device=backend.device(X), dtype=X.dtype)
         chi2 = backend.zeros(X.shape[0], dtype=X.dtype)
         done = backend.as_array(False)
         i = backend.as_array(0)
@@ -1729,27 +1747,18 @@ def batch_lm(
             backend.unpad_rows(chi2, B),
         )
 
-    if C is None:
-        C = backend.ones_like(Y)
-    if C.ndim == 2:
-        Cinv = 1 / C
-    else:
-        Cinv = backend.linalg.inv(C)
-    Cinv = backend.to(Cinv, dtype=X.dtype)
-
-    v_lm_step = backend.vmap(
-        partial(
-            _lm_step,
-            lambda x: f(x, *f_args, **f_kwargs),
-            Lup=L_up,
-            Ldn=L_dn,
-            epsilon=epsilon,
-            L_min=L_min,
-            L_max=L_max,
-        )
+    v_lm_step, Cinv, L = _lm_setup(
+        lambda x: f(x, *f_args, **f_kwargs),
+        X,
+        Y,
+        C,
+        L,
+        epsilon=epsilon,
+        L_up=L_up,
+        L_dn=L_dn,
+        L_min=L_min,
+        L_max=L_max,
     )
-
-    L = L * backend.ones(B, device=backend.device(X), dtype=X.dtype)
     pending = None
     for _ in range(max_iter):
         X, L, chi2, done = _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max)
