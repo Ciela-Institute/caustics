@@ -1,4 +1,5 @@
 # mypy: disable-error-code="misc", disable-error-code="attr-defined"
+import weakref
 from math import pi, ceil
 from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
 from importlib import import_module
@@ -1579,6 +1580,101 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     return X, L, chi2
 
 
+def _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max):
+    # One iteration and its termination test, jitted together under jax.
+    Xnew, L, chi2 = v_lm_step(X, Y, Cinv, L)
+    step = backend.max(backend.abs(Xnew - X), dim=-1)
+
+    # Termination is per element, then reduced -- never a majority vote.
+    # Elements are mathematically independent and only the loop is shared, so
+    # a criterion that stops the batch while any element is still descending
+    # makes that element's answer depend on the company it keeps.
+    #
+    # A small step alone does not mean converged. `_lm_step` leaves `X`
+    # exactly unchanged when it rejects a trial step, so an element whose
+    # steps are being rejected -- precisely one that needs more iterations --
+    # reports a zero step. The conjunction with `L < 1e-2` is what separates
+    # the two: low damping is only reached through a run of *accepted* steps,
+    # while a rejecting element multiplies its `L` by `L_up` every iteration
+    # and climbs away from the threshold.
+    #
+    # An element already at its root also rejects (its gradient and step both
+    # vanish, so `rho` is 0/0), which walks its `L` up to `L_max`. That is why
+    # exhaustion counts as done: it is how a converged element that finished
+    # early keeps the loop from spinning until `max_iter` while a slower one
+    # is still working. Either way `X` no longer moves.
+    converged = (step < stopping) & (L < 1e-2)
+    return Xnew, L, chi2, backend.all(converged | (L >= L_max))
+
+
+# One compiled program per `f`. A `WeakKeyDictionary` holds `f` only through
+# `weakref.ref`, so a cached solve never outlives the `f` it was built for.
+_SOLVES: "weakref.WeakKeyDictionary[Callable, Callable]" = weakref.WeakKeyDictionary()
+
+
+def _jitted_solve(f):
+    solve = _SOLVES.get(f)
+    if solve is not None:
+        return solve
+
+    # The closure below must not hold `f` itself: a value that references its
+    # own key keeps that key alive forever in a `WeakKeyDictionary`.
+    f_ref = weakref.ref(f)
+
+    def solve(X, Y, C, L, f_args, f_kwargs, *, epsilon, L_up, L_dn, max_iter, L_min, L_max, stopping):  # fmt: skip
+        if C is None:
+            Cinv = backend.ones_like(Y)
+        elif C.ndim == 2:
+            Cinv = 1 / C
+        else:
+            Cinv = backend.linalg.inv(C)
+        Cinv = backend.to(Cinv, dtype=X.dtype)
+
+        v_lm_step = backend.vmap(
+            partial(
+                _lm_step,
+                lambda x: f_ref()(x, *f_args, **f_kwargs),
+                Lup=L_up,
+                Ldn=L_dn,
+                epsilon=epsilon,
+                L_min=L_min,
+                L_max=L_max,
+            )
+        )
+
+        L = L * backend.ones(X.shape[0], device=backend.device(X), dtype=X.dtype)
+        chi2 = backend.zeros(X.shape[0], dtype=X.dtype)
+        done = backend.as_array(False)
+        i = backend.as_array(0)
+
+        def cond(carry):
+            i, X, L, chi2, done = carry
+            return (i < max_iter) & ~done
+
+        def body(carry):
+            i, X, L, chi2, done = carry
+            X, L, chi2, done = _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max)
+            return i + 1, X, L, chi2, done
+
+        _, X, L, chi2, _ = backend.while_loop(cond, body, (i, X, L, chi2, done))
+        return X, L, chi2
+
+    solve = backend.jit(
+        solve,
+        static_argnames=(
+            "epsilon",
+            "L_up",
+            "L_dn",
+            "max_iter",
+            "L_min",
+            "L_max",
+            "stopping",
+        ),
+    )
+    _SOLVES[f] = solve
+    return solve
+
+
 def batch_lm(
     X,  # B, Din
     Y,  # B, Dout
@@ -1594,13 +1690,44 @@ def batch_lm(
     stopping=1e-4,
     f_args=(),
     f_kwargs={},
-    jit=False,  # jit each iteration over a padded batch (jax): f is traced once per call
+    jit=False,  # jax: solve once under jit, cached per f; f_args/f_kwargs are traced inputs
 ):
     B, Din = X.shape
     B, Dout = Y.shape
 
     if len(X) != len(Y):
         raise ValueError("x and y must having matching batch dimension")
+
+    if jit and backend.compiles:
+        # One compiled solve per `f`, cached in `_SOLVES`: the LM settings are
+        # static arguments and the batch is padded to one of a few sizes, so
+        # the program compiles once per (f, size) pair rather than once per
+        # call. `f_args`/`f_kwargs` are traced inputs, so new parameter
+        # values reuse the cached solve instead of retracing it. Padded rows
+        # repeat the last one and finish with it.
+        padded = backend.padded_size(B)
+        Xp, Yp = backend.pad_rows(X, padded), backend.pad_rows(Y, padded)
+        Cp = backend.pad_rows(C, padded) if C is not None else None
+        X, L, chi2 = _jitted_solve(f)(
+            Xp,
+            Yp,
+            Cp,
+            L,
+            f_args,
+            f_kwargs,
+            epsilon=epsilon,
+            L_up=L_up,
+            L_dn=L_dn,
+            max_iter=max_iter,
+            L_min=L_min,
+            L_max=L_max,
+            stopping=stopping,
+        )
+        return (
+            backend.unpad_rows(X, B),
+            backend.unpad_rows(L, B),
+            backend.unpad_rows(chi2, B),
+        )
 
     if C is None:
         C = backend.ones_like(Y)
@@ -1609,14 +1736,6 @@ def batch_lm(
     else:
         Cinv = backend.linalg.inv(C)
     Cinv = backend.to(Cinv, dtype=X.dtype)
-
-    # Jitted under jax, the batch is padded to one of a few sizes, so the step
-    # compiles once per size. Padded rows repeat the last one and finish with it.
-    # Not by default: a caller handing over a fresh `f` every call would
-    # compile the step anew each time.
-    padded = backend.padded_size(B) if jit else B
-    if padded > B:
-        X, Y, Cinv = (backend.pad_rows(a, padded) for a in (X, Y, Cinv))
 
     v_lm_step = backend.vmap(
         partial(
@@ -1630,43 +1749,17 @@ def batch_lm(
         )
     )
 
-    # One iteration and its termination test, jitted together under jax.
-    def iterate(X, Y, Cinv, L):
-        Xnew, L, C = v_lm_step(X, Y, Cinv, L)
-        step = backend.max(backend.abs(Xnew - X), dim=-1)
-
-        # Termination is per element, then reduced -- never a majority vote.
-        # Elements are mathematically independent and only the loop is shared, so
-        # a criterion that stops the batch while any element is still descending
-        # makes that element's answer depend on the company it keeps.
-        #
-        # A small step alone does not mean converged. `_lm_step` leaves `X`
-        # exactly unchanged when it rejects a trial step, so an element whose
-        # steps are being rejected -- precisely one that needs more iterations --
-        # reports a zero step. The conjunction with `L < 1e-2` is what separates
-        # the two: low damping is only reached through a run of *accepted* steps,
-        # while a rejecting element multiplies its `L` by `L_up` every iteration
-        # and climbs away from the threshold.
-        #
-        # An element already at its root also rejects (its gradient and step both
-        # vanish, so `rho` is 0/0), which walks its `L` up to `L_max`. That is why
-        # exhaustion counts as done: it is how a converged element that finished
-        # early keeps the loop from spinning until `max_iter` while a slower one
-        # is still working. Either way `X` no longer moves.
-        converged = (step < stopping) & (L < 1e-2)
-        return Xnew, L, C, backend.all(converged | (L >= L_max))
-
-    if jit:
-        iterate = backend.jit(iterate)
-    L = L * backend.ones(padded, device=backend.device(X), dtype=X.dtype)
+    L = L * backend.ones(B, device=backend.device(X), dtype=X.dtype)
+    pending = None
     for _ in range(max_iter):
-        X, L, C, done = iterate(X, Y, Cinv, L)
-        if done:
+        X, L, chi2, done = _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max)
+        # Read the previous iteration's flag, copied while this one ran:
+        # waiting on this iteration's own flag would stall the device.
+        if pending is not None and backend.read_flag(pending):
             break
+        pending = backend.flag_to_host(done)
 
-    if padded > B:
-        X, L, C = X[:B], L[:B], C[:B]
-    return X, L, C
+    return X, L, chi2
 
 
 def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=backend.float32, device=None):

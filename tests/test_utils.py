@@ -1,7 +1,11 @@
+import gc
+import weakref
+
 import numpy as np
 import pytest
 from astropy.wcs import WCS
 
+import caustics.utils as utils
 from caustics.utils import (
     batch_lm,
     meshgrid,
@@ -14,6 +18,7 @@ from caustics.utils import (
 )
 from caustics.constants import arcsec_to_deg
 from caustics.backend_obj import backend
+from jax_compiles import compile_count
 
 _sip_powers = (
     (0, 2),
@@ -387,3 +392,67 @@ def test_batch_lm_runs_eagerly_unless_asked_to_jit():
     before = len(compiles)
     _solve([[-1.2, 1.0], [0.99, 0.99]])
     assert len(compiles) == before
+
+
+def _offset_rosenbrock(x, a):
+    """`_rosenbrock` with its root moved to ``(1, 1) + a``."""
+    return _rosenbrock(x - a)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_batch_lm_reads_each_done_flag_one_iteration_late(monkeypatch, jit):
+    """The Python loop never waits on the iteration it just launched: it stops
+    one iteration after the first whose batch is done."""
+    if jit and backend.backend == "jax":
+        pytest.skip("under jax a jitted solve loops on the device")
+    dones = []
+    iterate = utils._iterate
+
+    def spy(*args):
+        out = iterate(*args)
+        dones.append(bool(backend.to_numpy(out[-1])))
+        return out
+
+    monkeypatch.setattr(utils, "_iterate", spy)
+    _solve([[-1.2, 1.0], [0.99, 0.99]], jit=jit)
+    assert True in dones
+    assert len(dones) == min(dones.index(True) + 2, 50)
+
+
+@pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
+def test_batch_lm_reuses_its_compiled_solve_for_new_f_args():
+    starts = np.asarray([[-1.2, 1.0], [0.99, 0.99]])
+    X0, X1 = backend.to(starts), backend.to(starts + 0.5)
+    Y = backend.to(np.zeros((2, 2)))
+    a0, a1 = backend.to(np.zeros(2)), backend.to(np.full(2, 0.5))
+    batch_lm(X0, Y, _offset_rosenbrock, f_args=(a0,), jit=True)
+    before = compile_count()
+    root, _, _ = batch_lm(X1, Y, _offset_rosenbrock, f_args=(a1,), jit=True)
+    assert compile_count() == before
+    np.testing.assert_allclose(backend.to_numpy(root), 1.5, atol=1e-4)
+
+
+@pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
+def test_batch_lm_compiles_nothing_for_a_new_batch_size_that_pads_alike():
+    def put(starts):
+        return backend.to(np.asarray(starts)), backend.to(np.zeros((len(starts), 2)))
+
+    batch_lm(*put([[-1.2, 1.0], [0.99, 0.99]]), _rosenbrock, jit=True)
+    X, Y = put([[-1.2, 1.0], [0.99, 0.99], [0.5, 0.5]])
+    before = compile_count()
+    root, L, chi2 = batch_lm(X, Y, _rosenbrock, jit=True)
+    assert compile_count() == before
+    assert tuple(root.shape) == (3, 2) and tuple(L.shape) == tuple(chi2.shape) == (3,)
+
+
+@pytest.mark.skipif(backend.backend != "jax", reason="only jax compiles")
+def test_batch_lm_frees_its_compiled_solve_with_f():
+    def f(x):
+        return _rosenbrock(x)
+
+    X, Y = backend.to(np.asarray([[-1.2, 1.0]])), backend.to(np.zeros((1, 2)))
+    batch_lm(X, Y, f, jit=True)
+    ref = weakref.ref(f)
+    del f
+    gc.collect()
+    assert ref() is None
