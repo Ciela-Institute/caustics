@@ -1,10 +1,9 @@
 from warnings import warn
-from typing import Tuple
 
 from caskade import forward
 
-from .base import ThinLens, CosmologyType, NameType, ZType
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("SinglePlane",)
 
@@ -30,7 +29,7 @@ class SinglePlane(ThinLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        lenses: Tuple[ThinLens],
+        lenses: tuple[ThinLens],
         name: NameType = None,
         z_l: ZType = None,
         z_s: ZType = None,

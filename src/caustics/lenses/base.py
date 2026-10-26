@@ -1,24 +1,24 @@
 # mypy: disable-error-code="call-overload"
-from abc import abstractmethod
-from typing import Optional, Union, Annotated
 import warnings
+from abc import abstractmethod
+from typing import Annotated
 
 from caskade import Module, Param, forward
 
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..cosmology import Cosmology
-from .utils import magnification
 from . import func
+from .utils import magnification
 
-__all__ = ("ThinLens", "ThickLens")
+__all__ = ("ThickLens", "ThinLens")
 
 CosmologyType = Annotated[
     Cosmology,
     "Cosmology object that encapsulates cosmological parameters and distances",
 ]
-NameType = Annotated[Optional[str], "Name of the lens model"]
+NameType = Annotated[str | None, "Name of the lens model"]
 ZType = Annotated[
-    Optional[Union[ArrayLike, float]],
+    ArrayLike | float | None,
     "The redshift of an object in the lens system",
     True,
 ]
@@ -87,14 +87,14 @@ class Lens(Module):
         x: ArrayLike,
         y: ArrayLike,
         method="autograd",
-        pixelscale: Optional[ArrayLike] = None,
+        pixelscale: ArrayLike | None = None,
     ):
         """
         General shear calculation for a lens model using the jacobian of the
         lens equation. Individual lenses may implement more efficient methods.
         """
         A = self.jacobian_lens_equation(x, y, method=method, pixelscale=pixelscale)
-        I = backend.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
+        I = backend.eye(2, device=A.device, dtype=A.dtype).reshape(
             *[1] * len(A.shape[:-2]), 2, 2
         )
         negPsi = (
@@ -142,8 +142,8 @@ class Lens(Module):
         bx: ArrayLike,
         by: ArrayLike,
         epsilon: float = 1e-3,
-        x0: Optional[ArrayLike] = None,
-        y0: Optional[ArrayLike] = None,
+        x0: ArrayLike | None = None,
+        y0: ArrayLike | None = None,
         fov: float = 5.0,
         divisions: int = 100,
         max_depth: int = 25,
@@ -469,7 +469,7 @@ class ThickLens(Lens):
         self,
         x: ArrayLike,
         y: ArrayLike,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the effective reduced deflection angle vector field.
@@ -626,7 +626,7 @@ class ThinLens(Lens):
 
     @forward
     def reduced_deflection_angle(
-        self, x: ArrayLike, y: ArrayLike, chunk_size: Optional[int] = None
+        self, x: ArrayLike, y: ArrayLike, chunk_size: int | None = None
     ) -> tuple[ArrayLike, ArrayLike]:
         """
         Computes the reduced deflection angle of the lens at given coordinates [arcsec].
@@ -715,7 +715,7 @@ class ThinLens(Lens):
         self,
         x: ArrayLike,
         y: ArrayLike,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
         *args,
         **kwargs,
     ) -> ArrayLike:
@@ -972,7 +972,7 @@ class ThinLens(Lens):
         self,
         x: ArrayLike,
         y: ArrayLike,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the deflection angle vector.
@@ -995,7 +995,7 @@ class ThinLens(Lens):
         y: ArrayLike,
         method="autograd",
         pixelscale=None,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ) -> tuple[tuple[ArrayLike, ArrayLike], tuple[ArrayLike, ArrayLike]]:
         """
         Return the jacobian of the deflection angle vector.

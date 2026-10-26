@@ -1,12 +1,12 @@
-from typing import Annotated, Tuple
 from operator import itemgetter
+from typing import Annotated
 from warnings import warn
 
 from caskade import forward
 
-from ..backend_obj import backend, ArrayLike
-from ..constants import arcsec_to_rad, rad_to_arcsec, c_Mpc_s, days_to_seconds
-from .base import ThickLens, ThinLens, NameType, CosmologyType, ZType
+from ..backend_obj import ArrayLike, backend
+from ..constants import arcsec_to_rad, c_Mpc_s, days_to_seconds, rad_to_arcsec
+from .base import CosmologyType, NameType, ThickLens, ThinLens, ZType
 
 __all__ = ("Multiplane",)
 
@@ -35,7 +35,7 @@ class Multiplane(ThickLens):
     def __init__(
         self,
         cosmology: CosmologyType,
-        lenses: Tuple[ThinLens],
+        lenses: tuple[ThinLens],
         name: NameType = None,
         z_s: ZType = None,
     ):
@@ -204,7 +204,7 @@ class Multiplane(ThickLens):
         ----------
         1. Margarita Petkova, R. Benton Metcalf, and Carlo Giocoli. 2014. GLAMER II: multiple-plane lensing. MNRAS 445, 1954-1966. DOI:https://doi.org/10.1093/mnras/stu1860
 
-        """  # noqa: E501
+        """
         return self._raytrace_helper(
             x,
             y,

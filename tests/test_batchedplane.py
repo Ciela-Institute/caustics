@@ -1,9 +1,9 @@
 from math import pi
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, BatchedPlane
 from caustics.utils import meshgrid
-from caustics.backend_obj import backend
 
 
 def test_batchedplane():
