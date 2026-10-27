@@ -174,12 +174,11 @@ class Lens(Module):
         the parameter values of this call.
 
         The center of every component, ``self.component_centers()``, is given
-        a hole, and so is each of ``centers``. A hole drops no image. Where the
-        lens map is smooth, as at a shear's, a mass sheet's or a cored
-        profile's center, its hole curve is a speck and never a
-        pseudo-caustic, so the hole changes only a critical curve crossing its
-        disk, which is re-joined round it. A component centered near or
-        outside ``fov`` widens it.
+        a hole, and so is each of ``centers``. Where the lens map is smooth, as
+        at a shear's, a mass sheet's or a cored profile's center, its hole
+        curve is a speck and never a pseudo-caustic, so the hole changes only a
+        critical curve crossing its disk, which is re-joined round it. A
+        component centered near or outside ``fov`` widens it.
 
         Under jax, the map and its Jacobian run through :func:`~caustics.jit_forward`,
         compiled once per lens object and padded batch size and reused at
