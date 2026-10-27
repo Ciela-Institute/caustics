@@ -12,7 +12,7 @@ lens calls, except for root finding: every image of a source
 :func:`magnification_region` gives the region of the source plane between
 two total magnifications, its contours and its area.
 
-The modules, lowest layer first; each imports only from those before it:
+The modules, lowest layer first:
 
 - :mod:`.mesh_backend` -- the backend the bookkeeping runs on, and
   conversions to and from the user's.
