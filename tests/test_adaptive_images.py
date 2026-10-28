@@ -35,6 +35,8 @@ from adaptive_maps import (
     localised_fold,
     localised_fold_jacobian,
     localised_fold_xy,
+    point_mass,
+    power_law_lens,
     SIE_LIKE_LENS,
     sis,
     SIS_LENS,
@@ -270,6 +272,42 @@ def test_forward_raytrace_finds_every_sis_inner_image_beyond_min_img_sep():
     ), f"{len(missed)} of 600 inner images missed, at k = {np.round(k[missed], 3).tolist()[:10]}"
 
 
+def test_forward_raytrace_finds_every_image_just_outside_a_center_steeper_than_isothermal():
+    """Every image just outside the center's hole of a power law of slope ``t = 1.2`` comes back.
+
+    Its deflection, ``r**-0.2``, diverges at the center, so the leaves there
+    are non-finite and left out of the index. The leaves sharing a vertex
+    with them have a large ``sigma_min``, so they converge although their
+    source images bulge far past their straight edges -- on the side of the
+    leaves left out, where no indexed triangle covers the bulge. The images
+    lie ``0.5`` to ``1.5`` times ``min_img_sep`` from the center, just
+    outside its hole. Growing only the leaves that did not converge misses
+    9 of these 1000.
+    """
+    sep = 0.05
+    lens_ = power_law_lens(1.2)
+    mesh = build_lens_mesh(
+        lens_.raytrace,
+        lens_.jacobian_lens_equation,
+        fov=8.0,
+        init_res=8,
+        min_img_sep=sep,
+        centers=[[0.0, 0.0]],
+    )
+    rng = np.random.default_rng(3)
+    r = rng.uniform(0.5, 1.5, 1000) * sep
+    phi = rng.uniform(0.0, 2 * np.pi, 1000)
+    theta = r[:, None] * np.stack((np.cos(phi), np.sin(phi)), axis=-1)
+    bx, by = lens_.raytrace(
+        backend.as_array(theta[:, 0]), backend.as_array(theta[:, 1])
+    )
+    images, counts = fr(mesh, np.stack((to_np(bx), to_np(by)), axis=-1), lens_.raytrace)
+    missed = _missed(images, counts, theta, sep / 4)
+    assert (
+        not missed
+    ), f"{len(missed)} of 1000 images missed, at r / min_img_sep = {np.round(r[missed] / sep, 3).tolist()[:10]}"
+
+
 def test_forward_raytrace_finds_every_sie_image_beyond_min_img_sep_of_a_critical_curve(
     sie,
 ):
@@ -442,7 +480,7 @@ def test_query_hits_a_failing_leaf_within_its_deviation_at_its_nearest_point(mes
     """A point just outside a non-converged leaf's source triangle, within its
     deviation, hits the leaf, with the coordinates of the triangle's nearest point."""
     status = leaf_status(mesh)
-    grow = to_np(leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin))
+    grow = to_np(leaf_grow(mesh))
     vs, leaves = to_np(mesh.vertices_source), to_np(mesh.leaves)
     tri = vs[leaves]
     edge = np.linalg.norm(tri[:, 1] - tri[:, 0], axis=1)
@@ -467,6 +505,42 @@ def test_query_hits_a_failing_leaf_within_its_deviation_at_its_nearest_point(mes
         j = off[k] + int(np.flatnonzero(block == leaf)[0])
         assert (bary[j] >= 0).all() and np.isclose(bary[j].sum(), 1.0)
         assert np.allclose(bary[j] @ tri[leaf], mid[k], rtol=0, atol=1e-9)
+
+
+def test_query_returns_a_leaf_holding_each_point_next_to_the_leaves_left_out_of_the_index():
+    """Every point of a leaf sharing a vertex with a non-finite leaf is queried back to a leaf holding it.
+
+    Next to a point mass ``sigma_min`` is large, so the leaves around its
+    non-finite center converge although their source images bulge far past
+    their straight edges, into the images of the center's leaves, which are
+    left out of the index. Forty points in each such leaf; growing only the
+    leaves that did not converge returns no leaf holding 165 of these 720.
+    """
+    fn, jac = point_mass()
+    mesh, _ = build(fn, jac, min_img_sep=0.2, centers=[[0.0, 0.0]])
+    status = leaf_status(mesh)
+    vl, leaves = to_np(mesh.vertices_lens), to_np(mesh.leaves)
+    out = (status & NONFINITE) != 0
+    ring = np.flatnonzero(~out & np.isin(leaves, leaves[out]).any(axis=1))
+    assert (
+        status[ring] == LEAF_CONVERGED
+    ).any(), "fixture must converge next to the center"
+    w = np.random.default_rng(8).dirichlet((1.0, 1.0, 1.0), (ring.size, 40))
+    theta = np.einsum("lnk,lkd->lnd", w, vl[leaves[ring]]).reshape(-1, 2)
+    idx, off, _ = query_np(mesh, fn(theta))
+    owner = np.repeat(np.arange(theta.shape[0]), np.diff(off))
+    held = to_np(
+        contains(
+            triangle_weights(
+                mesh_backend.as_array(vl[leaves[idx]]),
+                mesh_backend.as_array(theta[owner]),
+            )
+        )
+    )
+    unheld = np.setdiff1d(np.arange(theta.shape[0]), owner[held])
+    assert (
+        unheld.size == 0
+    ), f"no queried leaf holds {unheld.size} of {theta.shape[0]} points"
 
 
 def test_query_handles_empty_input_and_misses():
@@ -539,7 +613,7 @@ def test_bary_reconstructs_beta_on_every_hit_leaf():
         "fixture produced a degenerate contained leaf; the ~good branch needs writing"
     )
     assert np.allclose(recon[inside], beta[owner][inside], atol=1e-8)
-    grow = to_np(leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin))
+    grow = to_np(leaf_grow(mesh))
     assert (
         np.linalg.norm(recon[~inside] - beta[owner][~inside], axis=1)
         <= grow[idx[~inside]] + 1e-12
@@ -634,7 +708,7 @@ def test_dedup_keeps_exactly_one_point_per_singleton_block():
 
 
 def test_index_hits_are_the_query_hits_with_raw_weights(mesh, beta):
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
+    grow = leaf_grow(mesh)
     qidx, tri, w = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, beta, grow)
     idx, off, _ = mesh_query(mesh, beta)
     counts = np.diff(to_np(off))

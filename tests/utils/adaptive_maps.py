@@ -222,6 +222,28 @@ SIE_LIKE_LENS = lens(_sie_like_xy, _sie_like_jacobian_xy)
 SIS_LENS = lens(_sis_xy, _sis_jacobian_xy)
 
 
+def power_law_lens(t, b=1.0):
+    """
+    A circular power law of Einstein radius ``b`` and slope ``t``, backend-native.
+
+    The deflection is ``b**t r**(1 - t)`` toward the center: ``t = 1`` is
+    the SIS, and ``t > 1`` is steeper, diverging at the center, where the
+    map is non-finite.
+    """
+
+    def raytrace(x, y):
+        k = b**t * (x * x + y * y) ** (-t / 2)
+        return x - k * x, y - k * y
+
+    def jacobian(x, y):
+        r2 = x * x + y * y
+        k = b**t * r2 ** (-t / 2)
+        c = t * k / r2
+        return stack_2x2(1.0 - k + c * x * x, c * x * y, c * x * y, 1.0 - k + c * y * y)
+
+    return lens(raytrace, jacobian)
+
+
 def collapse(p):
     """A ``kappa == 1`` sheet: the whole lens plane maps to one point."""
     return np.zeros_like(p)

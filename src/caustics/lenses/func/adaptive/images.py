@@ -30,7 +30,8 @@ def mesh_query(mesh, beta):
     """
     Leaves whose source-plane triangle contains each point, or reaches it.
 
-    A leaf that did not converge reaches its deviation beyond its triangle
+    A leaf that did not converge, or that shares a vertex with a leaf left
+    out of the index, reaches its deviation beyond its triangle
     (:func:`~.lens_mesh.leaf_grow`): near a lens center or a fold its true
     image bulges past the straight-edged one. A point on an edge two leaves
     share returns both, and leaves near a critical curve overlap, so the
@@ -57,9 +58,8 @@ def mesh_query(mesh, beta):
     """
     device = mesh_backend.device(mesh.vertices_lens)
     beta = mesh_backend.as_array(beta, dtype=mesh_backend.float64, device=device)
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
     qidx, leaves, w = index_hits(
-        mesh.index, mesh.vertices_source, mesh.leaves, beta, grow
+        mesh.index, mesh.vertices_source, mesh.leaves, beta, leaf_grow(mesh)
     )
     tri = mesh.vertices_source[mesh.leaves[leaves]]
     inside = contains(w)
@@ -297,8 +297,9 @@ def forward_raytrace(
     Lens-plane positions of every image of each source-plane point.
 
     Each leaf with a finite raytrace and Jacobian whose source-plane
-    triangle contains the point, or, for a leaf that did not converge,
-    reaches it (:func:`mesh_query`), seeds Levenberg-Marquardt
+    triangle contains the point, or, for a leaf that did not converge or
+    that shares a vertex with a non-finite one, reaches it
+    (:func:`mesh_query`), seeds Levenberg-Marquardt
     (:func:`~caustics.utils.batch_lm`) with the preimage under the leaf's
     affine map. A root is kept when it maps to within ``residual_tol`` of
     the point and lies in its seed's leaf or within ``max(r, min_img_sep)``

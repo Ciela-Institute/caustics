@@ -79,8 +79,10 @@ class LensMesh(NamedTuple):
     level straddles a fold, a critical curve or a lens center the mesh
     cannot resolve; its source triangle is queried grown by its deviation
     (:func:`leaf_grow`), and ``forward_raytrace`` accepts its roots further
-    from their seeds. The pre-closure leaves -- the origins -- are kept with
-    their level, class and status, which is what an extension refines from.
+    from their seeds. The source triangle of a leaf sharing a vertex with
+    one left out of the index is grown too, converged or not. The
+    pre-closure leaves -- the origins -- are kept with their level, class
+    and status, which is what an extension refines from.
 
     Parameters
     ----------
@@ -202,20 +204,49 @@ def make_sampler(raytrace, jacobian, device, batch_size=None):
     return sample
 
 
-def leaf_grow(origin_status, origin_deviation, leaf_origin):
+def finite_leaves(mesh):
+    """True where a leaf's origin has a finite raytrace and Jacobian, ``(L,)``: the leaves ``mesh.index`` holds."""
+    return (
+        mesh.origin_status[mesh.leaf_origin]
+        & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)
+    ) == 0
+
+
+def leaf_grow(mesh):
     """
     How far each leaf's source-plane triangle reaches beyond itself when queried, ``(L,)``.
 
-    A leaf whose origin did not converge reaches its origin's largest
-    midpoint deviation: about how far the true image of one of its edges
-    bulges from the straight one. A converged leaf reaches no further than
-    its triangle.
+    A leaf reaches its origin's largest midpoint deviation -- about how far
+    the true image of one of its edges bulges from the straight one --
+    where its origin did not converge, or where it shares a vertex with a
+    leaf left out of the index (:func:`finite_leaves`). Elsewhere a
+    converged leaf reaches no further than its triangle: its image bulges
+    past an edge into the indexed triangle across it. Beside a leaf left
+    out, no indexed triangle lies there, and next to a lens center steeper
+    than isothermal ``sigma_min`` is large enough that a leaf converges
+    with a deviation far above ``min_img_sep``. :func:`_mesh_index` and
+    :func:`~.images.mesh_query` both read it, so the index registers each
+    leaf as far as a query reaches.
 
     *Unit: arcsec*
     """
-    return mesh_backend.where(origin_status == LEAF_CONVERGED, 0.0, origin_deviation)[
-        leaf_origin
-    ]
+    left_out = mesh.leaves[mesh_backend.flatnonzero(~finite_leaves(mesh))]
+    at_left_out = mesh_backend.fill_at_indices(
+        mesh_backend.zeros(
+            (mesh.vertices_lens.shape[0],),
+            dtype=mesh_backend.bool,
+            device=mesh_backend.device(mesh.leaves),
+        ),
+        left_out.reshape(-1),
+        True,
+    )
+    beside = mesh_backend.any(at_left_out[mesh.leaves], dim=1)
+    status = mesh.origin_status[mesh.leaf_origin]
+    return mesh_backend.where(
+        (status == LEAF_CONVERGED) & ~beside,
+        0.0,
+        mesh.origin_deviation[mesh.leaf_origin],
+    )
 
 
 def _lens_split(h0, min_img_sep):
@@ -423,13 +454,10 @@ def _freeze(lat, cache, store, rows, sample, min_img_sep, holes, batch_size, see
 
 def _mesh_index(mesh):
     """``mesh.index``: over the source-plane images of the leaves whose origin is finite, each grown by :func:`leaf_grow`."""
-    finite = (
-        mesh.origin_status[mesh.leaf_origin]
-        & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)
-    ) == 0
-    indexed = mesh_backend.flatnonzero(finite)
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
-    return build_index(mesh.vertices_source, mesh.leaves, indexed, grow[indexed])
+    indexed = mesh_backend.flatnonzero(finite_leaves(mesh))
+    return build_index(
+        mesh.vertices_source, mesh.leaves, indexed, leaf_grow(mesh)[indexed]
+    )
 
 
 def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):

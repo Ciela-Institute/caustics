@@ -5,6 +5,7 @@ import pytest
 
 from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
+from caustics.lenses.func.adaptive.criterion import LEAF_CONVERGED
 from caustics.lenses.func.adaptive.geometry import triangle_weights
 from caustics.lenses.func.adaptive.index import (
     CELLS_PER_BOX,
@@ -294,7 +295,7 @@ def point_mesh():
 
 def _hits_against_brute_force(mesh, points):
     """``index_hits`` on ``mesh`` at ``points``, asserted equal to brute force over every finite leaf."""
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
+    grow = leaf_grow(mesh)
     rows = i64(finite_rows(mesh))
     got = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, points, grow)
     assert_hits_equal(
@@ -328,6 +329,33 @@ def test_index_hits_equal_brute_force_on_a_point_mass_mesh(point_mesh):
     assert to_np(qidx).size > 0
 
 
+def test_index_hits_equal_brute_force_beside_the_leaves_left_out_of_a_point_mass_mesh(
+    point_mesh,
+):
+    """Just beyond the source triangles of the leaves sharing a vertex with a non-finite one, which reach beyond them though they converge.
+
+    Each vertex of such a triangle is pushed half its reach away from the
+    triangle's centroid: outside the triangle, within its reach.
+    """
+    rows = finite_rows(point_mesh)
+    leaves = to_np(point_mesh.leaves)
+    out = np.setdiff1d(np.arange(leaves.shape[0]), rows)
+    beside = rows[np.isin(leaves[rows], leaves[out]).any(axis=1)]
+    status = to_np(point_mesh.origin_status)[to_np(point_mesh.leaf_origin)]
+    assert (
+        status[beside] == LEAF_CONVERGED
+    ).any(), "fixture must converge next to the center"
+    reach = to_np(leaf_grow(point_mesh))[beside]
+    tri = to_np(point_mesh.vertices_source)[leaves[beside]]
+    away = tri - tri.mean(axis=1, keepdims=True)
+    away /= np.linalg.norm(away, axis=-1, keepdims=True)
+    points = (tri + 0.5 * reach[:, None, None] * away).reshape(-1, 2)
+    qidx, hit, _ = _hits_against_brute_force(point_mesh, f64(points))
+    qidx, hit = to_np(qidx), to_np(hit)
+    owner = np.repeat(beside, 3)
+    assert all(owner[k] in hit[qidx == k] for k in range(owner.size))
+
+
 def test_point_mass_candidates_average_at_most_three_times_the_box_floor(point_mesh):
     """Near a point mass's caustic, candidates per point average at most three times the floor.
 
@@ -341,13 +369,7 @@ def test_point_mass_candidates_average_at_most_three_times_the_box_floor(point_m
     """
     rows = finite_rows(point_mesh)
     vs, leaves = to_np(point_mesh.vertices_source), to_np(point_mesh.leaves)
-    grow = to_np(
-        leaf_grow(
-            point_mesh.origin_status,
-            point_mesh.origin_deviation,
-            point_mesh.leaf_origin,
-        )
-    )[rows]
+    grow = to_np(leaf_grow(point_mesh))[rows]
     tri = vs[leaves[rows]]
     box_lo, box_hi = tri.min(axis=1) - grow[:, None], tri.max(axis=1) + grow[:, None]
     beta = np.random.default_rng(41).uniform(-0.3, 0.3, (300, 2))
@@ -361,7 +383,7 @@ def test_point_mass_candidates_average_at_most_three_times_the_box_floor(point_m
 
 def test_index_hits_hold_at_most_pair_cap_pairs_per_step(mesh, beta, monkeypatch):
     """Each step of a query holds at most ``PAIR_CAP`` pairs, or one point holding more, and the hits do not change."""
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)
+    grow = leaf_grow(mesh)
     whole = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, beta, grow)
     steps = []
     chunk_hits = index_module._chunk_hits
@@ -390,7 +412,7 @@ def test_index_hits_hold_at_most_pair_cap_pairs_per_step(mesh, beta, monkeypatch
 def test_build_index_holds_at_most_entry_cap_entries_per_step(mesh, monkeypatch):
     """Each step of a build holds at most ``ENTRY_CAP`` entries, or one column of cells -- one level and x -- holding more, and the index does not change."""
     rows = i64(finite_rows(mesh))
-    grow = leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin)[rows]
+    grow = leaf_grow(mesh)[rows]
     steps = []
     chunk_cells = index_module._chunk_cells
 

@@ -224,13 +224,32 @@ def test_the_index_holds_exactly_the_leaves_with_a_finite_raytrace_and_jacobian(
 
 def test_leaf_grow_is_the_origin_s_deviation_where_it_did_not_converge(sie_mesh):
     mesh = sie_mesh
-    grow = to_np(leaf_grow(mesh.origin_status, mesh.origin_deviation, mesh.leaf_origin))
+    grow = to_np(leaf_grow(mesh))
     origin = to_np(mesh.leaf_origin)
     converged = to_np(mesh.origin_status)[origin] == LEAF_CONVERGED
     assert (grow[converged] == 0).all()
     deviation = to_np(mesh.origin_deviation)[origin]
     assert np.array_equal(grow[~converged], deviation[~converged])
     assert (grow[~converged] > 0).any()
+
+
+def test_leaf_grow_is_the_origin_s_deviation_beside_a_leaf_left_out_of_the_index():
+    """On every finite leaf sharing a vertex with a non-finite one, converged or not; elsewhere a converged leaf reaches nothing.
+
+    Next to a point mass ``sigma_min`` is large, so the leaves around its
+    non-finite center converge with deviations far above ``min_img_sep``.
+    """
+    mesh, _ = build(*point_mass(), min_img_sep=0.2, centers=[[0.0, 0.0]])
+    grow = to_np(leaf_grow(mesh))
+    status, leaves = leaf_status(mesh), to_np(mesh.leaves)
+    out = (status & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) != 0
+    beside = ~out & np.isin(leaves, leaves[out]).any(axis=1)
+    converged = status == LEAF_CONVERGED
+    assert (beside & converged).any(), "fixture must converge next to the center"
+    deviation = to_np(mesh.origin_deviation)[to_np(mesh.leaf_origin)]
+    assert np.array_equal(grow[beside], deviation[beside])
+    assert (deviation[beside & converged] > mesh.min_img_sep).all()
+    assert (grow[converged & ~beside] == 0).all()
 
 
 def test_build_halves_the_requested_min_img_sep():
