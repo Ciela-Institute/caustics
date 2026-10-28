@@ -104,7 +104,7 @@ def assert_same(a, b, path="mesh"):
 
     Two lattices are equal when they place every point alike: an extended
     lattice keeps its ``lo`` and shifts ``origin`` where a fresh one starts
-    at its own corner.
+    at its own corner. Like arrays, they are compared wherever they are.
     """
     a, b = to_mesh(a), to_mesh(b)
     from caustics.lenses.func.adaptive.lattice import Lattice, lattice_xy
@@ -112,11 +112,13 @@ def assert_same(a, b, path="mesh"):
     if isinstance(a, Lattice):
         assert (a.level, a.n, a.scale) == (b.level, b.n, b.scale), path
         corners = i64([[0, 0], [a.n, a.n], [a.n // 3, 2 * a.n // 3]])
-        np.testing.assert_array_equal(
-            to_np(lattice_xy(a, corners)),
-            to_np(lattice_xy(b, corners)),
-            err_msg=path,
-        )
+
+        def place(lat):
+            # lattice_xy takes ij on the device of lo, which is the mesh's.
+            ij = mesh_backend.to(corners, device=mesh_backend.device(lat.lo))
+            return to_np(lattice_xy(lat, ij))
+
+        np.testing.assert_array_equal(place(a), place(b), err_msg=path)
         return
     if isinstance(a, tuple) and hasattr(a, "_fields"):
         assert type(a) is type(b), path
