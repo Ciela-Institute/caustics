@@ -1577,7 +1577,8 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     chi2 = backend.where(rho > epsilon, chi2_new, chi2)
     L = backend.clamp(backend.where(rho >= epsilon, L / Ldn, L * Lup), L_min, L_max)
 
-    return X, L, chi2
+    # The step proposed, taken or not: what the termination test reads.
+    return X, L, chi2, backend.max(backend.abs(h))
 
 
 def _lm_setup(call, X, Y, C, L, *, epsilon, L_up, L_dn, L_min, L_max):
@@ -1607,33 +1608,43 @@ def _lm_setup(call, X, Y, C, L, *, epsilon, L_up, L_dn, L_min, L_max):
     return v_lm_step, Cinv, L
 
 
-def _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max):
+def _iterate(v_lm_step, X, Y, Cinv, L, chi2, converged, stopping, L_max):
     # One iteration and its termination test. Under jax with `jit=True` this
     # runs inside `_jitted_solve`'s compiled while-loop body; otherwise (jit
-    # False, or eager) it runs as plain Python, once per call.
-    Xnew, L, chi2 = v_lm_step(X, Y, Cinv, L)
-    step = backend.max(backend.abs(Xnew - X), dim=-1)
+    # False, or eager) it runs as plain Python, once per call. `converged`
+    # flags the elements that converged at an earlier iteration.
+    Xnew, Lnew, chi2new, step = v_lm_step(X, Y, Cinv, L)
 
     # Termination is per element, then reduced -- never a majority vote.
     # Elements are mathematically independent and only the loop is shared, so
     # a criterion that stops the batch while any element is still descending
     # makes that element's answer depend on the company it keeps.
     #
-    # A small step alone does not mean converged. `_lm_step` leaves `X`
-    # exactly unchanged when it rejects a trial step, so an element whose
-    # steps are being rejected -- precisely one that needs more iterations --
-    # reports a zero step. The conjunction with `L < 1e-2` is what separates
-    # the two: low damping is only reached through a run of *accepted* steps,
-    # while a rejecting element multiplies its `L` by `L_up` every iteration
-    # and climbs away from the threshold.
+    # An element converges when the step `_lm_step` proposed, taken or not,
+    # is below `stopping` while `L < 1e-2`. A rejected step leaves `X`
+    # exactly unchanged, so read off `X` it would be zero; and low damping
+    # outlasts the first few rejections after a run of accepted steps, so an
+    # element that rejects one large step -- near a point caustic, say, where
+    # the map is nearly flat one way -- would stop far from its root. The
+    # damping guards the other way: a heavily damped step is small however
+    # far the root is.
     #
-    # An element already at its root also rejects (its gradient and step both
-    # vanish, so `rho` is 0/0), which walks its `L` up to `L_max`. That is why
-    # exhaustion counts as done: it is how a converged element that finished
-    # early keeps the loop from spinning until `max_iter` while a slower one
-    # is still working. Either way `X` no longer moves.
-    converged = (step < stopping) & (L < 1e-2)
-    return Xnew, L, chi2, backend.all(converged | (L >= L_max))
+    # Convergence is sticky: an element keeps the `X`, `L` and `chi2` it
+    # converged with, and counts as done, for the rest of the loop. At its
+    # root it would reject nearly every step (its gradient and step both
+    # vanish, so `rho` is 0/0) and walk its `L` up and out of the converged
+    # state, reaching `L_max` 15 to 20 iterations on; an element that
+    # converged a few iterations before a slower one would keep the loop
+    # running until then. Freezing it, not just its flag, keeps its answer
+    # from depending on how long its company runs. Exhaustion, `L >= L_max`,
+    # counts as done too: it is how an element that stalls short of its root
+    # keeps the loop from spinning until `max_iter`.
+    frozen = backend.unsqueeze(converged, -1)
+    Xnew = backend.where(frozen, X, Xnew)
+    Lnew = backend.where(converged, L, Lnew)
+    chi2new = backend.where(converged, chi2, chi2new)
+    converged = converged | ((step < stopping) & (Lnew < 1e-2))
+    return Xnew, Lnew, chi2new, converged, backend.all(converged | (Lnew >= L_max))
 
 
 # One compiled program per `f`. A `WeakKeyDictionary` holds `f` only through
@@ -1673,19 +1684,23 @@ def _jitted_solve(f):
             L_max=L_max,
         )
         chi2 = backend.zeros(X.shape[0], dtype=X.dtype)
+        converged = backend.zeros(X.shape[0], dtype=backend.bool)
         done = backend.as_array(False)
         i = backend.as_array(0)
 
         def cond(carry):
-            i, X, L, chi2, done = carry
+            i, X, L, chi2, converged, done = carry
             return (i < max_iter) & ~done
 
         def body(carry):
-            i, X, L, chi2, done = carry
-            X, L, chi2, done = _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max)
-            return i + 1, X, L, chi2, done
+            i, X, L, chi2, converged, done = carry
+            X, L, chi2, converged, done = _iterate(
+                v_lm_step, X, Y, Cinv, L, chi2, converged, stopping, L_max
+            )
+            return i + 1, X, L, chi2, converged, done
 
-        _, X, L, chi2, _ = backend.while_loop(cond, body, (i, X, L, chi2, done))
+        carry = (i, X, L, chi2, converged, done)
+        _, X, L, chi2, _, _ = backend.while_loop(cond, body, carry)
         return X, L, chi2
 
     solve = backend.jit(
@@ -1777,9 +1792,13 @@ def batch_lm(
         L_min=L_min,
         L_max=L_max,
     )
+    chi2 = backend.zeros(X.shape[0], dtype=X.dtype, device=backend.device(X))
+    converged = backend.zeros(X.shape[0], dtype=backend.bool, device=backend.device(X))
     pending = None
     for _ in range(max_iter):
-        X, L, chi2, done = _iterate(v_lm_step, X, Y, Cinv, L, stopping, L_max)
+        X, L, chi2, converged, done = _iterate(
+            v_lm_step, X, Y, Cinv, L, chi2, converged, stopping, L_max
+        )
         # Read the previous iteration's flag, copied while this one ran:
         # waiting on this iteration's own flag would stall the device.
         if pending is not None and backend.read_flag(pending):

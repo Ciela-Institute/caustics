@@ -321,6 +321,81 @@ def test_batch_lm_is_independent_of_batch_composition():
         ), f"same element gave {alone} alone and {together} with {len(companions)} companions"
 
 
+# Alone, the first start converges at the 5th iteration and the second at the
+# 13th. At its root an element rejects nearly every step, and its damping
+# climbs by `L_up` each time: by the 13th the first has left the converged
+# state. Without sticky convergence a batch of both runs on until both reach
+# `L_max`, which counts as done, at the 33rd.
+STAGGERED = [[0.99, 0.99], [0.92, -1.3]]
+
+
+def _iterations(monkeypatch, starts, **kw):
+    """How many iterations ``batch_lm``'s Python loop runs on ``starts``."""
+    calls = []
+    iterate = utils._iterate
+    monkeypatch.setattr(utils, "_iterate", lambda *a: calls.append(None) or iterate(*a))
+    _solve(starts, **kw)
+    monkeypatch.setattr(utils, "_iterate", iterate)
+    return len(calls)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_batch_lm_stops_once_its_slowest_element_has_converged(monkeypatch, jit):
+    """A batch runs as many iterations as its slowest element alone, though the others converged iterations earlier."""
+    if jit and backend.backend == "jax":
+        pytest.skip("under jax a jitted solve loops on the device")
+    slowest = _iterations(monkeypatch, STAGGERED[1:], jit=jit)
+    assert _iterations(monkeypatch, STAGGERED[:1], jit=jit) < slowest
+    assert _iterations(monkeypatch, STAGGERED, jit=jit) == slowest
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_batch_lm_returns_each_element_as_it_returns_it_alone(jit):
+    """Root, damping and chi^2 alike, though the elements converge iterations apart.
+
+    Under jax with ``jit=True`` the loop runs on the device, so this is what
+    shows there that the batch does not keep stepping a converged element.
+    """
+
+    def lm(starts):
+        X = backend.as_array(np.asarray(starts, dtype=np.float64))
+        Y = backend.as_array(np.zeros((len(starts), 2)))
+        return [backend.to_numpy(a) for a in batch_lm(X, Y, _rosenbrock, jit=jit)]
+
+    together = lm(STAGGERED)
+    for k, start in enumerate(STAGGERED):
+        for name, alone, both in zip(("root", "L", "chi2"), lm([start]), together):
+            np.testing.assert_allclose(
+                both[k], alone[0], rtol=1e-12, atol=1e-30, err_msg=f"{name} of {start}"
+            )
+
+
+def _sis(x):
+    """Residuals of a singular isothermal sphere, ``x - x / |x|``, whose caustic is the point ``0``."""
+    r = backend.sqrt(x[..., 0] ** 2 + x[..., 1] ** 2)
+    return backend.stack((x[..., 0] - x[..., 0] / r, x[..., 1] - x[..., 1] / r), dim=-1)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_batch_lm_does_not_stop_on_a_rejected_step(jit):
+    """A rejected step leaves ``X`` where it was, which is no sign of a root.
+
+    ``beta = 1e-4 u`` has an image at ``(1 + 1e-4) u``, where the map is
+    nearly flat along the critical curve ``|x| = 1``. From a start rotated
+    ``1e-3`` off it along the curve, the solve rejects a step at a damping
+    far below ``1e-2`` and then crawls to the image; reading the unchanged
+    ``X`` of that rejection as a zero step stops it ``8e-4`` from the image.
+    """
+    t, u = 1e-4, np.array([np.cos(np.pi / 6), np.sin(np.pi / 6)])
+    image = (1 + t) * u
+    c, s = np.cos(1e-3), np.sin(1e-3)
+    start = np.array([[c, -s], [s, c]]) @ image
+    X, Y = backend.as_array(start[None]), backend.as_array((t * u)[None])
+    root, _, _ = batch_lm(X, Y, _sis, stopping=1e-10, jit=jit)
+    gap = np.linalg.norm(backend.to_numpy(root)[0] - image)
+    assert gap < 1e-8, f"stopped {gap:.3g} from the image"
+
+
 def test_batch_lm_returns_one_row_per_element_whatever_the_padding():
     """Under jax three elements run padded to 64 rows; three come back."""
     X = backend.as_array(np.asarray([[-1.2, 1.0], [0.99, 0.99], [0.5, 0.5]]))
