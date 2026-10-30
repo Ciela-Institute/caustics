@@ -1541,7 +1541,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     if Cinv.ndim == 1:
         chi2 = backend.sum(dY**2 * Cinv, -1)
     else:
-        chi2 = backend.sum(dY @ Cinv @ dY, -1)
+        chi2 = dY @ Cinv @ dY
 
     # Gradient
     if Cinv.ndim == 1:
@@ -1566,7 +1566,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     if Cinv.ndim == 1:
         chi2_new = backend.sum(dYnew**2 * Cinv, -1)
     else:
-        chi2_new = backend.sum(dYnew @ Cinv @ dYnew, -1)
+        chi2_new = dYnew @ Cinv @ dYnew
 
     # Test
     expected_improvement = backend.dot(h, hess @ h) + 2 * backend.dot(h, grad)

@@ -396,6 +396,35 @@ def test_batch_lm_does_not_stop_on_a_rejected_step(jit):
     assert gap < 1e-8, f"stopped {gap:.3g} from the image"
 
 
+def _twice(x):
+    """Residuals of two measurements of one number ``x``."""
+    return backend.stack((x[..., 0], x[..., 0]), dim=-1)
+
+
+@pytest.mark.parametrize(
+    "C, root",
+    [
+        ([[1.0, 4.0], [4.0, 1.0]], [2.2, 2.8]),
+        ([[[1.0, 1.0], [1.0, 4.0]], [[4.0, 1.0], [1.0, 1.0]]], [2.0, 3.0]),
+    ],
+    ids=["variances", "covariances"],
+)
+@pytest.mark.parametrize("jit", [False, True])
+def test_batch_lm_weighs_the_residuals_by_the_inverse_covariance(C, root, jit):
+    """Two elements, each measuring one number as ``(2, 3)``.
+
+    With variances ``(1, 4)`` the root is ``(2 + 3/4) / (1 + 1/4) = 2.2``,
+    with ``(4, 1)`` it is ``2.8``. With a covariance of 1 between the two,
+    ``1^T C^-1`` is ``(1, 0)`` for the first element and ``(0, 1)`` for the
+    second, so the other measurement adds nothing: the roots are 2 and 3.
+    """
+    X = backend.as_array(np.zeros((2, 1)))
+    Y = backend.as_array(np.full((2, 2), [2.0, 3.0]))
+    C = backend.as_array(np.asarray(C))
+    got, _, _ = batch_lm(X, Y, _twice, C=C, stopping=1e-10, jit=jit)
+    np.testing.assert_allclose(backend.to_numpy(got)[:, 0], root, atol=1e-6)
+
+
 def test_batch_lm_returns_one_row_per_element_whatever_the_padding():
     """Under jax three elements run padded to 64 rows; three come back."""
     X = backend.as_array(np.asarray([[-1.2, 1.0], [0.99, 0.99], [0.5, 0.5]]))
