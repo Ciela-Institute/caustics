@@ -24,7 +24,7 @@ def test_time_delay_pointsource(q, phi, bx, by):
     lens = caustics.SIE(
         cosmology=cosmo, z_l=z_l, z_s=z_s, x0=0.0, y0=0.0, q=q, phi=phi, Rein=1.0
     )
-    x, y = lens.forward_raytrace(bx, by)
+    x, y, _ = lens.forward_raytrace(bx, by, fov=5.0, init_res=32, min_img_sep=1e-2)
 
     # Define lenstronomy lens
     lens_model_list = ["SIE"]

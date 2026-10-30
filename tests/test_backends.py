@@ -318,3 +318,10 @@ class TestBackendFull:
         assert len(chunks) == 2
         np.testing.assert_array_equal(to_np(b, chunks[0]), [0, 1, 2, 3, 4])
         np.testing.assert_array_equal(to_np(b, chunks[1]), [5, 6, 7, 8, 9])
+
+    def test_cumsum(self, b):
+        arr = b.make_array([1.0, 2.0, 3.0, 4.0])
+        assert np.allclose(to_np(b, b.cumsum(arr)), [1.0, 3.0, 6.0, 10.0])
+        arr2 = b.make_array([[1.0, 2.0], [3.0, 4.0]])
+        assert np.allclose(to_np(b, b.cumsum(arr2, dim=0)), [[1.0, 2.0], [4.0, 6.0]])
+        assert np.allclose(to_np(b, b.cumsum(arr2, dim=1)), [[1.0, 3.0], [3.0, 7.0]])

@@ -7,8 +7,10 @@ from caskade import Module, Param, forward
 
 from ..backend_obj import backend, ArrayLike
 from ..cosmology import Cosmology
+from ..jit import jit_forward
 from .utils import magnification
 from . import func
+from .func.adaptive.images import _forward_raytrace_at_user
 
 __all__ = ("ThinLens", "ThickLens")
 
@@ -94,7 +96,9 @@ class Lens(Module):
         lens equation. Individual lenses may implement more efficient methods.
         """
         A = self.jacobian_lens_equation(x, y, method=method, pixelscale=pixelscale)
-        I = backend.eye(2, device=A.device, dtype=A.dtype).reshape(  # noqa E741
+        I = backend.eye(
+            2, device=backend.device(A), dtype=A.dtype
+        ).reshape(  # noqa E741
             *[1] * len(A.shape[:-2]), 2, 2
         )
         negPsi = (
@@ -137,74 +141,269 @@ class Lens(Module):
         return magnification(self.raytrace, x, y)
 
     @forward
+    def build_closed_lens_mesh(
+        self,
+        fov: float,
+        init_res: int,
+        min_img_sep: float,
+        *,
+        mu_min: Optional[float] = None,
+        mu_max: Optional[float] = None,
+        max_depth: int = 25,
+        growth: float = 1.5,
+        max_iters: int = 10,
+        fov_x0: float = 0.0,
+        fov_y0: float = 0.0,
+        centers: Optional[ArrayLike] = None,
+        device=None,
+        batch_size: Optional[int] = None,
+    ) -> tuple[
+        func.LensMesh,
+        func.CriticalCurvesAndCaustics,
+        Optional[func.MagnificationRegion],
+    ]:
+        """
+        Build a lens mesh whose fov cuts no critical curve and, given ``mu_min``, the region ``mu_min <= mu_tot <= mu_max``.
+
+        Without ``mu_min`` this is
+        :func:`~caustics.lenses.func.build_closed_lens_mesh`, the region is
+        None and ``mu_max`` is unused. With it, this is
+        :func:`~caustics.lenses.func.build_closed_magnification_region`, which
+        grows the fov further until the region is bounded. The lens map is
+        ``self.raytrace`` and its Jacobian ``self.jacobian_lens_equation``, at
+        the parameter values of this call.
+
+        The center of every component, ``self.component_centers()``, is given
+        a hole, and so is each of ``centers``. Where the lens map is smooth, as
+        at a shear's, a mass sheet's or a cored profile's center, its hole
+        curve is a speck and never a pseudo-caustic, so the hole changes only a
+        critical curve crossing its disk, which is re-joined round it. A
+        component centered near or outside ``fov`` widens it.
+
+        Under jax, the map and its Jacobian run through :func:`~caustics.jit_forward`,
+        compiled once per lens object and padded batch size and reused at
+        other parameter values; a ``ThickLens`` runs eagerly. After a call,
+        changing a plain attribute (e.g. ``EPL.n_iter``) or the parameter
+        graph, or calling ``.to(...)``, needs a new lens object, as
+        :func:`~caustics.jit_forward` describes.
+
+        Parameters
+        ----------
+        fov: float
+            Side of the square lens-plane domain to start from.
+
+            *Unit: arcsec*
+
+        init_res: int
+            Level-0 cells per axis. Must resolve the smallest structure of the
+            lens.
+
+        min_img_sep: float
+            Lens-plane tolerance: the mesh refines to half of it, and images
+            closer than half of it are one image.
+
+            *Unit: arcsec*
+
+        mu_min: Optional[float]
+            Lowest total magnification in the region. None builds no region.
+
+        mu_max: Optional[float]
+            Highest total magnification in the region; unbounded when None.
+
+        max_depth: int
+            Hard cap on the refinement level.
+
+        growth: float
+            Factor each extension asks to multiply the fov by.
+
+        max_iters: int
+            Most extensions to run in each growing loop.
+
+        fov_x0: float
+            x coordinate of the center of the starting fov.
+
+            *Unit: arcsec*
+
+        fov_y0: float
+            y coordinate of the center of the starting fov.
+
+            *Unit: arcsec*
+
+        centers: Optional[ArrayLike]
+            ``(S, 2)`` positions where the lens map may jump besides the
+            component centers, each given a hole too: the image-plane position
+            of a singular center in a later plane of a multiplane lens.
+
+            *Unit: arcsec*
+
+        device: Optional
+            Device the lens lives on; the mesh is stored there.
+
+        batch_size: Optional[int]
+            Most points per lens call.
+
+        Returns
+        -------
+        mesh: LensMesh
+        curves: CriticalCurvesAndCaustics
+            The mesh's critical curves, caustics and pseudo-caustics.
+        region: Optional[MagnificationRegion]
+            None without ``mu_min``.
+        """
+        holes = backend.to(self.component_centers(), dtype=backend.float64)
+        if centers is not None:
+            centers = backend.as_array(
+                centers, dtype=backend.float64, device=backend.device(holes)
+            )
+            holes = backend.concatenate((holes, centers), dim=0)
+        # Not x0, y0: @forward would fill those from the lens's own x0, y0.
+        build = dict(
+            max_depth=max_depth,
+            growth=growth,
+            max_iters=max_iters,
+            x0=fov_x0,
+            y0=fov_y0,
+            centers=holes,
+            device=device,
+            batch_size=batch_size,
+        )
+        if mu_min is None:
+            mesh, curves = func.build_closed_lens_mesh(
+                jit_forward(self.raytrace),
+                jit_forward(self.jacobian_lens_equation),
+                fov,
+                init_res,
+                min_img_sep,
+                **build,
+            )
+            return mesh, curves, None
+        return func.build_closed_magnification_region(
+            jit_forward(self.raytrace),
+            jit_forward(self.jacobian_lens_equation),
+            fov,
+            init_res,
+            min_img_sep,
+            mu_min,
+            mu_max,
+            **build,
+        )
+
+    @forward
     def forward_raytrace(
         self,
         bx: ArrayLike,
         by: ArrayLike,
-        epsilon: float = 1e-3,
-        x0: Optional[ArrayLike] = None,
-        y0: Optional[ArrayLike] = None,
-        fov: float = 5.0,
-        divisions: int = 100,
+        *,
+        mesh: Optional[func.LensMesh] = None,
+        fov: Optional[float] = None,
+        init_res: Optional[int] = None,
+        min_img_sep: Optional[float] = None,
         max_depth: int = 25,
-    ) -> tuple[ArrayLike, ArrayLike]:
+        growth: float = 1.5,
+        max_iters: int = 10,
+        fov_x0: float = 0.0,
+        fov_y0: float = 0.0,
+        centers: Optional[ArrayLike] = None,
+        device=None,
+        batch_size: Optional[int] = None,
+        residual_tol: float = 1e-6,
+        lm_kwargs: Optional[dict] = None,
+    ) -> tuple[ArrayLike, ArrayLike, ArrayLike]:
         """
-        Perform a forward ray-tracing operation which maps from the source plane
-        to the image plane.
+        Lens-plane positions of every image of each source-plane point.
+
+        Without ``mesh``, :meth:`build_closed_lens_mesh` builds one first from
+        ``fov``, ``init_res``, ``min_img_sep`` and the build arguments after
+        them. A ``mesh`` passed in is used as is and the build arguments are
+        unused; it must come from this lens at the same parameter values.
+        Building it once and passing it to many calls saves the build. The
+        images are found by :func:`~caustics.lenses.func.forward_raytrace`.
+        Under jax, the solve is compiled once per lens object and padded
+        size, and reused at other parameter values. After a call, changing a
+        plain attribute (e.g. ``EPL.n_iter``) or the parameter graph, or
+        calling ``.to(...)``, needs a new lens object, as
+        :func:`~caustics.jit_forward` describes.
 
         Parameters
         ----------
         bx: ArrayLike
-            ArrayLike of x coordinate in the source plane.
+            Source-plane x coordinates, any shape, flattened to ``(B,)``.
 
             *Unit: arcsec*
 
         by: ArrayLike
-            ArrayLike of y coordinate in the source plane.
+            Source-plane y coordinates, the shape of ``bx``.
 
             *Unit: arcsec*
 
-        epsilon: ArrayLike
-            maximum distance between two images (arcsec) before they are
-            considered the same image.
+        mesh: Optional[LensMesh]
+            A lens mesh of this lens; built when None.
+
+        fov, init_res, min_img_sep, max_depth, growth, max_iters, fov_x0, fov_y0, centers, device:
+            As for :meth:`build_closed_lens_mesh`; used only to build a mesh.
+
+        batch_size: Optional[int]
+            Most points per lens call in the build, and most sources per chunk
+            in the solve.
+
+        residual_tol: float
+            Largest ``|raytrace(x) - beta|`` of a kept image.
 
             *Unit: arcsec*
 
-        fov: float
-            the field of view in which the initial random samples are taken.
-
-            *Unit: arcsec*
-
-        divisions: int
-            the number of divisions of the fov on each axis when constructing
-            the grid to perform in the triangle search.
+        lm_kwargs: Optional[dict]
+            Extra keyword arguments for :func:`~caustics.utils.batch_lm`.
 
         Returns
         -------
-        x_component: ArrayLike
-            x-coordinate ArrayLike of the ray-traced light rays
+        x: ArrayLike
+            ``(K,)`` float64 image x coordinates, source by source: the
+            ``counts[b]`` images of source ``b`` follow those of sources
+            ``0 .. b - 1``.
 
             *Unit: arcsec*
 
-        y_component: ArrayLike
-            y-coordinate ArrayLike of the ray-traced light rays
+        y: ArrayLike
+            ``(K,)`` float64 image y coordinates, in the order of ``x``.
 
             *Unit: arcsec*
+
+        counts: ArrayLike
+            ``(B,)`` int64 images per source.
+
+        Raises
+        ------
+        ValueError
+            If any source lies outside the image of the mesh's fov boundary,
+            where some of its images can lie outside the fov. The closed build
+            grows the fov only until it cuts no critical curve, so a far
+            source needs a larger ``fov``, or a ``mesh`` that covers it.
         """
-        if x0 is None:
-            x0 = backend.zeros((), device=bx.device, dtype=bx.dtype)
-        if y0 is None:
-            y0 = backend.zeros((), device=by.device, dtype=by.dtype)
-
-        return func.forward_raytrace(
-            backend.stack((bx, by)),
-            self.raytrace,
-            x0,
-            y0,
-            fov,
-            divisions,
-            epsilon,
-            max_depth,
+        if mesh is None:
+            mesh, _, _ = self.build_closed_lens_mesh(
+                fov,
+                init_res,
+                min_img_sep,
+                max_depth=max_depth,
+                growth=growth,
+                max_iters=max_iters,
+                fov_x0=fov_x0,
+                fov_y0=fov_y0,
+                centers=centers,
+                device=device,
+                batch_size=batch_size,
+            )
+        raytrace = jit_forward(self.raytrace)
+        lm_map = (raytrace.on_points, (raytrace.values(),)) if raytrace.jitted else None
+        return _forward_raytrace_at_user(
+            bx,
+            by,
+            raytrace,
+            mesh,
+            lm_map,
+            batch_size=batch_size,
+            residual_tol=residual_tol,
+            lm_kwargs=lm_kwargs,
         )
 
 
@@ -221,6 +420,10 @@ class ThickLens(Lens):
         An instance of a Cosmology class that describes
         the cosmological parameters of the model.
     """
+
+    # `jit_forward` runs these eagerly: `Multiplane` sorts its planes by
+    # redshift in Python, which traced values cannot do.
+    _jit_forward_eager = True
 
     @forward
     def reduced_deflection_angle(
@@ -455,7 +658,7 @@ class ThickLens(Lens):
         ax, ay = self.effective_reduced_deflection_angle(x, y)
 
         # Build Jacobian
-        J = backend.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
+        J = backend.zeros((*ax.shape, 2, 2), device=backend.device(ax), dtype=ax.dtype)
         grad_ax = backend.gradient(ax, spacing=pixelscale)
         grad_ay = backend.gradient(ay, spacing=pixelscale)
         J = backend.fill_at_indices(J, (Ellipsis, 0, 1), grad_ax[0])
@@ -533,7 +736,7 @@ class ThickLens(Lens):
         J = self._jacobian_effective_deflection_angle_finitediff(
             x, y, pixelscale, **kwargs
         )
-        return backend.to(backend.eye(2), device=J.device) - J
+        return backend.to(backend.eye(2), device=backend.device(J)) - J
 
     @forward
     def _jacobian_lens_equation_autograd(
@@ -548,7 +751,7 @@ class ThickLens(Lens):
         """
         # Build Jacobian
         J = self._jacobian_effective_deflection_angle_autograd(x, y, **kwargs)
-        return backend.to(backend.eye(2), device=J.device) - backend.detach(J)
+        return backend.to(backend.eye(2), device=backend.device(J)) - backend.detach(J)
 
     @forward
     def effective_convergence_div(
@@ -623,6 +826,26 @@ class ThinLens(Lens):
     ):
         super().__init__(cosmology=cosmology, name=name, z_s=z_s)
         self.z_l = Param("z_l", z_l, units="unitless", valid=(0, None))
+
+    @forward
+    def component_centers(
+        self,
+        x0: Annotated[ArrayLike, "Param"],
+        y0: Annotated[ArrayLike, "Param"],
+    ) -> ArrayLike:
+        """
+        Lens-plane center of each component of the lens: of a single profile, its own.
+
+        :meth:`build_closed_lens_mesh` cuts a hole around each.
+
+        Returns
+        -------
+        ArrayLike
+            ``(1, 2)``: ``(x0, y0)``.
+
+            *Unit: arcsec*
+        """
+        return backend.stack((x0, y0)).reshape(1, 2)
 
     @forward
     def reduced_deflection_angle(
@@ -958,7 +1181,7 @@ class ThinLens(Lens):
         ax, ay = self.reduced_deflection_angle(x, y)
 
         # Build Jacobian
-        J = backend.zeros((*ax.shape, 2, 2), device=ax.device, dtype=ax.dtype)
+        J = backend.zeros((*ax.shape, 2, 2), device=backend.device(ax), dtype=ax.dtype)
         grad_ax = backend.gradient(ax, spacing=pixelscale)
         grad_ay = backend.gradient(ay, spacing=pixelscale)
         J = backend.fill_at_indices(J, (Ellipsis, 0, 1), grad_ax[0])
@@ -1030,7 +1253,7 @@ class ThinLens(Lens):
         """
         # Build Jacobian
         J = self._jacobian_deflection_angle_finitediff(x, y, pixelscale, **kwargs)
-        return backend.to(backend.eye(2), device=J.device) - J
+        return backend.to(backend.eye(2), device=backend.device(J)) - J
 
     @forward
     def _jacobian_lens_equation_autograd(
@@ -1045,4 +1268,4 @@ class ThinLens(Lens):
         """
         # Build Jacobian
         J = self._jacobian_deflection_angle_autograd(x, y, **kwargs)
-        return backend.to(backend.eye(2), device=J.device) - backend.detach(J)
+        return backend.to(backend.eye(2), device=backend.device(J)) - backend.detach(J)

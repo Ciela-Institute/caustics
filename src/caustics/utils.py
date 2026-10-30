@@ -1,4 +1,5 @@
 # mypy: disable-error-code="misc", disable-error-code="attr-defined"
+import weakref
 from math import pi, ceil
 from typing import Callable, Optional, Tuple, Dict, Union, Any, Literal
 from importlib import import_module
@@ -1540,7 +1541,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     if Cinv.ndim == 1:
         chi2 = backend.sum(dY**2 * Cinv, -1)
     else:
-        chi2 = backend.sum(dY @ Cinv @ dY, -1)
+        chi2 = dY @ Cinv @ dY
 
     # Gradient
     if Cinv.ndim == 1:
@@ -1565,7 +1566,7 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     if Cinv.ndim == 1:
         chi2_new = backend.sum(dYnew**2 * Cinv, -1)
     else:
-        chi2_new = backend.sum(dYnew @ Cinv @ dYnew, -1)
+        chi2_new = dYnew @ Cinv @ dYnew
 
     # Test
     expected_improvement = backend.dot(h, hess @ h) + 2 * backend.dot(h, grad)
@@ -1576,7 +1577,146 @@ def _lm_step(f, X, Y, Cinv, L, Lup, Ldn, epsilon, L_min, L_max):
     chi2 = backend.where(rho > epsilon, chi2_new, chi2)
     L = backend.clamp(backend.where(rho >= epsilon, L / Ldn, L * Lup), L_min, L_max)
 
-    return X, L, chi2
+    # The step proposed, taken or not: what the termination test reads.
+    return X, L, chi2, backend.max(backend.abs(h))
+
+
+def _lm_setup(call, X, Y, C, L, *, epsilon, L_up, L_dn, L_min, L_max):
+    # Shared between the eager and jitted paths, so a change to the covariance
+    # handling, the dtype cast or the LM settings cannot drift between them.
+    if C is None:
+        Cinv = backend.ones_like(Y)
+    elif C.ndim == 2:
+        Cinv = 1 / C
+    else:
+        Cinv = backend.linalg.inv(C)
+    Cinv = backend.to(Cinv, dtype=X.dtype)
+
+    v_lm_step = backend.vmap(
+        partial(
+            _lm_step,
+            call,
+            Lup=L_up,
+            Ldn=L_dn,
+            epsilon=epsilon,
+            L_min=L_min,
+            L_max=L_max,
+        )
+    )
+
+    L = L * backend.ones(X.shape[0], device=backend.device(X), dtype=X.dtype)
+    return v_lm_step, Cinv, L
+
+
+def _iterate(v_lm_step, X, Y, Cinv, L, chi2, converged, stopping, L_max):
+    # One iteration and its termination test. Under jax with `jit=True` this
+    # runs inside `_jitted_solve`'s compiled while-loop body; otherwise (jit
+    # False, or eager) it runs as plain Python, once per call. `converged`
+    # flags the elements that converged at an earlier iteration.
+    Xnew, Lnew, chi2new, step = v_lm_step(X, Y, Cinv, L)
+
+    # Termination is per element, then reduced -- never a majority vote.
+    # Elements are mathematically independent and only the loop is shared, so
+    # a criterion that stops the batch while any element is still descending
+    # makes that element's answer depend on the company it keeps.
+    #
+    # An element converges when the step `_lm_step` proposed, taken or not,
+    # is below `stopping` while `L < 1e-2`. A rejected step leaves `X`
+    # exactly unchanged, so read off `X` it would be zero; and low damping
+    # outlasts the first few rejections after a run of accepted steps, so an
+    # element that rejects one large step -- near a point caustic, say, where
+    # the map is nearly flat one way -- would stop far from its root. The
+    # damping guards the other way: a heavily damped step is small however
+    # far the root is.
+    #
+    # Convergence is sticky: an element keeps the `X`, `L` and `chi2` it
+    # converged with, and counts as done, for the rest of the loop. At its
+    # root it would reject nearly every step (its gradient and step both
+    # vanish, so `rho` is 0/0) and walk its `L` up and out of the converged
+    # state, reaching `L_max` 15 to 20 iterations on; an element that
+    # converged a few iterations before a slower one would keep the loop
+    # running until then. Freezing it, not just its flag, keeps its answer
+    # from depending on how long its company runs. Exhaustion, `L >= L_max`,
+    # counts as done too: it is how an element that stalls short of its root
+    # keeps the loop from spinning until `max_iter`.
+    frozen = backend.unsqueeze(converged, -1)
+    Xnew = backend.where(frozen, X, Xnew)
+    Lnew = backend.where(converged, L, Lnew)
+    chi2new = backend.where(converged, chi2, chi2new)
+    converged = converged | ((step < stopping) & (Lnew < 1e-2))
+    return Xnew, Lnew, chi2new, converged, backend.all(converged | (Lnew >= L_max))
+
+
+# One compiled program per `f`. A `WeakKeyDictionary` holds `f` only through
+# `weakref.ref`, so a cached solve never outlives the `f` it was built for.
+#
+# Contract: the program is traced once per `f`, against the LM settings and
+# padded size (its static arguments). Anything `f` reads besides `X`,
+# `f_args` and `f_kwargs` -- a closed-over array, a module attribute -- is
+# frozen into that program at the first solve, so a caller must route
+# anything that changes between calls (e.g. new lens-parameter values)
+# through `f_args`/`f_kwargs`, which are traced inputs, rather than through a
+# fresh `f`; `f_args`/`f_kwargs` must therefore hold arrays. `X`, `Y` and `C`
+# must be jax arrays of one float dtype that `f` preserves.
+_SOLVES: "weakref.WeakKeyDictionary[Callable, Callable]" = weakref.WeakKeyDictionary()
+
+
+def _jitted_solve(f):
+    solve = _SOLVES.get(f)
+    if solve is not None:
+        return solve
+
+    # The closure below must not hold `f` itself: a value that references its
+    # own key keeps that key alive forever in a `WeakKeyDictionary`.
+    f_ref = weakref.ref(f)
+
+    def solve(X, Y, C, L, f_args, f_kwargs, *, epsilon, L_up, L_dn, max_iter, L_min, L_max, stopping):  # fmt: skip
+        v_lm_step, Cinv, L = _lm_setup(
+            lambda x: f_ref()(x, *f_args, **f_kwargs),
+            X,
+            Y,
+            C,
+            L,
+            epsilon=epsilon,
+            L_up=L_up,
+            L_dn=L_dn,
+            L_min=L_min,
+            L_max=L_max,
+        )
+        chi2 = backend.zeros(X.shape[0], dtype=X.dtype)
+        converged = backend.zeros(X.shape[0], dtype=backend.bool)
+        done = backend.as_array(False)
+        i = backend.as_array(0)
+
+        def cond(carry):
+            i, X, L, chi2, converged, done = carry
+            return (i < max_iter) & ~done
+
+        def body(carry):
+            i, X, L, chi2, converged, done = carry
+            X, L, chi2, converged, done = _iterate(
+                v_lm_step, X, Y, Cinv, L, chi2, converged, stopping, L_max
+            )
+            return i + 1, X, L, chi2, converged, done
+
+        carry = (i, X, L, chi2, converged, done)
+        _, X, L, chi2, _, _ = backend.while_loop(cond, body, carry)
+        return X, L, chi2
+
+    solve = backend.jit(
+        solve,
+        static_argnames=(
+            "epsilon",
+            "L_up",
+            "L_dn",
+            "max_iter",
+            "L_min",
+            "L_max",
+            "stopping",
+        ),
+    )
+    _SOLVES[f] = solve
+    return solve
 
 
 def batch_lm(
@@ -1594,45 +1734,78 @@ def batch_lm(
     stopping=1e-4,
     f_args=(),
     f_kwargs={},
+    jit=False,  # jax: solve once under jit, cached per f (see _SOLVES above _jitted_solve)
 ):
     B, Din = X.shape
     B, Dout = Y.shape
 
     if len(X) != len(Y):
-        raise ValueError("x and y must having matching batch dimension")
+        raise ValueError("x and y must have matching batch dimension")
 
-    if C is None:
-        C = backend.ones_like(Y)
-    if C.ndim == 2:
-        Cinv = 1 / C
-    else:
-        Cinv = backend.linalg.inv(C)
-    Cinv = backend.to(Cinv, dtype=X.dtype)
-
-    v_lm_step = backend.vmap(
-        partial(
-            _lm_step,
-            lambda x: f(x, *f_args, **f_kwargs),
-            Lup=L_up,
-            Ldn=L_dn,
+    if jit and backend.compiles:
+        # One compiled solve per `f`, cached in `_SOLVES`: the LM settings are
+        # static arguments and the batch is padded to one of a few sizes, so
+        # the program compiles once per (f, size) pair rather than once per
+        # call. `f_args`/`f_kwargs` are traced inputs, so new parameter
+        # values reuse the cached solve instead of retracing it. Padded rows
+        # repeat the last one and finish with it.
+        #
+        # `jit` defaults to False because that reuse needs a caller who keeps
+        # calling with the *same* `f` and routes what changes through
+        # `f_args`/`f_kwargs` (see the contract above `_SOLVES`). A caller
+        # that instead hands over a fresh `f` every call would still compile
+        # anew each time, paying tracing cost for no reuse, so it should pass
+        # `jit=False` (or just not pass `jit=True`).
+        padded = backend.padded_size(B)
+        Xp, Yp = backend.pad_rows(X, padded), backend.pad_rows(Y, padded)
+        Cp = backend.pad_rows(C, padded) if C is not None else None
+        X, L, chi2 = _jitted_solve(f)(
+            Xp,
+            Yp,
+            Cp,
+            L,
+            f_args,
+            f_kwargs,
             epsilon=epsilon,
+            L_up=L_up,
+            L_dn=L_dn,
+            max_iter=max_iter,
             L_min=L_min,
             L_max=L_max,
+            stopping=stopping,
         )
-    )
-    L = L * backend.ones(B, device=backend.device(X), dtype=X.dtype)
-    for _ in range(max_iter):
-        Xnew, L, C = v_lm_step(X, Y, Cinv, L)
-        if (
-            backend.all(backend.abs(Xnew - X) < stopping)
-            and backend.sum(L < 1e-2).item() > B / 3
-        ):
-            break
-        if backend.all(L >= L_max):
-            break
-        X = Xnew
+        return (
+            backend.unpad_rows(X, B),
+            backend.unpad_rows(L, B),
+            backend.unpad_rows(chi2, B),
+        )
 
-    return X, L, C
+    v_lm_step, Cinv, L = _lm_setup(
+        lambda x: f(x, *f_args, **f_kwargs),
+        X,
+        Y,
+        C,
+        L,
+        epsilon=epsilon,
+        L_up=L_up,
+        L_dn=L_dn,
+        L_min=L_min,
+        L_max=L_max,
+    )
+    chi2 = backend.zeros(X.shape[0], dtype=X.dtype, device=backend.device(X))
+    converged = backend.zeros(X.shape[0], dtype=backend.bool, device=backend.device(X))
+    pending = None
+    for _ in range(max_iter):
+        X, L, chi2, converged, done = _iterate(
+            v_lm_step, X, Y, Cinv, L, chi2, converged, stopping, L_max
+        )
+        # Read the previous iteration's flag, copied while this one ran:
+        # waiting on this iteration's own flag would stall the device.
+        if pending is not None and backend.read_flag(pending):
+            break
+        pending = backend.flag_to_host(done)
+
+    return X, L, chi2
 
 
 def gaussian(pixelscale, nx, ny, sigma, upsample=1, dtype=backend.float32, device=None):
