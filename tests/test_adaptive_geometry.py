@@ -529,6 +529,13 @@ def test_vertical_and_zero_length_segments_add_nothing():
     assert union_area(*_loops(unit)) == 1.0
 
 
+@pytest.mark.parametrize(
+    "loop", [[[1.0, 0.0], [1.0, 2.0]], [[1.0, 1.0]]], ids=["vertical", "point"]
+)
+def test_a_loop_with_no_width_has_no_area(loop):
+    assert union_area(*_loops(loop)) == 0.0
+
+
 def test_a_regular_polygon_has_its_exact_area():
     n = 2000
     angle = 2.0 * np.pi * np.arange(n) / n

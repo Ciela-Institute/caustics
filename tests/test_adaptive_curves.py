@@ -400,11 +400,20 @@ def test_ends_that_do_not_alternate_stay_open():
     assert sorted(len(lens) for lens, *_ in parts) == [3, 3]
 
 
+# A loop round the origin, wholly inside ``_one_hole``'s circle.
+TINY = [(0.01, 0.0), (0.0, 0.01), (-0.01, 0.0), (0.0, -0.01)]
+
+
 def test_a_curve_wholly_inside_a_hole_is_dropped():
-    tiny = [(0.01, 0.0), (0.0, 0.01), (-0.01, 0.0), (0.0, -0.01)]
     far = [(2.0, 0.0), (2.0, 1.0), (3.0, 1.0)]
-    parts = _parts(join_at_holes(_traced((tiny, True), (far, True)), _one_hole()))
+    parts = _parts(join_at_holes(_traced((TINY, True), (far, True)), _one_hole()))
     assert len(parts) == 1 and np.array_equal(parts[0][0], np.array(far))
+
+
+def test_with_every_curve_inside_a_hole_no_curve_is_left():
+    got = join_at_holes(_traced((TINY, True)), _one_hole())
+    assert _parts(got) == [] and to_np(got.offsets).tolist() == [0]
+    assert to_np(got.lens).shape == to_np(got.source).shape == (0, 2)
 
 
 # A single traced point just outside a hole's circle, within a leaf edge of
