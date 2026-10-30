@@ -376,12 +376,6 @@ class Backend:
     def _sum_jax(self, array, dim=None):
         return self.jax.numpy.sum(array, axis=dim)
 
-    def _cumprod_torch(self, array, dim=None):
-        return self.module.cumprod(array, dim=dim)
-
-    def _cumprod_jax(self, array, dim=None):
-        return self.module.cumprod(array, axis=dim)
-
     def _cumsum_torch(self, array, dim=0):
         return self.module.cumsum(array, dim=dim)
 
