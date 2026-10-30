@@ -425,6 +425,12 @@ def test_batch_lm_weighs_the_residuals_by_the_inverse_covariance(C, root, jit):
     np.testing.assert_allclose(backend.to_numpy(got)[:, 0], root, atol=1e-6)
 
 
+def test_batch_lm_rejects_starts_and_targets_of_different_batch_sizes():
+    X, Y = backend.as_array(np.zeros((2, 2))), backend.as_array(np.zeros((3, 2)))
+    with pytest.raises(ValueError, match="matching batch dimension"):
+        batch_lm(X, Y, _rosenbrock)
+
+
 def test_batch_lm_returns_one_row_per_element_whatever_the_padding():
     """Under jax three elements run padded to 64 rows; three come back."""
     X = backend.as_array(np.asarray([[-1.2, 1.0], [0.99, 0.99], [0.5, 0.5]]))

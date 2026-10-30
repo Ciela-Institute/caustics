@@ -1740,7 +1740,7 @@ def batch_lm(
     B, Dout = Y.shape
 
     if len(X) != len(Y):
-        raise ValueError("x and y must having matching batch dimension")
+        raise ValueError("x and y must have matching batch dimension")
 
     if jit and backend.compiles:
         # One compiled solve per `f`, cached in `_SOLVES`: the LM settings are
