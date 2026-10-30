@@ -20,8 +20,8 @@ class TorchMeshBackend(Backend):
     """
     ``Backend``'s torch methods, without switching caskade's global backend.
 
-    ``as_array`` and ``to`` also take jax arrays, and sequences holding them,
-    through a numpy copy.
+    ``as_array`` also takes jax arrays, and sequences holding them, through a
+    numpy copy.
     """
 
     def __init__(self):
@@ -37,11 +37,6 @@ class TorchMeshBackend(Backend):
 
     def _as_array_torch(self, array, dtype=None, device=None):
         return super()._as_array_torch(self._readable(array), dtype, device)
-
-    def _to_torch(self, array, dtype=None, device=None):
-        if not isinstance(array, self.module.Tensor):
-            array = self._as_array_torch(array)
-        return super()._to_torch(array, dtype, device)
 
 
 mesh_backend = backend if backend.backend == "torch" else TorchMeshBackend()
