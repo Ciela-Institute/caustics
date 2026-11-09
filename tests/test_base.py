@@ -1,9 +1,9 @@
 import numpy as np
 
-from caustics.cosmology import FlatLambdaCDM
-from caustics.lenses import SIE
 from caustics import test as mini_test
 from caustics.backend_obj import backend
+from caustics.cosmology import FlatLambdaCDM
+from caustics.lenses import SIE
 
 
 def test_forward_raytrace(device):

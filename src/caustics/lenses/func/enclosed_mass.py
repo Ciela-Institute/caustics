@@ -1,7 +1,8 @@
-from ...utils import translate_rotate, derotate
+import numpy as np
+
 from ...backend_obj import backend
 from ...constants import G_over_c2
-import numpy as np
+from ...utils import derotate, translate_rotate
 
 
 def physical_deflection_angle_enclosed_mass(x0, y0, q, phi, enclosed_mass, x, y, s=0.0):

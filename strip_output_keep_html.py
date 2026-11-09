@@ -1,6 +1,7 @@
-import sys
-import nbformat
 import re
+import sys
+
+import nbformat
 
 
 def strip_output(nb):

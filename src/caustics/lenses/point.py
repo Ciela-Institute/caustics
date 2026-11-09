@@ -1,12 +1,12 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated, Literal
+from typing import Annotated, Literal
 from warnings import warn
 
-from caskade import forward, Param
+from caskade import Param, forward
 
 from ..backend_obj import ArrayLike
-from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("Point",)
 
@@ -62,17 +62,17 @@ class Point(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "X coordinate of the center of the lens",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Y coordinate of the center of the lens",
             True,
         ] = None,
         Rein: Annotated[
-            Optional[Union[ArrayLike, float]], "Einstein radius of the lens", True
+            ArrayLike | float | None, "Einstein radius of the lens", True
         ] = None,
         parametrization: Literal["Rein", "mass"] = "Rein",
         s: Annotated[

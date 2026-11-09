@@ -1,9 +1,11 @@
-import sys
 import os
-import torch
-import pytest
+import sys
+
 import matplotlib
 import matplotlib.pyplot as plt
+import pytest
+import torch
+
 from caustics.backend_obj import backend
 
 # Add the helpers directory to the path so we can import the helpers

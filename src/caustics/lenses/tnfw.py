@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,union-attr,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from .base import ThinLens, CosmologyType, NameType, ZType
-from . import func
 from ..backend_obj import ArrayLike
+from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 DELTA = 200.0
 
@@ -109,28 +109,28 @@ class TNFW(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Center of lens position on x-axis",
             True,
             "arcsec",
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Center of lens position on y-axis",
             True,
             "arcsec",
         ] = None,
         mass: Annotated[
-            Optional[Union[ArrayLike, float]], "Mass of the lens", True, "Msol"
+            ArrayLike | float | None, "Mass of the lens", True, "Msol"
         ] = None,
         Rs: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Scale radius of the TNFW lens",
             True,
             "arcsec",
         ] = None,
         tau: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Truncation scale. Ratio of truncation radius to scale radius",
             True,
             "rt/rs",
