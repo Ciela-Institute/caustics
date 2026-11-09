@@ -1,10 +1,10 @@
 # mypy: disable-error-code="operator,union-attr"
-from typing import Annotated, Tuple
+from typing import Annotated
 
 from caskade import forward
 
-from .base import Source, NameType
 from ..backend_obj import backend
+from .base import NameType, Source
 
 __all__ = ("LightStack",)
 
@@ -24,7 +24,7 @@ class LightStack(Source):
     def __init__(
         self,
         light_models: Annotated[
-            Tuple[Source], "a list of light models to sum their brightnesses"
+            tuple[Source], "a list of light models to sum their brightnesses"
         ],
         name: NameType = None,
     ):

@@ -1,11 +1,10 @@
-from typing import Optional
 from warnings import warn
 
 from caskade import forward
 
-from ..backend_obj import backend, ArrayLike
-from .base import ThinLens, CosmologyType, NameType, ZType
+from ..backend_obj import ArrayLike, backend
 from ..utils import vmap_reduce
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("BatchedPlane",)
 
@@ -38,7 +37,7 @@ class BatchedPlane(ThinLens):
         name: NameType = None,
         z_l: ZType = None,
         z_s: ZType = None,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ):
         """
         Initialize the SinglePlane lens model.

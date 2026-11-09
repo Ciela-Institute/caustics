@@ -1,6 +1,6 @@
 import caustics
-from caustics.utils import meshgrid
 from caustics.backend_obj import backend
+from caustics.utils import meshgrid
 
 
 def test_star_source():

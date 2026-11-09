@@ -1,19 +1,18 @@
 from io import StringIO
 
 import numpy as np
+import pytest
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import (
+    Psi_test_helper,
     alpha_test_helper,
     kappa_test_helper,
-    Psi_test_helper,
 )
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import Multipole
 from caustics.sims import build_simulator
-from caustics.backend_obj import backend
-
-import pytest
 
 
 @pytest.mark.parametrize("m_order", [2, 3, 4, 5, 6])
