@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,union-attr"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
-from .base import Source, NameType
-from . import func
 from ..backend_obj import ArrayLike
+from . import func
+from .base import NameType, Source
 
 __all__ = ("StarSource",)
 
@@ -49,27 +49,27 @@ class StarSource(Source):
     def __init__(
         self,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The x-coordinate of the star source's center",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The y-coordinate of the star source's center",
             True,
         ] = None,
         theta_s: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The radius of the star source",
             True,
         ] = None,
         Ie: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The intensity at the effective radius",
             True,
         ] = None,
         gamma: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "The linear limb darkening coefficient",
             True,
         ] = None,

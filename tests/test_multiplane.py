@@ -1,17 +1,16 @@
 from math import pi
 
-import lenstronomy.Util.param_util as param_util
+import numpy as np
+import pytest
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_ap
 from lenstronomy.LensModel.lens_model import LensModel
+from lenstronomy.Util import param_util
 from utils import lens_test_helper
-import numpy as np
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane, PixelatedConvergence, SinglePlane
 from caustics.utils import meshgrid
-from caustics.backend_obj import backend
-
-import pytest
 
 
 def test(device):

@@ -1,12 +1,12 @@
 # mypy: disable-error-code="dict-item"
-from typing import Optional, Union, Annotated, Literal
+from typing import Annotated, Literal
 from warnings import warn
 
-from caskade import forward, Param
+from caskade import Param, forward
 
 from ..backend_obj import ArrayLike, backend
-from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("ExternalShear",)
 
@@ -62,22 +62,22 @@ class ExternalShear(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "x-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "y-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         gamma_1: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Shear component in the x-direction",
             True,
         ] = None,
         gamma_2: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "Shear component in the y-direction",
             True,
         ] = None,

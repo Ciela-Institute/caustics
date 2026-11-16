@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional, Annotated
+from typing import Annotated
 
 from caskade import Module, forward
 
@@ -7,7 +7,7 @@ from ..backend_obj import ArrayLike
 
 __all__ = ("Source",)
 
-NameType = Annotated[Optional[str], "Name of the source"]
+NameType = Annotated[str | None, "Name of the source"]
 
 
 class Source(Module):

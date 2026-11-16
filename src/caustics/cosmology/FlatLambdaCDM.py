@@ -1,13 +1,13 @@
 # mypy: disable-error-code="operator"
-from typing import Optional, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
 from astropy.cosmology import default_cosmology
+from caskade import Param, forward
 from scipy.special import hyp2f1
 
-from ..utils import interp1d
-from ..backend_obj import backend, ArrayLike
+from ..backend_obj import ArrayLike, backend
 from ..constants import c_Mpc_s, km_to_Mpc
+from ..utils import interp1d
 from .base import Cosmology, NameType
 
 _h0_default = float(default_cosmology.get().h)
@@ -26,13 +26,13 @@ class FlatLambdaCDM(Cosmology):
     def __init__(
         self,
         h0: Annotated[
-            Optional[ArrayLike], "Hubble constant over 100", True
+            ArrayLike | None, "Hubble constant over 100", True
         ] = _h0_default,
         critical_density_0: Annotated[
-            Optional[ArrayLike], "Critical density at z=0", True
+            ArrayLike | None, "Critical density at z=0", True
         ] = _critical_density_0_default,
         Om0: Annotated[
-            Optional[ArrayLike], "Matter density parameter at z=0", True
+            ArrayLike | None, "Matter density parameter at z=0", True
         ] = _Om0_default,
         name: NameType = None,
     ):
