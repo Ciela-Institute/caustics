@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 import torch
 
-from caustics.backend_obj import Backend
 import caustics
+from caustics.backend_obj import Backend
 
 BACKENDS = ["torch", "jax"]
 

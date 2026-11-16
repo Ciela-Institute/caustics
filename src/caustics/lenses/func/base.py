@@ -1,7 +1,8 @@
-from ...utils import batch_lm
+from warnings import warn
+
 from ...backend_obj import backend
 from ...constants import arcsec_to_rad, c_Mpc_s, days_to_seconds
-from warnings import warn
+from ...utils import batch_lm
 
 
 def triangle_contains(p, v):
@@ -150,7 +151,7 @@ def forward_raytrace_rootfind(ix, iy, bx, by, raytrace):
         (ix.shape[0], 1), device=bx.device
     )  # has shape (B, Dout:2)
     # Optimize guesses in image plane
-    x, l, c = batch_lm(  # noqa: E741 Unused `l` variable
+    x, l, c = batch_lm(
         ixy,
         bxy,
         lambda *a, **k: backend.stack(

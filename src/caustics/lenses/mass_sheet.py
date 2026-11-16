@@ -1,11 +1,11 @@
 # mypy: disable-error-code="operator,dict-item"
-from typing import Optional, Union, Annotated
+from typing import Annotated
 
-from caskade import forward, Param
+from caskade import Param, forward
 
 from ..backend_obj import ArrayLike
-from .base import ThinLens, CosmologyType, NameType, ZType
 from . import func
+from .base import CosmologyType, NameType, ThinLens, ZType
 
 __all__ = ("MassSheet",)
 
@@ -60,17 +60,17 @@ class MassSheet(ThinLens):
         z_l: ZType = None,
         z_s: ZType = None,
         x0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "x-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         y0: Annotated[
-            Optional[Union[ArrayLike, float]],
+            ArrayLike | float | None,
             "y-coordinate of the shear center in the lens plane",
             True,
         ] = None,
         kappa: Annotated[
-            Optional[Union[ArrayLike, float]], "Surface density", True
+            ArrayLike | float | None, "Surface density", True
         ] = None,
         name: NameType = None,
     ):

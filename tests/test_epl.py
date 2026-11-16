@@ -1,17 +1,16 @@
-from math import pi
 from io import StringIO
+from math import pi
 
-import lenstronomy.Util.param_util as param_util
+import pytest
 from lenstronomy.LensModel.lens_model import LensModel
+from lenstronomy.Util import param_util
 from utils import Psi_test_helper, alpha_test_helper, kappa_test_helper
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import EPL
 from caustics.sims import build_simulator
 from caustics.utils import meshgrid
-from caustics.backend_obj import backend
-
-import pytest
 
 
 @pytest.mark.parametrize("q", [0.4, 0.7])

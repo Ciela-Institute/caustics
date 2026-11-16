@@ -1,6 +1,6 @@
 from ...backend_obj import backend
-from ...utils import translate_rotate, derotate
 from ...constants import c_km_s, rad_to_arcsec
+from ...utils import derotate, translate_rotate
 
 
 def reduced_deflection_angle_sie(x0, y0, q, phi, Rein, x, y, s=0.0):

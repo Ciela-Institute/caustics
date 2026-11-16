@@ -1,5 +1,6 @@
 from io import StringIO
 
+import pytest
 from astropy.cosmology import FlatLambdaCDM as FlatLambdaCDM_AP
 from astropy.cosmology import default_cosmology
 
@@ -8,12 +9,10 @@ from lenstronomy.Cosmo.lens_cosmo import LensCosmo
 from lenstronomy.LensModel.lens_model import LensModel
 from utils import lens_test_helper, setup_grids
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM as CausticFlatLambdaCDM
 from caustics.lenses import TNFW
 from caustics.sims import build_simulator
-from caustics.backend_obj import backend
-
-import pytest
 
 h0_default = float(default_cosmology.get().h)
 Om0_default = float(default_cosmology.get().Om0)

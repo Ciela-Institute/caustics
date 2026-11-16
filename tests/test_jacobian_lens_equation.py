@@ -1,9 +1,9 @@
 from math import pi
 
+from caustics.backend_obj import backend
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane
 from caustics.utils import meshgrid
-from caustics.backend_obj import backend
 
 
 def test_jacobian_autograd_vs_finitediff(device):

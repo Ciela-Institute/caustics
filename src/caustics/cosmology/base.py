@@ -1,14 +1,14 @@
 # mypy: disable-error-code="operator"
 from abc import abstractmethod
 from math import pi
-from typing import Optional, Annotated
+from typing import Annotated
 
-from ..backend_obj import ArrayLike
 from caskade import Module, forward
 
+from ..backend_obj import ArrayLike
 from ..constants import G_over_c2
 
-NameType = Annotated[Optional[str], "Name of the cosmology"]
+NameType = Annotated[str | None, "Name of the cosmology"]
 
 
 class Cosmology(Module):
