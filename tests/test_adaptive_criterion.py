@@ -15,13 +15,24 @@ from caustics.lenses.func.adaptive.criterion import (
     LEAF_JACOBIAN_PARITY_UNRESOLVED,
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
+    fitted_det_sigma,
+    fitted_midpoint_jacobian,
     lens_status,
 )
 from caustics.lenses.func.adaptive.geometry import (
     CHILD_VERTEX_INDICES,
+    COMPOSE,
+    PINV0,
     ROOT_CLASS,
     ROOT_SHAPES,
     shape_matrix,
+    sigma_min_2x2,
+)
+from caustics.lenses.func.adaptive.lattice import (
+    initial_triangles,
+    lattice_xy,
+    make_lattice,
+    midpoint_ij,
 )
 
 from adaptive_maps import f64, i64, to_np, AFFINE, affine
@@ -336,3 +347,95 @@ def test_affine_error_is_below_min_img_sep_exactly_where_the_deviation_checks_pa
     error = to_np(affine_error(deviation, sigma_min))
     assert 0 < passed.sum() < n
     assert np.array_equal(error < 0.01, passed)
+
+
+def descended(levels=3, fov=4.0, init_res=2):
+    """Every triangle of levels ``0..levels`` of a lattice: its six lens-plane samples, class and level, and ``h0``."""
+    lat = make_lattice(fov, 0.0, 0.0, init_res, levels + 1)
+    ij, cls = initial_triangles(init_res, lat.level, ROOT_CLASS)
+    table = mesh_backend.as_array(CHILD_VERTEX_INDICES, dtype=mesh_backend.int64)
+    theta6, classes, level = [], [], []
+    for d in range(levels + 1):
+        six_ij = mesh_backend.concatenate((ij, midpoint_ij(ij)), dim=1)
+        theta6.append(to_np(lattice_xy(lat, six_ij)))
+        classes.append(to_np(cls))
+        level.append(np.full(ij.shape[0], d))
+        ij, cls = six_ij[:, table].reshape(-1, 3, 2), COMPOSE[cls].reshape(-1)
+    return (
+        np.concatenate(theta6),
+        np.concatenate(classes),
+        np.concatenate(level),
+        lat.h0,
+    )
+
+
+def quadratic(p):
+    x, y = p[..., 0], p[..., 1]
+    return np.stack(
+        (
+            0.3 + 0.7 * x - 0.2 * y + 0.5 * x * x - 0.4 * x * y + 0.1 * y * y,
+            -0.1 + 0.1 * x + 0.9 * y - 0.3 * x * x + 0.6 * x * y + 0.2 * y * y,
+        ),
+        axis=-1,
+    )
+
+
+def quadratic_jacobian(p):
+    x, y = p[..., 0], p[..., 1]
+    J = np.empty(p.shape[:-1] + (2, 2))
+    J[..., 0, 0] = 0.7 + 1.0 * x - 0.4 * y
+    J[..., 0, 1] = -0.2 - 0.4 * x + 0.2 * y
+    J[..., 1, 0] = 0.1 - 0.6 * x + 0.6 * y
+    J[..., 1, 1] = 0.9 + 0.6 * x + 0.4 * y
+    return J
+
+
+def test_the_fit_is_exact_for_a_quadratic_map_on_every_class_and_level():
+    theta6, cls, level, h0 = descended()
+    assert set(cls.tolist()) == set(range(6))
+    got = to_np(
+        fitted_midpoint_jacobian(f64(quadratic(theta6)), i64(cls), i64(level), h0)
+    )
+    assert got.shape == (theta6.shape[0], 3, 2, 2)
+    np.testing.assert_allclose(
+        got, quadratic_jacobian(theta6[:, 3:]), rtol=0, atol=1e-11
+    )
+
+
+def test_the_fit_is_the_edge_derivative_formula_and_its_inverses_are_the_tables():
+    """A_fit(theta_i) = [D_ij, D_ik] @ inv([theta_j - theta_i, theta_k - theta_i]) with D_ij = 4 beta(m_k) - 3 beta_i - beta_j; A_fit(m_k) is the mean of its edge's two."""
+    theta6, cls, level, h0 = descended()
+    beta6 = np.random.default_rng(1).normal(size=theta6.shape)
+    tv, bv, bm = theta6[:, :3], beta6[:, :3], beta6[:, 3:]
+    A = np.empty((theta6.shape[0], 3, 2, 2))
+    for i in range(3):
+        j, k = (i + 1) % 3, (i + 2) % 3
+        D = np.stack(
+            (
+                4 * bm[:, k] - 3 * bv[:, i] - bv[:, j],
+                4 * bm[:, j] - 3 * bv[:, i] - bv[:, k],
+            ),
+            axis=-1,
+        )
+        E_inv = np.linalg.inv(
+            np.stack((tv[:, j] - tv[:, i], tv[:, k] - tv[:, i]), axis=-1)
+        )
+        table = (2.0**level / h0)[:, None, None] * to_np(PINV0)[to_np(COMPOSE)[cls, i]]
+        np.testing.assert_allclose(table, E_inv, rtol=1e-12, atol=1e-12)
+        A[:, i] = D @ E_inv
+    want = np.stack(
+        [0.5 * (A[:, (k + 1) % 3] + A[:, (k + 2) % 3]) for k in range(3)], axis=1
+    )
+    got = to_np(fitted_midpoint_jacobian(f64(beta6), i64(cls), i64(level), h0))
+    np.testing.assert_allclose(got, want, rtol=1e-10, atol=1e-10)
+
+
+def test_fitted_det_and_sigma_min_are_those_of_the_fitted_jacobian():
+    theta6, cls, level, h0 = descended(levels=1)
+    beta6 = f64(quadratic(theta6))
+    A = fitted_midpoint_jacobian(beta6, i64(cls), i64(level), h0)
+    det, sigma = fitted_det_sigma(beta6, i64(cls), i64(level), h0)
+    assert np.array_equal(
+        to_np(det), to_np(A[..., 0, 0] * A[..., 1, 1] - A[..., 0, 1] * A[..., 1, 0])
+    )
+    assert np.array_equal(to_np(sigma), to_np(sigma_min_2x2(A)))

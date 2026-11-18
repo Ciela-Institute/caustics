@@ -154,6 +154,97 @@ def children_sigma_min(Q, cls, level, h0):
     )
 
 
+def fitted_midpoint_jacobian(beta6, cls, level, h0):
+    """
+    The Jacobian at each edge midpoint of the quadratic map through a triangle's six images.
+
+    For ``{i, j, k} = {1, 2, 3}``, with ``m_k`` bisecting edge
+    ``(theta_i, theta_j)``, the quadratic through the three images on that
+    edge has the derivative ``D_ij = 4 beta(m_k) - 3 beta_i - beta_j`` along
+    it at ``theta_i``. Two edges give the Jacobian at a vertex, and the
+    Jacobian of a quadratic map is affine, so at a midpoint it is the mean
+    of its edge's two::
+
+        A_fit(theta_i) = [D_ij | D_ik] @ inv([theta_j - theta_i | theta_k - theta_i])
+        A_fit(m_k)     = (A_fit(theta_i) + A_fit(theta_j)) / 2
+
+    It is computed from affine maps instead, which difference the images
+    first, so that a constant map fits to exactly zero. With ``A_i`` the
+    affine map of the corner child at ``theta_i`` and ``A`` the triangle's
+    own, ``A_fit(theta_i) = 2 A_i - A`` and so
+    ``A_fit(m_k) = A_i + A_j - A``. The inverse edge matrices are
+    :data:`~.geometry.PINV0`'s, as in :func:`children_sigma_min`.
+
+    The fit differences images a leaf edge ``h`` apart, so its entries carry
+    rounding noise of about ``8 * eps * |beta| / h``: it stops resolving the
+    Jacobian at about the leaf size where the midpoint deviations themselves
+    cancel to zero.
+
+    Parameters
+    ----------
+    beta6: ArrayLike
+        ``(n, 6, 2)`` images at ``theta_1, theta_2, theta_3, m_1, m_2, m_3``,
+        ``m_i`` opposite ``theta_i``.
+
+        *Unit: arcsec*
+    cls: ArrayLike
+        ``(n,)`` int64 orientation classes.
+    level: ArrayLike
+        ``(n,)`` int64 refinement levels.
+    h0: float
+        Level-0 cell size.
+
+        *Unit: arcsec*
+
+    Returns
+    -------
+    ArrayLike
+        ``(n, 3, 2, 2)`` float64, the fitted Jacobian at ``m_1, m_2, m_3``.
+    """
+    beta_v, beta_m = beta6[:, :3], beta6[:, 3:]
+    scale = mesh_backend.to(2**level, dtype=mesh_backend.float64) / h0
+    child = (child_shape_matrices(beta_v, beta_m) @ PINV0[COMPOSE[cls]]) * (
+        2.0 * scale
+    ).reshape(-1, 1, 1, 1)
+    edges = mesh_backend.stack(
+        (beta_v[:, 1] - beta_v[:, 0], beta_v[:, 2] - beta_v[:, 0]), dim=-1
+    )
+    parent = (edges @ PINV0[cls]) * scale.reshape(-1, 1, 1)
+    return mesh_backend.stack(
+        (
+            child[:, 1] + child[:, 2] - parent,
+            child[:, 2] + child[:, 0] - parent,
+            child[:, 0] + child[:, 1] - parent,
+        ),
+        dim=1,
+    )
+
+
+def fitted_det_sigma(beta6, cls, level, h0):
+    """
+    ``det`` and ``sigma_min`` of :func:`fitted_midpoint_jacobian`, ``(n, 3)`` each.
+
+    What the criterion reads at an edge midpoint where the lens Jacobian
+    itself was not evaluated.
+
+    Parameters
+    ----------
+    beta6, cls, level, h0:
+        As for :func:`fitted_midpoint_jacobian`.
+
+    Returns
+    -------
+    det: ArrayLike
+        ``(n, 3)`` determinant of the fitted Jacobian at ``m_1, m_2, m_3``.
+    sigma_min: ArrayLike
+        ``(n, 3)`` its smallest singular value
+        (:func:`~.geometry.sigma_min_2x2`).
+    """
+    A = fitted_midpoint_jacobian(beta6, cls, level, h0)
+    det = A[..., 0, 0] * A[..., 1, 1] - A[..., 0, 1] * A[..., 1, 0]
+    return det, sigma_min_2x2(A)
+
+
 def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
     """
     Why each triangle's affine model of the lens map is not trusted, and the deviation and smallest singular value its error bound reads.
