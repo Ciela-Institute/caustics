@@ -132,16 +132,16 @@ def assert_same(a, b, path="mesh"):
 
 
 def localised_fold(p):
-    """Affine outside ``|y| < 0.5``; inside, ``beta_y = 0.6 y + y**2 - 0.25`` folds at ``y = -0.3``."""
+    """Affine outside ``|y| < 0.55``; inside, ``beta_y = 0.6 y + y**2 - 0.55**2`` folds at ``y = -0.3``."""
     y = p[:, 1]
-    bend = np.where(np.abs(y) < 0.5, y**2 - 0.25, 0.0)
+    bend = np.where(np.abs(y) < 0.55, y**2 - 0.55**2, 0.0)
     return np.stack([p[:, 0], 0.6 * y + bend], axis=-1)
 
 
 def localised_fold_jacobian(p):
     J = np.zeros((p.shape[0], 2, 2))
     J[:, 0, 0] = 1.0
-    J[:, 1, 1] = np.where(np.abs(p[:, 1]) < 0.5, 0.6 + 2.0 * p[:, 1], 0.6)
+    J[:, 1, 1] = np.where(np.abs(p[:, 1]) < 0.55, 0.6 + 2.0 * p[:, 1], 0.6)
     return J
 
 
@@ -214,7 +214,7 @@ def _sis_jacobian_xy(x, y):
 
 def localised_fold_xy(x, y):
     """:func:`localised_fold` on backend arrays, traceable for the root finding."""
-    bend = backend.where(backend.abs(y) < 0.5, y * y - 0.25, 0.0 * y)
+    bend = backend.where(backend.abs(y) < 0.55, y * y - 0.55**2, 0.0 * y)
     return x, 0.6 * y + bend
 
 

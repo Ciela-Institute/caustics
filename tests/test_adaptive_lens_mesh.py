@@ -148,6 +148,16 @@ def test_the_build_samples_no_point_twice_and_calls_both_callbacks_alike():
     ]
 
 
+def test_localised_fold_s_kink_lies_on_no_lattice_row():
+    mesh, _ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
+    y = to_np(mesh.vertices_lens)[:, 1]
+    assert not np.any(np.isclose(np.abs(y), 0.55, rtol=0, atol=1e-12))
+    p = np.array([[0.3, -0.55 - 1e-9], [0.3, -0.55 + 1e-9]])
+    assert np.allclose(localised_fold(p)[0], localised_fold(p)[1], atol=1e-8)
+    J = localised_fold_jacobian(p)
+    assert J[0, 1, 1] > 0 > J[1, 1, 1]
+
+
 def test_finest_leaves_are_no_longer_than_the_mesh_s_min_img_sep(sie_mesh):
     mesh = sie_mesh
     tri = to_np(mesh.vertices_lens)[to_np(mesh.leaves)]
