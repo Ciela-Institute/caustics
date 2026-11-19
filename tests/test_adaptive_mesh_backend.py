@@ -14,7 +14,6 @@ from adaptive_maps import (
     sie_like,
     sie_like_jacobian,
     SIE_LIKE_LENS,
-    stack_2x2,
     to_np,
     user_build,
 )
@@ -86,20 +85,10 @@ def _arrays(value):
 
 def test_every_public_function_returns_the_users_arrays():
     """0-d and empty results included: an affine lens has no critical curve."""
-    mesh = build_lens_mesh(
-        SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, 4.0, 8, 0.1
-    )
+    mesh = build_lens_mesh(SIE_LIKE_LENS.raytrace, 4.0, 8, 0.1)
     bx = backend.as_array([0.05, 0.3], dtype=backend.float64)
     by = backend.as_array([0.02, -0.1], dtype=backend.float64)
-    affine = build_lens_mesh(
-        lambda x, y: (0.7 * x, 0.9 * y),
-        lambda x, y: stack_2x2(
-            0.7 * backend.ones_like(x), 0.0 * x, 0.0 * x, 0.9 * backend.ones_like(x)
-        ),
-        4.0,
-        4,
-        0.25,
-    )
+    affine = build_lens_mesh(lambda x, y: (0.7 * x, 0.9 * y), 4.0, 4, 0.25)
     results = [
         mesh,
         critical_curves_and_caustics(mesh),
@@ -113,13 +102,9 @@ def test_every_public_function_returns_the_users_arrays():
 
 
 def test_extending_a_mesh_leaves_the_mesh_it_was_given_unchanged():
-    mesh = build_lens_mesh(
-        SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, 4.0, 4, 0.1
-    )
+    mesh = build_lens_mesh(SIE_LIKE_LENS.raytrace, 4.0, 4, 0.1)
     before = [to_np(a).copy() for a in _arrays(mesh)]
-    extend_lens_mesh(
-        mesh, SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, 6.0
-    )
+    extend_lens_mesh(mesh, SIE_LIKE_LENS.raytrace, 6.0)
     for a, b in zip(_arrays(mesh), before):
         np.testing.assert_array_equal(to_np(a), b)
 
@@ -140,7 +125,7 @@ def test_a_jax_build_compiles_only_for_its_padded_lens_batches():
     lens_ = numpy_lens(sie_like, sie_like_jacobian)
     jax.clear_caches()
     before = len(compiles)
-    build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 4, 0.1)
+    build_lens_mesh(lens_.raytrace, 4.0, 4, 0.1)
     assert len(compiles) - before <= 150
 
 
@@ -182,7 +167,7 @@ def test_scalars_of_the_users_backend_build_what_plain_floats_do():
 
     def built(number):
         kw = dict(x0=number(0.0), y0=number(0.0), centers=[(number(0.0), number(0.0))])
-        args = (lens_.raytrace, lens_.jacobian_lens_equation, number(4.0), 4)
+        args = (lens_.raytrace, number(4.0), 4)
         mesh = build_lens_mesh(*args, number(0.1), **kw)
         closed, _ = build_closed_lens_mesh(
             *args, number(0.1), growth=number(1.5), max_iters=1, **kw
@@ -194,9 +179,7 @@ def test_scalars_of_the_users_backend_build_what_plain_floats_do():
 
 
 def test_the_magnification_functions_return_the_users_arrays():
-    mesh = build_lens_mesh(
-        SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, 4.0, 8, 0.1
-    )
+    mesh = build_lens_mesh(SIE_LIKE_LENS.raytrace, 4.0, 8, 0.1)
     curves = critical_curves_and_caustics(mesh)
     bx = backend.as_array([0.05, 0.3], dtype=backend.float64)
     by = backend.as_array([0.02, -0.1], dtype=backend.float64)
@@ -205,7 +188,6 @@ def test_the_magnification_functions_return_the_users_arrays():
         magnification_region(mesh, curves, 3.0),
         *build_closed_magnification_region(
             SIE_LIKE_LENS.raytrace,
-            SIE_LIKE_LENS.jacobian_lens_equation,
             4.0,
             8,
             0.1,
@@ -220,9 +202,7 @@ def test_the_magnification_functions_return_the_users_arrays():
 
 
 def test_a_magnification_region_leaves_the_mesh_it_was_given_unchanged():
-    mesh = build_lens_mesh(
-        SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, 4.0, 8, 0.1
-    )
+    mesh = build_lens_mesh(SIE_LIKE_LENS.raytrace, 4.0, 8, 0.1)
     curves = critical_curves_and_caustics(mesh)
     before = [to_np(a).copy() for a in _arrays((mesh, curves))]
     magnification_region(mesh, curves, 3.0, 10.0)
@@ -232,7 +212,7 @@ def test_a_magnification_region_leaves_the_mesh_it_was_given_unchanged():
 
 def test_total_magnification_takes_numpy_sources():
     lens_ = numpy_lens(sie_like, sie_like_jacobian)
-    mesh = build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 4.0, 8, 0.1)
+    mesh = build_lens_mesh(lens_.raytrace, 4.0, 8, 0.1)
     mu = total_magnification(np.array([0.1, 0.2]), np.array([0.0, 0.1]), mesh)
     assert isinstance(mu, backend.array_type) and to_np(mu).shape == (2,)
 
@@ -240,7 +220,7 @@ def test_total_magnification_takes_numpy_sources():
 def test_a_user_mesh_s_lattice_gives_its_corner_in_the_user_s_backend():
     """On an extended lattice, whose origin is not lattice point ``(0, 0)``."""
     mesh, lens_ = user_build(affine, affine_jacobian)
-    grown = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 6.0)
+    grown = extend_lens_mesh(mesh, lens_.raytrace, 6.0)
     lat = grown.lattice
     assert lat.origin > 0
     corner = lat.corner

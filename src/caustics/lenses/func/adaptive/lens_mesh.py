@@ -23,7 +23,6 @@ from .geometry import (
     is_member,
     map_chunks,
     segments_cross,
-    sigma_min_2x2,
     sorted_find,
     to_device,
     winding_number,
@@ -113,10 +112,6 @@ class LensMesh(NamedTuple):
         a corner, of their fitted Jacobian at it, each from its origin's six
         images (:func:`~.criterion.fitted_jacobian`); NaN where a holder has
         a non-finite image.
-    vertices_det: ArrayLike
-        ``(V,)`` ``det A`` of the lens Jacobian at each vertex.
-    vertices_sigma_min: ArrayLike
-        ``(V,)`` smallest singular value of the lens Jacobian at each vertex.
     leaves: ArrayLike
         ``(L, 3)`` int64 vertex indices of the closed, conforming leaves,
         positively oriented in the lens plane.
@@ -166,8 +161,6 @@ class LensMesh(NamedTuple):
     vertices_lens: ArrayLike
     vertices_source: ArrayLike
     vertices_jacobian: ArrayLike
-    vertices_det: ArrayLike
-    vertices_sigma_min: ArrayLike
     leaves: ArrayLike
     leaf_origin: ArrayLike
     origin_leaves: ArrayLike
@@ -182,20 +175,17 @@ class LensMesh(NamedTuple):
     min_img_sep: float
 
 
-def make_sampler(raytrace, jacobian, device, batch_size=None):
+def make_sampler(raytrace, device, batch_size=None):
     """
-    The lens map as ``(N, 2) -> (N, 4)`` float64 ``(bx, by, det A, sigma_min A)``, or ``(N, 2)`` images when ``jacobian`` is None.
+    The lens map as ``(N, 2) -> (N, 2)`` float64 images.
 
-    ``raytrace`` and ``jacobian`` receive the same float64 coordinates on
-    ``device``, in the user's backend, padded to
-    ``backend.padded_size(N, batch_size)`` rows by repeating the last. Float64
-    matters: the criterion compares midpoint deviations of ``O(fov)``
-    quantities, which cancel to exactly zero below about
-    ``sqrt(8 * eps * fov)`` and would read as converged. ``det A`` is formed
-    in the Jacobian's dtype, then cast; ``sigma_min A``
-    (:func:`~.geometry.sigma_min_2x2`) is formed on the mesh backend from the
-    Jacobian's entries cast to float64, which travel with the other columns.
-    The values come back on the positions' device, one row per position.
+    ``raytrace`` receives float64 coordinates on ``device``, in the user's
+    backend, padded to ``backend.padded_size(N, batch_size)`` rows by
+    repeating the last. Float64 matters: the criterion compares midpoint
+    deviations of ``O(fov)`` quantities, which cancel to exactly zero below
+    about ``sqrt(8 * eps * fov)`` and would read as converged. The images
+    are cast to float64 and come back on the positions' device, one row per
+    position.
     """
     f64 = backend.float64
 
@@ -205,18 +195,8 @@ def make_sampler(raytrace, jacobian, device, batch_size=None):
         padded = mesh_backend.pad_rows(xy, size) if size > n else xy
         x = backend.as_array(to_user(padded[:, 0]), dtype=f64, device=device)
         y = backend.as_array(to_user(padded[:, 1]), dtype=f64, device=device)
-        columns = list(raytrace(x, y))
-        if jacobian is not None:
-            J = jacobian(x, y)
-            columns.append(J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0])
-            columns.extend((J[:, 0, 0], J[:, 0, 1], J[:, 1, 0], J[:, 1, 1]))
-        out = backend.stack([backend.to(c, dtype=f64) for c in columns], dim=-1)
+        out = backend.stack([backend.to(c, dtype=f64) for c in raytrace(x, y)], dim=-1)
         out = mesh_backend.to(to_mesh(out), device=mesh_backend.device(xy))
-        if jacobian is not None:
-            sigma = sigma_min_2x2(out[:, 3:].reshape(-1, 2, 2))
-            out = mesh_backend.concatenate(
-                (out[:, :3], mesh_backend.unsqueeze(sigma, -1)), dim=1
-            )
         return out[:n] if size > n else out
 
     return sample
@@ -296,7 +276,7 @@ def _lens_split(h0, min_img_sep):
     """The lens criterion as :func:`~.refine.refine`'s ``split``."""
 
     def split(ij, values6, cls, level):
-        status, _, _, _ = lens_status(values6[..., :2], cls, level, h0, min_img_sep)
+        status, _, _, _ = lens_status(values6, cls, level, h0, min_img_sep)
         return status != LEAF_CONVERGED
 
     return split
@@ -309,7 +289,6 @@ def _warn_depth_limited(h0, min_img_sep, max_level):
 
 def build_lens_mesh(
     raytrace,
-    jacobian,
     fov,
     init_res,
     min_img_sep,
@@ -336,13 +315,6 @@ def build_lens_mesh(
     ----------
     raytrace: Callable[[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike]]
         ``raytrace(x, y) -> (bx, by)`` on 1-D arrays, e.g. ``lens.raytrace``.
-    jacobian: Callable[[ArrayLike, ArrayLike], ArrayLike]
-        ``jacobian(x, y) -> (N, 2, 2)``, the Jacobian of ``raytrace``, e.g.
-        ``lens.jacobian_lens_equation``. A bare ``lens.jacobian_lens_equation``
-        re-traces its autodiff at every call under jax, while
-        ``caustics.jit_forward(lens.jacobian_lens_equation)``, which
-        ``Lens.build_closed_lens_mesh`` passes, compiles once per padded batch
-        size and follows the lens's parameters.
     fov: float
         Side of the square lens-plane domain.
 
@@ -369,10 +341,10 @@ def build_lens_mesh(
 
         *Unit: arcsec*
     device: Optional
-        Device the lens lives on: ``raytrace`` and ``jacobian`` receive
-        coordinates there, and the mesh is stored there.
+        Device the lens lives on: ``raytrace`` receives coordinates there,
+        and the mesh is stored there.
     batch_size: Optional[int]
-        Most points per ``raytrace`` and ``jacobian`` call.
+        Most points per ``raytrace`` call.
 
     Returns
     -------
@@ -380,7 +352,6 @@ def build_lens_mesh(
     """
     mesh = _build_lens_mesh(
         raytrace,
-        jacobian,
         *to_mesh((fov, init_res, min_img_sep, max_depth)),
         x0=to_mesh(x0),
         y0=to_mesh(y0),
@@ -393,7 +364,6 @@ def build_lens_mesh(
 
 def _build_lens_mesh(
     raytrace,
-    jacobian,
     fov,
     init_res,
     min_img_sep,
@@ -415,30 +385,36 @@ def _build_lens_mesh(
     _warn_depth_limited(h0, min_img_sep, max_level)
     lat = make_lattice(fov, x0, y0, init_res, max_level + 1)
     hole_centers, hole_radius = merge_centers(centers, min_img_sep)
-    trace = make_sampler(raytrace, None, device, batch_size)
+    sample = make_sampler(raytrace, device, batch_size)
     holes = sample_holes(
-        trace,
+        sample,
         hole_centers,
         hole_radius,
         min_img_sep,
         batch_size,
     )
-    sample = make_sampler(raytrace, jacobian, device, batch_size)
     ij, cls = initial_triangles(init_res, lat.level, ROOT_CLASS)
     cache, store, rows = add_roots(
-        empty_cache(4), empty_store(), lat, ij, cls, sample, batch_size
+        empty_cache(2), empty_store(), lat, ij, cls, sample, batch_size
     )
-    return _freeze(
-        lat, cache, store, rows, sample, trace, min_img_sep, holes, batch_size
+    return _freeze(lat, cache, store, rows, sample, min_img_sep, holes, batch_size)
+
+
+def _six_keys(lat, ij):
+    """
+    The lattice keys of triangles' six samples, ``(n, 6)``: the three vertices, then the three edge midpoints.
+
+    ``ij`` is ``(n, 3, 2)`` int64 vertex lattice coordinates; midpoint
+    ``m_i`` is opposite vertex ``i`` (:func:`~.lattice.midpoint_ij`).
+    """
+    return mesh_backend.concatenate(
+        (lattice_key(lat, ij), lattice_key(lat, midpoint_ij(ij))), dim=1
     )
 
 
 def _six_values(lat, cache, store, rows, table_keys, table_values):
     """The values at store ``rows``' six samples, ``(n, 6, C)``, read from ``table_keys``, ascending, and ``table_values``."""
-    ij = cache.ij[store.v[rows]]
-    keys6 = mesh_backend.concatenate(
-        (lattice_key(lat, ij), lattice_key(lat, midpoint_ij(ij))), dim=1
-    )
+    keys6 = _six_keys(lat, cache.ij[store.v[rows]])
     return table_values[mesh_backend.searchsorted(table_keys, keys6)]
 
 
@@ -461,24 +437,21 @@ def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep)
     return lens_status(beta6, store.cls[rows], store.level[rows], lat.h0, min_img_sep)
 
 
-def _freeze(
-    lat, cache, store, rows, sample, trace, min_img_sep, holes, batch_size, seed=None
-):
+def _freeze(lat, cache, store, rows, sample, min_img_sep, holes, batch_size, seed=None):
     """
     Refine from store ``rows``, then close and index the result, finishing its finest level.
 
     :func:`~.refine.refine` splits by :func:`_lens_split` down to the
     lattice's finest level. Its state is held only while :func:`_finish`
     reads it, so that it, and everything the status pass built, is freed
-    before the index, the largest step, is built. ``trace`` and ``seed``
-    are :func:`_finish`'s.
+    before the index, the largest step, is built. ``seed`` is
+    :func:`_finish`'s.
     """
     split = _lens_split(lat.h0, min_img_sep)
     mesh = _finish(
         lat,
         *refine(cache, store, rows, lat, sample, split, lat.level - 1, batch_size),
         sample,
-        trace,
         min_img_sep,
         holes,
         batch_size,
@@ -495,7 +468,7 @@ def _mesh_index(mesh):
     )
 
 
-def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, seed):
+def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
     """
     Close a refinement and finish its finest level: its :class:`LensMesh`, with no index yet.
 
@@ -504,8 +477,7 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
     images: below the finest level its midpoints are in the cache,
     ``refine`` having tested and passed it; at the finest level they are
     sampled here, with ``sample``, and never cached. The origins are tested
-    in canonical order, in steps of at most :data:`STATUS_ROWS` rows. From
-    the samples on, only their images are read.
+    in canonical order, in steps of at most :data:`STATUS_ROWS` rows.
 
     Each vertex carries the mean, over the origins holding it as a corner,
     of their fitted Jacobian at it. Each step of the status pass adds its
@@ -531,10 +503,9 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
     :func:`~.band.in_band` holds for; status does not depend on it. Its
     images are read from the table the status pass read. An old origin new
     to the band has midpoints that table lacks: those alone are raytraced,
-    with ``trace``, and read from a table of their own.
+    with ``sample``, and read from a table of their own.
 
-    ``trace`` raytraces points to their images alone, ``(N, 2)``:
-    :func:`make_sampler` without a Jacobian. ``seed`` is ``(status,
+    ``sample`` is :func:`make_sampler`'s. ``seed`` is ``(status,
     deviation, sigma_min, mid_keys, mid_values, vertices_jacobian,
     measured_keys, measured_det)`` from :func:`_seed`: the statuses,
     deviations and smallest singular values of the store's first rows, the
@@ -586,13 +557,12 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
     todo = todo[~is_member(mid_keys, todo)]
     if todo.shape[0]:
         xy = lattice_xy(lat, lattice_ij_from_key(lat, todo))
-        new_values = sample_points(xy, sample, batch_size)[:, :2]
+        new_values = sample_points(xy, sample, batch_size)
     else:
         new_values = mesh_backend.zeros((0, 2), dtype=f64)
-    # Images alone: nothing past this point reads the lens's Jacobian.
     table_keys = mesh_backend.concatenate((cache.keys, mid_keys, todo), dim=0)
     table_values = mesh_backend.concatenate(
-        (cache.values[cache.slots, :2], mid_values, new_values), dim=0
+        (cache.values[cache.slots], mid_values, new_values), dim=0
     )
     order = mesh_backend.argsort(table_keys)
     table_keys, table_values = table_keys[order], table_values[order]
@@ -680,10 +650,7 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
 
     def keys6_of(k):
         """Lattice keys of origins ``k``'s six samples, ``(n, 6)``."""
-        ij = cache.ij[store.v[origin[k]]]
-        return mesh_backend.concatenate(
-            (lattice_key(lat, ij), lattice_key(lat, midpoint_ij(ij))), dim=1
-        )
+        return _six_keys(lat, cache.ij[store.v[origin[k]]])
 
     def unresolved_step(k):
         """The keys of the six samples of those of origins ``k`` measured, ``(6 n,)``."""
@@ -701,7 +668,7 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
         measured_keys,
         seed_measured_keys,
         seed_measured_det,
-        trace,
+        sample,
         min_img_sep,
         batch_size,
     )
@@ -727,7 +694,7 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
         missing_keys = band_keys6.reshape(-1)[missing]
         side_keys = mesh_backend.unique(missing_keys)
         side_values = sample_points(
-            lattice_xy(lat, lattice_ij_from_key(lat, side_keys)), trace, batch_size
+            lattice_xy(lat, lattice_ij_from_key(lat, side_keys)), sample, batch_size
         )
         band_source6 = mesh_backend.fill_at_indices(
             band_source6.reshape(-1, 2),
@@ -744,16 +711,12 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
         measured_det,
     )
 
-    # One gather: each vertex field is a view, which keeps its whole base alive.
-    values = cache.values[used]
     mesh = LensMesh(
         lattice=lat,
         vertices_ij=cache.ij[used],
         vertices_lens=lattice_xy(lat, cache.ij[used]),
-        vertices_source=values[:, :2],
+        vertices_source=cache.values[used],
         vertices_jacobian=jacobian,
-        vertices_det=values[:, 2],
-        vertices_sigma_min=values[:, 3],
         leaves=leaves,
         leaf_origin=leaf_origin,
         origin_leaves=origin_leaves,
@@ -770,7 +733,7 @@ def _finish(lat, cache, store, sample, trace, min_img_sep, holes, batch_size, se
     return mesh
 
 
-def _measured_det(lat, keys, seed_keys, seed_det, trace, min_img_sep, batch_size):
+def _measured_det(lat, keys, seed_keys, seed_det, sample, min_img_sep, batch_size):
     """
     ``det A`` measured at lattice ``keys``: read from a seed's table where it holds the key, raytraced here otherwise.
 
@@ -789,8 +752,8 @@ def _measured_det(lat, keys, seed_keys, seed_det, trace, min_img_sep, batch_size
     seed_keys, seed_det: ArrayLike
         ``(J,)`` int64 ascending keys and ``(J,)`` float64 their measured
         ``det A``.
-    trace:
-        Images-only sampler (:func:`make_sampler` without a Jacobian).
+    sample:
+        :func:`make_sampler`'s.
 
     Returns
     -------
@@ -818,7 +781,7 @@ def _measured_det(lat, keys, seed_keys, seed_det, trace, min_img_sep, batch_size
     n = xy.shape[0]
     beta = sample_points(
         mesh_backend.concatenate((xy - dx, xy + dx, xy - dy, xy + dy), dim=0),
-        trace,
+        sample,
         batch_size,
     ).reshape(4, n, 2)
     jx = (beta[1] - beta[0]) / (2 * d)
@@ -836,9 +799,10 @@ def _seed(mesh, lat, k):
     """
     :func:`~.refine.refine`'s state, and :func:`_freeze`'s ``seed``, from a mesh on its lattice grown by ``k``.
 
-    The cache and store are :func:`~.refine.resume`'s. The measured samples
-    are shifted by ``k << lat.level``, as ``resume`` shifts the vertices,
-    and keyed on the grown lattice, which keeps their order.
+    The cache and store are :func:`~.refine.resume`'s, with the vertices'
+    images as the cache's values. The measured samples are shifted by
+    ``k << lat.level``, as ``resume`` shifts the vertices, and keyed on the
+    grown lattice, which keeps their order.
     """
     mesh = to_device(mesh, build_device())
     int64 = mesh_backend.int64
@@ -846,23 +810,13 @@ def _seed(mesh, lat, k):
         lat,
         k,
         mesh.vertices_ij,
-        mesh_backend.concatenate(
-            (
-                mesh.vertices_source,
-                mesh_backend.unsqueeze(mesh.vertices_det, -1),
-                mesh_backend.unsqueeze(mesh.vertices_sigma_min, -1),
-            ),
-            dim=1,
-        ),
+        mesh.vertices_source,
         mesh.origin_leaves,
         mesh.origin_level,
         mesh.origin_cls,
     )
     band = mesh.critical_band
-    bij = cache.ij[mesh.origin_leaves[band.leaves]]
-    keys6 = mesh_backend.concatenate(
-        (lattice_key(lat, bij), lattice_key(lat, midpoint_ij(bij))), dim=1
-    )
+    keys6 = _six_keys(lat, cache.ij[mesh.origin_leaves[band.leaves]])
     # Band samples are numbered in ascending key order, so these keys ascend.
     sample_keys = mesh_backend.fill_at_indices(
         mesh_backend.zeros((band.det.shape[0],), dtype=int64),
@@ -883,7 +837,7 @@ def _seed(mesh, lat, k):
     return cache, store, seed
 
 
-def extend_lens_mesh(mesh, raytrace, jacobian, fov, *, batch_size=None):
+def extend_lens_mesh(mesh, raytrace, fov, *, batch_size=None):
     """
     Grow a lens mesh to a larger fov about the same center, reusing its refinement.
 
@@ -900,8 +854,8 @@ def extend_lens_mesh(mesh, raytrace, jacobian, fov, *, batch_size=None):
     Parameters
     ----------
     mesh: LensMesh
-    raytrace, jacobian:
-        The pair ``mesh`` was built from.
+    raytrace:
+        The lens map ``mesh`` was built from.
     fov: float
         Requested side length.
 
@@ -917,12 +871,12 @@ def extend_lens_mesh(mesh, raytrace, jacobian, fov, *, batch_size=None):
     device = backend.device(mesh.vertices_lens)
     on_mesh = to_mesh(mesh)
     out = _extend_lens_mesh(
-        on_mesh, raytrace, jacobian, to_mesh(fov), device=device, batch_size=batch_size
+        on_mesh, raytrace, to_mesh(fov), device=device, batch_size=batch_size
     )
     return mesh if out is on_mesh else to_user(out, device)
 
 
-def _extend_lens_mesh(mesh, raytrace, jacobian, fov, *, device, batch_size):
+def _extend_lens_mesh(mesh, raytrace, fov, *, device, batch_size):
     """:func:`extend_lens_mesh` on ``mesh_backend`` arrays; ``device`` is the lens's."""
     h0 = mesh.lattice.h0
     k = max(0, math.ceil((float(fov) - mesh.lattice.fov) / (2.0 * h0) - 1e-9))
@@ -936,8 +890,7 @@ def _extend_lens_mesh(mesh, raytrace, jacobian, fov, *, device, batch_size):
         "Extend by less, or rebuild with a larger min_img_sep or a lower max_depth.",
     )
     _warn_depth_limited(h0, mesh.min_img_sep, max_level)
-    sample = make_sampler(raytrace, jacobian, device, batch_size)
-    trace = make_sampler(raytrace, None, device, batch_size)
+    sample = make_sampler(raytrace, device, batch_size)
     cache, store, seed = _seed(mesh, lat, k)
     ij, cls = ring_triangles(init_res, k, lat.level, ROOT_CLASS)
     cache, store, rows = add_roots(cache, store, lat, ij, cls, sample, batch_size)
@@ -947,7 +900,6 @@ def _extend_lens_mesh(mesh, raytrace, jacobian, fov, *, device, batch_size):
         store,
         rows,
         sample,
-        trace,
         mesh.min_img_sep,
         mesh.holes,
         batch_size,
@@ -1160,7 +1112,6 @@ def _curves_cut_by_fov(mesh, curves):
 
 def build_closed_lens_mesh(
     raytrace,
-    jacobian,
     fov,
     init_res,
     min_img_sep,
@@ -1197,7 +1148,7 @@ def build_closed_lens_mesh(
 
     Parameters
     ----------
-    raytrace, jacobian, fov, init_res, min_img_sep, max_depth, x0, y0, centers, device, batch_size:
+    raytrace, fov, init_res, min_img_sep, max_depth, x0, y0, centers, device, batch_size:
         As for :func:`build_lens_mesh`.
     growth: float
         Factor each extension asks to multiply the fov by.
@@ -1212,7 +1163,6 @@ def build_closed_lens_mesh(
     """
     mesh, curves = _build_closed_lens_mesh(
         raytrace,
-        jacobian,
         *to_mesh((fov, init_res, min_img_sep, max_depth)),
         growth=to_mesh(growth),
         max_iters=max_iters,
@@ -1227,7 +1177,6 @@ def build_closed_lens_mesh(
 
 def _build_closed_lens_mesh(
     raytrace,
-    jacobian,
     fov,
     init_res,
     min_img_sep,
@@ -1254,7 +1203,6 @@ def _build_closed_lens_mesh(
         fov, init_res = widened, init_res + 2 * k
     mesh = _build_lens_mesh(
         raytrace,
-        jacobian,
         fov,
         init_res,
         min_img_sep,
@@ -1273,7 +1221,6 @@ def _build_closed_lens_mesh(
         mesh = _extend_lens_mesh(
             mesh,
             raytrace,
-            jacobian,
             growth * mesh.lattice.fov,
             device=device,
             batch_size=batch_size,

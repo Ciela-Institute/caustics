@@ -279,7 +279,7 @@ def _images(mesh, beta, raytrace, tol, lm_map, lm_kwargs, device):
         to_user(seed, device), to_user(target, device), f, f_args=f_args, **lm_kwargs
     )
     root = mesh_backend.to(to_mesh(root), device=mesh_device)
-    trace = make_sampler(raytrace, None, device)
+    trace = make_sampler(raytrace, device)
     residual2 = mesh_backend.sum((trace(root) - target) ** 2, dim=-1)
     converged = residual2 < tol * tol
     keep = converged & near_seed(mesh, idx, seed, root) & inside_fov(mesh, root)

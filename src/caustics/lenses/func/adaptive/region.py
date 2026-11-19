@@ -605,7 +605,6 @@ def _extend_source_mesh(src, mesh, curves, mu_min, mu_max):
 
 def build_closed_magnification_region(
     raytrace,
-    jacobian,
     fov,
     init_res,
     min_img_sep,
@@ -634,7 +633,7 @@ def build_closed_magnification_region(
 
     Parameters
     ----------
-    raytrace, jacobian, fov, init_res, min_img_sep, max_depth, x0, y0, centers, device, batch_size:
+    raytrace, fov, init_res, min_img_sep, max_depth, x0, y0, centers, device, batch_size:
         As for :func:`~.lens_mesh.build_lens_mesh`.
     mu_min, mu_max:
         As for :func:`magnification_region`.
@@ -652,7 +651,6 @@ def build_closed_magnification_region(
     """
     mesh, curves, region = _build_closed_magnification_region(
         raytrace,
-        jacobian,
         *to_mesh((fov, init_res, min_img_sep)),
         float(mu_min),
         None if mu_max is None else float(mu_max),
@@ -670,7 +668,6 @@ def build_closed_magnification_region(
 
 def _build_closed_magnification_region(
     raytrace,
-    jacobian,
     fov,
     init_res,
     min_img_sep,
@@ -689,7 +686,6 @@ def _build_closed_magnification_region(
     """:func:`build_closed_magnification_region` on ``mesh_backend`` arrays, on the build device."""
     mesh, curves = _build_closed_lens_mesh(
         raytrace,
-        jacobian,
         fov,
         init_res,
         min_img_sep,
@@ -710,7 +706,6 @@ def _build_closed_magnification_region(
         mesh = _extend_lens_mesh(
             mesh,
             raytrace,
-            jacobian,
             growth * mesh.lattice.fov,
             device=device,
             batch_size=batch_size,

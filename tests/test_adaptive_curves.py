@@ -1260,7 +1260,6 @@ def test_the_caustic_area_of_an_sis_is_the_disk_its_pseudo_caustic_bounds():
     lens_ = numpy_lens(*sis())
     mesh, curves = build_closed_lens_mesh(
         lens_.raytrace,
-        lens_.jacobian_lens_equation,
         6.0,
         16,
         0.02,

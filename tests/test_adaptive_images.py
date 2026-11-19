@@ -81,11 +81,7 @@ def _missed(images, counts, want, tol):
 
 @pytest.fixture(scope="module")
 def mesh():
-    return to_mesh(
-        build_lens_mesh(
-            SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, **BUILD
-        )
-    )
+    return to_mesh(build_lens_mesh(SIE_LIKE_LENS.raytrace, **BUILD))
 
 
 @pytest.fixture(scope="module")
@@ -135,7 +131,6 @@ def _sie_build(device=None):
         lens = lens.to(device)
     mesh = build_lens_mesh(
         lens.raytrace,
-        lens.jacobian_lens_equation,
         fov=5.0,
         init_res=32,
         min_img_sep=1e-2,
@@ -252,7 +247,6 @@ def test_forward_raytrace_finds_every_sis_inner_image_beyond_min_img_sep():
     sep = 0.05
     mesh = build_lens_mesh(
         SIS_LENS.raytrace,
-        SIS_LENS.jacobian_lens_equation,
         fov=4.0,
         init_res=4,
         min_img_sep=sep,
@@ -284,7 +278,6 @@ def test_forward_raytrace_finds_every_image_just_outside_a_center_steeper_than_i
     lens_ = power_law_lens(1.2)
     mesh = build_lens_mesh(
         lens_.raytrace,
-        lens_.jacobian_lens_equation,
         fov=8.0,
         init_res=8,
         min_img_sep=sep,
@@ -374,7 +367,6 @@ def test_forward_raytrace_recovers_the_analytic_point_mass_pair():
     )
     mesh = build_lens_mesh(
         lens.raytrace,
-        lens.jacobian_lens_equation,
         fov=8.0,
         init_res=64,
         min_img_sep=1e-2,
@@ -460,7 +452,6 @@ def test_forward_raytrace_returns_the_converged_root_of_an_image_by_a_point_caus
     t, u = 1e-4, np.array([np.cos(np.pi / 6), np.sin(np.pi / 6)])
     mesh = build_lens_mesh(
         SIS_LENS.raytrace,
-        SIS_LENS.jacobian_lens_equation,
         fov=4.0,
         init_res=8,
         min_img_sep=0.02,

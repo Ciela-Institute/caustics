@@ -215,7 +215,6 @@ def test_pseudo_caustics_mark_nothing():
     mesh = to_mesh(
         build_lens_mesh(
             lens_.raytrace,
-            lens_.jacobian_lens_equation,
             6.0,
             16,
             0.02,
@@ -425,9 +424,7 @@ def _fold_lens(name):
 )
 def fold(request):
     lens, centers, fov = _fold_lens(request.param)
-    return build_closed_lens_mesh(
-        lens.raytrace, lens.jacobian_lens_equation, fov, 16, 0.02, centers=centers
-    )
+    return build_closed_lens_mesh(lens.raytrace, fov, 16, 0.02, centers=centers)
 
 
 @pytest.mark.filterwarnings("ignore:Lens model")
@@ -457,14 +454,11 @@ def test_a_region_s_area_matches_counting_mu_tot_on_a_fine_grid(fold, mu_min, mu
 def grown():
     """An SIS source mesh for mu_min = 1.5 at fov 6, and its extension with the lens mesh to fov 9."""
     lens_ = numpy_lens(*sis())
-    mesh = to_mesh(
-        build_lens_mesh(lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, 0.02)
-    )
+    mesh = to_mesh(build_lens_mesh(lens_.raytrace, 6.0, 16, 0.02))
     src = _source_mesh(mesh, _critical_curves_and_caustics(mesh), 1.5, None)
     bigger = _extend_lens_mesh(
         mesh,
         lens_.raytrace,
-        lens_.jacobian_lens_equation,
         9.0,
         device=None,
         batch_size=None,
@@ -523,7 +517,6 @@ def test_the_closed_build_grows_the_fov_until_the_region_is_bounded():
     lens_ = numpy_lens(*sis())
     mesh, curves, region = build_closed_magnification_region(
         lens_.raytrace,
-        lens_.jacobian_lens_equation,
         6.0,
         16,
         0.02,
@@ -540,7 +533,6 @@ def test_the_closed_build_traces_no_hole_where_an_earlier_source_mesh_was_invali
     lens_ = numpy_lens(*sis())
     mesh, curves, region = build_closed_magnification_region(
         lens_.raytrace,
-        lens_.jacobian_lens_equation,
         6.0,
         16,
         0.02,
@@ -553,7 +545,7 @@ def test_the_closed_build_traces_no_hole_where_an_earlier_source_mesh_was_invali
 
 def test_a_bounded_region_costs_no_extension_beyond_the_closed_lens_mesh():
     lens_ = numpy_lens(*sis())
-    args = (lens_.raytrace, lens_.jacobian_lens_equation, 6.0, 16, 0.02)
+    args = (lens_.raytrace, 6.0, 16, 0.02)
     mesh, curves, region = build_closed_magnification_region(
         *args, 3.0, centers=[(0.0, 0.0)]
     )
@@ -570,7 +562,6 @@ def test_the_closed_build_warns_when_no_fov_bounds_the_region():
     ):
         _, _, region = build_closed_magnification_region(
             lens_.raytrace,
-            lens_.jacobian_lens_equation,
             6.0,
             16,
             0.02,

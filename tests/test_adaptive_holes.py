@@ -148,7 +148,7 @@ def power_law_raytrace(c, b, t):
 def sample(raytrace, centers, radius, min_img_sep, batch_size=None):
     """``sample_holes`` of ``raytrace`` through ``make_sampler``."""
     return sample_holes(
-        make_sampler(raytrace, None, None, batch_size),
+        make_sampler(raytrace, None, batch_size),
         f64(centers),
         f64(radius),
         min_img_sep,
@@ -339,7 +339,7 @@ def test_a_build_stores_the_merged_and_sampled_holes():
     centers = [SIS_C, SIS_C, (1.5, 1.5)]
     mesh, lens_ = build(*sis([SIS_C]), **BUILD, centers=centers)
     want = sample_holes(
-        make_sampler(lens_.raytrace, None, None),
+        make_sampler(lens_.raytrace, None),
         *merge_centers(centers, mesh.min_img_sep),
         mesh.min_img_sep,
         None,

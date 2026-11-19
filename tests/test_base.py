@@ -71,6 +71,23 @@ def test_build_closed_lens_mesh_traces_the_region_only_given_mu_min(device):
     assert np.isfinite(region.area) and region.area > 0
 
 
+@pytest.mark.parametrize("mu_min", [None, 3.0])
+def test_build_closed_lens_mesh_never_calls_the_lens_jacobian(
+    device, monkeypatch, mu_min
+):
+    lens = _sie(device)
+
+    def boom(*args, **kwargs):
+        raise AssertionError("the lens Jacobian was called")
+
+    monkeypatch.setattr(type(lens), "jacobian_lens_equation", boom)
+    mesh, curves, region = lens.build_closed_lens_mesh(
+        5.0, 16, 2e-2, mu_min=mu_min, device=device
+    )
+    assert mesh.vertices_jacobian.shape[0] > 0
+    assert (region is None) == (mu_min is None)
+
+
 def _hole_centers(lens, device, **kwargs):
     """The centers of the holes in ``lens``'s closed mesh, in lexicographic ``(x, y)`` order."""
     mesh, _, _ = lens.build_closed_lens_mesh(5.0, 16, 2e-2, device=device, **kwargs)

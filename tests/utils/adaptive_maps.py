@@ -82,13 +82,11 @@ def numpy_lens(fn, jac):
 
 
 def user_build(fn, jac, fov=4.0, init_res=4, min_img_sep=0.25, **kw):
-    """``build_lens_mesh`` of numpy maps, in the user's backend, and its recording lens."""
+    """``build_lens_mesh`` of numpy maps, in the user's backend, and its recording lens; the build is handed its ``raytrace`` alone."""
     from caustics.lenses.func.adaptive.lens_mesh import build_lens_mesh
 
     lens_ = numpy_lens(fn, jac)
-    mesh = build_lens_mesh(
-        lens_.raytrace, lens_.jacobian_lens_equation, fov, init_res, min_img_sep, **kw
-    )
+    mesh = build_lens_mesh(lens_.raytrace, fov, init_res, min_img_sep, **kw)
     return mesh, lens_
 
 

@@ -170,8 +170,7 @@ class Lens(Module):
         None and ``mu_max`` is unused. With it, this is
         :func:`~caustics.lenses.func.build_closed_magnification_region`, which
         grows the fov further until the region is bounded. The lens map is
-        ``self.raytrace`` and its Jacobian ``self.jacobian_lens_equation``, at
-        the parameter values of this call.
+        ``self.raytrace``, at the parameter values of this call.
 
         The center of every component, ``self.component_centers()``, is given
         a hole, and so is each of ``centers``. Where the lens map is smooth, as
@@ -180,7 +179,7 @@ class Lens(Module):
         critical curve crossing its disk, which is re-joined round it. A
         component centered near or outside ``fov`` widens it.
 
-        Under jax, the map and its Jacobian run through :func:`~caustics.jit_forward`,
+        Under jax, the map runs through :func:`~caustics.jit_forward`,
         compiled once per lens object and padded batch size and reused at
         other parameter values; a ``ThickLens`` runs eagerly. After a call,
         changing a plain attribute (e.g. ``EPL.n_iter``) or the parameter
@@ -270,7 +269,6 @@ class Lens(Module):
         if mu_min is None:
             mesh, curves = func.build_closed_lens_mesh(
                 jit_forward(self.raytrace),
-                jit_forward(self.jacobian_lens_equation),
                 fov,
                 init_res,
                 min_img_sep,
@@ -279,7 +277,6 @@ class Lens(Module):
             return mesh, curves, None
         return func.build_closed_magnification_region(
             jit_forward(self.raytrace),
-            jit_forward(self.jacobian_lens_equation),
             fov,
             init_res,
             min_img_sep,

@@ -254,11 +254,7 @@ BUILD = dict(fov=6.0, init_res=4, min_img_sep=0.1, max_depth=6)
 
 @pytest.fixture(scope="module")
 def mesh():
-    return to_mesh(
-        build_lens_mesh(
-            SIE_LIKE_LENS.raytrace, SIE_LIKE_LENS.jacobian_lens_equation, **BUILD
-        )
-    )
+    return to_mesh(build_lens_mesh(SIE_LIKE_LENS.raytrace, **BUILD))
 
 
 @pytest.fixture(scope="module")
@@ -284,7 +280,6 @@ def point_mesh():
     )
     mesh = build_lens_mesh(
         lens.raytrace,
-        lens.jacobian_lens_equation,
         fov=5.0,
         init_res=32,
         min_img_sep=1e-2,
