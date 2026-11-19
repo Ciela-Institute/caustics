@@ -57,7 +57,8 @@ def _band(samples, lens, det, source=None):
         lens=f64(lens),
         source=f64(lens if source is None else source),
         det=f64(det),
-        sigma_min=f64(np.ones(np.shape(det))),
+        measured_ij=mesh_backend.zeros((0, 2), dtype=mesh_backend.int64),
+        measured_det=f64(np.zeros(0)),
     )
 
 
@@ -1054,6 +1055,23 @@ def test_an_sis_pseudo_caustic_no_critical_curve_reaches_is_among_the_curves():
     assert (critical[2] == -1).all()
     assert np.abs(np.hypot(*critical[0].T) - 1.0).max() < 1e-2
     _assert_ends_with_whole_pseudo_caustics(curves, mesh.holes)
+
+
+def expand_flags(flags, offsets):
+    """Each curve's flag repeated over its points."""
+    return np.repeat(to_np(flags), np.diff(to_np(offsets)))
+
+
+@pytest.mark.parametrize("with_hole", [True, False])
+def test_only_the_einstein_ring_is_traced_round_a_singular_centre(with_hole):
+    fn, jac = sis()
+    kw = dict(centers=f64([[0.0, 0.0]])) if with_hole else {}
+    mesh, _ = build(fn, jac, fov=4.0, init_res=8, min_img_sep=0.02, **kw)
+    curves = critical_curves_and_caustics(mesh)
+    critical = to_np(curves.lens)[
+        ~to_np(expand_flags(curves.pseudo_caustic, curves.offsets))
+    ]
+    assert np.abs(np.hypot(*critical.T) - 1.0).max() < 0.05
 
 
 def test_holes_critical_curves_reach_still_add_their_whole_pseudo_caustics(two_sis):

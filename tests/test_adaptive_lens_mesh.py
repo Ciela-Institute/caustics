@@ -10,6 +10,7 @@ from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
+from caustics.lenses.func.adaptive.band import MEASURE_OFFSET, RESOLVED_SPREAD, in_band
 from caustics.lenses.func.adaptive.criterion import (
     LEAF_APPROX_PARITY_UNRESOLVED,
     LEAF_CONVERGED,
@@ -372,71 +373,135 @@ def lattice_samples(mesh):
     return rows, origin_samples(mesh, rows)
 
 
-def independent_band(mesh, jac):
-    """Band origins recomputed from lattice-exact samples, without the build."""
-    rows, xy = lattice_samples(mesh)
-    J = jac(xy.reshape(-1, 2)).reshape(-1, 6, 2, 2)
-    det = J[..., 0, 0] * J[..., 1, 1] - J[..., 0, 1] * J[..., 1, 0]
-    positive = det >= 0
-    band = np.isfinite(det).all(axis=1) & positive.any(axis=1) & (~positive).any(axis=1)
-    return rows[band]
+BAND_CASES = [
+    pytest.param(
+        localised_fold,
+        localised_fold_jacobian,
+        dict(init_res=4, min_img_sep=0.05),
+        id="localised_fold",
+    ),
+    pytest.param(
+        row_fold, row_fold_jacobian, dict(init_res=8, min_img_sep=2e-2), id="row_fold"
+    ),
+    pytest.param(
+        *broken_where(localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0),
+        dict(init_res=4, min_img_sep=0.05),
+        id="nan_region",
+    ),
+]
 
 
-@pytest.mark.parametrize(
-    "fn, jac, kw",
-    [
-        (localised_fold, localised_fold_jacobian, dict(init_res=4, min_img_sep=0.05)),
-        (row_fold, row_fold_jacobian, dict(init_res=8, min_img_sep=2e-2)),
-        (
-            *broken_where(
-                localised_fold, localised_fold_jacobian, lambda p: p[:, 0] > 1.0
-            ),
-            dict(init_res=4, min_img_sep=0.05),
-        ),
-    ],
-    ids=["localised_fold", "row_fold", "nan_region"],
-)
-def test_band_is_the_sign_change_leaves_recomputed_independently(fn, jac, kw):
-    """The band is exactly the finest origins whose six dets change class.
-
-    Every band origin is ``LEAF_JACOBIAN_PARITY_UNRESOLVED``. So is every
-    origin with an exactly zero sample, which has no sign; outside the band
-    those are the ones whose other samples are all positive, the class the
-    band gives a zero. `localised_fold`'s curve is never a lattice row,
-    `row_fold`'s is one. Where the lens is NaN beside the curve, no band
-    leaf holds a non-finite sample.
-    """
-    mesh, _ = build(fn, jac, fov=4.0, **kw)
-    band = mesh.critical_band
-    got = to_np(band.leaves)
-    assert np.isfinite(to_np(band.det)).all()
-    assert not (to_np(mesh.origin_status)[got] & LEAF_RAYTRACE_NONFINITE).any()
-    want = independent_band(mesh, jac)
-    assert want.size > 0
-    assert sorted(got.tolist()) == sorted(want.tolist())
-    status = to_np(mesh.origin_status)
-    flagged = np.flatnonzero((status & LEAF_JACOBIAN_PARITY_UNRESOLVED) != 0)
-    assert set(got.tolist()) <= set(flagged.tolist())
-    rows, xy = lattice_samples(mesh)
-    J = jac(xy.reshape(-1, 2)).reshape(-1, 6, 2, 2)
-    det = dict(
-        zip(rows.tolist(), J[..., 0, 0] * J[..., 1, 1] - J[..., 0, 1] * J[..., 1, 0])
+def six_ij(mesh, rows):
+    """Lattice coordinates of the six samples of origins ``rows``, ``(n, 6, 2)``: vertices, then midpoints."""
+    v = to_np(mesh.vertices_ij)[to_np(mesh.origin_leaves)[rows]]
+    m = np.stack(
+        [(v[:, (i + 1) % 3] + v[:, (i + 2) % 3]) // 2 for i in range(3)], axis=1
     )
-    zero = [r for r, d in det.items() if (d == 0).any() and np.isfinite(d).all()]
-    assert set(zero) <= set(flagged.tolist())
-    extra = np.setdiff1d(flagged, got).tolist()
-    assert all((det[r] == 0).any() and (det[r] >= 0).all() for r in extra)
-    if fn is row_fold:
-        assert len(extra) > 0
-    else:
-        assert len(extra) == 0
+    return np.concatenate((v, m), axis=1)
+
+
+def fitted_det6(mesh, rows):
+    J = to_np(mesh.vertices_jacobian)[to_np(mesh.origin_leaves)[rows]]
+
+    def det2(A):  # the explicit 2x2 formula: np.linalg.det goes through slogdet
+        return A[..., 0, 0] * A[..., 1, 1] - A[..., 0, 1] * A[..., 1, 0]
+
+    det = det2(J)
+    mid = np.stack(
+        [det2(0.5 * (J[:, (i + 1) % 3] + J[:, (i + 2) % 3])) for i in range(3)],
+        axis=1,
+    )
+    spread = np.max(
+        [
+            np.linalg.norm(J[:, a] - J[:, b], axis=(1, 2))
+            for a, b in ((0, 1), (1, 2), (2, 0))
+        ],
+        axis=0,
+    )
+    return np.concatenate((det, mid), axis=1), spread
+
+
+def independent_measured(mesh):
+    """The samples a mesh must measure: those of its unresolved finest-level origins with finite images."""
+    finest = np.flatnonzero(to_np(mesh.origin_level) == mesh.lattice.level - 1)
+    _, spread = fitted_det6(mesh, finest)
+    finite = (to_np(mesh.origin_status)[finest] & LEAF_RAYTRACE_NONFINITE) == 0
+    rows = finest[~(spread < RESOLVED_SPREAD) & finite]
+    return {tuple(p) for p in six_ij(mesh, rows).reshape(-1, 2).tolist()}
+
+
+def independent_band(mesh):
+    """Finest-level origins whose six det change class: fitted, or measured where the table has the sample."""
+    finest = np.flatnonzero(to_np(mesh.origin_level) == mesh.lattice.level - 1)
+    det6, _ = fitted_det6(mesh, finest)
+    table = {
+        tuple(p): d
+        for p, d in zip(
+            to_np(mesh.critical_band.measured_ij).tolist(),
+            to_np(mesh.critical_band.measured_det).tolist(),
+        )
+    }
+    ij = six_ij(mesh, finest)
+    for r in range(finest.size):
+        for s in range(6):
+            det6[r, s] = table.get(tuple(ij[r, s]), det6[r, s])
+    ok = (
+        np.isfinite(det6).all(axis=1) & (det6 >= 0).any(axis=1) & (det6 < 0).any(axis=1)
+    )
+    return finest[ok], det6[ok]
+
+
+@pytest.mark.parametrize("fn, jac, kw", BAND_CASES)
+def test_the_band_is_the_sign_change_leaves_recomputed_independently(fn, jac, kw):
+    mesh, _ = build(fn, jac, **kw)
+    band = mesh.critical_band
+    rows, det6 = independent_band(mesh)
+    assert np.array_equal(to_np(band.leaves), rows) and rows.size > 0
+    np.testing.assert_array_equal(to_np(band.det[band.samples]), det6)
+    assert to_np(in_band(band.det[band.samples])).all()
+
+
+SINGULAR = dict(fov=4.0, init_res=8, min_img_sep=0.02)
+
+
+@pytest.mark.parametrize("centers", [None, [[0.0, 0.0]]])
+def test_the_measured_samples_are_those_of_the_unresolved_finite_finest_leaves(centers):
+    fn, jac = sis()
+    kw = {} if centers is None else dict(centers=f64(centers))
+    mesh, _ = build(fn, jac, **SINGULAR, **kw)
+    got = {tuple(p) for p in to_np(mesh.critical_band.measured_ij).tolist()}
+    assert got == independent_measured(mesh) and len(got) > 0
+    key = to_np(lattice_key(mesh.lattice, mesh.critical_band.measured_ij))
+    assert (np.diff(key) > 0).all()
+
+
+def test_a_measured_det_is_the_central_difference_of_the_raytrace_and_has_the_lens_s_sign():
+    fn, jac = sis()
+    mesh, _ = build(fn, jac, **SINGULAR, centers=f64([[0.0, 0.0]]))
+    band = mesh.critical_band
+    xy = to_np(lattice_xy(mesh.lattice, band.measured_ij))
+    d = MEASURE_OFFSET * mesh.min_img_sep
+    Jx = (fn(xy + [d, 0.0]) - fn(xy - [d, 0.0])) / (2 * d)
+    Jy = (fn(xy + [0.0, d]) - fn(xy - [0.0, d])) / (2 * d)
+    want = Jx[:, 0] * Jy[:, 1] - Jy[:, 0] * Jx[:, 1]
+    got = to_np(band.measured_det)
+    np.testing.assert_allclose(got, want, rtol=1e-6, atol=1e-6)
+    outside = np.hypot(*xy.T) > mesh.min_img_sep
+    assert (np.sign(got[outside]) == np.sign(numpy_det(jac, xy[outside]))).all()
+
+
+def test_a_lens_the_fit_resolves_measures_nothing():
+    mesh, lens_ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
+    assert mesh.critical_band.measured_ij.shape[0] == 0
+    asked = np.concatenate(lens_.calls.raytrace)
+    assert np.unique(asked, axis=0).shape[0] == asked.shape[0]
 
 
 def test_band_samples_are_lattice_exact_and_carry_the_lens_values():
     mesh, _ = build(row_fold, row_fold_jacobian, fov=4.0, init_res=8, min_img_sep=2e-2)
     band = mesh.critical_band
     leaves, samples = to_np(band.leaves), to_np(band.samples)
-    xy, source, det = to_np(band.lens), to_np(band.source), to_np(band.det)
+    xy, source = to_np(band.lens), to_np(band.source)
     assert leaves.size > 0
     vertices = to_np(mesh.vertices_lens)[to_np(mesh.origin_leaves)[leaves]]
     assert np.array_equal(xy[samples[:, :3]], vertices)
@@ -445,8 +510,6 @@ def test_band_samples_are_lattice_exact_and_carry_the_lens_values():
     assert np.array_equal(xy[samples], want[[position[r] for r in leaves.tolist()]])
     assert np.unique(xy, axis=0).shape[0] == xy.shape[0]
     assert np.array_equal(source, row_fold(xy))
-    J = row_fold_jacobian(xy)
-    assert np.array_equal(det, J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0])
     assert (np.diff(leaves) > 0).all()
     lat = mesh.lattice
     ij = np.rint((xy - to_np(lat.lo)) / lat.scale).astype(np.int64) + lat.origin
@@ -469,6 +532,38 @@ def test_band_is_empty_without_a_sign_change(fn, jac, kw):
     assert tuple(band.lens.shape) == (0, 2)
     assert tuple(band.source.shape) == (0, 2)
     assert tuple(band.det.shape) == (0,)
+
+
+def test_a_fold_on_a_lattice_row_is_one_curve_along_the_row():
+    mesh, _ = build(row_fold, row_fold_jacobian, fov=4.0, init_res=8, min_img_sep=2e-2)
+    curves = critical_curves_and_caustics(mesh)
+    assert curves.offsets.shape[0] - 1 == 1
+    assert np.abs(to_np(curves.lens)[:, 1] - 0.5).max() < 1e-9
+
+
+@pytest.mark.filterwarnings("ignore:Lens mesh is depth-limited")
+def test_a_depth_limited_mesh_still_traces_a_closed_tangential_curve():
+    mesh, _ = build(
+        sie_like, sie_like_jacobian, fov=4.0, init_res=8, min_img_sep=1e-3, max_depth=4
+    )
+    curves = critical_curves_and_caustics(mesh)
+    assert to_np(curves.closed).any()
+
+
+def test_a_fold_is_traced_straight_at_a_leaf_edge_of_two_to_the_minus_twenty():
+    h = 2.0**-20
+    mesh, _ = build(
+        row_fold,
+        row_fold_jacobian,
+        fov=64 * h,
+        init_res=4,
+        min_img_sep=2 * h,
+        x0=0.0,
+        y0=0.5 + 3.3 * h,
+    )
+    curves = critical_curves_and_caustics(mesh)
+    assert curves.offsets.shape[0] - 1 == 1
+    assert np.abs(to_np(curves.lens)[:, 1] - 0.5).max() < h
 
 
 def test_a_mesh_survives_a_pickle_round_trip():
@@ -827,8 +922,18 @@ def test_seeding_a_mesh_and_freezing_it_again_reproduces_it():
     lat = to_device(mesh.lattice, build_device())
     cache, store, seed = _seed(mesh, lat, 0)
     sample = make_sampler(lens_.raytrace, lens_.jacobian_lens_equation, None)
+    trace = make_sampler(lens_.raytrace, None, None)
     again = _freeze(
-        lat, cache, store, i64([]), sample, mesh.min_img_sep, mesh.holes, None, seed
+        lat,
+        cache,
+        store,
+        i64([]),
+        sample,
+        trace,
+        mesh.min_img_sep,
+        mesh.holes,
+        None,
+        seed,
     )
     assert_same(again, mesh)
     assert not lens_.calls.raytrace and not lens_.calls.jacobian
@@ -860,7 +965,7 @@ def test_the_status_pass_holds_at_most_status_rows_rows_per_step(extend, monkeyp
     assert whole.critical_band.leaves.shape[0] > 0, "fixture must have a band"
     monkeypatch.setattr(lens_mesh_module, "STATUS_ROWS", 7)
     steps.clear()
-    assert_same(run(), whole, rounding=("vertices_jacobian",))
+    assert_same(run(), whole, rounding=("vertices_jacobian", "critical_band.det"))
     assert max(steps) <= 7 and len(steps) > 2 * freezes, steps
 
 
@@ -996,6 +1101,17 @@ EQUIVALENCE = {
 }
 
 
+ROUNDING = ("vertices_jacobian", "critical_band.det")
+
+
+def assert_same_point_sets(a, b, tol, what):
+    """Every point of ``a`` within ``tol`` of a point of ``b``, and every point of ``b`` of one of ``a``."""
+    a, b = to_np(a), to_np(b)
+    assert a.shape[0] > 0 and b.shape[0] > 0, what
+    d = np.linalg.norm(a[:, None, :] - b[None, :, :], axis=-1)
+    assert d.min(axis=1).max() <= tol and d.min(axis=0).max() <= tol, what
+
+
 @pytest.mark.filterwarnings("ignore:Lens mesh is depth-limited")
 @pytest.mark.parametrize("case", list(EQUIVALENCE))
 def test_an_extension_is_the_fresh_build_of_the_larger_fov(case):
@@ -1004,7 +1120,17 @@ def test_an_extension_is_the_fresh_build_of_the_larger_fov(case):
     got = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, target)
     want, _ = build(fn, jac, **fresh_equivalent(kw, target))
     assert got.lattice.init_res > mesh.lattice.init_res
-    assert_same(got, want, rounding=("vertices_jacobian",))
+    if case != "row_fold":
+        assert_same(got, want, rounding=ROUNDING)
+        return
+    # The fold's det is within rounding of zero on its lattice row, so band
+    # membership can differ between the routes: compare the curves instead.
+    for name in got._fields:
+        if name != "critical_band":
+            assert_same(getattr(got, name), getattr(want, name), name, ROUNDING)
+    a, b = critical_curves_and_caustics(got), critical_curves_and_caustics(want)
+    for field in ("lens", "source"):
+        assert_same_point_sets(getattr(a, field), getattr(b, field), 1e-9, field)
 
 
 def test_extensions_chain():
@@ -1015,7 +1141,7 @@ def test_extensions_chain():
     fresh, _ = build(
         localised_fold, localised_fold_jacobian, **fresh_equivalent(kw, 8.0)
     )
-    assert_same(twice, fresh, rounding=("vertices_jacobian",))
+    assert_same(twice, fresh, rounding=ROUNDING)
 
 
 def test_an_extension_carries_its_holes_and_traces_none_of_them_again():

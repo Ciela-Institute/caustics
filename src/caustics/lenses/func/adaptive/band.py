@@ -1,9 +1,11 @@
 """
-The critical band: the ``max_level`` leaves ``det A`` changes sign across.
+The critical band: the ``max_level`` leaves the mesh's ``det A`` changes sign across.
 
-:func:`build_band` builds it when the lens mesh is frozen, from the samples
-of the finest-level pass; :mod:`~caustics.lenses.func.adaptive.curves`
-traces it.
+``A`` is the mesh's Jacobian, not the lens's: the fitted Jacobians its
+vertices carry (:func:`jacobian_det6`), and where they vary too much across
+a leaf to trust (:func:`resolved`), a ``det A`` measured from the raytrace
+at the leaf's samples. :func:`build_band` builds the band when the lens
+mesh is frozen; :mod:`~caustics.lenses.func.adaptive.curves` traces it.
 """
 
 from typing import NamedTuple
@@ -16,14 +18,24 @@ RESOLVED_SPREAD = 4.0
 """Largest Frobenius norm of a difference of two vertex Jacobians that
 :func:`resolved` still trusts, one value for every lens."""
 
+MEASURE_OFFSET = 1.0 / 1024
+"""Offset of a measured ``det A``'s central differences, as a fraction of
+the mesh's ``min_img_sep``."""
+
 
 class CriticalBand(NamedTuple):
     """
-    The ``max_level`` leaves ``det A`` changes sign across, with ``det A`` at their samples.
+    The ``max_level`` leaves the mesh's ``det A`` changes sign across, with ``det A`` at their samples.
 
     A leaf is in the band when :func:`in_band` holds for the determinants at
     its six samples -- the three vertices and the three edge midpoints, the
-    corners of its four red-split children.
+    corners of its four red-split children. Each is :func:`jacobian_det6`
+    of the leaf's three vertex Jacobians, except at a measured sample, one
+    of the six of a finest-level leaf that is not :func:`resolved` and has
+    no non-finite image: there it is ``det`` of the central differences of
+    the raytrace at four points :data:`MEASURE_OFFSET` ``* min_img_sep``
+    away along the axes, NaN where one of their images is non-finite, for
+    every leaf that holds the sample.
 
     Samples are deduplicated by lattice key: a sample shared by several band
     leaves is one row, with one ``det``, so every leaf sharing it agrees on
@@ -34,12 +46,12 @@ class CriticalBand(NamedTuple):
     Parameters
     ----------
     leaves: ArrayLike
-        Shape ``(F,)`` int64 index into ``LensMesh.origin_leaves``.
+        Shape ``(F,)`` int64 index into ``LensMesh.origin_leaves``, ascending.
     samples: ArrayLike
-        Shape ``(F, 6)`` int64 index into ``lens``, ``source``, ``det`` and
-        ``sigma_min``: each leaf's ``theta_1, theta_2, theta_3, m_1, m_2,
-        m_3``, the vertices in the leaf's own order and ``m_i`` opposite
-        ``theta_i``. Samples are numbered in ascending lattice-key order.
+        Shape ``(F, 6)`` int64 index into ``lens``, ``source`` and ``det``:
+        each leaf's ``theta_1, theta_2, theta_3, m_1, m_2, m_3``, the
+        vertices in the leaf's own order and ``m_i`` opposite ``theta_i``.
+        Samples are numbered in ascending lattice-key order.
     lens: ArrayLike
         Shape ``(S, 2)`` float64 lens-plane position of each sample.
 
@@ -49,10 +61,15 @@ class CriticalBand(NamedTuple):
 
         *Unit: arcsec*
     det: ArrayLike
-        Shape ``(S,)`` float64 ``det A`` at each sample.
-    sigma_min: ArrayLike
-        Shape ``(S,)`` float64 smallest singular value of ``A`` at each
-        sample, which an extension's criterion reads.
+        Shape ``(S,)`` float64 ``det`` of the mesh's Jacobian at each
+        sample, fitted or measured as above. The traced critical curves are
+        its zero set.
+    measured_ij: ArrayLike
+        Shape ``(K, 2)`` int64 lattice coordinates of every measured sample
+        of the mesh, band or not, in ascending lattice-key order. An
+        extension reads them rather than measure them again.
+    measured_det: ArrayLike
+        Shape ``(K,)`` float64 the measured ``det A`` at each.
     """
 
     leaves: ArrayLike
@@ -60,7 +77,8 @@ class CriticalBand(NamedTuple):
     lens: ArrayLike
     source: ArrayLike
     det: ArrayLike
-    sigma_min: ArrayLike
+    measured_ij: ArrayLike
+    measured_det: ArrayLike
 
 
 def in_band(det6):
@@ -141,9 +159,12 @@ def resolved(jacobian3):
     return spread < RESOLVED_SPREAD
 
 
-def build_band(lat, leaves, keys6, table_keys, table_values):
+def build_band(lat, leaves, keys6, source6, det6, measured_ij, measured_det):
     """
-    The :class:`CriticalBand` of ``leaves``, its sample values read from a table.
+    The :class:`CriticalBand` of ``leaves``, from each leaf's values at its six samples.
+
+    A sample several leaves hold carries identical values in each of them,
+    so filling its row from all of them is deterministic.
 
     Parameters
     ----------
@@ -153,10 +174,15 @@ def build_band(lat, leaves, keys6, table_keys, table_values):
     keys6: ArrayLike
         ``(F, 6)`` int64 lattice keys of each leaf's ``theta_1, theta_2,
         theta_3, m_1, m_2, m_3``.
-    table_keys: ArrayLike
-        ``(T,)`` int64 ascending keys, holding every key of ``keys6``.
-    table_values: ArrayLike
-        ``(T, 4)`` float64 ``(bx, by, det A, sigma_min A)`` at ``table_keys``.
+    source6: ArrayLike
+        ``(F, 6, 2)`` float64 image at each of them.
+
+        *Unit: arcsec*
+    det6: ArrayLike
+        ``(F, 6)`` float64 ``det`` of the mesh's Jacobian at each of them.
+    measured_ij, measured_det: ArrayLike
+        ``(K, 2)`` int64 and ``(K,)`` float64, the mesh's measured samples,
+        stored as they are.
 
     Returns
     -------
@@ -164,12 +190,23 @@ def build_band(lat, leaves, keys6, table_keys, table_values):
         With samples numbered in ascending key order.
     """
     keys, samples = mesh_backend.unique(keys6.reshape(-1), return_inverse=True)
-    values = table_values[mesh_backend.searchsorted(table_keys, keys)]
+    n, device = keys.shape[0], mesh_backend.device(keys6)
+    f64 = mesh_backend.float64
+    # Repeated indices carry identical values.
+    source = mesh_backend.fill_at_indices(
+        mesh_backend.zeros((n, 2), dtype=f64, device=device),
+        samples,
+        source6.reshape(-1, 2),
+    )
+    det = mesh_backend.fill_at_indices(
+        mesh_backend.zeros((n,), dtype=f64, device=device), samples, det6.reshape(-1)
+    )
     return CriticalBand(
         leaves=leaves,
         samples=samples.reshape(-1, 6),
         lens=lattice_xy(lat, lattice_ij_from_key(lat, keys)),
-        source=values[:, :2],
-        det=values[:, 2],
-        sigma_min=values[:, 3],
+        source=source,
+        det=det,
+        measured_ij=measured_ij,
+        measured_det=measured_det,
     )

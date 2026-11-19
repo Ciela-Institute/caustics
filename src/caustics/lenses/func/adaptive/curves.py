@@ -1,7 +1,13 @@
 """
 Critical curves and caustics, traced through a lens mesh's critical band.
 
-:func:`~caustics.lenses.func.adaptive.build_lens_mesh` keeps, as
+Throughout, ``A`` is the mesh's Jacobian, not the lens's: at a vertex the
+fitted Jacobian it carries (``LensMesh.vertices_jacobian``), at an edge
+midpoint the mean of its two ends'
+(:func:`~caustics.lenses.func.adaptive.band.jacobian_det6`), and at the
+samples of a leaf across which those vary too much to trust
+(:func:`~caustics.lenses.func.adaptive.band.resolved`), measured from the
+raytrace. :func:`~caustics.lenses.func.adaptive.build_lens_mesh` keeps, as
 ``mesh.critical_band``, every ``max_level`` leaf ``det A`` changes sign across,
 with ``det A`` and the image at its six samples. Those six samples are the
 corners of the leaf's four red-split children, so ``det A`` at them defines a
@@ -10,9 +16,8 @@ the critical curves, and -- interpolating the images the same way -- their
 caustics. Nothing here calls the lens.
 
 Every crossing lies on a child edge whose two ends have opposite classes, so
-where ``det A`` is continuous the true critical curve crosses the same edge:
-each lens-plane point is within one child edge, half a leaf edge, of the
-curve.
+where ``det A`` is continuous its zero set crosses the same edge: each
+lens-plane point is within one child edge, half a leaf edge, of it.
 
 A mesh built with ``centers`` also holds holes around them
 (:class:`~caustics.lenses.func.adaptive.CenterHoles`): the lens map can jump
@@ -144,7 +149,7 @@ def triangle_segments(tri, positive):
 
 def child_segments(samples, det):
     """
-    The oriented zero-crossing segment of ``det A`` on each red-split child.
+    The oriented zero-crossing segment of the mesh's ``det A`` on each red-split child.
 
     :func:`triangle_segments` on the four children of every band leaf. A
     sample's class is ``det >= 0``: an exact zero counts as positive, which
@@ -346,7 +351,7 @@ def _no_curves(band):
 
 def trace_band(band):
     """
-    Trace the zero set of ``det A`` through a :class:`CriticalBand`.
+    Trace the zero set of the mesh's ``det A`` through a :class:`CriticalBand`.
 
     Each child's segment (:func:`child_segments`) is chained into curves by
     :func:`chain_segments`, each distinct crossing edge one node, keyed by
@@ -688,8 +693,11 @@ def critical_curves_and_caustics(mesh):
     Critical curves, caustics and pseudo-caustics of the lens a mesh was built from.
 
     The zero set of ``det A`` traced through the critical band's red-split
-    children, each crossing interpolated linearly on a child edge whose ends
-    straddle it -- within half a finest leaf edge of the true curve -- and its
+    children, ``A`` the mesh's Jacobian: fitted from its vertices'
+    (``LensMesh.vertices_jacobian``), and measured from the raytrace where
+    the fit is unresolved (:class:`~caustics.lenses.func.adaptive.CriticalBand`).
+    Each crossing is interpolated linearly on a child edge whose ends
+    straddle it -- within half a finest leaf edge of that zero set -- and its
     caustic point interpolated the same way. On a mesh with holes the curves
     are cut at each hole's circle and re-joined along its hole curve
     (:func:`join_at_holes`), and each hole curve that is a pseudo-caustic
