@@ -15,7 +15,9 @@ from caustics.lenses.func.adaptive import (
     build_closed_lens_mesh,
     caustic_area,
     critical_curves_and_caustics,
+    extend_lens_mesh,
 )
+from caustics.lenses.func.adaptive.band import MEASURE_OFFSET
 from caustics.lenses.func.adaptive.curves import (
     chain_order,
     chain_segments,
@@ -28,13 +30,16 @@ from caustics.lenses.func.adaptive.curves import (
 )
 from caustics.lenses.func.adaptive.geometry import CHILD_VERTEX_INDICES
 from caustics.lenses.func.adaptive.holes import empty_holes
+from caustics.lenses.func.adaptive.lattice import lattice_xy
 
 from adaptive_maps import (
     affine,
     affine_jacobian,
+    assert_same,
     broken_where,
     build,
     f64,
+    fresh_equivalent,
     numpy_lens,
     row_fold,
     row_fold_jacobian,
@@ -1023,6 +1028,30 @@ def test_moving_a_center_off_the_lattice_leaves_the_count_unchanged(two_sis):
     grid = _grid_of(curves)
     band = _curve_mask(curves, grid, 0.06) | _curve_mask(moved, grid, 0.06)
     assert np.array_equal(_count(moved, grid)[~band], _count(curves, grid)[~band])
+
+
+def test_an_extension_measures_no_sample_the_old_mesh_holds():
+    fn, jac = sis(TWO_SIS)
+    mesh, lens_ = build(fn, jac, **TWO_SIS_BUILD, centers=TWO_SIS)
+    old = mesh.critical_band
+    assert old.measured_ij.shape[0] > 0
+    lens_.calls.raytrace.clear()
+    got = extend_lens_mesh(mesh, lens_.raytrace, 7.0)
+    # The four points of each old sample, formed as lens_mesh._measured_det forms them.
+    xy = to_np(lattice_xy(mesh.lattice, old.measured_ij))
+    d = MEASURE_OFFSET * float(mesh.min_img_sep)
+    dx, dy = np.array([d, 0.0]), np.array([0.0, d])
+    offsets = np.concatenate((xy - dx, xy + dx, xy - dy, xy + dy))
+    asked = np.concatenate(lens_.calls.raytrace)
+
+    def as_complex(p):
+        return p[:, 0] + 1j * p[:, 1]
+
+    assert not np.isin(as_complex(asked), as_complex(offsets)).any()
+    want, _ = build(
+        fn, jac, **fresh_equivalent(dict(TWO_SIS_BUILD), 7.0), centers=TWO_SIS
+    )
+    assert_same(got, want, rounding=("vertices_jacobian", "critical_band.det"))
 
 
 def _assert_ends_with_whole_pseudo_caustics(curves, holes):

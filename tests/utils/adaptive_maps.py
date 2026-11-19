@@ -96,6 +96,14 @@ def build(fn, jac, fov=4.0, init_res=4, min_img_sep=0.25, **kw):
     return to_mesh(mesh), lens_
 
 
+def fresh_equivalent(kw, target):
+    """``build`` arguments for a fresh build of ``target`` on the same cells."""
+    out = dict(kw)
+    out["init_res"] = round(kw["init_res"] * target / kw["fov"])
+    out["fov"] = target
+    return out
+
+
 def assert_same(a, b, path="mesh", rounding=()):
     """
     ``a`` and ``b`` equal: NamedTuples field by field, arrays bit for bit.

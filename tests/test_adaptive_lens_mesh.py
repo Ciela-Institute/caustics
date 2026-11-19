@@ -10,7 +10,12 @@ from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE
-from caustics.lenses.func.adaptive.band import MEASURE_OFFSET, RESOLVED_SPREAD, in_band
+from caustics.lenses.func.adaptive.band import (
+    MEASURE_OFFSET,
+    RESOLVED_SPREAD,
+    CriticalBand,
+    in_band,
+)
 from caustics.lenses.func.adaptive.criterion import (
     LEAF_APPROX_PARITY_UNRESOLVED,
     LEAF_CONVERGED,
@@ -59,6 +64,7 @@ from adaptive_maps import (
     collapse,
     collapse_jacobian,
     f64,
+    fresh_equivalent,
     holders_mean,
     i64,
     localised_fold,
@@ -995,14 +1001,6 @@ def test_the_mesh_s_arrays_hold_no_memory_beyond_their_own_values():
     assert sum(held.values()) <= sum(a.numel() * a.element_size() for a in arrays(mesh))
 
 
-def fresh_equivalent(kw, target):
-    """``build`` arguments for a fresh build of ``target`` on the same cells."""
-    out = dict(kw)
-    out["init_res"] = round(kw["init_res"] * target / kw["fov"])
-    out["fov"] = target
-    return out
-
-
 EQUIVALENCE = {
     "sie_like": (
         sie_like,
@@ -1083,9 +1081,113 @@ def test_an_extension_is_the_fresh_build_of_the_larger_fov(case):
     for name in got._fields:
         if name != "critical_band":
             assert_same(getattr(got, name), getattr(want, name), name, ROUNDING)
+    # A measured det depends on its point alone, so the table still matches.
+    assert_same(got.critical_band.measured_ij, want.critical_band.measured_ij)
+    assert_same(got.critical_band.measured_det, want.critical_band.measured_det)
     a, b = critical_curves_and_caustics(got), critical_curves_and_caustics(want)
     for field in ("lens", "source"):
         assert_same_point_sets(getattr(a, field), getattr(b, field), 1e-9, field)
+
+
+def origin_triples(mesh, shift=0):
+    """Each origin as its sorted lattice coordinates, shifted by ``shift`` on both axes."""
+    ij = to_np(mesh.vertices_ij)[to_np(mesh.origin_leaves)] + shift
+    return [tuple(sorted(map(tuple, t))) for t in ij.tolist()]
+
+
+def changed_vertices(mesh, got):
+    """Old vertices, by index in ``mesh``, that gained a holder or lost one to a split."""
+    ring = (got.lattice.init_res - mesh.lattice.init_res) // 2
+    shift = ring << mesh.lattice.level
+    old, new = origin_triples(mesh, shift), origin_triples(got)
+    old_set, new_set = set(old), set(new)
+    index = {
+        tuple(p): v for v, p in enumerate((to_np(mesh.vertices_ij) + shift).tolist())
+    }
+    changed, split = set(), set()
+    for triple in old_set - new_set:  # an old origin the extension split
+        split.update(index[p] for p in triple)
+    for triple in new_set - old_set:  # a new origin
+        changed.update(index[p] for p in triple if p in index)
+    return changed | split, split
+
+
+@pytest.mark.filterwarnings("ignore:Lens mesh is depth-limited")
+def test_some_equivalence_case_splits_a_holder_of_an_old_vertex():
+    """So that the comparison with the fresh build is known to cross a subtraction."""
+    splitting = []
+    for case, (fn, jac, kw, target) in EQUIVALENCE.items():
+        mesh, lens_ = build(fn, jac, **kw)
+        got = extend_lens_mesh(mesh, lens_.raytrace, target)
+        if changed_vertices(mesh, got)[1]:
+            splitting.append(case)
+    assert splitting
+
+
+def test_an_extension_keeps_an_untouched_vertex_s_jacobian_and_updates_the_rest():
+    fn, jac, kw, target = EQUIVALENCE["seam_fold"]
+    mesh, lens_ = build(fn, jac, **kw)
+    noise = f64(
+        np.random.default_rng(0).normal(size=tuple(mesh.vertices_jacobian.shape))
+    )
+    # Random bits: (x * c) / c != x for many doubles.
+    marked = mesh._replace(vertices_jacobian=noise)
+    got = extend_lens_mesh(marked, lens_.raytrace, target)
+    want, _ = build(fn, jac, **fresh_equivalent(kw, target))
+    changed, _ = changed_vertices(mesh, got)
+    ring = (got.lattice.init_res - mesh.lattice.init_res) // 2
+    shift = ring << mesh.lattice.level
+    new_index = {tuple(p): v for v, p in enumerate(to_np(got.vertices_ij).tolist())}
+    at = np.array(
+        [new_index[tuple(p)] for p in (to_np(mesh.vertices_ij) + shift).tolist()]
+    )
+    kept = np.array(sorted(set(range(at.size)) - changed))
+    moved = np.array(sorted(changed))
+    assert kept.size and moved.size
+    G, W = to_np(got.vertices_jacobian), to_np(want.vertices_jacobian)
+    M = to_np(marked.vertices_jacobian)
+    assert np.array_equal(G[at[kept]], M[kept])  # stored bits, untouched
+    assert not np.array_equal(G[at[moved]], M[moved])  # re-formed
+    assert not np.isclose(G[at[moved]], W[at[moved]]).all()  # from the marked mean
+
+
+def test_an_old_leaf_pulled_into_the_band_has_only_its_midpoints_raytraced_again():
+    fn, jac, kw, target = EQUIVALENCE["seam_fold"]
+    mesh, _ = build(fn, jac, **kw)
+    band = mesh.critical_band
+    keep = np.arange(band.leaves.shape[0]) != 0
+    used = np.unique(to_np(band.samples)[keep])
+    renumber = np.full(band.lens.shape[0], -1)
+    renumber[used] = np.arange(used.shape[0])
+    doctored = mesh._replace(
+        critical_band=CriticalBand(
+            leaves=band.leaves[i64(np.flatnonzero(keep))],
+            samples=i64(renumber[to_np(band.samples)[keep]]),
+            lens=band.lens[i64(used)],
+            source=band.source[i64(used)],
+            det=band.det[i64(used)],
+            measured_ij=band.measured_ij,
+            measured_det=band.measured_det,
+        )
+    )
+    lens_ = numpy_lens(fn, jac)
+    got = extend_lens_mesh(doctored, lens_.raytrace, target)
+    want, _ = build(fn, jac, **fresh_equivalent(kw, target))
+    assert_same(got, want, rounding=ROUNDING)
+
+    def as_complex(xy):
+        return xy[:, 0] + 1j * xy[:, 1]  # lattice points are exact, so == is too
+
+    asked = as_complex(np.concatenate(lens_.calls.raytrace))
+    vertices = as_complex(to_np(mesh.vertices_lens))
+    kept = as_complex(to_np(band.lens)[used])
+    assert not np.isin(asked, np.concatenate((vertices, kept))).any()
+    dropped = as_complex(
+        to_np(band.lens)[np.setdiff1d(np.arange(band.lens.shape[0]), used)]
+    )
+    again = dropped[~np.isin(dropped, vertices)]
+    assert again.shape[0] >= 1
+    assert all((asked == p).sum() == 1 for p in again)
 
 
 def test_extensions_chain():
