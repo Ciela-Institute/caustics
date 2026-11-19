@@ -318,6 +318,30 @@ def sis(centers=((0.0, 0.0),), b=1.0):
     return fn, jac
 
 
+def sie_with_subhalo(b_sub=0.05):
+    """
+    :func:`sie_like` plus a singular isothermal subhalo of Einstein radius ``b_sub``, its Jacobian, and the subhalo's center.
+
+    The subhalo sits ``2 * b_sub`` radially outside :func:`sie_like`'s
+    tangential critical circle, of radius ``sqrt(1.2**2 - 0.05)``, at a
+    polar angle off every lattice axis and diagonal; ``center`` is its
+    ``(2,)`` position. ``jac`` is analytic, for audits. Non-finite at
+    ``center``.
+    """
+    angle = 0.61
+    radius = np.sqrt(1.2**2 - 0.05) + 2.0 * b_sub
+    center = radius * np.array([np.cos(angle), np.sin(angle)])
+    sub_fn, sub_jac = sis(centers=(center,), b=b_sub)
+
+    def fn(p):
+        return sie_like(p) + sub_fn(p) - p
+
+    def jac(p):
+        return sie_like_jacobian(p) + sub_jac(p) - np.eye(2)
+
+    return fn, jac, center
+
+
 def point_mass(c=(0.0, 0.0), b=1.0):
     """A point mass of Einstein radius ``b`` at ``c``, and its Jacobian; non-finite at ``c``."""
     c = np.asarray(c, dtype=np.float64)

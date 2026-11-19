@@ -18,6 +18,10 @@ from caustics.lenses.func.adaptive import (
     extend_lens_mesh,
 )
 from caustics.lenses.func.adaptive.band import MEASURE_OFFSET
+from caustics.lenses.func.adaptive.criterion import (
+    LEAF_CONVERGED,
+    LEAF_RAYTRACE_NONFINITE,
+)
 from caustics.lenses.func.adaptive.curves import (
     chain_order,
     chain_segments,
@@ -31,6 +35,7 @@ from caustics.lenses.func.adaptive.curves import (
 from caustics.lenses.func.adaptive.geometry import CHILD_VERTEX_INDICES
 from caustics.lenses.func.adaptive.holes import empty_holes
 from caustics.lenses.func.adaptive.lattice import lattice_xy
+from caustics.lenses.func.adaptive.lens_mesh import finite_leaves
 
 from adaptive_maps import (
     affine,
@@ -1054,6 +1059,32 @@ def test_an_extension_measures_no_sample_the_old_mesh_holds():
     assert_same(got, want, rounding=("vertices_jacobian", "critical_band.det"))
 
 
+def test_an_extension_carries_the_measured_samples_and_measures_new_ones():
+    """The second singular centre lies in the ring alone; both are declared from the start."""
+    centers = [(0.0, 0.0), (2.75, 0.0)]
+    kw = dict(fov=4.0, init_res=8, min_img_sep=0.02, centers=centers)
+    fn, jac = sis(centers)
+    mesh, lens_ = build(fn, jac, **kw)
+    old = mesh.critical_band
+    assert old.measured_ij.shape[0] > 0
+    lens_.calls.raytrace.clear()
+    got = extend_lens_mesh(mesh, lens_.raytrace, 8.0)
+    # The four points of each old sample, formed as lens_mesh._measured_det forms them.
+    xy = to_np(lattice_xy(mesh.lattice, old.measured_ij))
+    d = MEASURE_OFFSET * float(mesh.min_img_sep)
+    dx, dy = np.array([d, 0.0]), np.array([0.0, d])
+    offsets = np.concatenate((xy - dx, xy + dx, xy - dy, xy + dy))
+    asked = np.concatenate(lens_.calls.raytrace)
+
+    def as_complex(p):
+        return p[:, 0] + 1j * p[:, 1]
+
+    assert not np.isin(as_complex(asked), as_complex(offsets)).any()
+    assert got.critical_band.measured_ij.shape[0] > old.measured_ij.shape[0]
+    want, _ = build(fn, jac, **fresh_equivalent(kw, 8.0))
+    assert_same(got, want, rounding=("vertices_jacobian", "critical_band.det"))
+
+
 def _assert_ends_with_whole_pseudo_caustics(curves, holes):
     """The last curves are one closed loop per pseudo-caustic hole: its stored circle and hole curve."""
     pseudo = np.flatnonzero(to_np(holes.pseudo_caustic))
@@ -1101,6 +1132,26 @@ def test_only_the_einstein_ring_is_traced_round_a_singular_centre(with_hole):
         ~to_np(expand_flags(curves.pseudo_caustic, curves.offsets))
     ]
     assert np.abs(np.hypot(*critical.T) - 1.0).max() < 0.05
+
+
+# On a lattice point, and off every one.
+@pytest.mark.parametrize("center", [(0.0, 0.0), (0.137, -0.061)])
+def test_an_undeclared_singular_centre_leaves_only_the_einstein_ring(center):
+    fn, jac = sis(centers=(center,))
+    mesh, _ = build(fn, jac, fov=4.0, init_res=8, min_img_sep=0.02)
+    curves = critical_curves_and_caustics(mesh)
+    r = np.hypot(*(to_np(curves.lens) - np.array(center)).T)
+    assert np.abs(r - 1.0).max() < 0.05
+    status, level = to_np(mesh.origin_status), to_np(mesh.origin_level)
+    centroid = to_np(mesh.vertices_lens)[to_np(mesh.origin_leaves)].mean(axis=1)
+    # Leaves out to about 1.8 min_img_sep fail the criterion; beyond it the reference converges the same origins.
+    inner = np.hypot(*(centroid - np.array(center)).T) < 1.5 * mesh.min_img_sep
+    assert inner.any() and (status[inner] != LEAF_CONVERGED).all()
+    assert (level[inner] == mesh.lattice.level - 1).all()
+    if center == (0.0, 0.0):
+        nonfinite = (status & LEAF_RAYTRACE_NONFINITE) != 0
+        assert nonfinite.sum() == 6
+        assert not to_np(finite_leaves(mesh))[nonfinite[to_np(mesh.leaf_origin)]].any()
 
 
 def test_holes_critical_curves_reach_still_add_their_whole_pseudo_caustics(two_sis):

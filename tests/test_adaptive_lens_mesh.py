@@ -75,6 +75,7 @@ from adaptive_maps import (
     row_fold_jacobian,
     sie_like,
     sie_like_jacobian,
+    sie_with_subhalo,
     sis,
     to_np,
     user_build,
@@ -122,13 +123,13 @@ def test_the_build_samples_no_point_twice():
     assert len({tuple(p) for p in points}) == len(points)
 
 
-@pytest.mark.filterwarnings("ignore:The fov still cuts")
 def test_no_build_path_calls_the_lens_jacobian():
     mesh, lens_ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
     extend_lens_mesh(mesh, lens_.raytrace, 6.0)
     assert len(lens_.calls.raytrace) > 0 and lens_.calls.jacobian == []
-    closed = numpy_lens(*seam_fold(2.0))
-    build_closed_lens_mesh(closed.raytrace, 4.0, 4, 0.05)
+    closed = numpy_lens(sie_like, sie_like_jacobian)
+    grown, _ = build_closed_lens_mesh(closed.raytrace, 2.0, 4, 0.05)
+    assert grown.lattice.fov > 2.0  # an extension ran
     assert closed.calls.jacobian == []
 
 
@@ -153,10 +154,16 @@ def test_a_float32_lens_still_builds_and_traces_its_fold():
         out = backend.as_array(out, dtype=f32, device=backend.device(x))
         return out[:, 0], out[:, 1]
 
+    xy = f64([[0.3, -0.3], [-1.2, 0.7], [1.9, 0.01]])
+    assert make_sampler(raytrace, None)(xy).dtype == mesh_backend.float64
     mesh = to_mesh(build_lens_mesh(raytrace, 4.0, 4, 0.05))
-    assert mesh.vertices_jacobian.dtype == mesh_backend.float64
-    curves = critical_curves_and_caustics(mesh)
-    assert np.abs(to_np(curves.lens)[:, 1] + 0.3).min() < 0.05
+    want, _ = build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05)
+    leaves_ij = [to_np(m.vertices_ij)[to_np(m.leaves)] for m in (mesh, want)]
+    assert np.array_equal(*leaves_ij)
+    got, ref = critical_curves_and_caustics(mesh), critical_curves_and_caustics(want)
+    assert got.closed.shape[0] == ref.closed.shape[0] > 0
+    a, b = to_np(got.lens), to_np(ref.lens)
+    assert np.linalg.norm(a[:, None] - b[None], axis=-1).min(axis=1).max() < 1e-3
 
 
 def test_localised_fold_s_kink_lies_on_no_lattice_row():
@@ -718,6 +725,38 @@ def test_converged_leaves_pass_jacobian_parity_at_their_own_samples(fn, jac, kw)
     assert ((det > 0).all(axis=1) | (det < 0).all(axis=1)).all()
 
 
+def test_a_subhalo_beside_the_critical_curve_is_resolved_and_audited():
+    fn, jac, center = sie_with_subhalo()
+    mesh, _ = build(
+        fn,
+        jac,
+        fov=4.0,
+        init_res=8,
+        min_img_sep=5e-3,
+        centers=f64([[0.0, 0.0], center]),
+    )
+    converged = np.flatnonzero(to_np(mesh.origin_status) == LEAF_CONVERGED)
+    det = numpy_det(
+        jac, to_np(origin_samples(mesh, i64(converged))).reshape(-1, 2)
+    ).reshape(-1, 6)
+    assert ((det > 0).all(axis=1) | (det < 0).all(axis=1)).all()
+    curves = critical_curves_and_caustics(mesh)
+    points = to_np(curves.lens)
+    near = np.hypot(*(points - center).T) < 4 * 0.05
+    assert near.any()
+    # |grad det A| at the points, by central differences of jac with step 1e-6
+    dx, dy = np.array([1e-6, 0.0]), np.array([0.0, 1e-6])
+    grad = np.hypot(
+        numpy_det(jac, points + dx) - numpy_det(jac, points - dx),
+        numpy_det(jac, points + dy) - numpy_det(jac, points - dy),
+    ) / (2 * 1e-6)
+    off = np.abs(numpy_det(jac, points)) / grad
+    traced = np.ones(points.shape[0], bool)  # not on a hole circle
+    for c, r in zip(to_np(mesh.holes.centers), to_np(mesh.holes.radius)):
+        traced &= np.hypot(*(points - c).T) > r + 1e-9
+    assert off[traced].max() < 0.1 * mesh.min_img_sep
+
+
 def test_coverage_does_not_drop_at_level_transitions():
     """Every point a uniform finest-level mesh covers, the adaptive mesh covers too."""
     fov, init_res, sep = 4.0, 4, 0.1
@@ -922,31 +961,76 @@ def test_seeding_a_mesh_and_freezing_it_again_reproduces_it():
 
 
 @pytest.mark.parametrize("extend", [False, True], ids=["build", "extension"])
-def test_the_status_pass_holds_at_most_status_rows_rows_per_step(extend, monkeypatch):
-    """Each step of a freeze's status pass holds at most ``STATUS_ROWS`` rows, and the mesh does not change."""
+def test_every_stepped_pass_holds_at_most_status_rows_rows_per_step(
+    extend, monkeypatch
+):
+    """
+    Each step of every pass a freeze takes in steps holds at most ``STATUS_ROWS`` rows, and the mesh does not change.
+
+    Each pass is seen through the call it makes once per step, on that
+    step's rows: the status pass through ``_status_rows``; the refit of the
+    old rows an extension splits through ``_six_values`` called outside
+    ``_status_rows``; the measuring pass's leaf selection through
+    ``resolved``; the band pass through ``in_band``. The extension is
+    ``ring_fold(2.0)``'s, which splits old rows.
+    """
+    fn, jac = ring_fold(2.0) if extend else (localised_fold, localised_fold_jacobian)
 
     def run():
-        mesh, lens_ = build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05)
+        mesh, lens_ = build(fn, jac, 4.0, 4, 0.05)
         if extend:
             mesh = extend_lens_mesh(mesh, lens_.raytrace, 6.0)
         return mesh
 
-    steps = []
+    steps = {"status": [], "split": [], "measure": [], "band": []}
+    in_status_rows = []
     status_rows = lens_mesh_module._status_rows
+    six_values = lens_mesh_module._six_values
+    resolved = lens_mesh_module.resolved
+    in_band_ = lens_mesh_module.in_band
 
-    def spy(lat, cache, store, rows, *rest):
-        steps.append(rows.shape[0])
-        return status_rows(lat, cache, store, rows, *rest)
+    def spy_status_rows(lat, cache, store, rows, *rest):
+        steps["status"].append(rows.shape[0])
+        in_status_rows.append(True)
+        try:
+            return status_rows(lat, cache, store, rows, *rest)
+        finally:
+            in_status_rows.pop()
 
-    monkeypatch.setattr(lens_mesh_module, "_status_rows", spy)
+    def spy_six_values(lat, cache, store, rows, *rest):
+        if not in_status_rows:
+            steps["split"].append(rows.shape[0])
+        return six_values(lat, cache, store, rows, *rest)
+
+    def spy_resolved(jacobian3):
+        steps["measure"].append(jacobian3.shape[0])
+        return resolved(jacobian3)
+
+    def spy_in_band(det6):
+        steps["band"].append(det6.shape[0])
+        return in_band_(det6)
+
+    monkeypatch.setattr(lens_mesh_module, "_status_rows", spy_status_rows)
+    monkeypatch.setattr(lens_mesh_module, "_six_values", spy_six_values)
+    monkeypatch.setattr(lens_mesh_module, "resolved", spy_resolved)
+    monkeypatch.setattr(lens_mesh_module, "in_band", spy_in_band)
     whole = run()
     freezes = 2 if extend else 1
-    assert len(steps) == freezes, "the default cap must hold each freeze in one step"
+    calls = {name: len(got) for name, got in steps.items()}
+    rows = {name: sum(got) for name, got in steps.items()}
+    assert calls == dict(
+        status=freezes, split=int(extend), measure=freezes, band=freezes
+    ), "the default cap must hold each freeze's pass in one step"
     assert whole.critical_band.leaves.shape[0] > 0, "fixture must have a band"
+    if extend:
+        assert rows["split"] > 7, "fixture must split more old rows than one step holds"
     monkeypatch.setattr(lens_mesh_module, "STATUS_ROWS", 7)
-    steps.clear()
+    for got in steps.values():
+        got.clear()
     assert_same(run(), whole, rounding=("vertices_jacobian", "critical_band.det"))
-    assert max(steps) <= 7 and len(steps) > 2 * freezes, steps
+    for name, got in steps.items():
+        assert sum(got) == rows[name] and max(got, default=0) <= 7, (name, got)
+        assert len(got) > calls[name] or rows[name] == 0, (name, got)
 
 
 @pytest.mark.parametrize("extend", [False, True], ids=["build", "extension"])
@@ -1148,7 +1232,9 @@ def test_an_extension_keeps_an_untouched_vertex_s_jacobian_and_updates_the_rest(
     M = to_np(marked.vertices_jacobian)
     assert np.array_equal(G[at[kept]], M[kept])  # stored bits, untouched
     assert not np.array_equal(G[at[moved]], M[moved])  # re-formed
-    assert not np.isclose(G[at[moved]], W[at[moved]]).all()  # from the marked mean
+    # Each re-formed vertex starts from the marked mean, so each differs from
+    # the fresh build's.
+    assert not np.isclose(G[at[moved]], W[at[moved]]).all(axis=(1, 2)).any()
 
 
 def test_an_old_leaf_pulled_into_the_band_has_only_its_midpoints_raytraced_again():

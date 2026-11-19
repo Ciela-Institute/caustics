@@ -181,6 +181,18 @@ def test_det_of_the_interpolated_jacobian_is_exact_where_the_jacobian_is_affine(
     np.testing.assert_allclose(mu, [want], rtol=1e-13)
 
 
+def test_mu_tot_is_finite_beside_an_undeclared_singular_centre():
+    fn, jac = sis()
+    mesh = user_build(fn, jac, fov=4.0, init_res=8, min_img_sep=0.02)[0]
+    phi = np.linspace(0.0, 2 * np.pi, 64, endpoint=False)
+    # sources whose inner image is near the centre
+    for radius in (0.9, 0.97, 0.995):
+        mu = to_np(
+            total_magnification(radius * np.cos(phi), radius * np.sin(phi), mesh)
+        )
+        assert np.isfinite(mu).all() and (mu > 0).all()
+
+
 def test_the_leaf_tables_carry_no_per_vertex_det():
     assert LeafTables._fields == ("area_ratio", "same_sign", "size")
     assert "vertices_det" not in inspect.getsource(magnification)
