@@ -23,6 +23,7 @@ from caustics.lenses.func.adaptive.criterion import (
     parity_from_children,
 )
 from caustics.lenses.func.adaptive.geometry import (
+    CORNER_SECTOR,
     build_device,
     child_matrix_tables,
     sigma_min_2x2,
@@ -39,7 +40,6 @@ from caustics.lenses.func.adaptive import lens_mesh as lens_mesh_module
 from caustics.lenses.func.adaptive.lens_mesh import (
     _fov_boundary,
     _freeze,
-    _owned_corners,
     _seed,
     build_closed_lens_mesh,
     build_lens_mesh,
@@ -55,12 +55,12 @@ from adaptive_maps import (
     affine,
     affine_jacobian,
     assert_same,
-    brute_owner,
     broken_where,
     build,
     collapse,
     collapse_jacobian,
     f64,
+    holders_mean,
     i64,
     localised_fold,
     localised_fold_jacobian,
@@ -860,7 +860,7 @@ def test_the_status_pass_holds_at_most_status_rows_rows_per_step(extend, monkeyp
     assert whole.critical_band.leaves.shape[0] > 0, "fixture must have a band"
     monkeypatch.setattr(lens_mesh_module, "STATUS_ROWS", 7)
     steps.clear()
-    assert_same(run(), whole)
+    assert_same(run(), whole, rounding=("vertices_jacobian",))
     assert max(steps) <= 7 and len(steps) > 2 * freezes, steps
 
 
@@ -1004,7 +1004,7 @@ def test_an_extension_is_the_fresh_build_of_the_larger_fov(case):
     got = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, target)
     want, _ = build(fn, jac, **fresh_equivalent(kw, target))
     assert got.lattice.init_res > mesh.lattice.init_res
-    assert_same(got, want)
+    assert_same(got, want, rounding=("vertices_jacobian",))
 
 
 def test_extensions_chain():
@@ -1015,7 +1015,7 @@ def test_extensions_chain():
     fresh, _ = build(
         localised_fold, localised_fold_jacobian, **fresh_equivalent(kw, 8.0)
     )
-    assert_same(twice, fresh)
+    assert_same(twice, fresh, rounding=("vertices_jacobian",))
 
 
 def test_an_extension_carries_its_holes_and_traces_none_of_them_again():
@@ -1028,7 +1028,7 @@ def test_an_extension_carries_its_holes_and_traces_none_of_them_again():
     lens_.calls.raytrace.clear()
     got = extend_lens_mesh(mesh, lens_.raytrace, lens_.jacobian_lens_equation, 4.0)
     want, _ = build(fn, jac, **fresh_equivalent(kw, 4.0))
-    assert_same(got, want)
+    assert_same(got, want, rounding=("vertices_jacobian",))
     traced = called_at(lens_.calls, "raytrace")
     for c in (c_in, c_out):
         d = np.hypot(*(traced - np.array(c)).T)
@@ -1161,7 +1161,7 @@ def test_an_extension_of_a_mesh_on_a_device_stays_on_it(device):
     on = backend.device(backend.as_array([0.0], device=device))
     assert backend.device(got.vertices_lens) == on
     assert backend.device(got.leaves) == backend.device(want.leaves)
-    assert_same(got, want)
+    assert_same(got, want, rounding=("vertices_jacobian",))
 
 
 def test_batch_size_reaches_every_path_an_extension_traces():
@@ -1180,7 +1180,7 @@ def test_batch_size_reaches_every_path_an_extension_traces():
         and max(len(xy) for xy in lens_.calls.raytrace + lens_.calls.jacobian) <= 5
     )
     want, _ = build(edge_bump, edge_bump_jacobian, **fresh_equivalent(kw, 6.0))
-    assert_same(got, want)
+    assert_same(got, want, rounding=("vertices_jacobian",))
 
 
 def closed_build(fn, jac, fov, init_res, min_img_sep, **kw):
@@ -1242,7 +1242,9 @@ def test_a_curve_the_fov_cuts_is_grown_until_it_closes():
     assert messages == []
     start, lens_ = build(sie_like, sie_like_jacobian, **kw)
     assert_same(
-        mesh, extend_lens_mesh(start, lens_.raytrace, lens_.jacobian_lens_equation, 2.5)
+        mesh,
+        extend_lens_mesh(start, lens_.raytrace, lens_.jacobian_lens_equation, 2.5),
+        rounding=("vertices_jacobian",),
     )
     assert_same(curves, critical_curves_and_caustics(mesh))
 
@@ -1542,93 +1544,71 @@ def test_a_clockwise_image_of_the_fov_boundary_still_has_an_inside():
     assert to_np(inside_fov_image(mesh, beta)).tolist() == [True, False]
 
 
-@pytest.mark.parametrize(
-    "fn, jac",
-    [(sie_like, sie_like_jacobian), (localised_fold, localised_fold_jacobian)],
-)
-def test_every_vertex_has_one_owner_the_lowest_sector_holding_it(fn, jac):
+FITTED = [(sie_like, sie_like_jacobian), (localised_fold, localised_fold_jacobian)]
+
+
+@pytest.mark.parametrize("fn, jac", FITTED)
+def test_a_vertex_carries_the_mean_of_its_holders_fitted_jacobians(fn, jac):
     mesh, _ = build(fn, jac, min_img_sep=0.05)
-    assert mesh.leaves.shape[0] > mesh.origin_leaves.shape[0]
-    n = mesh.vertices_lens.shape[0]
-    owns = to_np(_owned_corners(mesh.origin_leaves, mesh.origin_cls, n))
-    leaves = to_np(mesh.origin_leaves)
-    assert np.array_equal(np.bincount(leaves[owns], minlength=n), np.ones(n, int))
-    owner, corner = brute_owner(mesh)
-    rows, cols = np.nonzero(owns)
-    assert np.array_equal(owner[leaves[rows, cols]], rows)
-    assert np.array_equal(corner[leaves[rows, cols]], cols)
-
-
-def test_owners_do_not_depend_on_the_order_of_the_origins():
-    mesh, _ = build(sie_like, sie_like_jacobian, min_img_sep=0.05)
-    n = mesh.vertices_lens.shape[0]
-    perm = np.random.default_rng(0).permutation(mesh.origin_leaves.shape[0])
-    a = to_np(_owned_corners(mesh.origin_leaves, mesh.origin_cls, n))
-    b = to_np(
-        _owned_corners(mesh.origin_leaves[i64(perm)], mesh.origin_cls[i64(perm)], n)
-    )
-    assert np.array_equal(a[perm], b)
-
-
-@pytest.mark.parametrize(
-    "fn, jac",
-    [(sie_like, sie_like_jacobian), (localised_fold, localised_fold_jacobian)],
-)
-def test_a_vertex_carries_its_owner_s_fitted_jacobian(fn, jac):
-    mesh, _ = build(fn, jac, min_img_sep=0.05)
-    owner, corner = brute_owner(mesh)
-    rows = i64(owner)
-    beta6 = f64(fn(to_np(origin_samples(mesh, rows)).reshape(-1, 2)).reshape(-1, 6, 2))
-    A = fitted_jacobian(
-        beta6, mesh.origin_cls[rows], mesh.origin_level[rows], mesh.lattice.h0
-    )
-    want = to_np(A)[np.arange(owner.shape[0]), corner]
+    assert mesh.leaves.shape[0] > mesh.origin_leaves.shape[0]  # hanging nodes
     assert mesh.vertices_jacobian.dtype == mesh_backend.float64
-    assert np.array_equal(to_np(mesh.vertices_jacobian), want)
+    np.testing.assert_allclose(
+        to_np(mesh.vertices_jacobian), holders_mean(mesh, fn), rtol=1e-12, atol=1e-12
+    )
 
 
-def test_a_vertex_whose_owner_has_a_nonfinite_image_has_a_nan_jacobian():
+@pytest.mark.parametrize("fn, jac", FITTED)
+def test_no_two_holders_of_a_vertex_cover_one_sector(fn, jac):
+    mesh, _ = build(fn, jac, min_img_sep=0.05)
+    sector = to_np(CORNER_SECTOR)[to_np(mesh.origin_cls)]
+    key = to_np(mesh.origin_leaves) * 6 + sector
+    assert np.unique(key).size == key.size
+
+
+def test_a_vertex_any_of_whose_holders_has_a_nonfinite_image_is_nan():
     fn, jac = broken_where(
-        sie_like,
-        sie_like_jacobian,
-        lambda p: np.hypot(p[:, 0] - 0.7, p[:, 1]) < 0.1,
+        sie_like, sie_like_jacobian, lambda p: np.hypot(p[:, 0] - 0.7, p[:, 1]) < 0.1
     )
     mesh, _ = build(fn, jac, min_img_sep=0.05)
-    owner, _ = brute_owner(mesh)
-    bad = (to_np(mesh.origin_status)[owner] & LEAF_RAYTRACE_NONFINITE) != 0
+    bad_origin = (to_np(mesh.origin_status) & LEAF_RAYTRACE_NONFINITE) != 0
+    bad = np.zeros(mesh.vertices_lens.shape[0], bool)
+    bad[to_np(mesh.origin_leaves)[bad_origin].reshape(-1)] = True
     assert bad.any() and not bad.all()
     J = to_np(mesh.vertices_jacobian)
-    assert np.isnan(J[bad]).all(axis=(1, 2)).all()
-    assert np.isfinite(J[~bad]).all()
+    assert np.isnan(J[bad]).all() and np.isfinite(J[~bad]).all()
 
 
-def test_a_vertex_whose_owner_has_only_a_nonfinite_midpoint_has_a_nan_jacobian():
-    """The fit at the corner opposite the one bad midpoint reads no NaN; the vertex gets one all the same."""
-    fn, jac = broken_where(
-        affine, affine_jacobian, lambda p: np.hypot(p[:, 0], p[:, 1] - 0.5) < 0.01
-    )
-    mesh, _ = build(fn, jac, min_img_sep=4.0)
-    owner, corner = brute_owner(mesh)
-    rows = i64(owner)
-    beta6 = f64(fn(origin_samples(mesh, rows).reshape(-1, 2)).reshape(-1, 6, 2))
+def one_holder_fit(mesh, fn):
+    """Each vertex's corner fit from the first origin, in ``mesh.origin_leaves`` order, that holds it, numpy ``(V, 2, 2)``."""
+    flat = to_np(mesh.origin_leaves).reshape(-1)
+    vertex, first = np.unique(flat, return_index=True)
+    assert np.array_equal(vertex, np.arange(mesh.vertices_lens.shape[0]))
+    row, corner = np.divmod(first, 3)
+    beta6 = fn(origin_samples(mesh, row).reshape(-1, 2)).reshape(-1, 6, 2)
     A = fitted_jacobian(
-        beta6, mesh.origin_cls[rows], mesh.origin_level[rows], mesh.lattice.h0
+        f64(beta6),
+        mesh.origin_cls[i64(row)],
+        mesh.origin_level[i64(row)],
+        mesh.lattice.h0,
     )
-    fit = to_np(A)[np.arange(owner.shape[0]), corner]
-    bad = (to_np(mesh.origin_status)[owner] & LEAF_RAYTRACE_NONFINITE) != 0
-    assert (bad & np.isfinite(fit).all(axis=(1, 2))).any()
-    J = to_np(mesh.vertices_jacobian)
-    assert np.isnan(J[bad]).all()
-    assert np.array_equal(J[~bad], fit[~bad])
+    return to_np(A)[np.arange(row.shape[0]), corner]
 
 
-# Twice the measured largest error, 0.6130, rounded up to one significant figure.
-BOUND = 2.0
+# Twice the measured values, rounded up to one significant figure.
+MEDIAN_BOUND = 3e-4  # measured median error 1.494e-4
+MAX_BOUND = 0.4  # measured largest error 0.1843
 
 
-def test_the_fitted_vertex_jacobian_is_close_to_the_lens_s():
+def test_the_mean_is_closer_to_the_lens_than_one_holder_s_fit():
     mesh, _ = build(sie_like, sie_like_jacobian, min_img_sep=0.05)
-    err = np.abs(
-        to_np(mesh.vertices_jacobian) - sie_like_jacobian(to_np(mesh.vertices_lens))
-    )
-    assert np.nanmax(err) < BOUND
+    true = sie_like_jacobian(to_np(mesh.vertices_lens))
+    err = np.abs(to_np(mesh.vertices_jacobian) - true).max(axis=(1, 2))
+    one = np.abs(one_holder_fit(mesh, sie_like) - true).max(axis=(1, 2))
+    assert np.median(err) < 0.6 * np.median(one)
+    assert np.median(err) < MEDIAN_BOUND and err.max() < MAX_BOUND
+
+
+def test_two_builds_give_the_same_vertex_jacobians_bit_for_bit():
+    a, _ = build(sie_like, sie_like_jacobian, min_img_sep=0.05)
+    b, _ = build(sie_like, sie_like_jacobian, min_img_sep=0.05)
+    assert_same(a, b)

@@ -98,13 +98,17 @@ def build(fn, jac, fov=4.0, init_res=4, min_img_sep=0.25, **kw):
     return to_mesh(mesh), lens_
 
 
-def assert_same(a, b, path="mesh"):
+def assert_same(a, b, path="mesh", rounding=()):
     """
     ``a`` and ``b`` equal: NamedTuples field by field, arrays bit for bit.
 
     Two lattices are equal when they place every point alike: an extended
     lattice keeps its ``lo`` and shifts ``origin`` where a fresh one starts
     at its own corner. Like arrays, they are compared wherever they are.
+
+    An array whose path ends in one of the dotted names in ``rounding``,
+    such as ``"vertices_jacobian"``, need only agree to ``rtol = atol =
+    1e-12``, NaN where the other is: a float sum taken in another order.
     """
     a, b = to_mesh(a), to_mesh(b)
     from caustics.lenses.func.adaptive.lattice import Lattice, lattice_xy
@@ -123,10 +127,15 @@ def assert_same(a, b, path="mesh"):
     if isinstance(a, tuple) and hasattr(a, "_fields"):
         assert type(a) is type(b), path
         for name in a._fields:
-            assert_same(getattr(a, name), getattr(b, name), f"{path}.{name}")
+            assert_same(getattr(a, name), getattr(b, name), f"{path}.{name}", rounding)
     elif hasattr(a, "shape"):
         assert a.dtype == b.dtype and tuple(a.shape) == tuple(b.shape), path
-        np.testing.assert_array_equal(to_np(a), to_np(b), err_msg=path)
+        if any(f".{path}".endswith(f".{name}") for name in rounding):
+            np.testing.assert_allclose(
+                to_np(a), to_np(b), rtol=1e-12, atol=1e-12, equal_nan=True, err_msg=path
+            )
+        else:
+            np.testing.assert_array_equal(to_np(a), to_np(b), err_msg=path)
     else:
         assert a == b, path
 
@@ -433,29 +442,28 @@ def index_cell(index, level, ix, iy):
 SECTOR_OF_ANGLE = {0: 0, 45: 1, 90: 2, 180: 3, 225: 4, 270: 5}
 
 
-def brute_owner(mesh):
+def holders_mean(mesh, fn):
     """
-    Each vertex's owning origin and corner, found by looping over the vertices.
+    Each vertex's mean, over the origins holding it as a corner, of their fitted Jacobian at it, numpy ``(V, 2, 2)``.
 
-    A corner covers the sector that starts at the angle of its edge to the next
-    vertex; the owner is the origin whose corner at the vertex covers the lowest
-    sector. Independent of ``_owned_corners``: it reads only vertex positions.
-
-    Returns
-    -------
-    owner, corner: numpy int arrays, ``(V,)``
+    Independent of the freeze: every origin's six samples are raytraced with
+    ``fn`` at their lattice-exact positions and fitted
+    (``fitted_jacobian``), the corner fits are summed with ``np.add.at`` and
+    divided by the number of holders. NaN where a holder has a non-finite
+    image.
     """
+    from caustics.lenses.func.adaptive.criterion import fitted_jacobian
+
+    lat = mesh.lattice
     leaves = to_np(mesh.origin_leaves)
-    pos = to_np(mesh.vertices_lens)
-    n = pos.shape[0]
-    best = np.full(n, 6)
-    owner = np.full(n, -1)
-    corner = np.full(n, -1)
-    for t in range(leaves.shape[0]):
-        for i in range(3):
-            v = leaves[t, i]
-            d = pos[leaves[t, (i + 1) % 3]] - pos[v]
-            sector = SECTOR_OF_ANGLE[round(np.degrees(np.arctan2(d[1], d[0])) % 360)]
-            if sector < best[v]:
-                best[v], owner[v], corner[v] = sector, t, i
-    return owner, corner
+    vij = to_np(mesh.vertices_ij)[leaves] - lat.origin
+    mij = (vij[:, [1, 2, 0]] + vij[:, [2, 0, 1]]) // 2  # m_i opposite theta_i
+    six = np.concatenate((vij, mij), axis=1).astype(np.float64)
+    beta6 = fn((to_np(lat.lo) + six * lat.scale).reshape(-1, 2)).reshape(-1, 6, 2)
+    fit = fitted_jacobian(f64(beta6), mesh.origin_cls, mesh.origin_level, lat.h0)
+    n = mesh.vertices_lens.shape[0]
+    total = np.zeros((n, 2, 2))
+    np.add.at(total, leaves, to_np(fit)[:, :3])
+    mean = total / np.bincount(leaves.reshape(-1), minlength=n)[:, None, None]
+    mean[leaves[~np.isfinite(beta6).all(axis=(1, 2))].reshape(-1)] = np.nan
+    return mean
