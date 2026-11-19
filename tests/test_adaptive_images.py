@@ -9,7 +9,6 @@ from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Point
 from caustics.lenses.func.adaptive.criterion import (
     LEAF_CONVERGED,
-    LEAF_JACOBIAN_NONFINITE,
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
 )
@@ -44,9 +43,6 @@ from adaptive_maps import (
 )
 
 RNG = np.random.default_rng(20260904)
-
-
-NONFINITE = LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE
 
 
 def fr(mesh, beta, raytrace, **kw):
@@ -485,7 +481,7 @@ def test_query_hits_a_failing_leaf_within_its_deviation_at_its_nearest_point(mes
     tri = vs[leaves]
     edge = np.linalg.norm(tri[:, 1] - tri[:, 0], axis=1)
     pick = np.flatnonzero(
-        ((status & NONFINITE) == 0)
+        ((status & LEAF_RAYTRACE_NONFINITE) == 0)
         & (status != LEAF_CONVERGED)
         & (grow > 0)
         & (edge > 0)
@@ -520,7 +516,7 @@ def test_query_returns_a_leaf_holding_each_point_next_to_the_leaves_left_out_of_
     mesh, _ = build(fn, jac, min_img_sep=0.2, centers=[[0.0, 0.0]])
     status = leaf_status(mesh)
     vl, leaves = to_np(mesh.vertices_lens), to_np(mesh.leaves)
-    out = (status & NONFINITE) != 0
+    out = (status & LEAF_RAYTRACE_NONFINITE) != 0
     ring = np.flatnonzero(~out & np.isin(leaves, leaves[out]).any(axis=1))
     assert (
         status[ring] == LEAF_CONVERGED
@@ -737,7 +733,7 @@ def test_near_seed_accepts_a_root_within_the_leaf_s_radius_and_rejects_one_beyon
     ]
     lens_tri = to_np(mesh.vertices_lens)[to_np(mesh.leaves)]
     diameter = np.linalg.norm(lens_tri - lens_tri[:, [1, 2, 0]], axis=-1).max(axis=1)
-    finite = (status & NONFINITE) == 0
+    finite = (status & LEAF_RAYTRACE_NONFINITE) == 0
     wide = np.flatnonzero(
         finite & (status != LEAF_CONVERGED) & np.isfinite(r) & (r > 2 * sep)
     )

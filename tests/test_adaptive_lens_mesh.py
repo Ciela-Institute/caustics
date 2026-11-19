@@ -14,7 +14,6 @@ from caustics.lenses.func.adaptive.criterion import (
     LEAF_APPROX_PARITY_UNRESOLVED,
     LEAF_CONVERGED,
     LEAF_CONVERGENCE_FAILED,
-    LEAF_JACOBIAN_NONFINITE,
     LEAF_JACOBIAN_PARITY_UNRESOLVED,
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
@@ -203,7 +202,7 @@ def leaf_level(mesh):
 
 
 @pytest.mark.parametrize("bad", [np.nan, np.inf], ids=["nan", "inf"])
-def test_the_index_holds_exactly_the_leaves_with_a_finite_raytrace_and_jacobian(bad):
+def test_the_index_holds_exactly_the_leaves_with_a_finite_raytrace(bad):
     """A leaf whose raytrace is non-finite carries that flag alone and a
     non-finite vertex, every other leaf has finite vertices, only finest-level
     leaves carry a flag, and the index -- unconverged leaves included -- holds
@@ -223,7 +222,7 @@ def test_the_index_holds_exactly_the_leaves_with_a_finite_raytrace_and_jacobian(
     assert finite_vertices[~raytrace_bad].all()
     assert (level[status != LEAF_CONVERGED] == mesh.lattice.level - 1).all()
     leaf = leaf_status(mesh)
-    finite = (leaf & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) == 0
+    finite = (leaf & LEAF_RAYTRACE_NONFINITE) == 0
     assert (
         finite & (leaf != LEAF_CONVERGED)
     ).any(), "fixture must leave a finite leaf unconverged"
@@ -252,7 +251,7 @@ def test_leaf_grow_is_the_origin_s_deviation_beside_a_leaf_left_out_of_the_index
     mesh, _ = build(*point_mass(), min_img_sep=0.2, centers=[[0.0, 0.0]])
     grow = to_np(leaf_grow(mesh))
     status, leaves = leaf_status(mesh), to_np(mesh.leaves)
-    out = (status & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) != 0
+    out = (status & LEAF_RAYTRACE_NONFINITE) != 0
     beside = ~out & np.isin(leaves, leaves[out]).any(axis=1)
     converged = status == LEAF_CONVERGED
     assert (beside & converged).any(), "fixture must converge next to the center"
@@ -1463,18 +1462,25 @@ def _bowl_jacobian(p):
     return J
 
 
-def test_sigma_min_of_the_jacobian_drives_refinement():
-    """With its true Jacobian the bowl converges at level 0; with ``sigma_min`` a
-    billion times smaller, every leaf fails down to the finest level."""
+def test_sigma_min_of_the_fitted_jacobian_drives_refinement():
+    """The bowl converges at level 0; with its second image coordinate a billion
+    times smaller, so that its fitted Jacobian's ``sigma_min`` is too while the
+    first coordinate's deviation is unchanged, every leaf fails down to the
+    finest level."""
     honest, _ = build(_bowl, _bowl_jacobian, init_res=2, min_img_sep=1.0, max_depth=3)
     assert (to_np(honest.origin_level) == 0).all()
     assert (to_np(honest.origin_status) == LEAF_CONVERGED).all()
 
+    def starved_bowl(p):
+        return _bowl(p) * np.array([1.0, 1e-9])
+
     def starved_jacobian(p):
-        return 1e-9 * _bowl_jacobian(p)
+        J = _bowl_jacobian(p)
+        J[:, 1, :] *= 1e-9
+        return J
 
     starved, _ = build(
-        _bowl, starved_jacobian, init_res=2, min_img_sep=1.0, max_depth=3
+        starved_bowl, starved_jacobian, init_res=2, min_img_sep=1.0, max_depth=3
     )
     finest = starved.lattice.level - 1
     assert finest > 0
@@ -1487,13 +1493,8 @@ def test_origin_deviation_and_sigma_min_match_their_samples_recomputed_independe
     rows = np.arange(to_np(mesh.origin_leaves).shape[0])
     xy = origin_samples(mesh, rows)
     beta6 = localised_fold(xy.reshape(-1, 2)).reshape(-1, 6, 2)
-    sigma6 = to_np(
-        sigma_min_2x2(f64(localised_fold_jacobian(xy.reshape(-1, 2))))
-    ).reshape(-1, 6)
-    _, dev, sig = lens_status(
+    _, dev, sig, _ = lens_status(
         f64(beta6),
-        f64(numpy_det(localised_fold_jacobian, xy)),
-        f64(sigma6),
         mesh.origin_cls,
         mesh.origin_level,
         mesh.lattice.h0,

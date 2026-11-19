@@ -1,10 +1,13 @@
 """The lens mesh's refinement criterion and its ``LEAF_*`` flags."""
 
+import importlib
+
 import numpy as np
 import pytest
 
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.criterion import (
+    _status,
     child_maps,
     child_shape_matrices,
     children_sigma_min,
@@ -13,7 +16,6 @@ from caustics.lenses.func.adaptive.criterion import (
     LEAF_APPROX_PARITY_UNRESOLVED,
     LEAF_CONVERGED,
     LEAF_CONVERGENCE_FAILED,
-    LEAF_JACOBIAN_NONFINITE,
     LEAF_JACOBIAN_PARITY_UNRESOLVED,
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
@@ -117,8 +119,14 @@ def roots(shift=(0.0, 0.0), h0=H0):
     return six(h0 * np.asarray(ROOT_SHAPES, dtype=np.float64) + np.asarray(shift))
 
 
+def explicit_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
+    """The criterion, :func:`_status`, on six given ``det A`` and ``sigma_min A``, with ``Q`` and :func:`child_maps` built from ``beta6``."""
+    Q = child_shape_matrices(beta6[:, :3], beta6[:, 3:])
+    return _status(beta6, Q, child_maps(Q, cls), det6, sigma6, level, h0, min_img_sep)
+
+
 def status(theta6, beta, det, level=0, h0=H0, min_img_sep=0.01, sigma=None):
-    """``lens_status`` of the two root triangles, ``beta``, ``det`` and ``sigma`` numpy maps of ``(..., 2)``.
+    """The criterion's status of the two root triangles, ``beta``, ``det`` and ``sigma`` numpy maps of ``(..., 2)``.
 
     ``sigma`` defaults to ``+inf`` at every sample, which no deviation fails,
     so the tests of the other flags read the children's check alone.
@@ -126,7 +134,7 @@ def status(theta6, beta, det, level=0, h0=H0, min_img_sep=0.01, sigma=None):
     n = theta6.shape[0]
     sigma6 = np.full(theta6.shape[:-1], np.inf) if sigma is None else sigma(theta6)
     return to_np(
-        lens_status(
+        explicit_status(
             f64(beta(theta6)),
             f64(det(theta6)),
             f64(sigma6),
@@ -177,7 +185,7 @@ def test_a_nonfinite_image_is_the_row_s_only_flag():
         return np.where(np.arange(6) == 1, np.nan, 1.0) * np.ones(p.shape[:-1])
 
     got = status(roots(), beta, det)
-    assert got.tolist() == [LEAF_RAYTRACE_NONFINITE, LEAF_JACOBIAN_NONFINITE]
+    assert got.tolist() == [LEAF_RAYTRACE_NONFINITE, LEAF_JACOBIAN_PARITY_UNRESOLVED]
 
 
 @pytest.mark.parametrize("sample", range(6))
@@ -193,20 +201,29 @@ def test_one_flipped_det_sign_flags_jacobian_parity_on_its_row_alone(sample):
     ]
 
 
-@pytest.mark.parametrize("bad", [np.nan, np.inf])
-def test_a_nonfinite_det_flags_jacobian_nonfinite_not_parity(bad):
+@pytest.mark.parametrize(
+    "bad, want",
+    [
+        (np.nan, LEAF_JACOBIAN_PARITY_UNRESOLVED),
+        (np.inf, LEAF_CONVERGED),
+        (-np.inf, LEAF_JACOBIAN_PARITY_UNRESOLVED),
+    ],
+    ids=["nan", "inf", "-inf"],
+)
+def test_a_nonfinite_det_is_read_by_its_sign_and_a_nan_has_none(bad, want):
+    """``det A > 0`` elsewhere: an infinity of that sign passes, of the other fails, and a NaN fails both sign tests."""
+
     def det(p):
         out = np.full(p.shape[:-1], np.linalg.det(A))
         out[0, 3] = bad
         return out
 
-    assert status(roots(), affine, det).tolist() == [LEAF_JACOBIAN_NONFINITE, 0]
+    assert np.linalg.det(A) > 0
+    assert status(roots(), affine, det).tolist() == [want, 0]
 
 
 @pytest.mark.parametrize("sign", [1.0, -1.0])
-def test_an_exactly_zero_det_is_no_sign_so_it_flags_jacobian_parity_not_nonfinite(
-    sign,
-):
+def test_an_exactly_zero_det_is_no_sign_so_it_flags_jacobian_parity(sign):
     """A zero sample puts a critical curve on the triangle, whatever the others' sign."""
 
     def det(p):
@@ -262,7 +279,6 @@ def test_the_leaf_flags_are_distinct_single_bits():
         LEAF_APPROX_PARITY_UNRESOLVED,
         LEAF_JACOBIAN_PARITY_UNRESOLVED,
         LEAF_RAYTRACE_NONFINITE,
-        LEAF_JACOBIAN_NONFINITE,
     ]
     assert LEAF_CONVERGED == 0 and len(set(flags)) == len(flags)
     assert all(f > 0 and f & (f - 1) == 0 for f in flags)
@@ -315,12 +331,12 @@ def test_lens_status_s_deviation_and_sigma_min_on_an_affine_map_and_on_a_collaps
     n = theta6.shape[0]
     level, det6 = i64([0] * n), f64(np.ones((n, 6)))
     s = np.linalg.svd(A, compute_uv=False).min()
-    _, dev, sig = lens_status(
+    _, dev, sig = explicit_status(
         f64(affine(theta6)), det6, f64(np.full((n, 6), s)), ROOT_CLASS, level, H0, 0.01
     )
     assert np.allclose(to_np(dev), 0.0, atol=1e-15)
     assert np.allclose(to_np(sig), s)
-    _, dev, sig = lens_status(
+    _, dev, sig = explicit_status(
         f64(np.zeros_like(theta6)),
         det6,
         f64(np.zeros((n, 6))),
@@ -341,7 +357,7 @@ def test_affine_error_is_below_min_img_sep_exactly_where_the_deviation_checks_pa
     sigma6 = rng.uniform(0.05, 1.0, (n, 6))
     cls = mesh_backend.repeat(ROOT_CLASS, n // 2, axis=0)
     level = i64([0] * n)
-    got, deviation, sigma_min = lens_status(
+    got, deviation, sigma_min = explicit_status(
         f64(beta6), f64(np.ones((n, 6))), f64(sigma6), cls, level, H0, 0.01
     )
     passed = (to_np(got) & LEAF_CONVERGENCE_FAILED) == 0
@@ -444,3 +460,44 @@ def test_the_fit_is_the_edge_derivative_formula_and_its_inverses_are_the_tables(
     got = to_np(fitted_jacobian(f64(beta6), i64(cls), i64(level), h0))
     np.testing.assert_allclose(got[:, :3], A, rtol=1e-10, atol=1e-10)
     np.testing.assert_allclose(got[:, 3:], want, rtol=1e-10, atol=1e-10)
+
+
+def test_lens_status_is_the_criterion_on_the_fit_and_returns_its_corners():
+    theta6, cls, level, h0 = descended()
+    beta6 = f64(np.random.default_rng(2).normal(size=theta6.shape))
+    A = fitted_jacobian(beta6, i64(cls), i64(level), h0)
+    det6 = A[..., 0, 0] * A[..., 1, 1] - A[..., 0, 1] * A[..., 1, 0]
+    Q = child_shape_matrices(beta6[:, :3], beta6[:, 3:])
+    want = _status(
+        beta6, Q, child_maps(Q, i64(cls)), det6, sigma_min_2x2(A), i64(level), h0, 0.1
+    )
+    status, deviation, sigma_min, corners = lens_status(
+        beta6, i64(cls), i64(level), h0, 0.1
+    )
+    for got, w in zip((status, deviation, sigma_min), want):
+        assert np.array_equal(to_np(got), to_np(w))
+    assert np.array_equal(to_np(corners), to_np(A[:, :3]))
+
+
+def test_a_nan_det_reads_as_parity_unresolved_and_nothing_else():
+    theta6, cls, level, h0 = descended(levels=1)
+    beta6 = f64(theta6[:1])  # the identity map: finite images, no deviation
+    Q = child_shape_matrices(beta6[:, :3], beta6[:, 3:])
+    status, _, _ = _status(
+        beta6,
+        Q,
+        child_maps(Q, i64(cls[:1])),
+        f64([[np.nan, 1, 1, 1, 1, 1]]),
+        f64(np.ones((1, 6))),
+        i64(level[:1]),
+        h0,
+        0.1,
+    )
+    assert int(to_np(status)[0]) == LEAF_JACOBIAN_PARITY_UNRESOLVED
+
+
+@pytest.mark.parametrize(
+    "module", ["caustics.func", "caustics.lenses.func", "caustics.lenses.func.adaptive"]
+)
+def test_the_jacobian_nonfinite_flag_is_gone(module):
+    assert not hasattr(importlib.import_module(module), "LEAF_JACOBIAN_NONFINITE")

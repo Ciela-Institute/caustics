@@ -20,24 +20,26 @@ from .geometry import (
 # nonzero status: below it a failure means a split, and a closure triangle
 # reads its origin's status.
 #
+# The Jacobian tests read six values of `det A` and of `sigma_min A`: those
+# of the quadratic map through the triangle's six images, at its six samples
+# (`fitted_jacobian`). No lens Jacobian is read.
+#
 # - `LEAF_CONVERGENCE_FAILED`: a mapped midpoint strays from its affine
 #   prediction by more than `min_img_sep` allows, carried to the source plane
-#   by the children's affine maps or by the Jacobian at the six samples.
+#   by the children's affine maps or by those six `sigma_min A`.
 # - `LEAF_APPROX_PARITY_UNRESOLVED`: the four red-split children disagree on
 #   their orientation in the source plane.
-# - `LEAF_JACOBIAN_PARITY_UNRESOLVED`: `det A` changes sign between the six
-#   samples, or is exactly zero at one: a zero has no sign, and puts a
-#   critical point on the triangle. (The band instead counts a zero as
-#   positive, to trace the curve.)
+# - `LEAF_JACOBIAN_PARITY_UNRESOLVED`: those six `det A` are not of one
+#   strict sign: one differs, or is exactly zero, or is NaN. A zero has no
+#   sign, and puts a critical point on the triangle; a NaN fails both sign
+#   tests. (The band instead counts a zero as positive, to trace the curve.)
 # - `LEAF_RAYTRACE_NONFINITE`: some image is non-finite; then it is the only
 #   flag.
-# - `LEAF_JACOBIAN_NONFINITE`: some `det A` is non-finite.
 LEAF_CONVERGED = 0
 LEAF_CONVERGENCE_FAILED = 1 << 0
 LEAF_APPROX_PARITY_UNRESOLVED = 1 << 1
 LEAF_JACOBIAN_PARITY_UNRESOLVED = 1 << 2
 LEAF_RAYTRACE_NONFINITE = 1 << 3
-LEAF_JACOBIAN_NONFINITE = 1 << 4
 
 
 def midpoint_deviation(beta_v, beta_m):
@@ -188,8 +190,8 @@ def fitted_jacobian(beta6, cls, level, h0):
     first, so that a constant map fits to exactly zero. With ``A_i`` the
     affine map of the corner child at ``theta_i`` and ``A`` the triangle's
     own, the corner value is ``A_fit(theta_i) = 2 A_i - A`` and so the
-    midpoint value is ``A_fit(m_k) = A_i + A_j - A``. The inverse edge matrices are
-    :data:`~.geometry.PINV0`'s, as in :func:`children_sigma_min`.
+    midpoint value is ``A_fit(m_k) = A_i + A_j - A``. The inverse edge
+    matrices are :data:`~.geometry.PINV0`'s, as in :func:`children_sigma_min`.
 
     The fit differences images a leaf edge ``h`` apart, so its entries carry
     rounding noise of about ``8 * eps * |beta| / h``: it stops resolving the
@@ -244,9 +246,15 @@ def _maps_fit(beta_v, maps, cls, level, h0):
     )
 
 
-def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
+def lens_status(beta6, cls, level, h0, min_img_sep):
     """
-    Why each triangle's affine model of the lens map is not trusted, and the deviation and smallest singular value its error bound reads.
+    Why each triangle's affine model of the lens map is not trusted, the deviation and smallest singular value its error bound reads, and its fitted Jacobian at the vertices.
+
+    The triangle is judged on its six images alone. Its six ``det A`` and
+    six ``sigma_min A`` are those of the quadratic map through them, at the
+    six samples (:func:`fitted_jacobian`): no lens Jacobian is read. The
+    children's affine maps, which both the fit and the criterion read, are
+    built once.
 
     The status is a ``LEAF_*`` bitmask, ``LEAF_CONVERGED`` -- zero -- only
     where every one of these holds:
@@ -262,9 +270,9 @@ def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
       the lens-plane tolerance carried to the source plane. Written as
       ``deviation < threshold``, so that a NaN fails, and so does an
       exactly singular triangle, ``0 < 0``;
-    - ``det A`` is finite at all six samples (``LEAF_JACOBIAN_NONFINITE``)
-      and of one strict sign, an exact zero having none
-      (``LEAF_JACOBIAN_PARITY_UNRESOLVED``).
+    - ``det A`` is of one strict sign at all six samples, an exact zero
+      having none (``LEAF_JACOBIAN_PARITY_UNRESOLVED``). A NaN among the six
+      fails both sign tests, so it reads as parity unresolved.
 
     Parameters
     ----------
@@ -273,10 +281,6 @@ def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
         ``m_i`` opposite ``theta_i``.
 
         *Unit: arcsec*
-    det6: ArrayLike
-        ``(n, 6)`` ``det A`` at the same samples.
-    sigma6: ArrayLike
-        ``(n, 6)`` smallest singular value of ``A`` at the same samples.
     cls: ArrayLike
         ``(n,)`` int64 orientation classes.
     level: ArrayLike
@@ -300,22 +304,42 @@ def lens_status(beta6, det6, sigma6, cls, level, h0, min_img_sep):
         *Unit: arcsec*
     sigma_min: ArrayLike
         ``(n,)``, the smaller of :func:`children_sigma_min` and the smallest
-        of ``sigma6``.
+        ``sigma_min(A)`` of the fit at the six samples.
+    corner_jacobian: ArrayLike
+        ``(n, 3, 2, 2)`` float64, the fit's Jacobian at ``theta_1, theta_2,
+        theta_3``.
     """
     beta_v, beta_m = beta6[:, :3], beta6[:, 3:]
     Q = child_shape_matrices(beta_v, beta_m)
+    maps = child_maps(Q, cls)
+    A = _maps_fit(beta_v, maps, cls, level, h0)
+    det6 = A[..., 0, 0] * A[..., 1, 1] - A[..., 0, 1] * A[..., 1, 0]
+    status, deviation, sigma_min = _status(
+        beta6, Q, maps, det6, sigma_min_2x2(A), level, h0, min_img_sep
+    )
+    return status, deviation, sigma_min, A[:, :3]
+
+
+def _status(beta6, Q, maps, det6, sigma6, level, h0, min_img_sep):
+    """
+    :func:`lens_status`'s criterion on six given ``det A`` and ``sigma_min A``.
+
+    ``Q`` is :func:`child_shape_matrices` of ``beta6`` and ``maps`` its
+    :func:`child_maps`; ``det6`` and ``sigma6`` are ``(n, 6)``, at the six
+    samples. Returns ``status, deviation, sigma_min`` as :func:`lens_status`
+    does.
+    """
+    beta_v, beta_m = beta6[:, :3], beta6[:, 3:]
     deviation = mesh_backend.max(midpoint_deviation(beta_v, beta_m), dim=1)
     sigma_min = mesh_backend.minimum(
-        children_sigma_min(Q, cls, level, h0), mesh_backend.min(sigma6, dim=1)
+        _maps_sigma_min(maps, level, h0), mesh_backend.min(sigma6, dim=1)
     )
-    det_ok = mesh_backend.all(mesh_backend.isfinite(det6), dim=1)
     one_sign = mesh_backend.all(det6 > 0, dim=1) | mesh_backend.all(det6 < 0, dim=1)
     status = (
         mesh_backend.long(~parity_from_children(Q)) * LEAF_APPROX_PARITY_UNRESOLVED
         | mesh_backend.long(~(deviation < sigma_min * min_img_sep))
         * LEAF_CONVERGENCE_FAILED
-        | mesh_backend.long(~det_ok) * LEAF_JACOBIAN_NONFINITE
-        | mesh_backend.long(det_ok & ~one_sign) * LEAF_JACOBIAN_PARITY_UNRESOLVED
+        | mesh_backend.long(~one_sign) * LEAF_JACOBIAN_PARITY_UNRESOLVED
     )
     finite = mesh_backend.all(mesh_backend.isfinite(beta6), dim=(1, 2))
     status = mesh_backend.where(finite, status, LEAF_RAYTRACE_NONFINITE)

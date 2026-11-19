@@ -368,16 +368,11 @@ def assert_hits_equal(got, want):
 
 
 def finite_rows(mesh):
-    """The leaves every index of ``mesh`` holds: those whose origin has a finite raytrace and Jacobian."""
-    from caustics.lenses.func.adaptive.criterion import (
-        LEAF_JACOBIAN_NONFINITE,
-        LEAF_RAYTRACE_NONFINITE,
-    )
+    """The leaves every index of ``mesh`` holds: those whose origin has a finite raytrace."""
+    from caustics.lenses.func.adaptive.criterion import LEAF_RAYTRACE_NONFINITE
 
     status = to_np(mesh.origin_status)[to_np(mesh.leaf_origin)]
-    return np.flatnonzero(
-        (status & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)) == 0
-    )
+    return np.flatnonzero((status & LEAF_RAYTRACE_NONFINITE) == 0)
 
 
 def index_point_cells(index, level, points):

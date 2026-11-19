@@ -53,7 +53,6 @@ from .refine import (
 from .index import MeshIndex, build_index
 from .criterion import (
     LEAF_CONVERGED,
-    LEAF_JACOBIAN_NONFINITE,
     LEAF_RAYTRACE_NONFINITE,
     lens_status,
 )
@@ -73,16 +72,16 @@ class LensMesh(NamedTuple):
 
     Vertex ``v`` has a lens-plane position ``vertices_lens[v]`` and its image
     ``vertices_source[v]``, so the two embeddings share one topology. Every
-    leaf whose origin has a finite raytrace and Jacobian -- neither
-    ``LEAF_RAYTRACE_NONFINITE`` nor ``LEAF_JACOBIAN_NONFINITE`` -- is in
-    ``index``, converged or not. A leaf failing the criterion at the finest
-    level straddles a fold, a critical curve or a lens center the mesh
-    cannot resolve; its source triangle is queried grown by its deviation
-    (:func:`leaf_grow`), and ``forward_raytrace`` accepts its roots further
-    from their seeds. The source triangle of a leaf sharing a vertex with
-    one left out of the index is grown too, converged or not. The
-    pre-closure leaves -- the origins -- are kept with their level, class
-    and status, which is what an extension refines from.
+    leaf whose origin has a finite raytrace -- not flagged
+    ``LEAF_RAYTRACE_NONFINITE`` -- is in ``index``, converged or not. A leaf
+    failing the criterion at the finest level straddles a fold, a critical
+    curve or a lens center the mesh cannot resolve; its source triangle is
+    queried grown by its deviation (:func:`leaf_grow`), and
+    ``forward_raytrace`` accepts its roots further from their seeds. The
+    source triangle of a leaf sharing a vertex with one left out of the
+    index is grown too, converged or not. The pre-closure leaves -- the
+    origins -- are kept with their level, class and status, which is what
+    an extension refines from.
 
     Parameters
     ----------
@@ -127,7 +126,8 @@ class LensMesh(NamedTuple):
         *Unit: arcsec*
     origin_sigma_min: ArrayLike
         ``(N,)`` float64 smallest singular value of each origin's affine
-        model: the smaller of its children's and of ``A`` at its six samples.
+        model: the smaller of its children's and of the fitted ``A`` at its
+        six samples (:func:`~.criterion.fitted_jacobian`).
         With ``origin_deviation`` it gives :func:`~.criterion.affine_error`,
         how far a seed of the origin can lie from its image, below
         ``min_img_sep`` on every converged origin.
@@ -205,11 +205,8 @@ def make_sampler(raytrace, jacobian, device, batch_size=None):
 
 
 def finite_leaves(mesh):
-    """True where a leaf's origin has a finite raytrace and Jacobian, ``(L,)``: the leaves ``mesh.index`` holds."""
-    return (
-        mesh.origin_status[mesh.leaf_origin]
-        & (LEAF_RAYTRACE_NONFINITE | LEAF_JACOBIAN_NONFINITE)
-    ) == 0
+    """True where a leaf's origin has a finite raytrace, ``(L,)``: the leaves ``mesh.index`` holds."""
+    return (mesh.origin_status[mesh.leaf_origin] & LEAF_RAYTRACE_NONFINITE) == 0
 
 
 def leaf_grow(mesh):
@@ -253,15 +250,7 @@ def _lens_split(h0, min_img_sep):
     """The lens criterion as :func:`~.refine.refine`'s ``split``."""
 
     def split(ij, values6, cls, level):
-        status, _, _ = lens_status(
-            values6[..., :2],
-            values6[..., 2],
-            values6[..., 3],
-            cls,
-            level,
-            h0,
-            min_img_sep,
-        )
+        status, _, _, _ = lens_status(values6[..., :2], cls, level, h0, min_img_sep)
         return status != LEAF_CONVERGED
 
     return split
@@ -400,7 +389,8 @@ def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep)
     :func:`~.criterion.lens_status` of store ``rows``, and those of them at the finest level that are in the band.
 
     Each row's six samples are read from ``table_keys``, ascending, and
-    ``table_values``; :func:`~.band.in_band` reads their ``det A``.
+    ``table_values``; the criterion reads their images, and
+    :func:`~.band.in_band` their ``det A``.
 
     Returns
     -------
@@ -416,14 +406,8 @@ def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep)
     )
     values6 = table_values[mesh_backend.searchsorted(table_keys, keys6)]
     level = store.level[rows]
-    status, deviation, sigma_min = lens_status(
-        values6[..., :2],
-        values6[..., 2],
-        values6[..., 3],
-        store.cls[rows],
-        level,
-        lat.h0,
-        min_img_sep,
+    status, deviation, sigma_min, _ = lens_status(
+        values6[..., :2], store.cls[rows], level, lat.h0, min_img_sep
     )
     band = (level == lat.level - 1) & in_band(values6[..., 2])
     return status, deviation, sigma_min, rows[mesh_backend.flatnonzero(band)]

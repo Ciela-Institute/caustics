@@ -296,7 +296,7 @@ def forward_raytrace(
     """
     Lens-plane positions of every image of each source-plane point.
 
-    Each leaf with a finite raytrace and Jacobian whose source-plane
+    Each leaf with a finite raytrace whose source-plane
     triangle contains the point, or, for a leaf that did not converge or
     that shares a vertex with a non-finite one, reaches it
     (:func:`mesh_query`), seeds Levenberg-Marquardt

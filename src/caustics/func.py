@@ -66,7 +66,6 @@ from .lenses.func import (
     LEAF_APPROX_PARITY_UNRESOLVED,
     LEAF_JACOBIAN_PARITY_UNRESOLVED,
     LEAF_RAYTRACE_NONFINITE,
-    LEAF_JACOBIAN_NONFINITE,
 )
 
 from .light.func import brightness_sersic, k_lenstronomy, k_sersic
@@ -145,7 +144,6 @@ __all__ = (
     "LEAF_APPROX_PARITY_UNRESOLVED",
     "LEAF_JACOBIAN_PARITY_UNRESOLVED",
     "LEAF_RAYTRACE_NONFINITE",
-    "LEAF_JACOBIAN_NONFINITE",
     "brightness_sersic",
     "k_lenstronomy",
     "k_sersic",
