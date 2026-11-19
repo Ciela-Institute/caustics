@@ -1,11 +1,12 @@
 """
 The critical band: the ``max_level`` leaves the mesh's ``det A`` changes sign across.
 
-``A`` is the mesh's Jacobian, not the lens's: the fitted Jacobians its
-vertices carry (:func:`jacobian_det6`), and where they vary too much across
-a leaf to trust (:func:`resolved`), a ``det A`` measured from the raytrace
-at the leaf's samples. :func:`build_band` builds the band when the lens
-mesh is frozen; :mod:`~caustics.lenses.func.adaptive.curves` traces it.
+``A`` is the mesh's Jacobian, and no lens Jacobian is evaluated. ``det A``
+is that of the fitted Jacobians the vertices carry (:func:`jacobian_det6`),
+and, where they vary too much across a leaf to trust (:func:`resolved`),
+measured from the raytrace at the leaf's samples. :func:`build_band` builds
+the band when the lens mesh is frozen;
+:mod:`~caustics.lenses.func.adaptive.curves` traces it.
 """
 
 from typing import NamedTuple
@@ -15,8 +16,12 @@ from .mesh_backend import mesh_backend
 from .lattice import lattice_ij_from_key, lattice_xy
 
 RESOLVED_SPREAD = 2.0
-"""Largest Frobenius norm of a difference of two vertex Jacobians that
-:func:`resolved` still trusts, one value for every lens."""
+"""Frobenius norm of a difference of two vertex Jacobians below which
+:func:`resolved` trusts a triangle's fit. The Jacobian is dimensionless, so
+one value serves every lens and every ``min_img_sep``. It is a quarter of
+8: on 33 test meshes, every curve traced at any value from 0.25 to 8 lies
+within ``min_img_sep`` of a critical curve traced from the lens's own
+``det A``, and at 16 one does not."""
 
 MEASURE_OFFSET = 1.0 / 1024
 """Offset of a measured ``det A``'s central differences, as a fraction of
@@ -27,15 +32,28 @@ class CriticalBand(NamedTuple):
     """
     The ``max_level`` leaves the mesh's ``det A`` changes sign across, with ``det A`` at their samples.
 
-    A leaf is in the band when :func:`in_band` holds for the determinants at
-    its six samples -- the three vertices and the three edge midpoints, the
-    corners of its four red-split children. Each is :func:`jacobian_det6`
-    of the leaf's three vertex Jacobians, except at a measured sample, one
-    of the six of a finest-level leaf that is not :func:`resolved` and has
-    no non-finite image: there it is ``det`` of the central differences of
-    the raytrace at four points :data:`MEASURE_OFFSET` ``* min_img_sep``
-    away along the axes, NaN where one of their images is non-finite, for
-    every leaf that holds the sample.
+    A leaf is in the band when :func:`in_band` holds for ``det A`` at its six
+    samples -- the three vertices and the three edge midpoints, the corners
+    of its four red-split children. ``A`` is the mesh's Jacobian, and at
+    each sample ``det A`` is :func:`jacobian_det6` of the leaf's three
+    vertex Jacobians, except at a measured sample.
+
+    Close to a singular center, or a core smaller than a leaf, the fit's
+    error swamps the small eigenvalue of the Jacobian that the sign of
+    ``det A`` hangs on, so the fit cannot tell that sign. A leaf is
+    :func:`resolved` where the Frobenius norm of the difference of every two
+    of its vertex Jacobians is below :data:`RESOLVED_SPREAD`. The six
+    samples of every finest-level leaf that is not, and has no non-finite
+    image, are measured: four more points are raytraced, at ``x +- d`` and
+    ``y +- d`` with ``d = MEASURE_OFFSET * min_img_sep``, and ``det A`` is
+    the determinant of their central differences, NaN where one of the four
+    images is non-finite. Every leaf holding a measured sample reads that
+    value, resolved or not; the resolution test decides what is measured
+    and nothing else. A sample within a few ``d`` of a singular center gets
+    a wrong ``det A``; the crossings it makes lie inside the hole of a
+    center declared to the build, which drops them. The offset is limited
+    by rounding at very small leaves: by estimate it is sound down to a mesh
+    ``min_img_sep`` of about ``1e-5`` and fails near ``1e-6``.
 
     Samples are deduplicated by lattice key: a sample shared by several band
     leaves is one row, with one ``det``, so every leaf sharing it agrees on
@@ -67,9 +85,10 @@ class CriticalBand(NamedTuple):
     measured_ij: ArrayLike
         Shape ``(K, 2)`` int64 lattice coordinates of every measured sample
         of the mesh, band or not, in ascending lattice-key order. An
-        extension reads them rather than measure them again.
+        extension reads them, and measures only the samples they lack.
     measured_det: ArrayLike
-        Shape ``(K,)`` float64 the measured ``det A`` at each.
+        Shape ``(K,)`` float64 the measured ``det A`` at each, a function of
+        the sample's position alone.
     """
 
     leaves: ArrayLike

@@ -193,10 +193,16 @@ def fitted_jacobian(beta6, cls, level, h0):
     midpoint value is ``A_fit(m_k) = A_i + A_j - A``. The inverse edge
     matrices are :data:`~.geometry.PINV0`'s, as in :func:`children_sigma_min`.
 
-    The fit differences images a leaf edge ``h`` apart, so its entries carry
-    rounding noise of about ``8 * eps * |beta| / h``: it stops resolving the
-    Jacobian at about the leaf size where the midpoint deviations themselves
-    cancel to zero.
+    The fit differences images a leg or half a leg apart, the triangle's leg
+    being ``h = h0 / 2**level``, so it carries each image's rounding, about
+    ``eps * |beta|``, into its entries divided by ``h``. Each entry of
+    ``A_i + A_j - A`` and of ``2 A_i - A`` is a sum of the six images times
+    multiples of ``1 / h`` whose absolute values add up to at most 8 at a
+    midpoint and at the right-angled vertex, and 10 at the other two
+    vertices. So the entries carry rounding noise of about ``8 * eps *
+    |beta| / h`` at the midpoints and up to ``10 * eps * |beta| / h`` at the
+    vertices. The fit stops resolving the Jacobian at about the leaf size
+    where the midpoint deviations themselves cancel to zero.
 
     Parameters
     ----------

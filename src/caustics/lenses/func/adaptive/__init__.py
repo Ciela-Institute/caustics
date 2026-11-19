@@ -2,9 +2,10 @@
 Adaptive meshes of the lens plane and of the source plane.
 
 A lens mesh (:func:`build_lens_mesh`) is an adaptively refined
-triangulation of the lens plane that carries the lens map at its vertices.
-It is built once and then answers source-plane questions without further
-lens calls, except for root finding: every image of a source
+triangulation of the lens plane that carries the lens map at its vertices,
+and a Jacobian there fitted from the raytraced images: no lens Jacobian is
+evaluated. It is built once and then answers source-plane questions without
+further lens calls, except for root finding: every image of a source
 (:func:`forward_raytrace`), the critical curves, caustics and pseudo-caustics
 (:func:`critical_curves_and_caustics`) and the area they bound
 (:func:`caustic_area`), and the total magnification of a source

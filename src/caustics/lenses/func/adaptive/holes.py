@@ -287,8 +287,7 @@ def sample_holes(trace, centers, radius, min_img_sep, batch_size):
     ----------
     trace: Callable[[ArrayLike], ArrayLike]
         ``(N, 2)`` lens-plane positions to ``(N, 2)`` images, as
-        :func:`~caustics.lenses.func.adaptive.lens_mesh.make_sampler` gives
-        without a Jacobian.
+        :func:`~caustics.lenses.func.adaptive.lens_mesh.make_sampler` gives.
     centers: ArrayLike
         ``(H, 2)`` float64 hole centers, from :func:`merge_centers`.
 

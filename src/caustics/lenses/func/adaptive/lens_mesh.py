@@ -4,10 +4,11 @@ The lens mesh: an adaptive triangulation of the lens plane, carrying the lens ma
 :func:`build_lens_mesh` refines the lens plane until each leaf's affine
 model of the lens map is accurate to ``min_img_sep`` and no critical curve
 runs between its samples (:func:`~.criterion.lens_status`), down to a size
-floor. :func:`extend_lens_mesh` grows a mesh to a larger fov, reusing every
-lens evaluation, and :func:`build_closed_lens_mesh` grows it until the fov
-cuts no critical curve and the image of its boundary crosses no
-pseudo-caustic.
+floor. :func:`extend_lens_mesh` grows a mesh to a larger fov, reusing its
+refinement and the images it stores, and :func:`build_closed_lens_mesh`
+grows it until the fov cuts no critical curve and the image of its
+boundary crosses no pseudo-caustic. Only the raytrace is called: no lens
+Jacobian is evaluated.
 """
 
 import math
@@ -91,6 +92,16 @@ class LensMesh(NamedTuple):
     origins -- are kept with their level, class and status, which is what
     an extension refines from.
 
+    No lens Jacobian is evaluated: every Jacobian on the mesh is a fit's.
+    The quadratic map through an origin's six images has a Jacobian at each
+    of its corners (:func:`~.criterion.fitted_jacobian`). The holders of a
+    vertex are the origins with it as one of their three corners, six at an
+    interior vertex, three at a hanging node and fewer on the fov boundary,
+    and the vertex carries the mean of their fits there. The mean is a float
+    sum, so its last bits depend on the order of its terms: two builds by
+    the same route agree bit for bit, and an extension and a fresh build of
+    the same mesh agree to rounding.
+
     Parameters
     ----------
     lattice: Lattice
@@ -108,10 +119,9 @@ class LensMesh(NamedTuple):
 
         *Unit: arcsec*
     vertices_jacobian: ArrayLike
-        ``(V, 2, 2)`` float64 mean, over the origins holding each vertex as
-        a corner, of their fitted Jacobian at it, each from its origin's six
-        images (:func:`~.criterion.fitted_jacobian`); NaN where a holder has
-        a non-finite image.
+        ``(V, 2, 2)`` float64 the mean of each vertex's holders' fitted
+        Jacobians at it, as above; NaN where a holder has a non-finite
+        image.
     leaves: ArrayLike
         ``(L, 3)`` int64 vertex indices of the closed, conforming leaves,
         positively oriented in the lens plane.
@@ -134,20 +144,21 @@ class LensMesh(NamedTuple):
 
         *Unit: arcsec*
     origin_sigma_min: ArrayLike
-        ``(N,)`` float64 smallest singular value of each origin's affine
-        model: the smaller of its children's and of the fitted ``A`` at its
-        six samples (:func:`~.criterion.fitted_jacobian`).
-        With ``origin_deviation`` it gives :func:`~.criterion.affine_error`,
-        how far a seed of the origin can lie from its image, below
+        ``(N,)`` float64 the smaller of the smallest singular value of each
+        origin's four children's affine maps and that of its fitted
+        Jacobian at its six samples (:func:`~.criterion.lens_status`). With
+        ``origin_deviation`` it gives :func:`~.criterion.affine_error`, how
+        far a seed of the origin can lie from its image, below
         ``min_img_sep`` on every converged origin.
     index: MeshIndex
         Over the source-plane images of the leaves whose origin is finite,
         each grown by :func:`leaf_grow`.
     critical_band: CriticalBand
-        The finest-level origins the ``det`` of ``vertices_jacobian``
-        changes sign across, with ``det A`` measured from the raytrace
-        where those are unresolved (:func:`~.band.resolved`), and the
-        measured samples.
+        The finest-level origins across which ``det`` of the mesh's
+        Jacobian changes sign, with that ``det`` at their samples: from
+        ``vertices_jacobian``, or measured from the raytrace at the samples
+        of a leaf that is not :func:`~.band.resolved`. It also holds every
+        measured sample.
     holes: CenterHoles
         Holes around the lens centers, with their hole curves.
     min_img_sep: float
@@ -310,6 +321,31 @@ def build_lens_mesh(
     ``max_depth``. The leaves are then 2:1 balanced, closed and indexed. The
     criterion samples six points per triangle, so ``init_res`` must resolve
     the smallest structure of the lens.
+
+    Only ``raytrace`` is called; no lens Jacobian is evaluated. Each
+    triangle is judged on the quadratic map through its six images, each
+    vertex carries the mean of the Jacobians of the fits of the origins
+    holding it (:class:`LensMesh`), and the critical band is every
+    finest-level leaf across which ``det`` of that Jacobian changes sign
+    (:class:`~.band.CriticalBand`). Close to a singular center, or a core
+    smaller than a leaf, the fit cannot tell the sign of ``det A``. A leaf
+    is not :func:`~.band.resolved` where two of its vertex Jacobians differ
+    by :data:`~.band.RESOLVED_SPREAD` or more in Frobenius norm, or one is
+    NaN. At the six samples of such a finest-level leaf with finite images
+    the band reads instead a ``det A`` measured by central differences from
+    four more raytraces each, at ``x +- d`` and ``y +- d`` with
+    ``d = MEASURE_OFFSET * min_img_sep`` (:data:`~.band.MEASURE_OFFSET`).
+    The resolution test decides that and nothing else. A sample within a
+    few ``d`` of a singular center gets a wrong ``det A``; the hole of a
+    center declared in ``centers`` drops the crossings it makes. The offset
+    is limited by rounding at very small leaves: by estimate the measurement
+    is sound down to a mesh ``min_img_sep`` of about ``1e-5`` and fails near
+    ``1e-6``.
+
+    A sign change of ``det A`` lying exactly along mesh lines, where the
+    lens's Jacobian jumps while its map stays continuous, is not seen: each
+    triangle on either side fits its own smooth branch. For a pixelated
+    lens, offset the fov from the pixel grid.
 
     Parameters
     ----------
@@ -479,19 +515,18 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
     sampled here, with ``sample``, and never cached. The origins are tested
     in canonical order, in steps of at most :data:`STATUS_ROWS` rows.
 
-    Each vertex carries the mean, over the origins holding it as a corner,
-    of their fitted Jacobian at it. Each step of the status pass adds its
-    origins' corner fits to a sum by vertex (:func:`_add_corner_fits`); an
-    origin with a non-finite image adds nothing, and the vertices it holds
-    are NaN. The mean is the sum over the count of holders. The sum is a
-    float sum taken in canonical origin order, so a fresh build's mean
-    depends on the mesh and on :data:`STATUS_ROWS` alone, not on the order
-    refinement made the rows. A vertex held by no new origin and by no old
-    one split here keeps the mean ``seed`` stored, bit for bit. At any
-    other old vertex the sum starts as that mean times its old count of
-    holders, less the fits of the old origins split here that held it,
-    recomputed from the cache, where splitting put their midpoints, also in
-    steps of :data:`STATUS_ROWS`.
+    ``vertices_jacobian``, the mean of :class:`LensMesh`, is a sum by
+    vertex over the count of holders. Each step of the status pass adds its
+    origins' corner fits to the sum (:func:`_add_corner_fits`); an origin
+    with a non-finite image adds nothing, and the vertices it holds are
+    NaN. The sum is a float sum taken in canonical origin order, so a fresh
+    build's mean depends on the mesh and on :data:`STATUS_ROWS` alone, not
+    on the order refinement made the rows. A vertex held by no new origin
+    and by no old one split here keeps the mean ``seed`` stored, bit for
+    bit. At any other old vertex the sum starts as that mean times its old
+    count of holders, less the fits of the old origins split here that held
+    it, recomputed from the cache, where splitting put their midpoints, also
+    in steps of :data:`STATUS_ROWS`.
 
     With every mean final, the finest-level origins, old and new, are
     taken in steps of at most :data:`STATUS_ROWS`. The six samples of each
@@ -843,13 +878,22 @@ def extend_lens_mesh(mesh, raytrace, fov, *, batch_size=None):
 
     Whole level-0 cells are added on every side: the fewest that reach
     ``fov``, to within ``1e-9`` of a cell. The ring is refined as a fresh
-    build would refine it, and the balance settles the seam, so the result is
-    the mesh :func:`build_lens_mesh` gives on the grown lattice -- bit for bit
-    when the lens returns the same value at a point whatever batch it arrives
-    in, and the grown fov, center and cell size are dyadic, except
-    ``vertices_jacobian`` and the band's ``det``, which agree to rounding.
-    No old vertex, band sample or measured sample is sampled again; an old
-    leaf the extension brings into the band has its midpoints raytraced.
+    build would refine it, and the balance settles the seam, so the result
+    is the mesh :func:`build_lens_mesh` gives on the grown lattice, when the
+    lens returns the same value at a point whatever batch it arrives in and
+    the grown fov, center and cell size are dyadic. It equals that mesh bit
+    for bit in every field but two, which agree to rounding:
+    ``vertices_jacobian``, a float sum taken in another order, and the
+    fitted entries of the band's ``det``, computed from it. Band membership
+    and the set of measured samples are decided by comparisons on those
+    values, so they can differ only where ``det A`` at a sample lies within
+    rounding of zero, or a leaf's spread within rounding of
+    :data:`~.band.RESOLVED_SPREAD`.
+
+    No old vertex or band sample is raytraced again. Of an old leaf the
+    extension brings into the band, the midpoints the old band did not hold
+    are raytraced again. Only the samples the old mesh did not measure are
+    measured.
 
     Parameters
     ----------

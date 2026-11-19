@@ -296,17 +296,17 @@ def forward_raytrace(
     """
     Lens-plane positions of every image of each source-plane point.
 
-    Each leaf with a finite raytrace whose source-plane
-    triangle contains the point, or, for a leaf that did not converge or
-    that shares a vertex with a non-finite one, reaches it
-    (:func:`mesh_query`), seeds Levenberg-Marquardt
-    (:func:`~caustics.utils.batch_lm`) with the preimage under the leaf's
-    affine map. A root is kept when it maps to within ``residual_tol`` of
-    the point and lies in its seed's leaf or within ``max(r, min_img_sep)``
-    of the seed, ``r`` the leaf's :func:`~.criterion.affine_error`
-    (:func:`near_seed`), and lies in the fov: near a fold, a small residual
-    alone admits points far from any image. Kept roots closer than
-    ``min_img_sep`` are one image, the one of smallest residual.
+    Each leaf with a finite raytrace whose source-plane triangle contains
+    the point, or, for a leaf that did not converge or that shares a vertex
+    with a non-finite one, reaches it (:func:`mesh_query`), seeds
+    Levenberg-Marquardt (:func:`~caustics.utils.batch_lm`) with the
+    preimage under the leaf's affine map. A root is kept when it maps to
+    within ``residual_tol`` of the point and lies in its seed's leaf or
+    within ``max(r, min_img_sep)`` of the seed, ``r`` the leaf's
+    :func:`~.criterion.affine_error` (:func:`near_seed`), and lies in the
+    fov: near a fold, a small residual alone admits points far from any
+    image. Kept roots closer than ``min_img_sep`` are one image, the one of
+    smallest residual.
 
     On a leaf that did not converge, ``r`` can be far larger than
     ``min_img_sep`` (near a fold it is unbounded), so the residual test is

@@ -3,7 +3,8 @@ Total magnification at source-plane points, read off a lens mesh with no lens ca
 
 The magnification of an image is ``1 / |det|`` of the mesh's fitted Jacobian
 (``mesh.vertices_jacobian``) interpolated linearly at the image's preimage,
-not of the lens's own ``det A``.
+or the area ratio of its leaf where ``det`` changes sign across the leaf;
+no lens Jacobian is evaluated.
 
 Each leaf whose source-plane triangle holds a point
 (:func:`~.geometry.contains_half_open`) is one image of it, with the
@@ -51,11 +52,13 @@ def leaf_tables(mesh):
     """
     The :class:`LeafTables` of ``mesh``'s leaves, ``O(L)``.
 
-    ``same_sign`` reads :func:`~.band.jacobian_det6` of the leaf's fitted vertex
-    Jacobians, ``mesh.vertices_jacobian``, and is False where any of the six is
-    not finite (tested explicitly: six ``+inf`` are not one sign); the lens's
-    own ``det A`` is not consulted, nor is :func:`~.band.resolved`. The vertex
-    Jacobians themselves are interpolated by :func:`hit_magnification`.
+    ``same_sign`` reads :func:`~.band.jacobian_det6` of the leaf's fitted
+    vertex Jacobians, ``mesh.vertices_jacobian``, on every leaf at every
+    level, and is False where any of the six is not finite: a vertex
+    Jacobian is NaN where a holder of the vertex has a non-finite image, and
+    finiteness is tested explicitly, since six ``+inf`` pass the sign test.
+    :func:`~.band.resolved` plays no part. The vertex Jacobians themselves
+    are interpolated by :func:`hit_magnification`.
     """
     lens = mesh.vertices_lens[mesh.leaves]
     source = mesh.vertices_source[mesh.leaves]
@@ -93,9 +96,16 @@ def hit_magnification(tables, leaf, w, jacobian):
     affine Jacobian matches the true one at the edge midpoints and is off by
     at most ``4 delta / h`` elsewhere, and a converged leaf has ``delta <
     sigma_min * min_img_sep``, so the relative error is below about ``4
-    min_img_sep / h``. It gives no bound for the interpolated part, which
-    inverse ray shooting found 6 to 15 times more accurate across ten lens
-    models.
+    min_img_sep / h``. It gives no bound for the interpolated value, which
+    was measured against inverse ray shooting on 1600 source pixels round
+    the caustics of ten lens models -- SIE, EPL, NFW, pseudo-Jaffe and
+    point-mass profiles, alone or with shear, a subhalo, an ``m = 4``
+    multipole or a second point mass -- each meshed at a requested
+    ``min_img_sep`` of 0.03, 0.01 and 0.003. Over the pixels no caustic
+    crosses, its median relative error is 11 to 61 times below the area
+    ratio's. Against interpolating the lens's own ``det A`` at the vertices
+    it is lower on 26 of the 30 meshes; it is 2.1 to 2.2 times higher on
+    the NFW model, at each resolution, and 1.07 times on one other mesh.
 
     Parameters
     ----------
@@ -209,17 +219,17 @@ def total_magnification(bx, by, mesh, *, batch_size=None):
     The sum, over every leaf whose source-plane triangle holds the point, of
     the magnification of the image it stands for
     (:func:`hit_magnification`): ``1 / |det|`` of the mesh's fitted vertex
-    Jacobians interpolated at the preimage (not the lens's own ``det A``), or
-    the leaf's area ratio where the determinant changes sign across the leaf
-    or is not finite. A point on an edge two leaves of one sheet share counts once
+    Jacobians interpolated at the preimage, or the leaf's area ratio where
+    the determinant changes sign across the leaf or is not finite. A point
+    on an edge two leaves of one sheet share counts once
     (:func:`~.geometry.contains_half_open`). No lens call is made.
 
     Every image of a point lies in the fov only inside the image of the fov
     boundary, of a mesh whose fov cuts no critical curve (see
     :func:`~.lens_mesh.build_closed_lens_mesh`); outside it the sum misses
-    images, so it is NaN there. Leaves with a non-finite raytrace or
-    Jacobian are not indexed and add nothing: next to a singular center they
-    are finest-level leaves with large source images, whose area ratio is
+    images, so it is NaN there. Leaves whose origin has a non-finite image
+    are not indexed and add nothing: next to a singular center they are
+    finest-level leaves with large source images, whose area ratio is
     negligible.
 
     Parameters
