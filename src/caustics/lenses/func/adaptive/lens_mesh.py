@@ -333,14 +333,14 @@ def build_lens_mesh(
     by :data:`~.band.RESOLVED_SPREAD` or more in Frobenius norm, or one is
     NaN. At the six samples of such a finest-level leaf with finite images
     the band reads instead a ``det A`` measured by central differences from
-    four more raytraces each, at ``x +- d`` and ``y +- d`` with
-    ``d = MEASURE_OFFSET * min_img_sep`` (:data:`~.band.MEASURE_OFFSET`).
-    The resolution test decides that and nothing else. A sample within a
-    few ``d`` of a singular center gets a wrong ``det A``; the hole of a
-    center declared in ``centers`` drops the crossings it makes. The offset
-    is limited by rounding at very small leaves: by estimate the measurement
-    is sound down to a mesh ``min_img_sep`` of about ``1e-5`` and fails near
-    ``1e-6``.
+    four more raytraces each, at ``x +- d`` and ``y +- d`` with ``d``
+    :data:`~.band.MEASURE_OFFSET` times the mesh's ``min_img_sep``, half the
+    one requested. The resolution test decides that and nothing else. A
+    sample within a few ``d`` of a singular center gets a wrong ``det A``;
+    the hole of a center declared in ``centers`` drops the crossings it
+    makes. The offset is limited by rounding at very small leaves: by
+    estimate the measurement is sound down to a mesh ``min_img_sep`` of
+    about ``1e-5`` and fails near ``1e-6``.
 
     A sign change of ``det A`` lying exactly along mesh lines, where the
     lens's Jacobian jumps while its map stays continuous, is not seen: each
