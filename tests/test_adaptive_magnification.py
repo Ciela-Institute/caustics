@@ -151,6 +151,12 @@ def test_a_hit_whose_interpolated_det_leaves_the_leaf_s_sign_takes_the_area_rati
     # same sign, tiny: the guard is on sign and finiteness only
     assert det > 0 and abs(det) < 0.2
     np.testing.assert_allclose(mu, [1.0, 1.0 / det, 7.0], rtol=1e-12)
+    # +inf, of the leaf's sign: only the finiteness test sends it to the area ratio
+    J_inf = np.stack([np.eye(2), np.diag([np.inf, 1.0]), np.eye(2)])[None]
+    mean = J_inf[0].mean(axis=0)
+    assert mean[0, 0] * mean[1, 1] - mean[0, 1] * mean[1, 0] == np.inf
+    mu_inf = hit_magnification(tables, i64([0]), f64(np.ones((1, 3))), f64(J_inf))
+    assert to_np(mu_inf).tolist() == [7.0]
 
 
 def test_a_hit_whose_interpolated_det_changes_sign_takes_the_area_ratio():

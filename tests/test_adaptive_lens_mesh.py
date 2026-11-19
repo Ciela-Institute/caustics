@@ -128,9 +128,11 @@ def test_no_build_path_calls_the_lens_jacobian():
     extend_lens_mesh(mesh, lens_.raytrace, 6.0)
     assert len(lens_.calls.raytrace) > 0 and lens_.calls.jacobian == []
     closed = numpy_lens(sie_like, sie_like_jacobian)
-    grown, _ = build_closed_lens_mesh(closed.raytrace, 2.0, 4, 0.05)
+    grown, curves = build_closed_lens_mesh(closed.raytrace, 2.0, 4, 0.05)
     assert grown.lattice.fov > 2.0  # an extension ran
     assert closed.calls.jacobian == []
+    is_closed = to_np(curves.closed)
+    assert is_closed.shape[0] > 0 and is_closed.all()
 
 
 def test_a_mesh_has_images_and_a_fitted_jacobian_at_its_vertices_and_nothing_of_the_lens_s():
@@ -157,6 +159,7 @@ def test_a_float32_lens_still_builds_and_traces_its_fold():
     xy = f64([[0.3, -0.3], [-1.2, 0.7], [1.9, 0.01]])
     assert make_sampler(raytrace, None)(xy).dtype == mesh_backend.float64
     mesh = to_mesh(build_lens_mesh(raytrace, 4.0, 4, 0.05))
+    assert mesh.vertices_jacobian.dtype == mesh_backend.float64
     want, _ = build(localised_fold, localised_fold_jacobian, 4.0, 4, 0.05)
     leaves_ij = [to_np(m.vertices_ij)[to_np(m.leaves)] for m in (mesh, want)]
     assert np.array_equal(*leaves_ij)
