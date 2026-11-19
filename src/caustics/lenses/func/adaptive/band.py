@@ -14,7 +14,7 @@ from ....backend_obj import ArrayLike
 from .mesh_backend import mesh_backend
 from .lattice import lattice_ij_from_key, lattice_xy
 
-RESOLVED_SPREAD = 4.0
+RESOLVED_SPREAD = 2.0
 """Largest Frobenius norm of a difference of two vertex Jacobians that
 :func:`resolved` still trusts, one value for every lens."""
 

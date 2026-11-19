@@ -72,9 +72,9 @@ def test_resolved_is_a_spread_below_the_threshold_and_a_nan_fails():
     J = np.stack(
         [
             np.stack([eye, eye, eye + d * np.array([[1.0, 0], [0, 0]])])
-            for d in (3.9, 4.1)
+            for d in (1.9, 2.1)
         ]
     )
     J = np.concatenate([J, np.full((1, 3, 2, 2), np.nan)])
     assert to_np(resolved(f64(J))).tolist() == [True, False, False]
-    assert RESOLVED_SPREAD == 4.0
+    assert RESOLVED_SPREAD == 2.0
