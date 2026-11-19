@@ -417,7 +417,7 @@ def test_the_fit_is_exact_for_a_quadratic_map_at_all_six_samples():
 
 def test_a_constant_map_fits_to_exactly_zero():
     theta6, cls, level, h0 = descended()
-    beta6 = np.broadcast_to(np.array([0.3, -1.7]), theta6.shape)
+    beta6 = np.broadcast_to(np.array([0.3, -1.7]), theta6.shape).copy()
     got = to_np(fitted_jacobian(f64(beta6), i64(cls), i64(level), h0))
     assert np.array_equal(got, np.zeros_like(got))
 
