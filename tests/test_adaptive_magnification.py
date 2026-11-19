@@ -124,6 +124,48 @@ def test_hits_take_det_of_the_interpolated_jacobian_or_the_area_ratio():
     np.testing.assert_allclose(mu, [want0, 9.0], rtol=1e-14)
 
 
+def test_a_hit_whose_interpolated_det_leaves_the_leaf_s_sign_takes_the_area_ratio():
+    tables = LeafTables(
+        area_ratio=f64([7.0, 7.0, 7.0]),
+        same_sign=mesh_backend.as_array([True, True, True]),
+        size=f64([1.0, 1.0, 1.0]),
+    )
+
+    def rot(t):
+        return np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
+
+    J = np.stack(
+        [
+            # det 1 throughout
+            np.stack([np.eye(2), np.eye(2), np.eye(2)]),
+            # three det of +1 whose mean has det ~0
+            np.stack([rot(0.0), rot(2.0), rot(4.0)]),
+            # a non-finite interpolant
+            np.stack([np.eye(2), np.full((2, 2), np.inf), np.eye(2)]),
+        ]
+    )
+    w = np.ones((3, 3))
+    mu = to_np(hit_magnification(tables, i64([0, 1, 2]), f64(w), f64(J)))
+    mean = J[1].mean(axis=0)
+    det = mean[0, 0] * mean[1, 1] - mean[0, 1] * mean[1, 0]
+    # same sign, tiny: the guard is on sign and finiteness only
+    assert det > 0 and abs(det) < 0.2
+    np.testing.assert_allclose(mu, [1.0, 1.0 / det, 7.0], rtol=1e-12)
+
+
+def test_a_hit_whose_interpolated_det_changes_sign_takes_the_area_ratio():
+    tables = LeafTables(
+        area_ratio=f64([7.0]), same_sign=mesh_backend.as_array([True]), size=f64([1.0])
+    )
+    # det 1, 1.5, 1.5
+    J = np.stack([np.diag([1.0, 1.0]), np.diag([-3.0, -0.5]), np.diag([-3.0, -0.5])])
+    J = J[None]
+    w = np.array([[0.5, 0.25, 0.25]])
+    mean = (w[0, :, None, None] / w.sum() * J[0]).sum(axis=0)
+    assert mean[0, 0] * mean[1, 1] - mean[0, 1] * mean[1, 0] < 0
+    assert to_np(hit_magnification(tables, i64([0]), f64(w), f64(J))).tolist() == [7.0]
+
+
 def test_det_of_the_interpolated_jacobian_is_exact_where_the_jacobian_is_affine():
     tri = np.array([[0.0, 0.0], [0.5, 0.5], [0.0, 0.5]])
     w = np.array([[0.2, 0.3, 0.5]])

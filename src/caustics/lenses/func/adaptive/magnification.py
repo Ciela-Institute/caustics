@@ -82,6 +82,13 @@ def hit_magnification(tables, leaf, w, jacobian):
     distance``, which is not integrable, where the true magnification
     diverges like ``1 / sqrt(distance)``.
 
+    Six ``det`` of one sign do not hold ``det J`` to that sign everywhere
+    inside the leaf: ``det`` of the interpolant is quadratic in the
+    barycentric coordinates and can dip through zero between its samples.
+    So a hit whose ``det J`` is not finite, or is not of the strict sign of
+    ``det`` at the leaf's first vertex, takes the area ratio as well. A
+    ``det J`` of that sign is kept however small.
+
     The criterion bounds the area ratio's error: on a quadratic piece the
     affine Jacobian matches the true one at the edge midpoints and is off by
     at most ``4 delta / h`` elsewhere, and a converged leaf has ``delta <
@@ -107,10 +114,15 @@ def hit_magnification(tables, leaf, w, jacobian):
         ``(K,)`` float64.
     """
     bary = w / mesh_backend.unsqueeze(w[:, 0] + w[:, 1] + w[:, 2], -1)
-    mean = mesh_backend.sum(bary[:, :, None, None] * jacobian, dim=1)
-    interpolated = 1.0 / mesh_backend.abs(_det2(mean))
+    det = _det2(mesh_backend.sum(bary[:, :, None, None] * jacobian, dim=1))
+    first = _det2(jacobian[:, 0])
+    interpolated = (
+        tables.same_sign[leaf]
+        & mesh_backend.isfinite(det)
+        & (((det > 0) & (first > 0)) | ((det < 0) & (first < 0)))
+    )
     return mesh_backend.where(
-        tables.same_sign[leaf], interpolated, tables.area_ratio[leaf]
+        interpolated, 1.0 / mesh_backend.abs(det), tables.area_ratio[leaf]
     )
 
 
