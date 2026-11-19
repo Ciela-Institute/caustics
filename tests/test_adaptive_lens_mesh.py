@@ -6,10 +6,11 @@ import weakref
 import numpy as np
 import pytest
 
+from caustics import jit_forward
 from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend, to_mesh
 from caustics.cosmology import FlatLambdaCDM
-from caustics.lenses import SIE
+from caustics.lenses import EPL, SIE
 from caustics.lenses.func.adaptive.band import (
     MEASURE_OFFSET,
     RESOLVED_SPREAD,
@@ -39,7 +40,10 @@ from caustics.lenses.func.adaptive.lattice import (
     lattice_key,
     lattice_xy,
 )
-from caustics.lenses.func.adaptive.curves import critical_curves_and_caustics
+from caustics.lenses.func.adaptive.curves import (
+    caustic_area,
+    critical_curves_and_caustics,
+)
 from caustics.lenses.func.adaptive import lens_mesh as lens_mesh_module
 from caustics.lenses.func.adaptive.lens_mesh import (
     _fov_boundary,
@@ -187,6 +191,38 @@ def test_finest_leaves_are_no_longer_than_the_mesh_s_min_img_sep(sie_mesh):
     finest = level == mesh.lattice.level - 1
     assert finest.any()
     assert longest[finest].max() <= mesh.min_img_sep * (1 + 1e-12)
+
+
+def test_a_declared_center_the_raytrace_maps_to_itself_leaves_one_closed_curve():
+    """The library's EPL of slope 1.2, whose deflection diverges at its center, on a lattice point."""
+
+    def f(x):
+        return backend.as_array(x, dtype=backend.float64)
+
+    lens = EPL(
+        cosmology=FlatLambdaCDM(name="cosmo"),
+        z_l=f(0.5),
+        z_s=f(1.5),
+        x0=f(0.0),
+        y0=f(0.0),
+        q=f(0.4),
+        phi=f(np.pi / 5),
+        Rein=f(1.0),
+        t=f(1.2),
+    )
+    raytrace = jit_forward(lens.raytrace)
+    assert [to_np(b).tolist() for b in raytrace(f([0.0]), f([0.0]))] == [[0.0], [0.0]]
+    areas = []
+    for min_img_sep in (0.02, 0.01):
+        curves = critical_curves_and_caustics(
+            build_lens_mesh(raytrace, 4.0, 16, min_img_sep, centers=f([[0.0, 0.0]]))
+        )
+        assert to_np(curves.closed).tolist() == [True]
+        assert to_np(curves.pseudo_caustic).tolist() == [False]
+        areas.append(caustic_area(curves))
+    # Measured 6.6e-7 apart, alike on torch and jax; against 0.005 the
+    # coarser area is 8.3e-7 off, converging as min_img_sep squared.
+    assert areas[0] == pytest.approx(areas[1], rel=1e-5)
 
 
 def test_finest_level_midpoints_are_band_samples_but_never_vertices():
@@ -498,6 +534,35 @@ def test_a_measured_det_is_the_central_difference_of_the_raytrace_and_has_the_le
     assert (np.sign(got[outside]) == np.sign(numpy_det(jac, xy[outside]))).all()
 
 
+def test_an_origin_with_a_nonfinite_image_stays_out_of_the_band():
+    """Two SISs 0.6" apart, undeclared: the one on a lattice point leaves non-finite origins.
+
+    The measured samples of one of them read both classes of ``det A``; what
+    keeps it out of the band is its samples no finite origin measures, whose
+    ``det A`` is NaN.
+    """
+    mesh, _ = build(
+        *sis(((0.0, 0.0), (0.6, 0.0))), fov=5.0, init_res=10, min_img_sep=2e-2
+    )
+    status, level = to_np(mesh.origin_status), to_np(mesh.origin_level)
+    nonfinite = np.flatnonzero((status & LEAF_RAYTRACE_NONFINITE) != 0)
+    assert nonfinite.size > 0 and (level[nonfinite] == mesh.lattice.level - 1).all()
+    band = mesh.critical_band
+    table = dict(
+        zip(
+            map(tuple, to_np(band.measured_ij).tolist()),
+            to_np(band.measured_det).tolist(),
+        )
+    )
+    read = [
+        [table[s] for s in map(tuple, six) if s in table]
+        for six in six_ij(mesh, nonfinite).tolist()
+    ]
+    assert any(min(r) < 0 <= max(r) for r in read if r)
+    assert not np.isin(to_np(band.leaves), nonfinite).any()
+    assert np.isfinite(to_np(band.source)).all()
+
+
 def test_a_lens_the_fit_resolves_measures_nothing():
     mesh, lens_ = build(localised_fold, localised_fold_jacobian, min_img_sep=0.05)
     assert mesh.critical_band.measured_ij.shape[0] == 0
@@ -729,7 +794,8 @@ def test_converged_leaves_pass_jacobian_parity_at_their_own_samples(fn, jac, kw)
 
 
 def test_a_subhalo_beside_the_critical_curve_is_resolved_and_audited():
-    fn, jac, center = sie_with_subhalo()
+    b_sub = 0.05
+    fn, jac, center = sie_with_subhalo(b_sub)
     mesh, _ = build(
         fn,
         jac,
@@ -744,9 +810,14 @@ def test_a_subhalo_beside_the_critical_curve_is_resolved_and_audited():
     ).reshape(-1, 6)
     assert ((det > 0).all(axis=1) | (det < 0).all(axis=1)).all()
     curves = critical_curves_and_caustics(mesh)
+    assert to_np(curves.closed).all()
     points = to_np(curves.lens)
-    near = np.hypot(*(points - center).T) < 4 * 0.05
-    assert near.any()
+    traced = np.ones(points.shape[0], bool)  # not on a hole circle
+    for c, r in zip(to_np(mesh.holes.centers), to_np(mesh.holes.radius)):
+        traced &= np.hypot(*(points - c).T) > r + 1e-9
+    # The subhalo's curve passes b_sub / 0.973 from it, 0.973 the host's
+    # larger eigenvalue there; the host's curve alone passes 2 b_sub away.
+    assert (np.hypot(*(points[traced] - center).T) < 1.2 * b_sub).any()
     # |grad det A| at the points, by central differences of jac with step 1e-6
     dx, dy = np.array([1e-6, 0.0]), np.array([0.0, 1e-6])
     grad = np.hypot(
@@ -754,9 +825,6 @@ def test_a_subhalo_beside_the_critical_curve_is_resolved_and_audited():
         numpy_det(jac, points + dy) - numpy_det(jac, points - dy),
     ) / (2 * 1e-6)
     off = np.abs(numpy_det(jac, points)) / grad
-    traced = np.ones(points.shape[0], bool)  # not on a hole circle
-    for c, r in zip(to_np(mesh.holes.centers), to_np(mesh.holes.radius)):
-        traced &= np.hypot(*(points - c).T) > r + 1e-9
     assert off[traced].max() < 0.1 * mesh.min_img_sep
 
 

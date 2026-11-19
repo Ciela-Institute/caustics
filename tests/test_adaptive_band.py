@@ -78,3 +78,11 @@ def test_resolved_is_a_spread_below_the_threshold_and_a_nan_fails():
     J = np.concatenate([J, np.full((1, 3, 2, 2), np.nan)])
     assert to_np(resolved(f64(J))).tolist() == [True, False, False]
     assert RESOLVED_SPREAD == 2.0
+
+
+def test_one_nonfinite_entry_among_equal_vertex_jacobians_is_not_resolved():
+    cases = [(v, x) for x in (np.nan, np.inf, -np.inf) for v in range(3)]
+    J = np.tile(np.eye(2), (len(cases) + 1, 3, 1, 1))
+    for row, (v, x) in enumerate(cases):
+        J[row, v, 0, 1] = x
+    assert to_np(resolved(f64(J))).tolist() == [False] * len(cases) + [True]
