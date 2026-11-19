@@ -27,8 +27,7 @@ from adaptive_maps import (
     f64,
     i64,
     point_mass,
-    sie_like,
-    sie_like_jacobian,
+    quadratic_jacobian,
     sis,
     to_np,
     user_build,
@@ -105,28 +104,44 @@ def test_same_sign_reads_six_det_of_the_vertex_jacobians_and_not_the_resolution_
     far[tri[0]] = np.eye(2) * (1.0 + 2 * RESOLVED_SPREAD)
     assert not bool(to_np(resolved(f64(far[tri][None])))[0])
     assert same_sign(far)  # unresolved, yet one sign: still interpolated
+    inf = J.copy()
+    inf[tri] = np.diag([np.inf, 1.0])
+    assert not same_sign(inf)  # six det of +inf are not one sign
 
 
-def test_leaf_tables_carry_det_of_each_vertex_jacobian_and_hits_interpolate_it():
-    mesh, _ = build(sie_like, sie_like_jacobian)
-    tables = leaf_tables(mesh)
-    J = to_np(mesh.vertices_jacobian)
-    want = J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
-    assert np.array_equal(to_np(tables.vertex_det), want, equal_nan=True)
-    assert "vertices_det" not in inspect.getsource(magnification)
-
-
-def test_hits_interpolate_det_a_where_it_keeps_its_sign_and_take_the_area_ratio_elsewhere():
+def test_hits_take_det_of_the_interpolated_jacobian_or_the_area_ratio():
     tables = LeafTables(
-        area_ratio=f64([5.0, 7.0]),
+        area_ratio=f64([7.0, 9.0]),
         same_sign=mesh_backend.as_array([True, False]),
         size=f64([1.0, 1.0]),
-        vertex_det=f64([0.5, 0.5, 0.2]),
     )
-    w = f64([[1.0, 1.0, 2.0], [1.0, 1.0, 2.0]])  # barycentric (1/4, 1/4, 1/2)
-    det = f64([[0.5, 0.5, 0.2], [0.5, -0.5, 0.2]])
-    mu = to_np(hit_magnification(tables, i64([0, 1]), w, det))
-    np.testing.assert_allclose(mu, [1.0 / (0.125 + 0.125 + 0.1), 7.0], rtol=1e-15)
+    J = np.random.default_rng(0).normal(size=(2, 3, 2, 2)) + 3 * np.eye(2)
+    w = np.array([[0.2, 0.3, 0.5], [1.0, 2.0, 1.0]])
+    bary = w / w.sum(axis=1, keepdims=True)
+    M = (bary[0, :, None, None] * J[0]).sum(axis=0)
+    want0 = 1.0 / abs(M[0, 0] * M[1, 1] - M[0, 1] * M[1, 0])
+    mu = to_np(hit_magnification(tables, i64([0, 1]), f64(w), f64(J)))
+    np.testing.assert_allclose(mu, [want0, 9.0], rtol=1e-14)
+
+
+def test_det_of_the_interpolated_jacobian_is_exact_where_the_jacobian_is_affine():
+    tri = np.array([[0.0, 0.0], [0.5, 0.5], [0.0, 0.5]])
+    w = np.array([[0.2, 0.3, 0.5]])
+    tables = LeafTables(
+        area_ratio=f64([0.0]),
+        same_sign=mesh_backend.as_array([True]),
+        size=f64([1.0]),
+    )
+    J = quadratic_jacobian(tri)[None]  # the Jacobian of a quadratic map is affine
+    at = quadratic_jacobian((w[0, :, None] * tri).sum(axis=0))
+    want = 1.0 / abs(at[0, 0] * at[1, 1] - at[0, 1] * at[1, 0])
+    mu = to_np(hit_magnification(tables, i64([0]), f64(w), f64(J)))
+    np.testing.assert_allclose(mu, [want], rtol=1e-13)
+
+
+def test_the_leaf_tables_carry_no_per_vertex_det():
+    assert LeafTables._fields == ("area_ratio", "same_sign", "size")
+    assert "vertices_det" not in inspect.getsource(magnification)
 
 
 def test_the_local_resolution_is_the_smallest_image_among_the_leaves_holding_a_point():

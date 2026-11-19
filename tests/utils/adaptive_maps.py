@@ -465,3 +465,24 @@ def holders_mean(mesh, fn):
     mean = total / np.bincount(leaves.reshape(-1), minlength=n)[:, None, None]
     mean[leaves[~np.isfinite(beta6).all(axis=(1, 2))].reshape(-1)] = np.nan
     return mean
+
+
+def quadratic(p):
+    x, y = p[..., 0], p[..., 1]
+    return np.stack(
+        (
+            0.3 + 0.7 * x - 0.2 * y + 0.5 * x * x - 0.4 * x * y + 0.1 * y * y,
+            -0.1 + 0.1 * x + 0.9 * y - 0.3 * x * x + 0.6 * x * y + 0.2 * y * y,
+        ),
+        axis=-1,
+    )
+
+
+def quadratic_jacobian(p):
+    x, y = p[..., 0], p[..., 1]
+    J = np.empty(p.shape[:-1] + (2, 2))
+    J[..., 0, 0] = 0.7 + 1.0 * x - 0.4 * y
+    J[..., 0, 1] = -0.2 - 0.4 * x + 0.2 * y
+    J[..., 1, 0] = 0.1 - 0.6 * x + 0.6 * y
+    J[..., 1, 1] = 0.9 + 0.6 * x + 0.4 * y
+    return J

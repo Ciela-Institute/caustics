@@ -38,7 +38,15 @@ from caustics.lenses.func.adaptive.lattice import (
     midpoint_ij,
 )
 
-from adaptive_maps import f64, i64, to_np, AFFINE, affine
+from adaptive_maps import (
+    f64,
+    i64,
+    to_np,
+    AFFINE,
+    affine,
+    quadratic,
+    quadratic_jacobian,
+)
 
 
 def test_child_shape_matrices_match_shape_matrix_of_each_child():
@@ -384,27 +392,6 @@ def descended(levels=3, fov=4.0, init_res=2):
         np.concatenate(level),
         lat.h0,
     )
-
-
-def quadratic(p):
-    x, y = p[..., 0], p[..., 1]
-    return np.stack(
-        (
-            0.3 + 0.7 * x - 0.2 * y + 0.5 * x * x - 0.4 * x * y + 0.1 * y * y,
-            -0.1 + 0.1 * x + 0.9 * y - 0.3 * x * x + 0.6 * x * y + 0.2 * y * y,
-        ),
-        axis=-1,
-    )
-
-
-def quadratic_jacobian(p):
-    x, y = p[..., 0], p[..., 1]
-    J = np.empty(p.shape[:-1] + (2, 2))
-    J[..., 0, 0] = 0.7 + 1.0 * x - 0.4 * y
-    J[..., 0, 1] = -0.2 - 0.4 * x + 0.2 * y
-    J[..., 1, 0] = 0.1 - 0.6 * x + 0.6 * y
-    J[..., 1, 1] = 0.9 + 0.6 * x + 0.4 * y
-    return J
 
 
 def test_the_fit_is_exact_for_a_quadratic_map_at_all_six_samples():
