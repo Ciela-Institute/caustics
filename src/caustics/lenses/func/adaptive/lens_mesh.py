@@ -100,6 +100,11 @@ class LensMesh(NamedTuple):
         ``(V, 2)`` their images.
 
         *Unit: arcsec*
+    vertices_jacobian: ArrayLike
+        ``(V, 2, 2)`` float64 fitted Jacobian at each vertex of the origin
+        that owns it (:func:`_owned_corners`), from that origin's six images
+        (:func:`~.criterion.fitted_jacobian`); NaN where that origin has a
+        non-finite image.
     vertices_det: ArrayLike
         ``(V,)`` ``det A`` of the lens Jacobian at each vertex.
     vertices_sigma_min: ArrayLike
@@ -149,6 +154,7 @@ class LensMesh(NamedTuple):
     vertices_ij: ArrayLike
     vertices_lens: ArrayLike
     vertices_source: ArrayLike
+    vertices_jacobian: ArrayLike
     vertices_det: ArrayLike
     vertices_sigma_min: ArrayLike
     leaves: ArrayLike
@@ -417,7 +423,7 @@ def _build_lens_mesh(
 
 def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep):
     """
-    :func:`~.criterion.lens_status` of store ``rows``, and those of them at the finest level that are in the band.
+    :func:`~.criterion.lens_status` of store ``rows``, those of them at the finest level that are in the band, and their fitted Jacobian at their vertices.
 
     Each row's six samples are read from ``table_keys``, ascending, and
     ``table_values``; the criterion reads their images, and
@@ -430,6 +436,10 @@ def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep)
     band: ArrayLike
         int64 those of ``rows`` at the finest level in the band, in their
         order.
+    corner_jacobian: ArrayLike
+        ``(n, 3, 2, 2)`` float64, the fit's Jacobian at each row's vertices,
+        in the row's own order, as :func:`~.criterion.lens_status` gives it;
+        NaN on a row with a non-finite image.
     """
     ij = cache.ij[store.v[rows]]
     keys6 = mesh_backend.concatenate(
@@ -437,11 +447,13 @@ def _status_rows(lat, cache, store, rows, table_keys, table_values, min_img_sep)
     )
     values6 = table_values[mesh_backend.searchsorted(table_keys, keys6)]
     level = store.level[rows]
-    status, deviation, sigma_min, _ = lens_status(
+    status, deviation, sigma_min, corners = lens_status(
         values6[..., :2], store.cls[rows], level, lat.h0, min_img_sep
     )
+    nonfinite = (status & LEAF_RAYTRACE_NONFINITE) != 0
+    corners = mesh_backend.where(nonfinite.reshape(-1, 1, 1, 1), math.nan, corners)
     band = (level == lat.level - 1) & in_band(values6[..., 2])
-    return status, deviation, sigma_min, rows[mesh_backend.flatnonzero(band)]
+    return status, deviation, sigma_min, rows[mesh_backend.flatnonzero(band)], corners
 
 
 def _freeze(lat, cache, store, rows, sample, min_img_sep, holes, batch_size, seed=None):
@@ -484,12 +496,21 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
     samples: below the finest level its midpoints are in the cache,
     ``refine`` having tested and passed it; at the finest level they are
     sampled here and never cached, and they also give the band. The origins
-    are tested in steps of at most :data:`STATUS_ROWS` rows. ``seed`` is
-    ``(status, deviation, sigma_min, band_rows, mid_keys, mid_values)`` from
-    :func:`_seed`: the statuses, deviations and smallest singular values of
-    the store's first rows, the store rows of the old band, and the old
-    band's midpoint samples, read here rather than sampled again; None for
-    a fresh build.
+    are tested in steps of at most :data:`STATUS_ROWS` rows.
+
+    Each vertex has one owner among all the origins, old and new
+    (:func:`_owned_corners`), and carries its owner's fitted Jacobian at
+    it. A vertex owned by an origin carried over in ``seed`` keeps the
+    Jacobian its mesh stored: that origin owned it there too, and its
+    midpoint images are gone. Every other vertex is written by its owner's
+    step of the status pass, before the next step runs.
+
+    ``seed`` is ``(status, deviation, sigma_min, band_rows, mid_keys,
+    mid_values, vertices_jacobian)`` from :func:`_seed`: the statuses,
+    deviations and smallest singular values of the store's first rows, the
+    store rows of the old band, the old band's midpoint samples, read here
+    rather than sampled again, and the old vertices' Jacobians, by cache
+    slot; None for a fresh build.
     """
     int64, f64 = mesh_backend.int64, mesh_backend.float64
     used, leaves, leaf_origin, origin, origin_leaves = close(lat, cache, store)
@@ -502,8 +523,17 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
             mesh_backend.zeros((0,), dtype=int64),
             mesh_backend.zeros((0,), dtype=int64),
             mesh_backend.zeros((0, 4), dtype=f64),
+            mesh_backend.zeros((0, 2, 2), dtype=f64),
         )
-    seed_status, seed_deviation, seed_sigma_min, band_rows, mid_keys, mid_values = seed
+    (
+        seed_status,
+        seed_deviation,
+        seed_sigma_min,
+        band_rows,
+        mid_keys,
+        mid_values,
+        seed_jacobian,
+    ) = seed
     n_seed = seed_status.shape[0]
     n_new = n_rows - n_seed
     status = mesh_backend.concatenate(
@@ -534,23 +564,42 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
     order = mesh_backend.argsort(table_keys)
     table_keys, table_values = table_keys[order], table_values[order]
 
-    young_status, young_deviation, young_sigma_min, young_band = map_chunks(
-        lambda rows: _status_rows(
+    origin_of_row = mesh_backend.fill_at_indices(
+        mesh_backend.zeros((n_rows,), dtype=int64) - 1,
+        origin,
+        mesh_backend.arange(origin.shape[0], dtype=int64),
+    )
+    n_vertices = used.shape[0]
+    owned = _owned_corners(origin_leaves, store.cls[origin], n_vertices)
+    # The old vertices are the cache's first slots (resume).
+    old = mesh_backend.flatnonzero(used < seed_jacobian.shape[0])
+    jacobian = mesh_backend.fill_at_indices(
+        mesh_backend.zeros((n_vertices, 2, 2), dtype=f64),
+        old,
+        seed_jacobian[used[old]],
+    )
+
+    def status_step(rows):
+        nonlocal jacobian
+        *verdict, corners = _status_rows(
             lat, cache, store, rows, table_keys, table_values, min_img_sep
-        ),
-        young,
-        STATUS_ROWS,
+        )
+        k = origin_of_row[rows]
+        own = owned[k]
+        # Each vertex has one owning corner, so the indices are unique.
+        jacobian = mesh_backend.fill_at_indices(
+            jacobian, origin_leaves[k][own], corners[own]
+        )
+        return tuple(verdict)
+
+    young_status, young_deviation, young_sigma_min, young_band = map_chunks(
+        status_step, young, STATUS_ROWS
     )
     status = mesh_backend.fill_at_indices(status, young, young_status)
     deviation = mesh_backend.fill_at_indices(deviation, young, young_deviation)
     sigma_min = mesh_backend.fill_at_indices(sigma_min, young, young_sigma_min)
     band_rows = mesh_backend.concatenate((band_rows, young_band), dim=0)
 
-    origin_of_row = mesh_backend.fill_at_indices(
-        mesh_backend.zeros((n_rows,), dtype=int64) - 1,
-        origin,
-        mesh_backend.arange(origin.shape[0], dtype=int64),
-    )
     band_leaves = origin_of_row[band_rows]
     order = mesh_backend.argsort(band_leaves)
     band_leaves, band_rows = band_leaves[order], band_rows[order]
@@ -567,6 +616,7 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
         vertices_ij=cache.ij[used],
         vertices_lens=lattice_xy(lat, cache.ij[used]),
         vertices_source=values[:, :2],
+        vertices_jacobian=jacobian,
         vertices_det=values[:, 2],
         vertices_sigma_min=values[:, 3],
         leaves=leaves,
@@ -636,6 +686,7 @@ def _seed(mesh, lat, k):
         band.leaves,
         sample_keys[mid],
         values[mid],
+        mesh.vertices_jacobian,
     )
     return cache, store, seed
 

@@ -18,6 +18,7 @@ from caustics.lenses.func.adaptive.criterion import (
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
     child_shape_matrices,
+    fitted_jacobian,
     lens_status,
     parity_from_children,
 )
@@ -1567,3 +1568,67 @@ def test_owners_do_not_depend_on_the_order_of_the_origins():
         _owned_corners(mesh.origin_leaves[i64(perm)], mesh.origin_cls[i64(perm)], n)
     )
     assert np.array_equal(a[perm], b)
+
+
+@pytest.mark.parametrize(
+    "fn, jac",
+    [(sie_like, sie_like_jacobian), (localised_fold, localised_fold_jacobian)],
+)
+def test_a_vertex_carries_its_owner_s_fitted_jacobian(fn, jac):
+    mesh, _ = build(fn, jac, min_img_sep=0.05)
+    owner, corner = brute_owner(mesh)
+    rows = i64(owner)
+    beta6 = f64(fn(to_np(origin_samples(mesh, rows)).reshape(-1, 2)).reshape(-1, 6, 2))
+    A = fitted_jacobian(
+        beta6, mesh.origin_cls[rows], mesh.origin_level[rows], mesh.lattice.h0
+    )
+    want = to_np(A)[np.arange(owner.shape[0]), corner]
+    assert mesh.vertices_jacobian.dtype == mesh_backend.float64
+    assert np.array_equal(to_np(mesh.vertices_jacobian), want)
+
+
+def test_a_vertex_whose_owner_has_a_nonfinite_image_has_a_nan_jacobian():
+    fn, jac = broken_where(
+        sie_like,
+        sie_like_jacobian,
+        lambda p: np.hypot(p[:, 0] - 0.7, p[:, 1]) < 0.1,
+    )
+    mesh, _ = build(fn, jac, min_img_sep=0.05)
+    owner, _ = brute_owner(mesh)
+    bad = (to_np(mesh.origin_status)[owner] & LEAF_RAYTRACE_NONFINITE) != 0
+    assert bad.any() and not bad.all()
+    J = to_np(mesh.vertices_jacobian)
+    assert np.isnan(J[bad]).all(axis=(1, 2)).all()
+    assert np.isfinite(J[~bad]).all()
+
+
+def test_a_vertex_whose_owner_has_only_a_nonfinite_midpoint_has_a_nan_jacobian():
+    """The fit at the corner opposite the one bad midpoint reads no NaN; the vertex gets one all the same."""
+    fn, jac = broken_where(
+        affine, affine_jacobian, lambda p: np.hypot(p[:, 0], p[:, 1] - 0.5) < 0.01
+    )
+    mesh, _ = build(fn, jac, min_img_sep=4.0)
+    owner, corner = brute_owner(mesh)
+    rows = i64(owner)
+    beta6 = f64(fn(origin_samples(mesh, rows).reshape(-1, 2)).reshape(-1, 6, 2))
+    A = fitted_jacobian(
+        beta6, mesh.origin_cls[rows], mesh.origin_level[rows], mesh.lattice.h0
+    )
+    fit = to_np(A)[np.arange(owner.shape[0]), corner]
+    bad = (to_np(mesh.origin_status)[owner] & LEAF_RAYTRACE_NONFINITE) != 0
+    assert (bad & np.isfinite(fit).all(axis=(1, 2))).any()
+    J = to_np(mesh.vertices_jacobian)
+    assert np.isnan(J[bad]).all()
+    assert np.array_equal(J[~bad], fit[~bad])
+
+
+# Twice the measured largest error, 0.6130, rounded up to one significant figure.
+BOUND = 2.0
+
+
+def test_the_fitted_vertex_jacobian_is_close_to_the_lens_s():
+    mesh, _ = build(sie_like, sie_like_jacobian, min_img_sep=0.05)
+    err = np.abs(
+        to_np(mesh.vertices_jacobian) - sie_like_jacobian(to_np(mesh.vertices_lens))
+    )
+    assert np.nanmax(err) < BOUND
