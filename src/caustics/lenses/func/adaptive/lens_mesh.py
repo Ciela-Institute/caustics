@@ -147,9 +147,13 @@ class LensMesh(NamedTuple):
         ``(N,)`` float64 the smaller of the smallest singular value of each
         origin's four children's affine maps and that of its fitted
         Jacobian at its six samples (:func:`~.criterion.lens_status`). With
-        ``origin_deviation`` it gives :func:`~.criterion.affine_error`, how
-        far a seed of the origin can lie from its image, below
-        ``min_img_sep`` on every converged origin.
+        ``origin_deviation`` it gives :func:`~.criterion.affine_error`,
+        below ``min_img_sep`` on every converged origin. That bounds how far
+        a seed of the origin can lie from its image where the lens's own
+        smallest singular value on the leaf is at least the fit's. Where the
+        lens's Jacobian jumps inside a leaf it can be less: across the kink
+        of a test map, converged leaves fit 1.0 where the lens's own falls
+        to 0.6.
     index: MeshIndex
         Over the source-plane images of the leaves whose origin is finite,
         each grown by :func:`leaf_grow`.
@@ -196,7 +200,15 @@ def make_sampler(raytrace, device, batch_size=None):
     deviations of ``O(fov)`` quantities, which cancel to exactly zero below
     about ``sqrt(8 * eps * fov)`` and would read as converged. The images
     are cast to float64 and come back on the positions' device, one row per
-    position.
+    position. A raytrace that computes in float32 still limits the mesh:
+    its rounding enters the fitted Jacobian divided by the leaf's edge, and
+    on small enough leaves outweighs the change of ``det A`` across them, so
+    the critical curves break into open pieces. An SIS of Einstein radius 1
+    computed in float32, meshed over a fov of 4 from ``init_res`` 8, traces
+    one closed critical curve at a requested ``min_img_sep`` of 0.003 and
+    tens of open pieces at 0.002, where its finest leaves' shorter edges
+    halve from about ``1e-3`` to ``5e-4``. Raytrace in float64 to refine
+    further.
     """
     f64 = backend.float64
 
@@ -338,9 +350,15 @@ def build_lens_mesh(
     one requested. The resolution test decides that and nothing else. A
     sample within a few ``d`` of a singular center gets a wrong ``det A``;
     the hole of a center declared in ``centers`` drops the crossings it
-    makes. The offset is limited by rounding at very small leaves: by
-    estimate the measurement is sound down to a mesh ``min_img_sep`` of
-    about ``1e-5`` and fails near ``1e-6``.
+    makes. A singular center where ``raytrace`` returns a finite value --
+    ``EPL.raytrace`` returns the center itself there -- must be declared:
+    undeclared, a sample on it or within ``d`` of it is measured across the
+    singularity, and the mesh can trace a spurious closed curve round it
+    with a large caustic. :meth:`Lens.build_closed_lens_mesh
+    <caustics.lenses.base.Lens.build_closed_lens_mesh>` declares the center
+    of every component of the lens itself. The offset is limited by
+    rounding at very small leaves: by estimate the measurement is sound down
+    to a mesh ``min_img_sep`` of about ``1e-5`` and fails near ``1e-6``.
 
     A sign change of ``det A`` lying exactly along mesh lines, where the
     lens's Jacobian jumps while its map stays continuous, is not seen: each
@@ -373,7 +391,8 @@ def build_lens_mesh(
         of a singular isothermal profile or a point mass. Each gets a hole
         of radius ``min_img_sep / 2``, merged where holes overlap, whose
         boundary is traced so that critical curves can be re-joined around
-        it.
+        it. A singular center where ``raytrace`` returns a finite value must
+        be among them, as above.
 
         *Unit: arcsec*
     device: Optional

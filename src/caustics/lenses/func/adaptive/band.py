@@ -18,10 +18,13 @@ from .lattice import lattice_ij_from_key, lattice_xy
 RESOLVED_SPREAD = 2.0
 """Frobenius norm of a difference of two vertex Jacobians below which
 :func:`resolved` trusts a triangle's fit. The Jacobian is dimensionless, so
-one value serves every lens and every ``min_img_sep``. It is a quarter of
-8: on 33 test meshes, every curve traced at any value from 0.25 to 8 lies
-within ``min_img_sep`` of a critical curve traced from the lens's own
-``det A``, and at 16 one does not."""
+one value serves every lens and every ``min_img_sep``. It is half of 4: of
+the powers of two from 0.25 to 256, scanned on 33 test meshes against
+critical curves traced from the lens's own ``det A``, 4 is the largest at
+which every mesh traces as many curves as that reference, each within
+``min_img_sep`` of it. At 8 four meshes trace extra small closed loops,
+each within ``min_img_sep`` of a reference curve, and at 16 one traces a
+loop far from any."""
 
 MEASURE_OFFSET = 1.0 / 1024
 """Offset of a measured ``det A``'s central differences, as a fraction of
@@ -51,8 +54,14 @@ class CriticalBand(NamedTuple):
     value, resolved or not; the resolution test decides what is measured
     and nothing else. A sample within a few ``d`` of a singular center gets
     a wrong ``det A``; the crossings it makes lie inside the hole of a
-    center declared to the build, which drops them. The offset is limited
-    by rounding at very small leaves: by estimate it is sound down to a mesh
+    center declared to the build, which drops them. A singular center where
+    the raytrace returns a finite value must be declared: undeclared, a
+    sample on it or within ``d`` of it is measured across the singularity,
+    and the mesh can trace a spurious closed curve round it with a large
+    caustic. :meth:`Lens.build_closed_lens_mesh
+    <caustics.lenses.base.Lens.build_closed_lens_mesh>` declares the center
+    of every component of the lens itself. The offset is limited by
+    rounding at very small leaves: by estimate it is sound down to a mesh
     ``min_img_sep`` of about ``1e-5`` and fails near ``1e-6``.
 
     Samples are deduplicated by lattice key: a sample shared by several band

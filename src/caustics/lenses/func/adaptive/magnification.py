@@ -97,15 +97,17 @@ def hit_magnification(tables, leaf, w, jacobian):
     at most ``4 delta / h`` elsewhere, and a converged leaf has ``delta <
     sigma_min * min_img_sep``, so the relative error is below about ``4
     min_img_sep / h``. It gives no bound for the interpolated value, which
-    was measured against inverse ray shooting on 1600 source pixels round
-    the caustics of ten lens models -- SIE, EPL, NFW, pseudo-Jaffe and
-    point-mass profiles, alone or with shear, a subhalo, an ``m = 4``
+    was measured against inverse ray shooting on 40 x 40 source pixels round
+    the caustics of each of ten lens models -- SIE, EPL, NFW, pseudo-Jaffe
+    and point-mass profiles, alone or with shear, a subhalo, an ``m = 4``
     multipole or a second point mass -- each meshed at a requested
-    ``min_img_sep`` of 0.03, 0.01 and 0.003. Over the pixels no caustic
-    crosses, its median relative error is 11 to 61 times below the area
-    ratio's. Against interpolating the lens's own ``det A`` at the vertices
-    it is lower on 26 of the 30 meshes; it is 2.1 to 2.2 times higher on
-    the NFW model, at each resolution, and 1.07 times on one other mesh.
+    ``min_img_sep`` of 0.03, 0.01 and 0.003. Over the pixels that no caustic
+    or pseudo-caustic crosses, its median relative error is 11 to 37 times
+    below the area ratio's on the 28 meshes where it is at least ten times
+    the ray shooting's own. Against interpolating the lens's own ``det A``
+    at the vertices it is lower on 26 of the 30 meshes; it is 2.1 to 2.2
+    times higher on the NFW model, at each resolution, and 1.07 times on one
+    other mesh.
 
     Parameters
     ----------

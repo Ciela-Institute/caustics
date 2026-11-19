@@ -20,9 +20,9 @@ where ``det A`` is continuous its zero set crosses the same edge: each
 lens-plane point is within one child edge, half a leaf edge, of it. Against
 critical curves traced the same way from the lens's own ``det A`` at the
 band's samples, on 33 test meshes at a requested ``min_img_sep`` of
-``1e-2``, ``1e-3`` and ``1e-4``, the largest distance either way is 6.81% of
+``1e-2``, ``1e-3`` and ``1e-4``, the largest distance either way is 6.68% of
 the mesh's ``min_img_sep``, except along the kink of a synthetic map whose
-Jacobian jumps there: 10.3% at ``1e-2``.
+Jacobian jumps there: 10.3% at ``1e-2`` and 6.81% at ``1e-3``.
 
 A mesh built with ``centers`` also holds holes around them
 (:class:`~caustics.lenses.func.adaptive.CenterHoles`): the lens map can jump
