@@ -17,6 +17,7 @@ from warnings import warn
 from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
 from .geometry import (
+    CORNER_SECTOR,
     ROOT_CLASS,
     build_device,
     is_member,
@@ -202,6 +203,36 @@ def make_sampler(raytrace, jacobian, device, batch_size=None):
         return out[:n] if size > n else out
 
     return sample
+
+
+def _owned_corners(origin_leaves, origin_cls, n_vertices):
+    """
+    Which origin corner owns its vertex, ``(N, 3)`` bool.
+
+    Each corner covers one of six fixed sectors around its vertex, and the corners
+    holding a vertex cover distinct sectors. The owner of a vertex is the corner
+    covering the lowest sector among them. Reads only vertex indices and
+    orientation classes, so the answer does not depend on the order of the origins.
+
+    Parameters
+    ----------
+    origin_leaves: ArrayLike
+        ``(N, 3)`` int64 vertex indices of the origins.
+    origin_cls: ArrayLike
+        ``(N,)`` int64 orientation classes, ``0..5``.
+    n_vertices: int
+        Number of vertices ``V``.
+    """
+    sector = CORNER_SECTOR[origin_cls]
+    lowest = 6 + mesh_backend.zeros(
+        (n_vertices,),
+        dtype=mesh_backend.int64,
+        device=mesh_backend.device(origin_leaves),
+    )
+    for s in range(5, -1, -1):
+        # one corner per vertex covers sector s, so the indices are unique
+        lowest = mesh_backend.fill_at_indices(lowest, origin_leaves[sector == s], s)
+    return sector == lowest[origin_leaves]
 
 
 def finite_leaves(mesh):

@@ -38,6 +38,7 @@ from caustics.lenses.func.adaptive import lens_mesh as lens_mesh_module
 from caustics.lenses.func.adaptive.lens_mesh import (
     _fov_boundary,
     _freeze,
+    _owned_corners,
     _seed,
     build_closed_lens_mesh,
     build_lens_mesh,
@@ -53,6 +54,7 @@ from adaptive_maps import (
     affine,
     affine_jacobian,
     assert_same,
+    brute_owner,
     broken_where,
     build,
     collapse,
@@ -1537,3 +1539,31 @@ def test_a_clockwise_image_of_the_fov_boundary_still_has_an_inside():
     mesh, _ = build(flip, flip_jacobian)
     beta = f64([[0.5, 0.5], [3.0, 0.0]])
     assert to_np(inside_fov_image(mesh, beta)).tolist() == [True, False]
+
+
+@pytest.mark.parametrize(
+    "fn, jac",
+    [(sie_like, sie_like_jacobian), (localised_fold, localised_fold_jacobian)],
+)
+def test_every_vertex_has_one_owner_the_lowest_sector_holding_it(fn, jac):
+    mesh, _ = build(fn, jac, min_img_sep=0.05)
+    assert mesh.leaves.shape[0] > mesh.origin_leaves.shape[0]
+    n = mesh.vertices_lens.shape[0]
+    owns = to_np(_owned_corners(mesh.origin_leaves, mesh.origin_cls, n))
+    leaves = to_np(mesh.origin_leaves)
+    assert np.array_equal(np.bincount(leaves[owns], minlength=n), np.ones(n, int))
+    owner, corner = brute_owner(mesh)
+    rows, cols = np.nonzero(owns)
+    assert np.array_equal(owner[leaves[rows, cols]], rows)
+    assert np.array_equal(corner[leaves[rows, cols]], cols)
+
+
+def test_owners_do_not_depend_on_the_order_of_the_origins():
+    mesh, _ = build(sie_like, sie_like_jacobian, min_img_sep=0.05)
+    n = mesh.vertices_lens.shape[0]
+    perm = np.random.default_rng(0).permutation(mesh.origin_leaves.shape[0])
+    a = to_np(_owned_corners(mesh.origin_leaves, mesh.origin_cls, n))
+    b = to_np(
+        _owned_corners(mesh.origin_leaves[i64(perm)], mesh.origin_cls[i64(perm)], n)
+    )
+    assert np.array_equal(a[perm], b)

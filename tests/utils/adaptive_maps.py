@@ -428,3 +428,34 @@ def index_cell(index, level, ix, iy):
     if u == keys.size or keys[u] != key:
         return np.zeros(0, dtype=np.int64)
     return to_np(index.leaves)[offsets[u] : offsets[u + 1]]
+
+
+SECTOR_OF_ANGLE = {0: 0, 45: 1, 90: 2, 180: 3, 225: 4, 270: 5}
+
+
+def brute_owner(mesh):
+    """
+    Each vertex's owning origin and corner, found by looping over the vertices.
+
+    A corner covers the sector that starts at the angle of its edge to the next
+    vertex; the owner is the origin whose corner at the vertex covers the lowest
+    sector. Independent of ``_owned_corners``: it reads only vertex positions.
+
+    Returns
+    -------
+    owner, corner: numpy int arrays, ``(V,)``
+    """
+    leaves = to_np(mesh.origin_leaves)
+    pos = to_np(mesh.vertices_lens)
+    n = pos.shape[0]
+    best = np.full(n, 6)
+    owner = np.full(n, -1)
+    corner = np.full(n, -1)
+    for t in range(leaves.shape[0]):
+        for i in range(3):
+            v = leaves[t, i]
+            d = pos[leaves[t, (i + 1) % 3]] - pos[v]
+            sector = SECTOR_OF_ANGLE[round(np.degrees(np.arctan2(d[1], d[0])) % 360)]
+            if sector < best[v]:
+                best[v], owner[v], corner[v] = sector, t, i
+    return owner, corner

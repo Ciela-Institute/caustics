@@ -143,7 +143,19 @@ def child_matrix_tables():
     return M, G, COMPOSE, PINV0, ROOT_CLASS
 
 
-_, _, COMPOSE, PINV0, ROOT_CLASS = child_matrix_tables()
+_, G, COMPOSE, PINV0, ROOT_CLASS = child_matrix_tables()
+
+# Mesh edges run along x, y and one diagonal, so a triangle corner covers exactly
+# one of six angular sectors around its vertex; a sector starts at the angle of the
+# corner's edge to the next vertex: 0, 45, 90, 180, 225 and 270 degrees, numbered
+# 0..5. ``CORNER_SECTOR[cls, corner]`` is the sector covered by ``corner`` of a
+# triangle of orientation class ``cls``. A red-split child at corner ``i`` shares
+# that vertex and its two edges' directions with its parent, so its corner 0
+# covers the parent's corner ``i`` sector.
+CORNER_SECTOR = mesh_backend.as_array(
+    ((1, 3, 5), (3, 5, 1), (5, 1, 3), (4, 0, 2), (0, 2, 4), (2, 4, 0)),
+    dtype=mesh_backend.int64,
+)
 
 
 def area2(tri):

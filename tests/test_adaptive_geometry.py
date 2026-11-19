@@ -7,6 +7,9 @@ import pytest
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.geometry import (
     CHILD_VERTEX_INDICES,
+    COMPOSE,
+    CORNER_SECTOR,
+    G,
     ROOT_SHAPES,
     area2,
     child_matrix_tables,
@@ -30,7 +33,7 @@ from caustics.lenses.func.adaptive.geometry import (
     winding_number,
 )
 
-from adaptive_maps import f64, i64, to_np
+from adaptive_maps import SECTOR_OF_ANGLE, f64, i64, to_np
 
 RNG = np.random.default_rng(20260918)
 
@@ -562,3 +565,21 @@ def test_self_crossing_polygons_cover_what_a_winding_count_covers(seed):
         to_np(winding_number(f64(second), grid)) != 0
     )
     assert area == pytest.approx(covered.mean() * 16.0, abs=0.02)
+
+
+def test_corner_sector_is_the_sector_each_corner_covers():
+    R = to_np(shape_matrix(f64(ROOT_SHAPES[0])))
+    for c in range(6):
+        P = R @ to_np(G)[c]
+        v = [np.zeros(2), P[:, 0], P[:, 1]]
+        for i in range(3):
+            d = v[(i + 1) % 3] - v[i]
+            angle = round(np.degrees(np.arctan2(d[1], d[0])) % 360)
+            assert to_np(CORNER_SECTOR)[c, i] == SECTOR_OF_ANGLE[angle]
+
+
+def test_a_corner_child_covers_its_parent_s_sector():
+    cs, compose = to_np(CORNER_SECTOR), to_np(COMPOSE)
+    for c in range(6):
+        for i in range(3):
+            assert cs[compose[c, i], 0] == cs[c, i]
