@@ -1,6 +1,9 @@
 """
 Total magnification at source-plane points, read off a lens mesh with no lens call.
 
+The Jacobian determinant it interpolates is that of the mesh's fitted vertex
+Jacobians (``mesh.vertices_jacobian``), not the lens's own ``det A``.
+
 Each leaf whose source-plane triangle holds a point
 (:func:`~.geometry.contains_half_open`) is one image of it, with the
 magnification :func:`hit_magnification` gives; ``mu_tot`` is their sum
@@ -14,6 +17,7 @@ from ....backend_obj import ArrayLike, backend
 from .mesh_backend import mesh_backend, to_mesh, to_user
 from .geometry import area2, contains_half_open, map_chunks
 from .index import as_points, index_hits
+from .band import _det2, jacobian_det6
 from .lens_mesh import inside_fov_image
 
 
@@ -27,30 +31,42 @@ class LeafTables(NamedTuple):
         ``(L,)`` float64 ``|lens area| / |source area|``: the magnification
         of the leaf's affine map.
     same_sign: ArrayLike
-        ``(L,)`` bool, True where ``det A`` at the leaf's three vertices is
-        all positive or all negative.
+        ``(L,)`` bool, True where the leaf's six ``det`` (at its three
+        vertices and the three edge midpoints, from the mesh's fitted vertex
+        Jacobians) are finite and all positive or all negative.
     size: ArrayLike
         ``(L,)`` float64 longest edge of the leaf's source-plane triangle:
         how finely the lens mesh resolves the source plane there.
 
         *Unit: arcsec*
+    vertex_det: ArrayLike
+        ``(V,)`` float64 ``det`` of each vertex's fitted Jacobian
+        (``mesh.vertices_jacobian``); NaN where that Jacobian is.
     """
 
     area_ratio: ArrayLike
     same_sign: ArrayLike
     size: ArrayLike
+    vertex_det: ArrayLike
 
 
 def leaf_tables(mesh):
-    """The :class:`LeafTables` of ``mesh``'s leaves, ``O(L)``."""
+    """
+    The :class:`LeafTables` of ``mesh``'s leaves, ``O(L)``.
+
+    ``same_sign`` reads :func:`~.band.jacobian_det6` of the leaf's fitted vertex
+    Jacobians, ``mesh.vertices_jacobian``; the lens's own ``det A`` is not
+    consulted, nor is :func:`~.band.resolved`.
+    """
     lens = mesh.vertices_lens[mesh.leaves]
     source = mesh.vertices_source[mesh.leaves]
-    det = mesh.vertices_det[mesh.leaves]
+    det6 = jacobian_det6(mesh.vertices_jacobian[mesh.leaves])
     edge = source[:, [1, 2, 0]] - source
     return LeafTables(
         area_ratio=mesh_backend.abs(area2(lens)) / mesh_backend.abs(area2(source)),
-        same_sign=mesh_backend.all(det > 0, dim=1) | mesh_backend.all(det < 0, dim=1),
+        same_sign=mesh_backend.all(det6 > 0, dim=1) | mesh_backend.all(det6 < 0, dim=1),
         size=mesh_backend.max(mesh_backend.norm(edge, dim=-1), dim=1),
+        vertex_det=_det2(mesh.vertices_jacobian),
     )
 
 
@@ -58,9 +74,10 @@ def hit_magnification(tables, leaf, w, det):
     """
     The magnification of the image each hit stands for.
 
-    Where ``det A`` at the leaf's vertices shares one strict sign, ``1 /
-    |det A|`` with ``det A`` interpolated at the preimage, whose barycentric
-    coordinates are ``w`` over its sum. Elsewhere the leaf's area ratio:
+    Where the six ``det`` of the leaf's fitted vertex Jacobians share one
+    strict sign (``tables.same_sign``), ``1 / |det|`` with ``det``
+    interpolated from the three vertex values at the preimage, whose
+    barycentric coordinates are ``w`` over its sum. Elsewhere the leaf's area ratio:
     there the interpolated ``det A`` crosses zero inside the leaf, and ``1 /
     |det A|`` would diverge like ``1 / distance``, which is not integrable,
     where the true magnification diverges like ``1 / sqrt(distance)``.
@@ -81,7 +98,8 @@ def hit_magnification(tables, leaf, w, det):
     w: ArrayLike
         ``(K, 3)`` :func:`~.geometry.triangle_weights` of each hit.
     det: ArrayLike
-        ``(K, 3)`` ``det A`` at each hit leaf's vertices.
+        ``(K, 3)`` ``det`` of the fitted Jacobian at each hit leaf's vertices
+        (``tables.vertex_det``).
 
     Returns
     -------
@@ -157,7 +175,7 @@ def _total_magnification(mesh, tables, beta):
         contains_half_open(mesh.vertices_source[triangles], w)
     )
     qidx, leaf, w = qidx[keep], leaf[keep], w[keep]
-    mu = hit_magnification(tables, leaf, w, mesh.vertices_det[mesh.leaves[leaf]])
+    mu = hit_magnification(tables, leaf, w, tables.vertex_det[mesh.leaves[leaf]])
     size = tables.size[leaf]
     order = mesh_backend.lexsort([size, qidx])
     counts = mesh_backend.bincount(qidx, minlength=n)
@@ -177,9 +195,10 @@ def total_magnification(bx, by, mesh, *, batch_size=None):
 
     The sum, over every leaf whose source-plane triangle holds the point, of
     the magnification of the image it stands for
-    (:func:`hit_magnification`): ``1 / |det A|`` interpolated at the
-    preimage, or the leaf's area ratio where ``det A`` changes sign across
-    the leaf. A point on an edge two leaves of one sheet share counts once
+    (:func:`hit_magnification`): ``1 / |det|`` interpolated at the preimage,
+    where ``det`` is that of the mesh's fitted vertex Jacobians (not the
+    lens's own ``det A``), or the leaf's area ratio where it changes sign
+    across the leaf or is not finite. A point on an edge two leaves of one sheet share counts once
     (:func:`~.geometry.contains_half_open`). No lens call is made.
 
     Every image of a point lies in the fov only inside the image of the fov

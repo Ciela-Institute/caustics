@@ -1,10 +1,14 @@
 """Total magnification read off a lens mesh."""
 
+import inspect
+
 import numpy as np
 import pytest
 
 from caustics.backend_obj import backend
 from caustics.lenses.func.adaptive import total_magnification
+from caustics.lenses.func.adaptive import magnification
+from caustics.lenses.func.adaptive.band import RESOLVED_SPREAD, resolved
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.geometry import contains_half_open
 from caustics.lenses.func.adaptive.index import index_hits
@@ -23,6 +27,8 @@ from adaptive_maps import (
     f64,
     i64,
     point_mass,
+    sie_like,
+    sie_like_jacobian,
     sis,
     to_np,
     user_build,
@@ -72,11 +78,50 @@ def test_mu_tot_matches_the_analytic_lens(fn, jac, want):
     assert err.max() < 5e-2
 
 
+def test_same_sign_reads_six_det_of_the_vertex_jacobians_and_not_the_resolution_test():
+    mesh, _ = build(affine, affine_jacobian)
+    J = np.tile(np.eye(2), (mesh.vertices_lens.shape[0], 1, 1))
+    tri = to_np(mesh.leaves)[0]
+
+    def same_sign(J):
+        return bool(
+            to_np(leaf_tables(mesh._replace(vertices_jacobian=f64(J))).same_sign)[0]
+        )
+
+    assert same_sign(J)
+    flipped = J.copy()
+    flipped[tri[0]] = np.diag([1.0, -1.0])
+    assert not same_sign(flipped)  # a vertex det of the other sign
+    edge = J.copy()  # three positive det, one negative on an edge
+    edge[tri[0]] = edge[tri[1]] = np.diag([0.1, 0.1])
+    edge[tri[2]] = np.diag([-0.3, -0.05])
+    assert (np.linalg.det(edge[tri]) > 0).all()
+    assert np.linalg.det(0.5 * (edge[tri[1]] + edge[tri[2]])) < 0
+    assert not same_sign(edge)
+    nan = J.copy()
+    nan[tri[0]] = np.nan
+    assert not same_sign(nan)  # a NaN vertex Jacobian
+    far = J.copy()
+    far[tri[0]] = np.eye(2) * (1.0 + 2 * RESOLVED_SPREAD)
+    assert not bool(to_np(resolved(f64(far[tri][None])))[0])
+    assert same_sign(far)  # unresolved, yet one sign: still interpolated
+
+
+def test_leaf_tables_carry_det_of_each_vertex_jacobian_and_hits_interpolate_it():
+    mesh, _ = build(sie_like, sie_like_jacobian)
+    tables = leaf_tables(mesh)
+    J = to_np(mesh.vertices_jacobian)
+    want = J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
+    assert np.array_equal(to_np(tables.vertex_det), want, equal_nan=True)
+    assert "vertices_det" not in inspect.getsource(magnification)
+
+
 def test_hits_interpolate_det_a_where_it_keeps_its_sign_and_take_the_area_ratio_elsewhere():
     tables = LeafTables(
         area_ratio=f64([5.0, 7.0]),
         same_sign=mesh_backend.as_array([True, False]),
         size=f64([1.0, 1.0]),
+        vertex_det=f64([0.5, 0.5, 0.2]),
     )
     w = f64([[1.0, 1.0, 2.0], [1.0, 1.0, 2.0]])  # barycentric (1/4, 1/4, 1/2)
     det = f64([[0.5, 0.5, 0.2], [0.5, -0.5, 0.2]])
