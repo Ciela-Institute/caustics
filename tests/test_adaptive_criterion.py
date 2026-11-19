@@ -5,7 +5,9 @@ import pytest
 
 from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
 from caustics.lenses.func.adaptive.criterion import (
+    child_maps,
     child_shape_matrices,
+    children_sigma_min,
     midpoint_deviation,
     parity_from_children,
     LEAF_APPROX_PARITY_UNRESOLVED,
@@ -15,8 +17,7 @@ from caustics.lenses.func.adaptive.criterion import (
     LEAF_JACOBIAN_PARITY_UNRESOLVED,
     LEAF_RAYTRACE_NONFINITE,
     affine_error,
-    fitted_det_sigma,
-    fitted_midpoint_jacobian,
+    fitted_jacobian,
     lens_status,
 )
 from caustics.lenses.func.adaptive.geometry import (
@@ -390,16 +391,30 @@ def quadratic_jacobian(p):
     return J
 
 
-def test_the_fit_is_exact_for_a_quadratic_map_on_every_class_and_level():
+def test_the_fit_is_exact_for_a_quadratic_map_at_all_six_samples():
     theta6, cls, level, h0 = descended()
     assert set(cls.tolist()) == set(range(6))
-    got = to_np(
-        fitted_midpoint_jacobian(f64(quadratic(theta6)), i64(cls), i64(level), h0)
-    )
-    assert got.shape == (theta6.shape[0], 3, 2, 2)
-    np.testing.assert_allclose(
-        got, quadratic_jacobian(theta6[:, 3:]), rtol=0, atol=1e-11
-    )
+    got = to_np(fitted_jacobian(f64(quadratic(theta6)), i64(cls), i64(level), h0))
+    assert got.shape == (theta6.shape[0], 6, 2, 2)
+    np.testing.assert_allclose(got, quadratic_jacobian(theta6), rtol=0, atol=1e-11)
+
+
+def test_a_constant_map_fits_to_exactly_zero():
+    theta6, cls, level, h0 = descended()
+    beta6 = np.broadcast_to(np.array([0.3, -1.7]), theta6.shape)
+    got = to_np(fitted_jacobian(f64(beta6), i64(cls), i64(level), h0))
+    assert np.array_equal(got, np.zeros_like(got))
+
+
+def test_children_sigma_min_is_that_of_the_child_maps():
+    theta6, cls, level, h0 = descended(levels=1)
+    beta6 = f64(quadratic(theta6))
+    Q = child_shape_matrices(beta6[:, :3], beta6[:, 3:])
+    maps = child_maps(Q, i64(cls))
+    scale = (2.0 ** (level + 1) / h0)[:, None]
+    want = (to_np(sigma_min_2x2(maps)) * scale).min(axis=1)
+    got = to_np(children_sigma_min(Q, i64(cls), i64(level), h0))
+    np.testing.assert_allclose(got, want, rtol=1e-14)
 
 
 def test_the_fit_is_the_edge_derivative_formula_and_its_inverses_are_the_tables():
@@ -426,16 +441,6 @@ def test_the_fit_is_the_edge_derivative_formula_and_its_inverses_are_the_tables(
     want = np.stack(
         [0.5 * (A[:, (k + 1) % 3] + A[:, (k + 2) % 3]) for k in range(3)], axis=1
     )
-    got = to_np(fitted_midpoint_jacobian(f64(beta6), i64(cls), i64(level), h0))
-    np.testing.assert_allclose(got, want, rtol=1e-10, atol=1e-10)
-
-
-def test_fitted_det_and_sigma_min_are_those_of_the_fitted_jacobian():
-    theta6, cls, level, h0 = descended(levels=1)
-    beta6 = f64(quadratic(theta6))
-    A = fitted_midpoint_jacobian(beta6, i64(cls), i64(level), h0)
-    det, sigma = fitted_det_sigma(beta6, i64(cls), i64(level), h0)
-    assert np.array_equal(
-        to_np(det), to_np(A[..., 0, 0] * A[..., 1, 1] - A[..., 0, 1] * A[..., 1, 0])
-    )
-    assert np.array_equal(to_np(sigma), to_np(sigma_min_2x2(A)))
+    got = to_np(fitted_jacobian(f64(beta6), i64(cls), i64(level), h0))
+    np.testing.assert_allclose(got[:, :3], A, rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(got[:, 3:], want, rtol=1e-10, atol=1e-10)
