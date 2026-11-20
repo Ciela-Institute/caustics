@@ -1,5 +1,7 @@
 from math import pi
 
+import numpy as np
+
 from caustics.cosmology import FlatLambdaCDM
 from caustics.lenses import SIE, Multiplane
 from caustics.utils import meshgrid
@@ -133,6 +135,32 @@ def test_multiplane_effective_convergence(device):
     assert C.shape == (10, 10)
     curl = lens.effective_convergence_curl(thx, thy, x)
     assert curl.shape == (10, 10)
+
+
+def test_a_jitted_jacobian_takes_the_parameters_as_inputs_and_follows_them():
+    """Jitted with the parameters as an input, the Jacobian matches the eager one,
+    and after a parameter changes it gives the new Jacobian, never a stale one."""
+    lens = SIE(
+        name="sie",
+        cosmology=FlatLambdaCDM(name="cosmo"),
+        z_l=0.5,
+        z_s=1.5,
+        x0=0.1,
+        y0=-0.2,
+        q=0.6,
+        phi=0.4,
+        Rein=1.0,
+    )
+    lens.to_dynamic()
+    x = backend.as_array([0.5, -0.3, 1.2], dtype=backend.float64)
+    y = backend.as_array([0.2, 0.9, -0.7], dtype=backend.float64)
+    jac = backend.jit(lambda x, y, p: lens.jacobian_lens_equation(x, y, params=p))
+    for q in (0.6, 0.45):
+        lens.q = q
+        p = lens.get_values()
+        got = backend.to_numpy(jac(x, y, p))
+        want = backend.to_numpy(lens.jacobian_lens_equation(x, y, params=p))
+        np.testing.assert_allclose(got, want, rtol=1e-12, atol=1e-14)
 
 
 if __name__ == "__main__":

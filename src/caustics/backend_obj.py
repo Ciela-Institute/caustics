@@ -96,7 +96,23 @@ class Backend:
         self.jit = self._jit_torch
         self.norm = self._norm_torch
         self.arange = self._arange_torch
+        self.cumsum = self._cumsum_torch
         self.linspace = self._linspace_torch
+        self.sort = self._sort_torch
+        self.argsort = self._argsort_torch
+        self.unique = self._unique_torch
+        self.bincount = self._bincount_torch
+        self.flatnonzero = self._flatnonzero_torch
+        self.sign = self._sign_torch
+        self.lexsort = self._lexsort_torch
+        self.all = self._all_torch
+        self.any = self._any_torch
+        self.padded_size = self._padded_size_torch
+        self.pad_rows = self._pad_rows_torch
+        self.unpad_rows = self._unpad_rows_torch
+        self.compiles = False
+        self.while_loop = self._while_loop_torch
+        self.flag_to_host = self._flag_to_host_torch
 
     def setup_jax(self):
         self.jax = importlib.import_module("jax")
@@ -157,7 +173,23 @@ class Backend:
         self.jit = self._jit_jax
         self.norm = self._norm_jax
         self.arange = self._arange_jax
+        self.cumsum = self._cumsum_jax
         self.linspace = self._linspace_jax
+        self.sort = self._sort_jax
+        self.argsort = self._argsort_jax
+        self.unique = self._unique_jax
+        self.bincount = self._bincount_jax
+        self.flatnonzero = self._flatnonzero_jax
+        self.sign = self._sign_jax
+        self.lexsort = self._lexsort_jax
+        self.all = self._all_jax
+        self.any = self._any_jax
+        self.padded_size = self._padded_size_jax
+        self.pad_rows = self._pad_rows_jax
+        self.unpad_rows = self._unpad_rows_jax
+        self.compiles = True
+        self.while_loop = self._while_loop_jax
+        self.flag_to_host = self._flag_to_host_jax
 
         self.key = self.jax.random.key(
             np.random.randint(0, 2**31 - 1)
@@ -344,11 +376,11 @@ class Backend:
     def _sum_jax(self, array, dim=None):
         return self.jax.numpy.sum(array, axis=dim)
 
-    def _cumprod_torch(self, array, dim=None):
-        return self.module.cumprod(array, dim=dim)
+    def _cumsum_torch(self, array, dim=0):
+        return self.module.cumsum(array, dim=dim)
 
-    def _cumprod_jax(self, array, dim=None):
-        return self.module.cumprod(array, axis=dim)
+    def _cumsum_jax(self, array, dim=0):
+        return self.module.cumsum(array, axis=dim)
 
     def _max_torch(self, array, dim=None):
         return (
@@ -599,6 +631,142 @@ class Backend:
     def _chunk_jax(self, array, chunks, dim=0):
         return self.module.array_split(array, chunks, axis=dim)
 
+    def _sort_torch(self, array, dim=-1):
+        return self.module.sort(array, dim=dim, stable=True).values
+
+    def _sort_jax(self, array, dim=-1):
+        return self.module.sort(array, axis=dim, stable=True)
+
+    def _argsort_torch(self, array, dim=-1):
+        return self.module.argsort(array, dim=dim, stable=True)
+
+    def _argsort_jax(self, array, dim=-1):
+        return self.module.argsort(array, axis=dim, stable=True)
+
+    def _unique_torch(self, array, return_inverse=False):
+        if return_inverse:
+            values, inverse = self.module.unique(
+                array, sorted=True, return_inverse=True
+            )
+            return values, inverse.reshape(-1)
+        return self.module.unique(array, sorted=True)
+
+    def _unique_jax(self, array, return_inverse=False):
+        if return_inverse:
+            values, inverse = self.module.unique(array, return_inverse=True)
+            return values, inverse.reshape(-1)
+        return self.module.unique(array)
+
+    def _bincount_torch(self, array, minlength=0):
+        return self.module.bincount(array, minlength=minlength)
+
+    def _bincount_jax(self, array, minlength=0):
+        return self.module.bincount(array, minlength=minlength)
+
+    def _flatnonzero_torch(self, array):
+        return self.module.nonzero(array.reshape(-1), as_tuple=False).reshape(-1)
+
+    def _flatnonzero_jax(self, array):
+        return self.module.flatnonzero(array)
+
+    def _sign_torch(self, array):
+        result = self.module.sign(array)
+        if array.dtype.is_floating_point:
+            result = self.module.where(self.module.isnan(array), array, result)
+        return result
+
+    def _sign_jax(self, array):
+        return self.module.sign(array)
+
+    def _lexsort_torch(self, keys):
+        # numpy convention: keys[-1] is the primary sort key. Stable sorts
+        # applied first-to-last leave the last key most significant.
+        order = self.module.arange(keys[0].shape[0], device=keys[0].device)
+        for key in keys:
+            order = order[self.module.argsort(key[order], stable=True)]
+        return order
+
+    def _lexsort_jax(self, keys):
+        return self.module.lexsort(tuple(keys))
+
+    def _all_torch(self, array, dim=None):
+        return (
+            self.module.all(array) if dim is None else self.module.all(array, dim=dim)
+        )
+
+    def _all_jax(self, array, dim=None):
+        return self.module.all(array, axis=dim)
+
+    def _any_torch(self, array, dim=None):
+        return (
+            self.module.any(array) if dim is None else self.module.any(array, dim=dim)
+        )
+
+    def _any_jax(self, array, dim=None):
+        return self.module.any(array, axis=dim)
+
+    def _padded_size_torch(self, n, cap=None):
+        return n
+
+    def _padded_size_jax(self, n, cap=None):
+        # Eager jax compiles each op for each new shape, so a batch is padded
+        # to one of a few sizes. From 64 rows on, XLA also gives a point the
+        # same lens value whatever the batch size.
+        if n == 0:
+            return 0
+        size = 1 << (max(n, 64) - 1).bit_length()
+        return size if cap is None else min(size, cap)
+
+    def _pad_rows_torch(self, array, n):
+        last = array[-1:].expand(n - array.shape[0], *array.shape[1:])
+        return self.module.cat((array, last), dim=0)
+
+    def _pad_rows_jax(self, array, n):
+        # Padding on the device recompiles per shape; numpy pads on the host
+        # instead, so pad_rows compiles nothing regardless of n.
+        (device,) = array.devices()
+        widths = [(0, n - array.shape[0])] + [(0, 0)] * (array.ndim - 1)
+        host = np.pad(np.asarray(array), widths, mode="edge")
+        return self.jax.device_put(host, device=device)
+
+    def _unpad_rows_torch(self, array, n):
+        return array[:n]
+
+    def _unpad_rows_jax(self, array, n):
+        (device,) = array.devices()
+        return self.jax.device_put(np.asarray(array)[:n], device=device)
+
+    def _while_loop_torch(self, cond, body, init):
+        state = init
+        while cond(state):
+            state = body(state)
+        return state
+
+    def _while_loop_jax(self, cond, body, init):
+        return self.jax.lax.while_loop(cond, body, init)
+
+    def _flag_to_host_torch(self, flag):
+        if flag.device.type != "cuda":
+            return flag
+        host = flag.to("cpu", non_blocking=True)
+        event = self.module.cuda.Event()
+        # The copy runs on `flag.device`'s stream, not necessarily the current
+        # device's; record there so `read_flag`'s `event.synchronize()` waits
+        # for that copy and nothing else.
+        event.record(self.module.cuda.current_stream(flag.device))
+        return host, event
+
+    def _flag_to_host_jax(self, flag):
+        flag.copy_to_host_async()
+        return flag
+
+    def read_flag(self, handle):
+        if isinstance(handle, tuple):
+            flag, event = handle
+            event.synchronize()
+            return bool(flag)
+        return bool(handle)
+
     def _jit_torch(self, func, **kwargs):
         return func
 
@@ -626,11 +794,8 @@ class Backend:
     def searchsorted(self, array, value):
         return self.module.searchsorted(array, value)
 
-    def any(self, array):
-        return self.module.any(array)
-
-    def all(self, array):
-        return self.module.all(array)
+    def finfo(self, dtype):
+        return self.module.finfo(dtype)
 
     def log(self, array):
         return self.module.log(array)
@@ -794,6 +959,14 @@ class Backend:
     @property
     def float64(self):
         return self.module.float64
+
+    @property
+    def int64(self):
+        return self.module.int64
+
+    @property
+    def int8(self):
+        return self.module.int8
 
     @property
     def pi(self):

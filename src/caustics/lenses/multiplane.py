@@ -63,6 +63,26 @@ class Multiplane(ThickLens):
         return [lens.z_l.value for lens in self.lenses]
 
     @forward
+    def component_centers(self) -> ArrayLike:
+        """
+        Center of each component of every plane, plane by plane in the order of ``lenses``.
+
+        Each center is in its own plane's coordinates, so only the first
+        plane's lie where the lens map is singular, when they are singular at
+        all; a later plane's singular point lies elsewhere in the image plane.
+
+        Returns
+        -------
+        ArrayLike
+            ``(S, 2)`` ``(x0, y0)`` rows.
+
+            *Unit: arcsec*
+        """
+        return backend.concatenate(
+            [lens.component_centers() for lens in self.lenses], dim=0
+        )
+
+    @forward
     def _raytrace_helper(
         self,
         x: ArrayLike,

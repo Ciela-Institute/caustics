@@ -1,0 +1,252 @@
+"""Total magnification read off a lens mesh."""
+
+import inspect
+
+import numpy as np
+import pytest
+
+from caustics.backend_obj import backend
+from caustics.lenses.func.adaptive import total_magnification
+from caustics.lenses.func.adaptive import magnification
+from caustics.lenses.func.adaptive.band import RESOLVED_SPREAD, resolved
+from caustics.lenses.func.adaptive.mesh_backend import mesh_backend
+from caustics.lenses.func.adaptive.geometry import contains_half_open
+from caustics.lenses.func.adaptive.index import index_hits
+from caustics.lenses.func.adaptive.lens_mesh import inside_fov_image
+from caustics.lenses.func.adaptive.magnification import (
+    LeafTables,
+    _total_magnification,
+    hit_magnification,
+    leaf_tables,
+)
+from adaptive_maps import (
+    AFFINE,
+    affine,
+    affine_jacobian,
+    build,
+    f64,
+    i64,
+    point_mass,
+    quadratic_jacobian,
+    sis,
+    to_np,
+    user_build,
+)
+
+RNG = np.random.default_rng(20261009)
+
+
+def sis_mu(b):
+    """An SIS of unit Einstein radius: two images inside it, one outside."""
+    return np.where(b < 1.0, 2.0 / b, 1.0 + 1.0 / b)
+
+
+def point_mu(u):
+    return (u**2 + 2.0) / (u * np.sqrt(u**2 + 4.0))
+
+
+def _mu(mesh, points):
+    return to_np(_total_magnification(mesh, leaf_tables(mesh), f64(points))[0])
+
+
+def _sis_user_mesh(min_img_sep=0.02):
+    return user_build(*sis(), 6.0, 16, min_img_sep)[0]
+
+
+def test_an_affine_lens_has_one_over_det_a_everywhere():
+    mesh, _ = build(affine, affine_jacobian, fov=4.0, init_res=4, min_img_sep=0.25)
+    mu = _mu(mesh, RNG.uniform(-1.0, 1.0, (200, 2)))
+    np.testing.assert_allclose(mu, 1.0 / abs(np.linalg.det(AFFINE)), rtol=1e-12)
+
+
+@pytest.mark.parametrize(
+    "fn, jac, want",
+    [(*sis(), sis_mu), (*point_mass(), point_mu)],
+    ids=["sis", "point"],
+)
+def test_mu_tot_matches_the_analytic_lens(fn, jac, want):
+    """Away from the SIS pseudo-caustic and from the singular center."""
+    mesh, _ = build(fn, jac, fov=6.0, init_res=16, min_img_sep=0.02)
+    beta = RNG.uniform(-1.5, 1.5, (20000, 2))
+    r = np.linalg.norm(beta, axis=1)
+    keep = (
+        to_np(inside_fov_image(mesh, f64(beta))) & (r > 0.1) & (np.abs(r - 1.0) > 0.05)
+    )
+    err = np.abs(_mu(mesh, beta[keep]) / want(r[keep]) - 1.0)
+    assert np.median(err) < 2e-3
+    assert err.max() < 5e-2
+
+
+def test_same_sign_reads_six_det_of_the_vertex_jacobians_and_not_the_resolution_test():
+    mesh, _ = build(affine, affine_jacobian)
+    J = np.tile(np.eye(2), (mesh.vertices_lens.shape[0], 1, 1))
+    tri = to_np(mesh.leaves)[0]
+
+    def same_sign(J):
+        return bool(
+            to_np(leaf_tables(mesh._replace(vertices_jacobian=f64(J))).same_sign)[0]
+        )
+
+    assert same_sign(J)
+    flipped = J.copy()
+    flipped[tri[0]] = np.diag([1.0, -1.0])
+    assert not same_sign(flipped)  # a vertex det of the other sign
+    edge = J.copy()  # three positive det, one negative on an edge
+    edge[tri[0]] = edge[tri[1]] = np.diag([0.1, 0.1])
+    edge[tri[2]] = np.diag([-0.3, -0.05])
+    assert (np.linalg.det(edge[tri]) > 0).all()
+    assert np.linalg.det(0.5 * (edge[tri[1]] + edge[tri[2]])) < 0
+    assert not same_sign(edge)
+    nan = J.copy()
+    nan[tri[0]] = np.nan
+    assert not same_sign(nan)  # a NaN vertex Jacobian
+    far = J.copy()
+    far[tri[0]] = np.eye(2) * (1.0 + 2 * RESOLVED_SPREAD)
+    assert not bool(to_np(resolved(f64(far[tri][None])))[0])
+    assert same_sign(far)  # unresolved, yet one sign: still interpolated
+    inf = J.copy()
+    inf[tri] = np.diag([np.inf, 1.0])
+    assert not same_sign(inf)  # six det of +inf are not one sign
+
+
+def test_hits_take_det_of_the_interpolated_jacobian_or_the_area_ratio():
+    tables = LeafTables(
+        area_ratio=f64([7.0, 9.0]),
+        same_sign=mesh_backend.as_array([True, False]),
+        size=f64([1.0, 1.0]),
+    )
+    J = np.random.default_rng(0).normal(size=(2, 3, 2, 2)) + 3 * np.eye(2)
+    w = np.array([[0.2, 0.3, 0.5], [1.0, 2.0, 1.0]])
+    bary = w / w.sum(axis=1, keepdims=True)
+    M = (bary[0, :, None, None] * J[0]).sum(axis=0)
+    want0 = 1.0 / abs(M[0, 0] * M[1, 1] - M[0, 1] * M[1, 0])
+    mu = to_np(hit_magnification(tables, i64([0, 1]), f64(w), f64(J)))
+    np.testing.assert_allclose(mu, [want0, 9.0], rtol=1e-14)
+
+
+def test_a_hit_whose_interpolated_det_leaves_the_leaf_s_sign_takes_the_area_ratio():
+    tables = LeafTables(
+        area_ratio=f64([7.0, 7.0, 7.0]),
+        same_sign=mesh_backend.as_array([True, True, True]),
+        size=f64([1.0, 1.0, 1.0]),
+    )
+
+    def rot(t):
+        return np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
+
+    J = np.stack(
+        [
+            # det 1 throughout
+            np.stack([np.eye(2), np.eye(2), np.eye(2)]),
+            # three det of +1 whose mean has det ~0
+            np.stack([rot(0.0), rot(2.0), rot(4.0)]),
+            # a non-finite interpolant
+            np.stack([np.eye(2), np.full((2, 2), np.inf), np.eye(2)]),
+        ]
+    )
+    w = np.ones((3, 3))
+    mu = to_np(hit_magnification(tables, i64([0, 1, 2]), f64(w), f64(J)))
+    mean = J[1].mean(axis=0)
+    det = mean[0, 0] * mean[1, 1] - mean[0, 1] * mean[1, 0]
+    # same sign, tiny: the guard is on sign and finiteness only
+    assert det > 0 and abs(det) < 0.2
+    np.testing.assert_allclose(mu, [1.0, 1.0 / det, 7.0], rtol=1e-12)
+    # +inf, of the leaf's sign: only the finiteness test sends it to the area ratio
+    J_inf = np.stack([np.eye(2), np.diag([np.inf, 1.0]), np.eye(2)])[None]
+    mean = J_inf[0].mean(axis=0)
+    assert mean[0, 0] * mean[1, 1] - mean[0, 1] * mean[1, 0] == np.inf
+    mu_inf = hit_magnification(tables, i64([0]), f64(np.ones((1, 3))), f64(J_inf))
+    assert to_np(mu_inf).tolist() == [7.0]
+
+
+def test_a_hit_whose_interpolated_det_changes_sign_takes_the_area_ratio():
+    tables = LeafTables(
+        area_ratio=f64([7.0]), same_sign=mesh_backend.as_array([True]), size=f64([1.0])
+    )
+    # det 1, 1.5, 1.5
+    J = np.stack([np.diag([1.0, 1.0]), np.diag([-3.0, -0.5]), np.diag([-3.0, -0.5])])
+    J = J[None]
+    w = np.array([[0.5, 0.25, 0.25]])
+    mean = (w[0, :, None, None] / w.sum() * J[0]).sum(axis=0)
+    assert mean[0, 0] * mean[1, 1] - mean[0, 1] * mean[1, 0] < 0
+    assert to_np(hit_magnification(tables, i64([0]), f64(w), f64(J))).tolist() == [7.0]
+
+
+def test_det_of_the_interpolated_jacobian_is_exact_where_the_jacobian_is_affine():
+    tri = np.array([[0.0, 0.0], [0.5, 0.5], [0.0, 0.5]])
+    w = np.array([[0.2, 0.3, 0.5]])
+    tables = LeafTables(
+        area_ratio=f64([0.0]),
+        same_sign=mesh_backend.as_array([True]),
+        size=f64([1.0]),
+    )
+    J = quadratic_jacobian(tri)[None]  # the Jacobian of a quadratic map is affine
+    at = quadratic_jacobian((w[0, :, None] * tri).sum(axis=0))
+    want = 1.0 / abs(at[0, 0] * at[1, 1] - at[0, 1] * at[1, 0])
+    mu = to_np(hit_magnification(tables, i64([0]), f64(w), f64(J)))
+    np.testing.assert_allclose(mu, [want], rtol=1e-13)
+
+
+def test_mu_tot_is_finite_beside_an_undeclared_singular_centre():
+    fn, jac = sis()
+    mesh = user_build(fn, jac, fov=4.0, init_res=8, min_img_sep=0.02)[0]
+    phi = np.linspace(0.0, 2 * np.pi, 64, endpoint=False)
+    # sources whose inner image is near the centre
+    for radius in (0.9, 0.97, 0.995):
+        mu = to_np(
+            total_magnification(radius * np.cos(phi), radius * np.sin(phi), mesh)
+        )
+        assert np.isfinite(mu).all() and (mu > 0).all()
+
+
+def test_the_leaf_tables_carry_no_per_vertex_det():
+    assert LeafTables._fields == ("area_ratio", "same_sign", "size")
+    assert "vertices_det" not in inspect.getsource(magnification)
+
+
+def test_the_local_resolution_is_the_smallest_image_among_the_leaves_holding_a_point():
+    mesh, _ = build(*sis(), fov=6.0, init_res=16, min_img_sep=0.04)
+    tables = leaf_tables(mesh)
+    beta = f64(RNG.uniform(-1.5, 1.5, (300, 2)))
+    _, size = _total_magnification(mesh, tables, beta)
+    qidx, leaf, w = index_hits(mesh.index, mesh.vertices_source, mesh.leaves, beta)
+    held = to_np(contains_half_open(mesh.vertices_source[mesh.leaves[leaf]], w))
+    want = np.full(300, np.inf)
+    np.minimum.at(want, to_np(qidx)[held], to_np(tables.size[leaf])[held])
+    np.testing.assert_array_equal(to_np(size), want)
+
+
+def test_mu_tot_on_a_symmetry_axis_matches_mu_tot_just_off_it():
+    """The images of the lens-plane axes lie on lattice lines: a point there is on shared edges."""
+    mesh, _ = build(*sis(), fov=6.0, init_res=16, min_img_sep=0.04)
+    x = np.linspace(0.2, 1.8, 41)
+    on = _mu(mesh, np.stack((x, 0.0 * x), axis=-1))
+    off = _mu(mesh, np.stack((x, 0.0 * x + 1e-9), axis=-1))
+    np.testing.assert_allclose(on, off, rtol=1e-6)
+
+
+def test_total_magnification_is_nan_outside_the_fov_boundary_image_and_takes_any_shape():
+    mesh = _sis_user_mesh()
+    bx = backend.as_array([[0.3, 10.0], [0.5, -0.2]], dtype=backend.float64)
+    by = backend.as_array([[0.1, 10.0], [0.0, 0.4]], dtype=backend.float64)
+    mu = to_np(total_magnification(bx, by, mesh))
+    assert mu.shape == (4,)
+    assert np.isnan(mu[1]) and np.isfinite(mu[[0, 2, 3]]).all()
+
+
+def test_total_magnification_does_not_depend_on_the_batch_size():
+    mesh = _sis_user_mesh(0.04)
+    beta = RNG.uniform(-1.5, 1.5, (101, 2))
+    bx = backend.as_array(beta[:, 0], dtype=backend.float64)
+    by = backend.as_array(beta[:, 1], dtype=backend.float64)
+    whole = to_np(total_magnification(bx, by, mesh))
+    for batch_size in (1, 7):
+        np.testing.assert_array_equal(
+            to_np(total_magnification(bx, by, mesh, batch_size=batch_size)), whole
+        )
+
+
+def test_no_source_gives_no_magnification():
+    mesh = _sis_user_mesh(0.04)
+    empty = backend.as_array(np.zeros(0), dtype=backend.float64)
+    assert to_np(total_magnification(empty, empty, mesh)).shape == (0,)

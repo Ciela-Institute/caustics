@@ -58,6 +58,25 @@ class BatchedPlane(ThinLens):
         self.chunk_size = chunk_size
 
     @forward
+    def component_centers(self) -> ArrayLike:
+        """
+        Lens-plane center of every batched lens.
+
+        A center coordinate without the batch dimension is shared by every
+        lens.
+
+        Returns
+        -------
+        ArrayLike
+            ``(S, 2)`` ``(x0, y0)`` rows, one per batched lens.
+
+            *Unit: arcsec*
+        """
+        x0, y0 = self.lens.x0.value, self.lens.y0.value
+        zero = backend.zeros_like(x0 + y0)
+        return backend.stack((x0 + zero, y0 + zero), dim=-1).reshape(-1, 2)
+
+    @forward
     def reduced_deflection_angle(
         self,
         x: ArrayLike,
