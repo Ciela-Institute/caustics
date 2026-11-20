@@ -653,9 +653,10 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
         old,
         seed_jacobian[used[old]],
     )
-    # An old NaN mean enters the sum here. It can only be at a vertex the
-    # non-finite mask below sets to NaN anyway: a non-finite origin sits at
-    # the finest level and is never split, so it still holds the vertex.
+    # An old NaN mean enters the sum here and keeps the vertex NaN, as it
+    # must stay: the non-finite origin behind it sits at the finest level and
+    # is never split, so it still holds the vertex. ``bad`` below therefore
+    # marks the vertices of the new non-finite origins alone.
     total = stored * old_held.reshape(-1, 1, 1)
     for lo in range(0, split.shape[0], STATUS_ROWS):
         rows = split[lo : lo + STATUS_ROWS]
@@ -667,18 +668,25 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
             total, split_vertices[lo : lo + STATUS_ROWS], store.cls[rows], -corners
         )
 
+    bad = mesh_backend.zeros((n_vertices,), dtype=mesh_backend.bool)
+
     def status_step(rows):
-        nonlocal total
+        nonlocal total, bad
         *verdict, corners = _status_rows(
             lat, cache, store, rows, table_keys, table_values, min_img_sep
         )
-        finite = mesh_backend.flatnonzero((verdict[0] & LEAF_RAYTRACE_NONFINITE) == 0)
+        is_finite = (verdict[0] & LEAF_RAYTRACE_NONFINITE) == 0
+        finite = mesh_backend.flatnonzero(is_finite)
         adds = rows[finite]
         total = _add_corner_fits(
             total,
             origin_leaves[origin_of_row[adds]],
             store.cls[adds],
             corners[finite],
+        )
+        drops = rows[mesh_backend.flatnonzero(~is_finite)]
+        bad = mesh_backend.fill_at_indices(
+            bad, origin_leaves[origin_of_row[drops]].reshape(-1), True
         )
         return tuple(verdict)
 
@@ -689,14 +697,6 @@ def _finish(lat, cache, store, sample, min_img_sep, holes, batch_size, seed):
     deviation = mesh_backend.fill_at_indices(deviation, young, young_deviation)
     sigma_min = mesh_backend.fill_at_indices(sigma_min, young, young_sigma_min)
 
-    nonfinite = mesh_backend.flatnonzero(
-        (status[origin] & LEAF_RAYTRACE_NONFINITE) != 0
-    )
-    bad = mesh_backend.fill_at_indices(
-        mesh_backend.zeros((n_vertices,), dtype=mesh_backend.bool),
-        origin_leaves[nonfinite].reshape(-1),
-        True,
-    )
     jacobian = mesh_backend.where(
         changed.reshape(-1, 1, 1), total / held.reshape(-1, 1, 1), stored
     )
